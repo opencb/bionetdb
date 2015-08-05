@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.app.cli;
 
+import org.opencb.bionetdb.core.BioPaxParser;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.IOException;
@@ -21,13 +22,15 @@ public class BuildCommandExecutor extends CommandExecutor {
 
     @Override
     public void execute() {
-        logger.info("soy el log {}", buildCommandOptions.input);
 
         try {
             Path inputPath = Paths.get(buildCommandOptions.input);
             FileUtils.checkFile(inputPath);
 
+            BioPaxParser bioPaxParser = new BioPaxParser("L3");
+            bioPaxParser.parse(inputPath);
 
+            System.out.println("oleeeeeee!!!!!!!");
 
 
         } catch (IOException e) {
