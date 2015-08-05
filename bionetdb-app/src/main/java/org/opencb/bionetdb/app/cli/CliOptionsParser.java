@@ -16,35 +16,29 @@ public class CliOptionsParser {
     private final GeneralOptions generalOptions;
     private final CommonCommandOptions commonCommandOptions;
 
-    private DownloadCommandOptions downloadCommandOptions;
     private BuildCommandOptions buildCommandOptions;
     private LoadCommandOptions loadCommandOptions;
     private QueryCommandOptions queryCommandOptions;
     private VariantAnnotationCommandOptions variantAnnotationCommandOptions;
-    private PostLoadCommandOptions postLoadCommandOptions;
 
 
     public CliOptionsParser() {
         generalOptions = new GeneralOptions();
 
         jcommander = new JCommander(generalOptions);
-        jcommander.setProgramName("cellbase.sh");
+        jcommander.setProgramName("bionetdb.sh");
 
         commonCommandOptions = new CommonCommandOptions();
 
-        downloadCommandOptions = new DownloadCommandOptions();
         buildCommandOptions = new BuildCommandOptions();
         loadCommandOptions = new LoadCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
         variantAnnotationCommandOptions = new VariantAnnotationCommandOptions();
-        postLoadCommandOptions = new PostLoadCommandOptions();
 
-        jcommander.addCommand("download", downloadCommandOptions);
         jcommander.addCommand("build", buildCommandOptions);
         jcommander.addCommand("load", loadCommandOptions);
         jcommander.addCommand("query", queryCommandOptions);
-        jcommander.addCommand("variant-annotation", variantAnnotationCommandOptions);
-        jcommander.addCommand("post-load", postLoadCommandOptions);
+        jcommander.addCommand("annotation", variantAnnotationCommandOptions);
 
     }
 
@@ -86,37 +80,8 @@ public class CliOptionsParser {
         @Parameter(names = {"-L", "--log-level"}, description = "Set the logging level, accepted values are: debug, info, warn, error and fatal", required = false, arity = 1)
         public String logLevel = "info";
 
-        @Deprecated
-        @Parameter(names = {"-v", "--verbose"}, description = "[Deprecated] Set the level of the logging", required = false, arity = 1)
-        public boolean verbose;
-
         @Parameter(names = {"-C", "--conf"}, description = "CellBase configuration.json file. Have a look at cellbase/cellbase-core/src/main/resources/configuration.json for an example", required = false, arity = 1)
         public String conf;
-
-    }
-
-
-    @Parameters(commandNames = {"download"}, commandDescription = "Download all different data sources provided in the configuration.json file")
-    public class DownloadCommandOptions {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-
-        @Parameter(names = {"-d", "--data"}, description = "Comma separated list of data to download: genome, gene, variation, regulation, protein, conservation, clinical and gene2disease. 'all' to download everything", required = true, arity = 1)
-        public String data;
-
-        @Parameter(names = {"-s", "--species"}, description = "Name of the species to be downloaded, valid format include 'Homo sapiens' or 'hsapiens'", required = false, arity = 1)
-        public String species = "Homo sapiens";
-
-        @Parameter(names = {"-a", "--assembly"}, description = "Name of the assembly, if empty the first assembly in configuration.json will be used", required = false, arity = 1)
-        public String assembly = "GRCh37";
-
-        @Parameter(names = {"-o", "--output"}, description = "The output directory, species folder will be created", required = false, arity = 1)
-        public String output = "/tmp";
-
-        @Parameter(names = {"--common"}, description = "Directory where common multi-species data will be downloaded, this is mainly protein and expression data [<OUTPUT>/common]", required = false, arity = 1)
-        public String common;
 
     }
 
@@ -128,23 +93,14 @@ public class CliOptionsParser {
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
 
-        @Parameter(names = {"-d", "--data"}, description = "Comma separated list of data to download: genome, gene, variation, regulation, protein, conservation, drug, clinvar, cosmic and GWAS CAatalog. 'all' build everything.", required = true, arity = 1)
-        public String data;
+        @Parameter(names = {"-i", "--input"}, description = "Input file with the downloaded network", required = true, arity = 1)
+        public String input;
+
+        @Parameter(names = {"-o", "--output"}, description = "Output file where the data model is stored", required = false, arity = 1)
+        public String output;
 
         @Parameter(names = {"-s", "--species"}, description = "Name of the species to be built, valid format include 'Homo sapiens' or 'hsapiens'", required = false, arity = 1)
         public String species = "Homo sapiens";
-
-        @Parameter(names = {"-a", "--assembly"}, description = "Name of the assembly, if empty the first assembly in configuration.json will be used", required = false, arity = 1)
-        public String assembly;
-
-        @Parameter(names = {"-i", "--input"}, description = "Input directory with the downloaded data sources to be loaded", required = true, arity = 1)
-        public String input;
-
-        @Parameter(names = {"-o", "--output"}, description = "Output directory where the JSON data models are saved", required = false, arity = 1)
-        public String output = "/tmp";
-
-        @Parameter(names = {"--common"}, description = "Directory where common multi-species data will be downloaded, this is mainly protein and expression data [<OUTPUT>/common]", required = false, arity = 1)
-        public String common;
 
     }
 
@@ -156,9 +112,6 @@ public class CliOptionsParser {
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
 
-        @Parameter(names = {"-d", "--data"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = true, arity = 1)
-        public String data;
-
         @Parameter(names = {"-i", "--input"}, description = "Input directory with the JSON data models to be loaded", required = true, arity = 1)
         public String input;
 
@@ -167,9 +120,6 @@ public class CliOptionsParser {
 
         @Parameter(names = {"-l", "--loader"}, description = "Database specific data loader to be used", required = false, arity = 1)
         public String loader = "org.opencb.cellbase.mongodb.loader.MongoDBCellBaseLoader";
-
-        @Parameter(names = {"--num-threads"}, description = "Number of threads used for loading data into the database", required = false, arity = 1)
-        public int numThreads = 2;
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
         public Map<String, String> loaderParams = new HashMap<>();
@@ -187,32 +137,14 @@ public class CliOptionsParser {
         @Parameter(names = {"--species"}, description = "Name of the species to be downloaded, valid format include 'Homo sapiens' or 'hsapiens'", required = true, arity = 1)
         public String species = "Homo sapiens";
 
-        @Parameter(names = {"--assembly"}, description = "Name of the assembly, if empty the first assembly in configuration.json will be used", required = false, arity = 1)
-        public String assembly = "GRCh37";
-
-        @Parameter(names = {"--type"}, description = "", required = false, arity = 1)
-        public String category;
-
-        @Parameter(names = {"--id"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "By pathway ID", required = false, arity = 1)
         public String id;
 
-        @Parameter(names = {"--resource"}, description = "", required = false, arity = 1)
-        public String resource;
+        @Parameter(names = {"--gene"}, description = "", required = false, arity = 1)
+        public String gene;
 
         @Parameter(names = {"-o", "--output-file"}, description = "", required = false, arity = 1)
         public String outputFile;
-
-        @Deprecated
-        @Parameter(names = {"--variant-annot"}, description = "[DEPRECATED]", required = false)
-        public boolean annotate;
-
-        @Deprecated
-        @Parameter(names = {"-i", "--input-file"}, description = "[DEPRECATED]", required = false, arity = 1)
-        public String inputFile;
-
-        @Deprecated
-        @Parameter(names = {"--host-url"}, description = "[DEPRECATED]", required = false, arity = 1)
-        public String url;
 
     }
 
@@ -236,9 +168,6 @@ public class CliOptionsParser {
         @Parameter(names = {"-a", "--assembly"}, description = "Name of the assembly, if empty the first assembly in configuration.json will be read", required = false, arity = 1)
         public String assembly = "GRCh37";
 
-        @Parameter(names = {"-l", "--local"}, description = "Database credentials for local annotation are read from configuration.json file", required = false, arity = 0)
-        public boolean local;
-
         @Parameter(names = {"--remote-url"}, description = "The URL of CellBase REST web services, this has no effect if --local is present", required = false, arity = 1)
         public String url = "bioinfodev.hpc.cam.ac.uk";
 
@@ -251,48 +180,17 @@ public class CliOptionsParser {
         @Parameter(names = {"--batch-size"}, description = "Number of variants per batch", required = false, arity = 1)
         public int batchSize = 200;
 
-        @Parameter(names = {"--resume"}, description = "Whether we resume annotation or overwrite the annotation in the output file", required = false, arity = 0)
-        public boolean resume;
-
-        @Parameter(names = {"--custom-file"}, description = "String with a comma separated list (no spaces in between) of files with custom annotation to be included during the annotation process. File format must be VCF. For example: file1.vcf,file2.vcf", required = false)
-        public String customFiles;
-
-        @Parameter(names = {"--custom-file-id"}, description = "String with a comma separated list (no spaces in between) of short identifiers for each custom file. For example: fileId1,fileId2", required = false)
-        public String customFileIds;
-
-        @Parameter(names = {"--custom-file-fields"}, description = "String containing a colon separated list (no spaces in between) of field lists which indicate the info fields to be taken from each VCF file. For example: field1File1,field2File1:field1File2,field3File2", required = false, arity = 1)
-        public String customFileFields;
-
-        @Parameter(names = {"--output-format"}, description = "Variant annotation output format. Values: JSON, PB, VEP", required = false, arity = 1)
-        public String outputFormat = "JSON";
-
-        @Parameter(names = {"--gzip"}, description = "Whether the output file is gzipped", required = false, arity = 0)
-        public boolean gzip;
-
     }
 
-    @Parameters(commandNames = {"post-load"}, commandDescription = "Complements data already loaded in CellBase")
-    public class PostLoadCommandOptions {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-a", "--assembly"}, description = "The name of the assembly", required = false, arity = 1)
-        public String assembly = null;
-
-        @Parameter(names = {"--clinical-annotation-file"}, description = "Specify a file containing variant annotations for CellBase clinical data. Accepted file formats: VEP's file format", required = false)
-        public String clinicalAnnotationFilename = null;
-
-    }
 
     public void printUsage(){
         if(getCommand().isEmpty()) {
             System.err.println("");
-            System.err.println("Program:     CellBase (OpenCB)");
-            System.err.println("Version:     3.2.0");
-            System.err.println("Description: High-Performance NoSQL database and RESTful web services to access the most relevant biological data");
+            System.err.println("Program:     BioNetDB (OpenCB)");
+            System.err.println("Version:     1.0.0");
+            System.err.println("Description: BioNetDB implements a storage engine to work with biological networks using a NoQSL Graph database");
             System.err.println("");
-            System.err.println("Usage:       cellbase.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("Usage:       bionetdb.sh [-h|--help] [--version] <command> [options]");
             System.err.println("");
             System.err.println("Commands:");
             printMainUsage();
@@ -300,7 +198,7 @@ public class CliOptionsParser {
         } else {
             String parsedCommand = getCommand();
             System.err.println("");
-            System.err.println("Usage:   cellbase.sh " + parsedCommand + " [options]");
+            System.err.println("Usage:   bionetdb.sh " + parsedCommand + " [options]");
             System.err.println("");
             System.err.println("Options:");
             printCommandUsage(jcommander.getCommands().get(parsedCommand));
@@ -348,10 +246,6 @@ public class CliOptionsParser {
         return commonCommandOptions;
     }
 
-    public DownloadCommandOptions getDownloadCommandOptions() {
-        return downloadCommandOptions;
-    }
-
     public BuildCommandOptions getBuildCommandOptions() {
         return buildCommandOptions;
     }
@@ -364,7 +258,8 @@ public class CliOptionsParser {
         return queryCommandOptions;
     }
 
-    public VariantAnnotationCommandOptions getVariantAnnotationCommandOptions() { return variantAnnotationCommandOptions; }
+    public VariantAnnotationCommandOptions getVariantAnnotationCommandOptions() {
+        return variantAnnotationCommandOptions;
+    }
 
-    public PostLoadCommandOptions getPostLoadCommandOptions() { return postLoadCommandOptions; }
 }

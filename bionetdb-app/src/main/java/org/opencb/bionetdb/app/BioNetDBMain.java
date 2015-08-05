@@ -9,7 +9,7 @@ import org.opencb.bionetdb.app.cli.CommandExecutor;
  * Created by imedina on 05/08/15.
  */
 public class BioNetDBMain {
-    public static final String VERSION = "3.1.0-RC";
+    public static final String VERSION = "1.0.0";
 
     public static void main(String[] args) {
 
@@ -43,7 +43,7 @@ public class BioNetDBMain {
                 System.exit(0);
             } else {
                 switch (parsedCommand) {
-                    case "download":
+                    case "build":
                         commandExecutor = new BuildCommandExecutor(cliOptionsParser.getBuildCommandOptions());
                         break;
 //                    case "build":
