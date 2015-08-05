@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.opencb.bionetdb</groupId>
+    <artifactId>bionetdb</artifactId>
+    <version>0.1.0</version>
+    <packaging>pom</packaging>
+
+    <name>BioNetDB project</name>
+    <description>BioNetDB implements a storage engine to work with biological networks using a NoQSL Graph database</description>
+    <url>http://www.opencb.org/subprojects/cellbase</url>
+
+    <modules>
+        <module>bionetdb-app</module>
+        <module>bionetdb-core</module>
+        <module>bionetdb-neo4j</module>
+        <module>bionetdb-server</module>
+    </modules>
+
+    <properties>
+        <bionetdb.version>0.1.0</bionetdb.version>
+        <biodata.version>0.5-SNAPSHOT</biodata.version>
+        <datastore.version>0.4-SNAPSHOT</datastore.version>
+        <jackson.version>2.5.4</jackson.version>
+        <jersey.version>2.19</jersey.version>
+        <compileSource>1.8</compileSource>
+        <build.dir>build</build.dir>
+    </properties>
+
+    <scm>
+        <url>https://github.com/opencb/bionetdb</url>
+        <connection>scm:git:git://github.com/opencb/bionetdb.git</connection>
+        <developerConnection>scm:git:git@github.com:opencb/bionetdb.git</developerConnection>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>imedina</id>
+            <name>Nacho</name>
+            <email>igmecas@gmail.com</email>
+        </developer>
+        <developer>
+            <id>dapregi</id>
+            <name>Daniel</name>
+            <email>dperezgil89@gmail.com</email>
+        </developer>
+    </developers>
+
+    <mailingLists>
+        <mailingList>
+            <name>OpenCB Mailing List</name>
+            <archive>https://groups.google.com/forum/#!forum/opencb</archive>
+            <post>opencb@googlegroups.com</post>
+        </mailingList>
+    </mailingLists>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Intra-module dependencies -->
+            <dependency>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>biodata-models</artifactId>
+                <version>${biodata.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>biodata-formats</artifactId>
+                <version>${biodata.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.datastore</groupId>
+                <artifactId>datastore-core</artifactId>
+                <version>${datastore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.datastore</groupId>
+                <artifactId>datastore-mongodb</artifactId>
+                <version>${datastore.version}</version>
+            </dependency>
+
+            <!-- General dependencies -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.7.12</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>1.7.12</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.module</groupId>
+                <artifactId>jackson-module-jsonSchema</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-servlet</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-client</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.12</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.2</version>
+                <configuration>
+                    <source>${compileSource}</source>
+                    <target>${compileSource}</target>
+                    <showDeprecation>true</showDeprecation>
+                    <showWarnings>true</showWarnings>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.5</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <skipLocalStaging>true</skipLocalStaging>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <distributionManagement>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+</project>
