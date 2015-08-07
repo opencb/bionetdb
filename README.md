@@ -17,7 +17,7 @@ Roadmap is available at [GitHub milestones](https://github.com/opencb/bionetdb/m
 BioNetDB is versioned following the rules from [Semantic versioning](http://semver.org/).
 
 ### Maintainers
-We recommend to contact BioNetDB developers by writing to BioNetDB mailing list bionetdb@googlegroups.com. The main developers and maintainers are:
+We recommend to contact BioNetDB developers by writing to BioNetDB mailing list opencb@googlegroups.com. The main developers and maintainers are:
 * Ignacio Medina (im411@cam.ac.uk) (_Founder and Project Leader_)
 * Daniel Perez-Gil  (daniel.perez@incliva.es)
 
@@ -25,7 +25,7 @@ We recommend to contact BioNetDB developers by writing to BioNetDB mailing list 
 BioNetDB is an open-source and collaborative project. We appreciate any help and feedback from users, you can contribute in many different ways such as simple bug reporting and feature request. Depending on your skills you are more than welcome to develop client tools, new features or even fixing bugs.
 
 # How to build 
-BioNetDB is mainly developed in Java and it uses [Apache Maven](http://maven.apache.org/) as building tool. BioNetDB requires Java 7+ and others OpenCB Java dependencies that can be found in [Maven Central Repository](http://search.maven.org/).
+BioNetDB is mainly developed in Java and it uses [Apache Maven](http://maven.apache.org/) as building tool. BioNetDB requires Java 8+ and others OpenCB Java dependencies that can be found in [Maven Central Repository](http://search.maven.org/).
 
 Stable releases are merged and tagged at **_master_** branch. You are encouraged to use latest stable release for production. Current active development is carried out at **_develop_** branch, only compilation is guaranteed and bugs are expected, use this branch for development or for testing new functionalities. Only dependencies of **_master_** branch are ensured to be deployed at [Maven Central Repository](http://search.maven.org/), **_develop_** branch may require users to download and install other active OpenCB repositories:
 * _biodata_: https://github.com/opencb/biodata (branch 'develop')
@@ -53,6 +53,6 @@ You can run the unit tests using Maven or your favorite IDE.
 ### Command Line Interface (CLI)
 If the build process has gone well you should get an integrated help by executing:
 
-    $ ./bin/cellbase.sh --help
+    $ ./bin/bionetdb.sh --help
 
 You can find more detailed documentation and tutorials at: https://github.com/opencb/bionetdb/wiki.
