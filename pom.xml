@@ -11,7 +11,7 @@
 
     <name>BioNetDB project</name>
     <description>BioNetDB implements a storage engine to work with biological networks using a NoQSL Graph database</description>
-    <url>http://www.opencb.org/subprojects/cellbase</url>
+    <url>http://www.opencb.org/subprojects/bionetdb</url>
 
     <modules>
         <module>bionetdb-app</module>

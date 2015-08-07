@@ -36,7 +36,7 @@ public class BioNetDBMain {
                     System.exit(1);
                 }
             }
-        }else {
+        } else {
             CommandExecutor commandExecutor = null;
             if(cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();
