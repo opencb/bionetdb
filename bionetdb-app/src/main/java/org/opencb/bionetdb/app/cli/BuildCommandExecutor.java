@@ -30,9 +30,6 @@ public class BuildCommandExecutor extends CommandExecutor {
             BioPaxParser bioPaxParser = new BioPaxParser("L3");
             bioPaxParser.parse(inputPath);
 
-            System.out.println("oleeeeeee!!!!!!!");
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }

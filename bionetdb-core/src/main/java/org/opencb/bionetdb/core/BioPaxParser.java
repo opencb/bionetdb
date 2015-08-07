@@ -2,19 +2,21 @@ package org.opencb.bionetdb.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.biopax.paxtools.controller.EditorMap;
+import org.biopax.paxtools.controller.PropertyEditor;
+import org.biopax.paxtools.controller.SimpleEditorMap;
 import org.biopax.paxtools.io.BioPAXIOHandler;
 import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
-import org.biopax.paxtools.model.BioPAXFactory;
-import org.biopax.paxtools.model.BioPAXLevel;
 import org.biopax.paxtools.model.Model;
-import org.biopax.paxtools.model.level3.Protein;
+import org.biopax.paxtools.model.level3.*;
+import org.biopax.paxtools.model.level3.Process;
+
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by imedina on 05/08/15.
@@ -22,33 +24,31 @@ import java.util.Set;
 public class BioPaxParser {
 
     private String level;
-    private BioPAXFactory factory;
+    private EditorMap editorMap;
 
     private ObjectMapper objectMapper;
 
     public BioPaxParser(String level) {
         this.level = level;
 
-        objectMapper = new ObjectMapper();
-
         init();
     }
 
     private void init() {
+
         switch (level.toLowerCase()) {
             case "l1":
-                factory = BioPAXLevel.L1.getDefaultFactory();
+                editorMap = SimpleEditorMap.L1;
                 break;
             case "l2":
-                factory = BioPAXLevel.L2.getDefaultFactory();
+                editorMap = SimpleEditorMap.L2;
                 break;
             case "l3":
             default:
-                factory = BioPAXLevel.L3.getDefaultFactory();
+                editorMap = SimpleEditorMap.L3;
                 break;
         }
     }
-
 
     public void parse(Path path) throws IOException {
 
@@ -56,28 +56,121 @@ public class BioPaxParser {
         BioPAXIOHandler handler = new SimpleIOHandler();
         Model model = handler.convertFromOWL(fileInputStream);
 
-        Set<BioPAXElement> objects = model.getObjects();
-        Iterator<BioPAXElement> iterator = objects.iterator();
+        // Selecting pathways
+        Set<Pathway> pathways = model.getObjects(Pathway.class);
 
-        while (iterator.hasNext()) {
-            BioPAXElement bioPAXElement = iterator.next();
-
-            switch (bioPAXElement.getModelInterface().getSimpleName()) {
-                case "Protein":
-                    createProteinElement(bioPAXElement);
-                    break;
-            }
+        for (Pathway pathway : pathways) {
+            createPathway(pathway);
         }
+
         fileInputStream.close();
+
     }
 
-    private void createProteinElement(BioPAXElement bioPAXElement) throws JsonProcessingException {
-        if(bioPAXElement.getRDFId().endsWith("Protein1")) {
-            Protein protein = (Protein)bioPAXElement;
-            System.out.println("next = " + protein.getModelInterface().getSimpleName());
-            System.out.println("next = " + protein.getCellularLocation());
-            System.out.println("next = " + protein.getDisplayName());
+    private void createPathway(Pathway pathway) {
+
+        if(pathway.getRDFId().endsWith("Pathway842")) {
+
+            Map<String, Collection> pathwayProperties = getBpeProperties(pathway);
+
+/*
+            for (String prop : pathwayProperties.keySet()) {
+                System.out.println("Pathway = " + prop + ": " +
+                        pathwayProperties.get(prop).toString());
+            }
+*/
+
+            Set<Process> processes = pathway.getPathwayComponent();
+
+            for (Process process : processes) {
+                createProcess(process);
+            }
+
         }
+
+    }
+
+    private void createProcess(Process process) {
+
+        Map<String, Collection> processProperties = getBpeProperties(process);
+
+/*
+        for (String prop : processProperties.keySet()) {
+            System.out.println("Process = " +  prop + ": " +
+                    processProperties.get(prop).toString());
+        }
+*/
+        String [] componentTypes = {"left", "right"};
+
+        for (String componentType : componentTypes) {
+            Collection molecules = processProperties.get(componentType);
+
+            for (Object molecule : molecules) {
+                createMolecule((PhysicalEntity) molecule);
+            }
+
+        }
+
+        Set<Control> controls = process.getControlledOf();
+
+        for (Control control : controls) {
+            createControl(control);
+
+        }
+
+    }
+
+    private void createMolecule(PhysicalEntity molecule) {
+
+        Map<String, Collection> moleculeProperties = getBpeProperties(molecule);
+
+/*
+        for (String prop : moleculeProperties.keySet()) {
+            System.out.println("Molecule = " +  prop + ": " +
+                    moleculeProperties.get(prop).toString());
+
+        }
+*/
+
+    }
+
+    private void createControl(Control control) {
+
+        Map<String, Collection> controlProperties = getBpeProperties(control);
+
+/*
+        for (String prop : controlProperties.keySet()) {
+            System.out.println("Control = " +  prop + ": " +
+                    controlProperties.get(prop).toString());
+        }
+*/
+
+        Set<Controller> controllers = control.getController();
+
+        for (Controller controller : controllers) {
+            Map<String, Collection> controllerProperties = getBpeProperties(controller);
+        }
+
+    }
+
+    public Map<String, Collection> getBpeProperties(BioPAXElement bpe) {
+
+        // Getting editors of the BioPAX element
+        Set<PropertyEditor> editors = this.editorMap.getEditorsOf(bpe);
+
+        // Creating table to store values
+        Map<String, Collection> props = new HashMap<>();
+
+        // Retrieving properties and their values
+        int row = 0;
+        for (PropertyEditor editor : editors) {
+            // First column is property and second column is value
+            props.put(editor.getProperty(), editor.getValueFromBean(bpe));
+            row++;
+        }
+
+        return props;
+
     }
 
 }
