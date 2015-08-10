@@ -16,7 +16,6 @@
     <modules>
         <module>bionetdb-app</module>
         <module>bionetdb-core</module>
-        <module>bionetdb-neo4j</module>
         <module>bionetdb-server</module>
     </modules>
 
