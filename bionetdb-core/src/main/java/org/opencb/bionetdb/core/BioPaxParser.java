@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.core;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.biopax.paxtools.controller.EditorMap;
 import org.biopax.paxtools.controller.PropertyEditor;
@@ -11,12 +10,16 @@ import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
-
+import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.models.Protein;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by imedina on 05/08/15.
@@ -27,6 +30,9 @@ public class BioPaxParser {
     private EditorMap editorMap;
 
     private ObjectMapper objectMapper;
+
+    private static final String REACTOME_PATHWAYS = "reactome.pathways";
+
 
     public BioPaxParser(String level) {
         this.level = level;
@@ -55,6 +61,8 @@ public class BioPaxParser {
         FileInputStream fileInputStream = new FileInputStream(path.toAbsolutePath().toString());
         BioPAXIOHandler handler = new SimpleIOHandler();
         Model model = handler.convertFromOWL(fileInputStream);
+
+        Network network = new Network();
 
         // Selecting pathways
         Set<Pathway> pathways = model.getObjects(Pathway.class);
@@ -171,6 +179,14 @@ public class BioPaxParser {
 
         return props;
 
+    }
+
+
+    private Protein createProtein(BioPAXElement bpe) {
+        Protein protein = new Protein("", "");
+
+
+        return protein;
     }
 
 }

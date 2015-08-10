@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import org.opencb.bionetdb.core.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 
 /**
  * Created by imedina on 05/08/15.
