@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.neo4j;
+package org.opencb.bionetdb.core.neo4j;
 
 import org.opencb.bionetdb.core.NetworkDBAdaptor;
 
