@@ -8,11 +8,11 @@ public class Protein extends PhysicalEntity {
     private String uniProtId;
 
     public Protein() {
-        super("", "", Type.PROTEIN);
+        super("", "", "", Type.PROTEIN);
     }
 
-    public Protein(String id, String name) {
-        super(id, name, Type.PROTEIN);
+    public Protein(String id, String name, String description) {
+        super(id, name, description, Type.PROTEIN);
     }
 
 

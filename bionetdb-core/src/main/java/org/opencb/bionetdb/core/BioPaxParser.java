@@ -9,17 +9,16 @@ import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
+import org.biopax.paxtools.model.level3.Dna;
+import org.biopax.paxtools.model.level3.PhysicalEntity;
 import org.biopax.paxtools.model.level3.Process;
-import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.models.*;
 import org.opencb.bionetdb.core.models.Protein;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by imedina on 05/08/15.
@@ -31,7 +30,7 @@ public class BioPaxParser {
 
     private ObjectMapper objectMapper;
 
-    private static final String REACTOME_PATHWAYS = "reactome.pathways";
+    private static final String REACTOME_FEAT = "reactome.";
 
 
     public BioPaxParser(String level) {
@@ -58,22 +57,121 @@ public class BioPaxParser {
 
     public void parse(Path path) throws IOException {
 
+        Network network = new Network();
+
+        // Retrieving model from BioPAX file
         FileInputStream fileInputStream = new FileInputStream(path.toAbsolutePath().toString());
         BioPAXIOHandler handler = new SimpleIOHandler();
         Model model = handler.convertFromOWL(fileInputStream);
 
-        Network network = new Network();
+        // Retrieving BioPAX elements
+        Set<BioPAXElement> bioPAXElements = model.getObjects();
 
-        // Selecting pathways
-        Set<Pathway> pathways = model.getObjects(Pathway.class);
+        for (BioPAXElement bioPAXElement : bioPAXElements) {
 
-        for (Pathway pathway : pathways) {
-            createPathway(pathway);
+            // Getting BioPAX element properties
+            Map<String, Collection> properties = getBpeProperties(bioPAXElement);
+
+            switch (bioPAXElement.getModelInterface().getSimpleName()) {
+
+                // Physical Entities
+                case "Dna":
+                    createDna(bioPAXElement, properties);
+                    break;
+                case "Rna":
+                    //createRna(bioPAXElement, properties);
+                    break;
+                case "Protein":
+                    //createProtein(bioPAXElement, properties);
+                    break;
+                case "Complex":
+                    //createComplex(bioPAXElement, properties);
+                    break;
+                case "SmallMolecule":
+                    //createSmallMolecule(bioPAXElement, properties);
+                    break;
+
+                // Interactions
+                case "BiochemicalReaction":
+                case "TemplateReaction":
+                case "Degradation":
+                    //createReaction(bioPAXElement, properties);
+                    break;
+                case "Catalysis":
+                    //createCatalysis(bioPAXElement, properties);
+                    break;
+                case "Modulation":
+                case "TemplateReactionRegulation":
+                    //createRegulation(bioPAXElement, properties);
+                    break;
+                case "ComplexAssembly":
+                case "MolecularInteraction":
+                    //createAssembly(bioPAXElement, properties);
+                    break;
+                case "Transport":
+                case "TransportWithBiochemicalReaction":
+                    //createTransport(bioPAXElement, properties);
+                    break;
+            }
+
         }
 
         fileInputStream.close();
 
     }
+
+    private void createDna(BioPAXElement bioPAXElement, Map<String, Collection> properties) {
+
+        org.opencb.bionetdb.core.models.Dna dna = new org.opencb.bionetdb.core.models.Dna();
+
+        Map<String, Collection> attributes = new HashMap<>();
+
+        Dna dnaBP = (Dna) bioPAXElement;
+
+        // Setting id
+        dna.setId(bioPAXElement.getRDFId().split("#")[1]);
+
+        // Retrieving attributes values
+        for (Map.Entry<String, Collection> entry : properties.entrySet()) {
+
+            switch (entry.getKey()) {
+                case "name":
+                    System.out.println(entry.getValue());
+                    dna.setName((String) entry.getValue().iterator().next());
+                    break;
+                case "cellularLocation":
+                    dna.setCellularLocation(entry.getValue());
+                    break;
+                case "dataSource":
+                    dna.setDataSource(entry.getValue());
+                    break;
+                case "entityReference":
+                    if (!entry.getValue().isEmpty()) {
+                        // todo Get organism and NCBI taxonomy from "entityReference"
+                        Map<String, Collection> propertiesER = getBpeProperties(dnaBP.getEntityReference());
+                        dna.setAltNames(propertiesER.get("name"));
+                    }
+                    break;
+                default:
+                    // Nonspecific attributes
+                    attributes.put(REACTOME_FEAT + entry.getKey(), entry.getValue());
+                    break;
+            }
+        }
+
+        dna.setAttributes(attributes);
+
+        // Retrieving processes where the molecule is a participant.
+        ArrayList<String> processes = new ArrayList<>();
+
+        for (BioPAXElement process : dnaBP.getParticipantOf()) {
+            processes.add(process.toString().split("#")[1]);
+        }
+
+            dna.setParticipantOf(processes);
+
+    }
+
 
     private void createPathway(Pathway pathway) {
 
@@ -182,11 +280,13 @@ public class BioPaxParser {
     }
 
 
+/*
     private Protein createProtein(BioPAXElement bpe) {
         Protein protein = new Protein("", "");
 
 
         return protein;
     }
+*/
 
 }

@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.models;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -9,18 +10,25 @@ public class PhysicalEntity {
 
     protected String id;
     protected String name;
+    protected String description;
+    protected Collection cellularLocation;
+    protected Collection dataSource;
+    protected Collection altNames;
+    protected Collection participantOf;
 
     protected Type type;
 
-    protected Map<String, Object> attributes;
+    protected Map<String, Collection> attributes;
 
     // TODO think about his!
     protected Display display;
 
     enum Type {
-        PROTEIN ("protein"),
-        GENE    ("gene");
-
+        PROTEIN       ("protein"),
+        DNA           ("dna"),
+        RNA           ("rna"),
+        COMPLEX       ("complex"),
+        SMALLMOLECULE ("smallmolecule");
 
         private final String type;
 
@@ -30,19 +38,14 @@ public class PhysicalEntity {
     }
 
     public PhysicalEntity() {
-
     }
 
-    public PhysicalEntity(String id, String name, Type type) {
+    public PhysicalEntity(String id, String name, String description, Type type) {
         this.id = id;
         this.name = name;
+        this.description = description;
         this.type = type;
     }
-
-
-
-
-
 
     class Display {
 
@@ -50,23 +53,6 @@ public class PhysicalEntity {
         private int y;
         private int z;
 
-
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-    }
-
-    public Display getDisplay() {
-        return display;
-    }
-
-    public void setDisplay(Display display) {
-        this.display = display;
     }
 
     public String getId() {
@@ -85,11 +71,51 @@ public class PhysicalEntity {
         this.name = name;
     }
 
-    public Type getType() {
-        return type;
+    public String getDescription() {
+        return description;
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Collection getCellularLocation() {
+        return cellularLocation;
+    }
+
+    public void setCellularLocation(Collection cellularLocation) {
+        this.cellularLocation = cellularLocation;
+    }
+
+    public Collection getDataSource() {
+        return dataSource;
+    }
+
+    public void setDataSource(Collection dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    public Collection getAltNames() {
+        return altNames;
+    }
+
+    public void setAltNames(Collection altNames) {
+        this.altNames = altNames;
+    }
+
+    public Collection getParticipantOf() {
+        return participantOf;
+    }
+
+    public void setParticipantOf(Collection participantOf) {
+        this.participantOf = participantOf;
+    }
+
+    public Map<String, Collection> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Collection> attributes) {
+        this.attributes = attributes;
     }
 }

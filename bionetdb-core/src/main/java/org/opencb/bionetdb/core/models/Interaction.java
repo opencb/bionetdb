@@ -16,7 +16,10 @@ public class Interaction {
 
     enum Type {
         REACTION    ("reaction"),
-        CATALYSIS   ("catalysis");
+        CATALYSIS   ("catalysis"),
+        REGULATION  ("regulation"),
+        ASSEMBLY    ("assembly"),
+        TRANSPORT   ("transport");
 
         private final String type;
 
