@@ -119,7 +119,7 @@ public class CliOptionsParser {
         public String database;
 
         @Parameter(names = {"-l", "--loader"}, description = "Database specific data loader to be used", required = false, arity = 1)
-        public String loader = "org.opencb.cellbase.mongodb.loader.MongoDBCellBaseLoader";
+        public String loader = "org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor";
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
         public Map<String, String> loaderParams = new HashMap<>();

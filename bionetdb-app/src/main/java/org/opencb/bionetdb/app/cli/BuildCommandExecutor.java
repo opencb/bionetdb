@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.app.cli;
 
-import org.opencb.bionetdb.core.BioPaxParser;
+import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.IOException;

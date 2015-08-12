@@ -17,6 +17,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.opencb.datastore</groupId>
+            <artifactId>datastore-core</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
             <version>2.2.3</version>
@@ -24,6 +29,11 @@
         <dependency>
             <groupId>org.biopax.paxtools</groupId>
             <artifactId>paxtools-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.sbml.libsbml</groupId>
+            <artifactId>libsbml</artifactId>
+            <systemPath>${basedir}/src/main/resources/libsbmlj.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

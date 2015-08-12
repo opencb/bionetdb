@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.core.models;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -11,14 +12,14 @@ public class PhysicalEntity {
     protected String id;
     protected String name;
     protected String description;
-    protected Collection cellularLocation;
-    protected Collection dataSource;
-    protected Collection altNames;
-    protected Collection participantOf;
+    protected List<String> cellularLocation;
+    protected List<String> source;
+    protected List<String> altNames;
+    protected List<String> participantOf;
 
     protected Type type;
 
-    protected Map<String, Collection> attributes;
+    protected Map<String, Object> attributes;
 
     // TODO think about his!
     protected Display display;
@@ -28,7 +29,7 @@ public class PhysicalEntity {
         DNA           ("dna"),
         RNA           ("rna"),
         COMPLEX       ("complex"),
-        SMALLMOLECULE ("smallmolecule");
+        SMALLMOLECULE ("smallMolecule");
 
         private final String type;
 
@@ -79,43 +80,59 @@ public class PhysicalEntity {
         this.description = description;
     }
 
-    public Collection getCellularLocation() {
+    public List<String> getCellularLocation() {
         return cellularLocation;
     }
 
-    public void setCellularLocation(Collection cellularLocation) {
+    public void setCellularLocation(List<String> cellularLocation) {
         this.cellularLocation = cellularLocation;
     }
 
-    public Collection getDataSource() {
-        return dataSource;
+    public List<String> getSource() {
+        return source;
     }
 
-    public void setDataSource(Collection dataSource) {
-        this.dataSource = dataSource;
+    public void setSource(List<String> source) {
+        this.source = source;
     }
 
-    public Collection getAltNames() {
+    public List<String> getAltNames() {
         return altNames;
     }
 
-    public void setAltNames(Collection altNames) {
+    public void setAltNames(List<String> altNames) {
         this.altNames = altNames;
     }
 
-    public Collection getParticipantOf() {
+    public List<String> getParticipantOf() {
         return participantOf;
     }
 
-    public void setParticipantOf(Collection participantOf) {
+    public void setParticipantOf(List<String> participantOf) {
         this.participantOf = participantOf;
     }
 
-    public Map<String, Collection> getAttributes() {
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
+    public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Collection> attributes) {
+    public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public Display getDisplay() {
+        return display;
+    }
+
+    public void setDisplay(Display display) {
+        this.display = display;
     }
 }

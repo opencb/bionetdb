@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core;
+package org.opencb.bionetdb.core.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.biopax.paxtools.controller.EditorMap;
@@ -13,7 +13,6 @@ import org.biopax.paxtools.model.level3.Dna;
 import org.biopax.paxtools.model.level3.PhysicalEntity;
 import org.biopax.paxtools.model.level3.Process;
 import org.opencb.bionetdb.core.models.*;
-import org.opencb.bionetdb.core.models.Protein;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -55,7 +54,7 @@ public class BioPaxParser {
         }
     }
 
-    public void parse(Path path) throws IOException {
+    public Network parse(Path path) throws IOException {
 
         Network network = new Network();
 
@@ -70,7 +69,7 @@ public class BioPaxParser {
         for (BioPAXElement bioPAXElement : bioPAXElements) {
 
             // Getting BioPAX element properties
-            Map<String, Collection> properties = getBpeProperties(bioPAXElement);
+            Map<String, List> properties = getBpeProperties(bioPAXElement);
 
             switch (bioPAXElement.getModelInterface().getSimpleName()) {
 
@@ -118,13 +117,12 @@ public class BioPaxParser {
 
         fileInputStream.close();
 
+        return network;
     }
 
-    private void createDna(BioPAXElement bioPAXElement, Map<String, Collection> properties) {
+    private void createDna(BioPAXElement bioPAXElement, Map<String, List> properties) {
 
         org.opencb.bionetdb.core.models.Dna dna = new org.opencb.bionetdb.core.models.Dna();
-
-        Map<String, Collection> attributes = new HashMap<>();
 
         Dna dnaBP = (Dna) bioPAXElement;
 
@@ -132,7 +130,7 @@ public class BioPaxParser {
         dna.setId(bioPAXElement.getRDFId().split("#")[1]);
 
         // Retrieving attributes values
-        for (Map.Entry<String, Collection> entry : properties.entrySet()) {
+        for (Map.Entry<String, List> entry : properties.entrySet()) {
 
             switch (entry.getKey()) {
                 case "name":
@@ -143,23 +141,21 @@ public class BioPaxParser {
                     dna.setCellularLocation(entry.getValue());
                     break;
                 case "dataSource":
-                    dna.setDataSource(entry.getValue());
+                    dna.setSource(entry.getValue());
                     break;
                 case "entityReference":
                     if (!entry.getValue().isEmpty()) {
                         // todo Get organism and NCBI taxonomy from "entityReference"
-                        Map<String, Collection> propertiesER = getBpeProperties(dnaBP.getEntityReference());
+                        Map<String, List> propertiesER = getBpeProperties(dnaBP.getEntityReference());
                         dna.setAltNames(propertiesER.get("name"));
                     }
                     break;
                 default:
                     // Nonspecific attributes
-                    attributes.put(REACTOME_FEAT + entry.getKey(), entry.getValue());
+                    dna.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
                     break;
             }
         }
-
-        dna.setAttributes(attributes);
 
         // Retrieving processes where the molecule is a participant.
         ArrayList<String> processes = new ArrayList<>();
@@ -177,7 +173,7 @@ public class BioPaxParser {
 
         if(pathway.getRDFId().endsWith("Pathway842")) {
 
-            Map<String, Collection> pathwayProperties = getBpeProperties(pathway);
+            Map<String, List> pathwayProperties = getBpeProperties(pathway);
 
 /*
             for (String prop : pathwayProperties.keySet()) {
@@ -198,7 +194,7 @@ public class BioPaxParser {
 
     private void createProcess(Process process) {
 
-        Map<String, Collection> processProperties = getBpeProperties(process);
+        Map<String, List> processProperties = getBpeProperties(process);
 
 /*
         for (String prop : processProperties.keySet()) {
@@ -228,7 +224,7 @@ public class BioPaxParser {
 
     private void createMolecule(PhysicalEntity molecule) {
 
-        Map<String, Collection> moleculeProperties = getBpeProperties(molecule);
+        Map<String, List> moleculeProperties = getBpeProperties(molecule);
 
 /*
         for (String prop : moleculeProperties.keySet()) {
@@ -242,7 +238,7 @@ public class BioPaxParser {
 
     private void createControl(Control control) {
 
-        Map<String, Collection> controlProperties = getBpeProperties(control);
+        Map<String, List> controlProperties = getBpeProperties(control);
 
 /*
         for (String prop : controlProperties.keySet()) {
@@ -254,24 +250,24 @@ public class BioPaxParser {
         Set<Controller> controllers = control.getController();
 
         for (Controller controller : controllers) {
-            Map<String, Collection> controllerProperties = getBpeProperties(controller);
+            Map<String, List> controllerProperties = getBpeProperties(controller);
         }
 
     }
 
-    public Map<String, Collection> getBpeProperties(BioPAXElement bpe) {
+    public Map<String, List> getBpeProperties(BioPAXElement bpe) {
 
         // Getting editors of the BioPAX element
         Set<PropertyEditor> editors = this.editorMap.getEditorsOf(bpe);
 
         // Creating table to store values
-        Map<String, Collection> props = new HashMap<>();
+        Map<String, List> props = new HashMap<>();
 
         // Retrieving properties and their values
         int row = 0;
         for (PropertyEditor editor : editors) {
             // First column is property and second column is value
-            props.put(editor.getProperty(), editor.getValueFromBean(bpe));
+            props.put(editor.getProperty(), new ArrayList<>(editor.getValueFromBean(bpe)));
             row++;
         }
 
