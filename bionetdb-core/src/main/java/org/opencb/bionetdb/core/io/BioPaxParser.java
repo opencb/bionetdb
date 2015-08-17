@@ -9,18 +9,15 @@ import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
-import org.biopax.paxtools.model.level3.Complex;
-import org.biopax.paxtools.model.level3.Dna;
-import org.biopax.paxtools.model.level3.PhysicalEntity;
-import org.biopax.paxtools.model.level3.Protein;
-import org.biopax.paxtools.model.level3.Rna;
-import org.biopax.paxtools.model.level3.SmallMolecule;
-import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.models.Network;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by imedina on 05/08/15.
@@ -59,13 +56,19 @@ public class BioPaxParser {
     }
 
     public Network parse(Path path) throws IOException {
-
         Network network = new Network();
 
+        // Reading GZip input stream
+        InputStream inputStream;
+        if (path.toFile().getName().endsWith(".gz")) {
+            inputStream = new GZIPInputStream(new FileInputStream(path.toFile()));
+        }else {
+            inputStream = Files.newInputStream(path);
+        }
+
         // Retrieving model from BioPAX file
-        FileInputStream fileInputStream = new FileInputStream(path.toAbsolutePath().toString());
         BioPAXIOHandler handler = new SimpleIOHandler();
-        Model model = handler.convertFromOWL(fileInputStream);
+        Model model = handler.convertFromOWL(inputStream);
 
         // Retrieving BioPAX elements
         Set<BioPAXElement> bioPAXElements = model.getObjects();
@@ -73,7 +76,6 @@ public class BioPaxParser {
         for (BioPAXElement bioPAXElement : bioPAXElements) {
 
             switch (bioPAXElement.getModelInterface().getSimpleName()) {
-
                 // Physical Entities
                 case "Dna":
                     network.getPhysicalEntities().add(createDna(bioPAXElement));
@@ -115,14 +117,11 @@ public class BioPaxParser {
             }
 
         }
-
-        fileInputStream.close();
-
+        inputStream.close();
         return network;
     }
 
     private org.opencb.bionetdb.core.models.Dna createDna(BioPAXElement bioPAXElement) {
-
         org.opencb.bionetdb.core.models.Dna dna = new org.opencb.bionetdb.core.models.Dna();
         Dna dnaBP = (Dna) bioPAXElement;
 
@@ -137,11 +136,17 @@ public class BioPaxParser {
             switch (entry.getKey()) {
                 case "displayName":
                     dna.setName(entry.getValue().toString());
+                    break;
                 case "name":
                     dna.setAltNames(entry.getValue());
                     break;
                 case "cellularLocation":
-                    dna.setCellularLocation(entry.getValue());
+                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
+                    List<String> cellularLocations = new ArrayList<>();
+                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
+                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
+                    }
+                    dna.setCellularLocation(cellularLocations);
                     break;
                 case "dataSource":
                     dna.setSource(entry.getValue());
@@ -184,7 +189,12 @@ public class BioPaxParser {
                     rna.setAltNames(entry.getValue());
                     break;
                 case "cellularLocation":
-                    rna.setCellularLocation(entry.getValue());
+                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
+                    List<String> cellularLocations = new ArrayList<>();
+                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
+                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
+                    }
+                    rna.setCellularLocation(cellularLocations);
                     break;
                 case "dataSource":
                     rna.setSource(entry.getValue());
@@ -227,7 +237,12 @@ public class BioPaxParser {
                     protein.setAltNames(entry.getValue());
                     break;
                 case "cellularLocation":
-                    protein.setCellularLocation(entry.getValue());
+                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
+                    List<String> cellularLocations = new ArrayList<>();
+                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
+                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
+                    }
+                    protein.setCellularLocation(cellularLocations);
                     break;
                 case "dataSource":
                     protein.setSource(entry.getValue());
@@ -248,15 +263,12 @@ public class BioPaxParser {
                     break;
 
             }
-
         }
-
         return protein;
     }
 
 
     private org.opencb.bionetdb.core.models.Complex createComplex(BioPAXElement bioPAXElement) {
-
         org.opencb.bionetdb.core.models.Complex complex;
         complex = new org.opencb.bionetdb.core.models.Complex();
 
@@ -274,11 +286,17 @@ public class BioPaxParser {
             switch (entry.getKey()) {
                 case "displayName":
                     complex.setName(entry.getValue().toString());
+                    break;
                 case "name":
                     complex.setAltNames(entry.getValue());
                     break;
                 case "cellularLocation":
-                    complex.setCellularLocation(entry.getValue());
+                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
+                    List<String> cellularLocations = new ArrayList<>();
+                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
+                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
+                    }
+                    complex.setCellularLocation(cellularLocations);
                     break;
                 case "dataSource":
                     complex.setSource(entry.getValue());
@@ -304,15 +322,12 @@ public class BioPaxParser {
                     complex.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
                     break;
             }
-
         }
-
         return complex;
     }
 
 
     private org.opencb.bionetdb.core.models.SmallMolecule createSmallMolecule(BioPAXElement bioPAXElement) {
-
         org.opencb.bionetdb.core.models.SmallMolecule smallMolecule;
         smallMolecule = new org.opencb.bionetdb.core.models.SmallMolecule();
 
@@ -335,7 +350,12 @@ public class BioPaxParser {
                     smallMolecule.setAltNames(entry.getValue());
                     break;
                 case "cellularLocation":
-                    smallMolecule.setCellularLocation(entry.getValue());
+                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
+                    List<String> cellularLocations = new ArrayList<>();
+                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
+                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
+                    }
+                    smallMolecule.setCellularLocation(cellularLocations);
                     break;
                 case "dataSource":
                     smallMolecule.setSource(entry.getValue());
@@ -353,17 +373,13 @@ public class BioPaxParser {
                     smallMolecule.getAttributes().put(REACTOME_FEAT + entry.getKey(),
                             entry.getValue());
                     break;
-
             }
-
         }
-
         return smallMolecule;
     }
 
 
     public Map<String, List> getBpeProperties(BioPAXElement bpe) {
-
         // Getting editors of the BioPAX element
         Set<PropertyEditor> editors = this.editorMap.getEditorsOf(bpe);
 
@@ -375,16 +391,15 @@ public class BioPaxParser {
             // First column is property and second column is value
             props.put(editor.getProperty(), new ArrayList<>(editor.getValueFromBean(bpe)));
         }
-
         return props;
-
     }
 
-    /*private void setCommonProperties (org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity, Map<String, List> properties){
-        physicalEntity.setName(properties.get("").getValue().toString());
-        physicalEntity.setAltNames(entry.getValue());
-        physicalEntity.setCellularLocation(entry.getValue());
-        physicalEntity.setSource(entry.getValue());
-    }*/
+    @Deprecated
+    private void setCommonProperties (org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity, Map<String, List> properties){
+        physicalEntity.setName(properties.get("displayName").toString());
+        physicalEntity.setAltNames(properties.get("name"));
+        physicalEntity.setCellularLocation(properties.get("cellularLocation"));
+        physicalEntity.setSource(properties.get("dataSource"));
+    }
 
 }

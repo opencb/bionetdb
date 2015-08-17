@@ -3,6 +3,9 @@ package org.opencb.bionetdb.core.neo4j;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.models.Interaction;
 import org.opencb.bionetdb.core.models.Network;
+import org.opencb.datastore.core.Query;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 //import org.opencb.datastore.core.Query;
 //import org.opencb.datastore.core.QueryOptions;
 //import org.opencb.datastore.core.QueryResult;
@@ -30,7 +33,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     }
 
-/*
     @Override
     public QueryResult get(Query query, QueryOptions queryOptions) {
         return null;
@@ -45,6 +47,5 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public QueryResult stats(Query query, QueryOptions queryOptions) {
         return null;
     }
-*/
 
 }

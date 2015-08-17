@@ -16,10 +16,10 @@
     <packaging>jar</packaging>
 
     <dependencies>
-<!--        <dependency>
+        <dependency>
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-core</artifactId>
-        </dependency>-->
+        </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
