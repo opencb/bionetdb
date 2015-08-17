@@ -82,7 +82,7 @@
                 <artifactId>biodata-formats</artifactId>
                 <version>${biodata.version}</version>
             </dependency>
-            <dependency>
+<!--            <dependency>
                 <groupId>org.opencb.datastore</groupId>
                 <artifactId>datastore-core</artifactId>
                 <version>${datastore.version}</version>
@@ -91,7 +91,7 @@
                 <groupId>org.opencb.datastore</groupId>
                 <artifactId>datastore-mongodb</artifactId>
                 <version>${datastore.version}</version>
-            </dependency>
+            </dependency>-->
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-lib</artifactId>

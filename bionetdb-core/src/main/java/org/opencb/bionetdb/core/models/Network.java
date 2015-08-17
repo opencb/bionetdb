@@ -22,6 +22,7 @@ public class Network {
     protected Map<String, Object> attributes;
 
     public Network() {
+        init();
     }
 
     public Network(String id, String name, String description) {
@@ -38,5 +39,53 @@ public class Network {
         interactions = new ArrayList<>();
 
         attributes = new HashMap<>();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public List<PhysicalEntity> getPhysicalEntities() {
+        return physicalEntities;
+    }
+
+    public void setPhysicalEntities(List<PhysicalEntity> physicalEntities) {
+        this.physicalEntities = physicalEntities;
+    }
+
+    public List<Interaction> getInteractions() {
+        return interactions;
+    }
+
+    public void setInteractions(List<Interaction> interactions) {
+        this.interactions = interactions;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 }

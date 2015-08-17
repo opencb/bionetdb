@@ -1,8 +1,6 @@
 package org.opencb.bionetdb.core.models;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by imedina on 10/08/15.
@@ -15,7 +13,7 @@ public class PhysicalEntity {
     protected List<String> cellularLocation;
     protected List<String> source;
     protected List<String> altNames;
-    protected List<String> participantOf;
+    protected List<String> altIds;
 
     protected Type type;
 
@@ -39,6 +37,7 @@ public class PhysicalEntity {
     }
 
     public PhysicalEntity() {
+        init();
     }
 
     public PhysicalEntity(String id, String name, String description, Type type) {
@@ -46,6 +45,18 @@ public class PhysicalEntity {
         this.name = name;
         this.description = description;
         this.type = type;
+
+        // init rest of attributes
+        init();
+
+    }
+
+    private void init() {
+        this.attributes = new HashMap<>();
+        this.cellularLocation = new ArrayList<>();
+        this.source = new ArrayList<>();
+        this.altNames = new ArrayList<>();
+        this.altIds = new ArrayList<>();
     }
 
     class Display {
@@ -104,20 +115,12 @@ public class PhysicalEntity {
         this.altNames = altNames;
     }
 
-    public List<String> getParticipantOf() {
-        return participantOf;
+    public List<String> getAltIds() {
+        return altIds;
     }
 
-    public void setParticipantOf(List<String> participantOf) {
-        this.participantOf = participantOf;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public void setType(Type type) {
-        this.type = type;
+    public void setAltIds(List<String> altIds) {
+        this.altIds = altIds;
     }
 
     public Map<String, Object> getAttributes() {
@@ -128,11 +131,4 @@ public class PhysicalEntity {
         this.attributes = attributes;
     }
 
-    public Display getDisplay() {
-        return display;
-    }
-
-    public void setDisplay(Display display) {
-        this.display = display;
-    }
 }

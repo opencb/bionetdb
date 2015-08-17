@@ -9,9 +9,12 @@ import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
+import org.biopax.paxtools.model.level3.Complex;
 import org.biopax.paxtools.model.level3.Dna;
 import org.biopax.paxtools.model.level3.PhysicalEntity;
-import org.biopax.paxtools.model.level3.Process;
+import org.biopax.paxtools.model.level3.Protein;
+import org.biopax.paxtools.model.level3.Rna;
+import org.biopax.paxtools.model.level3.SmallMolecule;
 import org.opencb.bionetdb.core.models.*;
 
 import java.io.FileInputStream;
@@ -22,6 +25,7 @@ import java.util.*;
 /**
  * Created by imedina on 05/08/15.
  */
+
 public class BioPaxParser {
 
     private String level;
@@ -68,26 +72,23 @@ public class BioPaxParser {
 
         for (BioPAXElement bioPAXElement : bioPAXElements) {
 
-            // Getting BioPAX element properties
-            Map<String, List> properties = getBpeProperties(bioPAXElement);
-
             switch (bioPAXElement.getModelInterface().getSimpleName()) {
 
                 // Physical Entities
                 case "Dna":
-                    createDna(bioPAXElement, properties);
+                    network.getPhysicalEntities().add(createDna(bioPAXElement));
                     break;
                 case "Rna":
-                    //createRna(bioPAXElement, properties);
+                    network.getPhysicalEntities().add(createRna(bioPAXElement));
                     break;
                 case "Protein":
-                    //createProtein(bioPAXElement, properties);
+                    network.getPhysicalEntities().add(createProtein(bioPAXElement));
                     break;
                 case "Complex":
-                    //createComplex(bioPAXElement, properties);
+                    network.getPhysicalEntities().add(createComplex(bioPAXElement));
                     break;
                 case "SmallMolecule":
-                    //createSmallMolecule(bioPAXElement, properties);
+                    network.getPhysicalEntities().add(createSmallMolecule(bioPAXElement));
                     break;
 
                 // Interactions
@@ -120,22 +121,24 @@ public class BioPaxParser {
         return network;
     }
 
-    private void createDna(BioPAXElement bioPAXElement, Map<String, List> properties) {
+    private org.opencb.bionetdb.core.models.Dna createDna(BioPAXElement bioPAXElement) {
 
         org.opencb.bionetdb.core.models.Dna dna = new org.opencb.bionetdb.core.models.Dna();
-
         Dna dnaBP = (Dna) bioPAXElement;
+
+        // Getting BioPAX element properties
+        Map<String, List> properties = getBpeProperties(bioPAXElement);
 
         // Setting id
         dna.setId(bioPAXElement.getRDFId().split("#")[1]);
 
         // Retrieving attributes values
         for (Map.Entry<String, List> entry : properties.entrySet()) {
-
             switch (entry.getKey()) {
+                case "displayName":
+                    dna.setName(entry.getValue().toString());
                 case "name":
-                    System.out.println(entry.getValue());
-                    dna.setName((String) entry.getValue().iterator().next());
+                    dna.setAltNames(entry.getValue());
                     break;
                 case "cellularLocation":
                     dna.setCellularLocation(entry.getValue());
@@ -145,9 +148,10 @@ public class BioPaxParser {
                     break;
                 case "entityReference":
                     if (!entry.getValue().isEmpty()) {
-                        // todo Get organism and NCBI taxonomy from "entityReference"
-                        Map<String, List> propertiesER = getBpeProperties(dnaBP.getEntityReference());
-                        dna.setAltNames(propertiesER.get("name"));
+                        // TODO Get organism and NCBI taxonomy from "entityReference"
+                        Map<String, List> propertiesER;
+                        propertiesER = getBpeProperties(dnaBP.getEntityReference());
+                        dna.setAltIds(propertiesER.get("name"));
                     }
                     break;
                 default:
@@ -156,104 +160,207 @@ public class BioPaxParser {
                     break;
             }
         }
-
-        // Retrieving processes where the molecule is a participant.
-        ArrayList<String> processes = new ArrayList<>();
-
-        for (BioPAXElement process : dnaBP.getParticipantOf()) {
-            processes.add(process.toString().split("#")[1]);
-        }
-
-            dna.setParticipantOf(processes);
-
+        return dna;
     }
 
+    private org.opencb.bionetdb.core.models.Rna createRna(BioPAXElement bioPAXElement) {
+        org.opencb.bionetdb.core.models.Rna rna = new org.opencb.bionetdb.core.models.Rna();
 
-    private void createPathway(Pathway pathway) {
+        Rna rnaBP = (Rna) bioPAXElement;
 
-        if(pathway.getRDFId().endsWith("Pathway842")) {
+        // Getting BioPAX element properties
+        Map<String, List> properties = getBpeProperties(bioPAXElement);
 
-            Map<String, List> pathwayProperties = getBpeProperties(pathway);
+        // Setting id
+        rna.setId(bioPAXElement.getRDFId().split("#")[1]);
 
-/*
-            for (String prop : pathwayProperties.keySet()) {
-                System.out.println("Pathway = " + prop + ": " +
-                        pathwayProperties.get(prop).toString());
+        // Retrieving attributes values
+        for (Map.Entry<String, List> entry : properties.entrySet()) {
+
+            switch (entry.getKey()) {
+                case "displayName":
+                    rna.setName(entry.getValue().toString());
+                case "name":
+                    rna.setAltNames(entry.getValue());
+                    break;
+                case "cellularLocation":
+                    rna.setCellularLocation(entry.getValue());
+                    break;
+                case "dataSource":
+                    rna.setSource(entry.getValue());
+                    break;
+                case "entityReference":
+                    if (!entry.getValue().isEmpty()) {
+                        // TODO Get organism and NCBI taxonomy from "entityReference"
+                        Map<String, List> propertiesER;
+                        propertiesER = getBpeProperties(rnaBP.getEntityReference());
+                        rna.setAltIds(propertiesER.get("name"));
+                    }
+                    break;
+                default:
+                    // Nonspecific attributes
+                    rna.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
+                    break;
             }
-*/
+        }
+        return rna;
+    }
 
-            Set<Process> processes = pathway.getPathwayComponent();
+    private org.opencb.bionetdb.core.models.Protein createProtein(BioPAXElement bioPAXElement) {
+        org.opencb.bionetdb.core.models.Protein protein = new org.opencb.bionetdb.core.models.Protein();
+        Protein proteinBP = (Protein) bioPAXElement;
 
-            for (Process process : processes) {
-                createProcess(process);
+        // Getting BioPAX element properties
+        Map<String, List> properties = getBpeProperties(bioPAXElement);
+
+        // Setting id
+        protein.setId(bioPAXElement.getRDFId().split("#")[1]);
+
+        // Retrieving attributes values
+        for (Map.Entry<String, List> entry : properties.entrySet()) {
+
+            switch (entry.getKey()) {
+                case "displayName":
+                    protein.setName(entry.getValue().toString());
+                    break;
+                case "name":
+                    protein.setAltNames(entry.getValue());
+                    break;
+                case "cellularLocation":
+                    protein.setCellularLocation(entry.getValue());
+                    break;
+                case "dataSource":
+                    protein.setSource(entry.getValue());
+                    break;
+                case "entityReference":
+                    if (!entry.getValue().isEmpty()) {
+                        // TODO Get organism and NCBI taxonomy from "entityReference"
+                        Map<String, List> propertiesER;
+                        propertiesER = getBpeProperties(proteinBP.getEntityReference());
+                        protein.setAltIds(propertiesER.get("name"));
+                        protein.setUniProtId(propertiesER.get("xref").toString());
+                        protein.setDescription(propertiesER.get("comment").toString());
+                    }
+                    break;
+                default:
+                    // Nonspecific attributes
+                    protein.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
+                    break;
+
             }
 
         }
 
+        return protein;
     }
 
-    private void createProcess(Process process) {
 
-        Map<String, List> processProperties = getBpeProperties(process);
+    private org.opencb.bionetdb.core.models.Complex createComplex(BioPAXElement bioPAXElement) {
 
-/*
-        for (String prop : processProperties.keySet()) {
-            System.out.println("Process = " +  prop + ": " +
-                    processProperties.get(prop).toString());
-        }
-*/
-        String [] componentTypes = {"left", "right"};
+        org.opencb.bionetdb.core.models.Complex complex;
+        complex = new org.opencb.bionetdb.core.models.Complex();
 
-        for (String componentType : componentTypes) {
-            Collection molecules = processProperties.get(componentType);
+        Complex complexBP = (Complex) bioPAXElement;
 
-            for (Object molecule : molecules) {
-                createMolecule((PhysicalEntity) molecule);
+        // Getting BioPAX element properties
+        Map<String, List> properties = getBpeProperties(bioPAXElement);
+
+        // Setting id
+        complex.setId(bioPAXElement.getRDFId().split("#")[1]);
+
+        // Retrieving attributes values
+        for (Map.Entry<String, List> entry : properties.entrySet()) {
+
+            switch (entry.getKey()) {
+                case "displayName":
+                    complex.setName(entry.getValue().toString());
+                case "name":
+                    complex.setAltNames(entry.getValue());
+                    break;
+                case "cellularLocation":
+                    complex.setCellularLocation(entry.getValue());
+                    break;
+                case "dataSource":
+                    complex.setSource(entry.getValue());
+                    break;
+                case "component":
+                    ArrayList<String> components = new ArrayList<>();
+                    for (PhysicalEntity component : complexBP.getComponent()) {
+                        components.add(component.getRDFId().split("#")[1]);
+                    }
+                    complex.setComponents(components);
+                    break;
+                case "componentStoichiometry":
+                    Map<String, Float> stoichiometries = new HashMap<>();
+                    for (Stoichiometry stoichiometry : complexBP.getComponentStoichiometry()) {
+                        stoichiometries.put(
+                                stoichiometry.getPhysicalEntity().toString().split("#")[1],
+                                stoichiometry.getStoichiometricCoefficient());
+                    }
+                    complex.setStoichiometry(stoichiometries);
+                    break;
+                default:
+                    // Nonspecific attributes
+                    complex.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
+                    break;
             }
 
         }
 
-        Set<Control> controls = process.getControlledOf();
-
-        for (Control control : controls) {
-            createControl(control);
-
-        }
-
+        return complex;
     }
 
-    private void createMolecule(PhysicalEntity molecule) {
 
-        Map<String, List> moleculeProperties = getBpeProperties(molecule);
+    private org.opencb.bionetdb.core.models.SmallMolecule createSmallMolecule(BioPAXElement bioPAXElement) {
 
-/*
-        for (String prop : moleculeProperties.keySet()) {
-            System.out.println("Molecule = " +  prop + ": " +
-                    moleculeProperties.get(prop).toString());
+        org.opencb.bionetdb.core.models.SmallMolecule smallMolecule;
+        smallMolecule = new org.opencb.bionetdb.core.models.SmallMolecule();
+
+        SmallMolecule smallMoleculeBP = (SmallMolecule) bioPAXElement;
+
+        // Getting BioPAX element properties
+        Map<String, List> properties = getBpeProperties(bioPAXElement);
+
+        // Setting id
+        smallMolecule.setId(bioPAXElement.getRDFId().split("#")[1]);
+
+        // Retrieving attributes values
+        for (Map.Entry<String, List> entry : properties.entrySet()) {
+
+            switch (entry.getKey()) {
+                case "displayName":
+                    smallMolecule.setName(entry.getValue().toString());
+                    break;
+                case "name":
+                    smallMolecule.setAltNames(entry.getValue());
+                    break;
+                case "cellularLocation":
+                    smallMolecule.setCellularLocation(entry.getValue());
+                    break;
+                case "dataSource":
+                    smallMolecule.setSource(entry.getValue());
+                    break;
+                case "entityReference":
+                    if (!entry.getValue().isEmpty()) {
+                        // TODO Get organism and NCBI taxonomy from "entityReference"
+                        Map<String, List> propertiesER;
+                        propertiesER = getBpeProperties(smallMoleculeBP.getEntityReference());
+                        smallMolecule.setAltIds(propertiesER.get("name"));
+                    }
+                    break;
+                default:
+                    // Nonspecific attributes
+                    smallMolecule.getAttributes().put(REACTOME_FEAT + entry.getKey(),
+                            entry.getValue());
+                    break;
+
+            }
 
         }
-*/
 
+        return smallMolecule;
     }
 
-    private void createControl(Control control) {
-
-        Map<String, List> controlProperties = getBpeProperties(control);
-
-/*
-        for (String prop : controlProperties.keySet()) {
-            System.out.println("Control = " +  prop + ": " +
-                    controlProperties.get(prop).toString());
-        }
-*/
-
-        Set<Controller> controllers = control.getController();
-
-        for (Controller controller : controllers) {
-            Map<String, List> controllerProperties = getBpeProperties(controller);
-        }
-
-    }
 
     public Map<String, List> getBpeProperties(BioPAXElement bpe) {
 
@@ -264,25 +371,20 @@ public class BioPaxParser {
         Map<String, List> props = new HashMap<>();
 
         // Retrieving properties and their values
-        int row = 0;
         for (PropertyEditor editor : editors) {
             // First column is property and second column is value
             props.put(editor.getProperty(), new ArrayList<>(editor.getValueFromBean(bpe)));
-            row++;
         }
 
         return props;
 
     }
 
-
-/*
-    private Protein createProtein(BioPAXElement bpe) {
-        Protein protein = new Protein("", "");
-
-
-        return protein;
-    }
-*/
+    /*private void setCommonProperties (org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity, Map<String, List> properties){
+        physicalEntity.setName(properties.get("").getValue().toString());
+        physicalEntity.setAltNames(entry.getValue());
+        physicalEntity.setCellularLocation(entry.getValue());
+        physicalEntity.setSource(entry.getValue());
+    }*/
 
 }
