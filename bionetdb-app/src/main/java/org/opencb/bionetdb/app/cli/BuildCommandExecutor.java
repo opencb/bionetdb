@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.app.cli;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.commons.utils.FileUtils;
@@ -33,8 +34,8 @@ public class BuildCommandExecutor extends CommandExecutor {
 
             BioPaxParser bioPaxParser = new BioPaxParser("L3");
             Network network = bioPaxParser.parse(inputPath);
-            System.out.println("network.getPhysicalEntities().size() = " + network.getPhysicalEntities().size());
-            // print to file
+
+            // Print to file
             Path outputPath;
             if (buildCommandOptions.output == null || buildCommandOptions.output.isEmpty()) {
                 outputPath = Paths.get(buildCommandOptions.input+".json");
@@ -42,6 +43,7 @@ public class BuildCommandExecutor extends CommandExecutor {
                 outputPath = Paths.get(buildCommandOptions.output);
             }
             ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputPath.toAbsolutePath().toString()));
             bufferedWriter.write(objectMapper.writeValueAsString(network));
             bufferedWriter.close();

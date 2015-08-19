@@ -10,10 +10,15 @@ public class PhysicalEntity {
     protected String id;
     protected String name;
     protected String description;
-    protected List<String> cellularLocation;
+    protected Map<String, List<String>> cellularLocation;
     protected List<String> source;
     protected List<String> altNames;
     protected List<String> altIds;
+    protected List<String> members;
+    protected List<String> memberOfSet;
+    protected List<String> componentOfComplex;
+    protected List<String> participantOfInteraction;
+    protected List<Map<String, Object>> features;
 
     protected Type type;
 
@@ -53,10 +58,15 @@ public class PhysicalEntity {
 
     private void init() {
         this.attributes = new HashMap<>();
-        this.cellularLocation = new ArrayList<>();
+        this.cellularLocation = new HashMap<>();
         this.source = new ArrayList<>();
         this.altNames = new ArrayList<>();
         this.altIds = new ArrayList<>();
+        this.members = new ArrayList<>();
+        this.memberOfSet = new ArrayList<>();
+        this.componentOfComplex = new ArrayList<>();
+        this.participantOfInteraction = new ArrayList<>();
+        this.features = new ArrayList<>();
     }
 
     class Display {
@@ -91,11 +101,11 @@ public class PhysicalEntity {
         this.description = description;
     }
 
-    public List<String> getCellularLocation() {
+    public Map<String, List<String>> getCellularLocation() {
         return cellularLocation;
     }
 
-    public void setCellularLocation(List<String> cellularLocation) {
+    public void setCellularLocation(Map<String, List<String>> cellularLocation) {
         this.cellularLocation = cellularLocation;
     }
 
@@ -131,4 +141,44 @@ public class PhysicalEntity {
         this.attributes = attributes;
     }
 
+    public List<String> getMembers() {
+
+        return members;
+    }
+
+    public void setMembers(List<String> members) {
+        this.members = members;
+    }
+
+    public List<String> getMemberOfSet() {
+        return memberOfSet;
+    }
+
+    public void setMemberOfSet(List<String> memberOfSet) {
+        this.memberOfSet = memberOfSet;
+    }
+
+    public List<String> getComponentOfComplex() {
+        return componentOfComplex;
+    }
+
+    public void setComponentOfComplex(List<String> componentOfComplex) {
+        this.componentOfComplex = componentOfComplex;
+    }
+
+    public List<String> getParticipantOfInteraction() {
+        return participantOfInteraction;
+    }
+
+    public void setParticipantOfInteraction(List<String> participantOfInteraction) {
+        this.participantOfInteraction = participantOfInteraction;
+    }
+
+    public List<Map<String, Object>> getFeatures() {
+        return features;
+    }
+
+    public void setFeatures(List<Map<String, Object>> features) {
+        this.features = features;
+    }
 }

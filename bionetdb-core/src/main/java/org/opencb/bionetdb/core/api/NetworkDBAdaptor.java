@@ -5,9 +5,6 @@ import org.opencb.bionetdb.core.models.Network;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-//import org.opencb.datastore.core.Query;
-//import org.opencb.datastore.core.QueryOptions;
-//import org.opencb.datastore.core.QueryResult;
 
 import java.util.List;
 

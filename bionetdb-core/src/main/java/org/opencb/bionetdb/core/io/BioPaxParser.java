@@ -9,7 +9,14 @@ import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
-import org.opencb.bionetdb.core.models.Network;
+import org.biopax.paxtools.model.level3.Complex;
+import org.biopax.paxtools.model.level3.Dna;
+import org.biopax.paxtools.model.level3.Interaction;
+import org.biopax.paxtools.model.level3.PhysicalEntity;
+import org.biopax.paxtools.model.level3.Protein;
+import org.biopax.paxtools.model.level3.Rna;
+import org.biopax.paxtools.model.level3.SmallMolecule;
+import org.opencb.bionetdb.core.models.*;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -62,7 +69,7 @@ public class BioPaxParser {
         InputStream inputStream;
         if (path.toFile().getName().endsWith(".gz")) {
             inputStream = new GZIPInputStream(new FileInputStream(path.toFile()));
-        }else {
+        } else {
             inputStream = Files.newInputStream(path);
         }
 
@@ -125,93 +132,44 @@ public class BioPaxParser {
         org.opencb.bionetdb.core.models.Dna dna = new org.opencb.bionetdb.core.models.Dna();
         Dna dnaBP = (Dna) bioPAXElement;
 
-        // Getting BioPAX element properties
-        Map<String, List> properties = getBpeProperties(bioPAXElement);
+        // Common properties
+        setCommonProperties(dnaBP, dna);
 
-        // Setting id
-        dna.setId(bioPAXElement.getRDFId().split("#")[1]);
+        // Dna properties
+        if (dnaBP.getEntityReference() != null) {
 
-        // Retrieving attributes values
-        for (Map.Entry<String, List> entry : properties.entrySet()) {
-            switch (entry.getKey()) {
-                case "displayName":
-                    dna.setName(entry.getValue().toString());
-                    break;
-                case "name":
-                    dna.setAltNames(entry.getValue());
-                    break;
-                case "cellularLocation":
-                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
-                    List<String> cellularLocations = new ArrayList<>();
-                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
-                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
-                    }
-                    dna.setCellularLocation(cellularLocations);
-                    break;
-                case "dataSource":
-                    dna.setSource(entry.getValue());
-                    break;
-                case "entityReference":
-                    if (!entry.getValue().isEmpty()) {
-                        // TODO Get organism and NCBI taxonomy from "entityReference"
-                        Map<String, List> propertiesER;
-                        propertiesER = getBpeProperties(dnaBP.getEntityReference());
-                        dna.setAltIds(propertiesER.get("name"));
-                    }
-                    break;
-                default:
-                    // Nonspecific attributes
-                    dna.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
-                    break;
-            }
+            EntityReference entityReference = dnaBP.getEntityReference();
+
+            // altIds
+            List<String> altIds = new ArrayList<>();
+            altIds.addAll(entityReference.getName());
+            dna.setAltIds(altIds);
+
+            // description
+            dna.setDescription(entityReference.getComment().toString());
         }
         return dna;
     }
 
     private org.opencb.bionetdb.core.models.Rna createRna(BioPAXElement bioPAXElement) {
         org.opencb.bionetdb.core.models.Rna rna = new org.opencb.bionetdb.core.models.Rna();
-
         Rna rnaBP = (Rna) bioPAXElement;
 
-        // Getting BioPAX element properties
-        Map<String, List> properties = getBpeProperties(bioPAXElement);
+        // Common properties
+        setCommonProperties(rnaBP, rna);
 
-        // Setting id
-        rna.setId(bioPAXElement.getRDFId().split("#")[1]);
+        // Rna properties
+        if (rnaBP.getEntityReference() != null) {
 
-        // Retrieving attributes values
-        for (Map.Entry<String, List> entry : properties.entrySet()) {
+            EntityReference entityReference = rnaBP.getEntityReference();
 
-            switch (entry.getKey()) {
-                case "displayName":
-                    rna.setName(entry.getValue().toString());
-                case "name":
-                    rna.setAltNames(entry.getValue());
-                    break;
-                case "cellularLocation":
-                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
-                    List<String> cellularLocations = new ArrayList<>();
-                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
-                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
-                    }
-                    rna.setCellularLocation(cellularLocations);
-                    break;
-                case "dataSource":
-                    rna.setSource(entry.getValue());
-                    break;
-                case "entityReference":
-                    if (!entry.getValue().isEmpty()) {
-                        // TODO Get organism and NCBI taxonomy from "entityReference"
-                        Map<String, List> propertiesER;
-                        propertiesER = getBpeProperties(rnaBP.getEntityReference());
-                        rna.setAltIds(propertiesER.get("name"));
-                    }
-                    break;
-                default:
-                    // Nonspecific attributes
-                    rna.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
-                    break;
-            }
+            // altIds
+            List<String> altIds = new ArrayList<>();
+            altIds.addAll(entityReference.getName());
+            rna.setAltIds(altIds);
+
+            // description
+            rna.setDescription(entityReference.getComment().toString());
         }
         return rna;
     }
@@ -220,165 +178,203 @@ public class BioPaxParser {
         org.opencb.bionetdb.core.models.Protein protein = new org.opencb.bionetdb.core.models.Protein();
         Protein proteinBP = (Protein) bioPAXElement;
 
-        // Getting BioPAX element properties
-        Map<String, List> properties = getBpeProperties(bioPAXElement);
+        // Common properties
+        setCommonProperties(proteinBP, protein);
 
-        // Setting id
-        protein.setId(bioPAXElement.getRDFId().split("#")[1]);
+        // Protein properties
+        if (proteinBP.getEntityReference() != null) {
 
-        // Retrieving attributes values
-        for (Map.Entry<String, List> entry : properties.entrySet()) {
+            EntityReference entityReference = proteinBP.getEntityReference();
 
-            switch (entry.getKey()) {
-                case "displayName":
-                    protein.setName(entry.getValue().toString());
-                    break;
-                case "name":
-                    protein.setAltNames(entry.getValue());
-                    break;
-                case "cellularLocation":
-                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
-                    List<String> cellularLocations = new ArrayList<>();
-                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
-                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
-                    }
-                    protein.setCellularLocation(cellularLocations);
-                    break;
-                case "dataSource":
-                    protein.setSource(entry.getValue());
-                    break;
-                case "entityReference":
-                    if (!entry.getValue().isEmpty()) {
-                        // TODO Get organism and NCBI taxonomy from "entityReference"
-                        Map<String, List> propertiesER;
-                        propertiesER = getBpeProperties(proteinBP.getEntityReference());
-                        protein.setAltIds(propertiesER.get("name"));
-                        protein.setUniProtId(propertiesER.get("xref").toString());
-                        protein.setDescription(propertiesER.get("comment").toString());
-                    }
-                    break;
-                default:
-                    // Nonspecific attributes
-                    protein.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
-                    break;
+            // altIds
+            List<String> altIds = new ArrayList<>();
+            altIds.addAll(entityReference.getName());
+            protein.setAltIds(altIds);
 
+            // description
+            protein.setDescription(entityReference.getComment().toString());
+
+            // uniProtId
+            Set<Xref> xrefs = entityReference.getXref();
+            for (Xref xref : xrefs) {
+                protein.setUniProtId(xref.getId());
             }
         }
         return protein;
     }
 
-
-    private org.opencb.bionetdb.core.models.Complex createComplex(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.Complex complex;
-        complex = new org.opencb.bionetdb.core.models.Complex();
-
-        Complex complexBP = (Complex) bioPAXElement;
-
-        // Getting BioPAX element properties
-        Map<String, List> properties = getBpeProperties(bioPAXElement);
-
-        // Setting id
-        complex.setId(bioPAXElement.getRDFId().split("#")[1]);
-
-        // Retrieving attributes values
-        for (Map.Entry<String, List> entry : properties.entrySet()) {
-
-            switch (entry.getKey()) {
-                case "displayName":
-                    complex.setName(entry.getValue().toString());
-                    break;
-                case "name":
-                    complex.setAltNames(entry.getValue());
-                    break;
-                case "cellularLocation":
-                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
-                    List<String> cellularLocations = new ArrayList<>();
-                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
-                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
-                    }
-                    complex.setCellularLocation(cellularLocations);
-                    break;
-                case "dataSource":
-                    complex.setSource(entry.getValue());
-                    break;
-                case "component":
-                    ArrayList<String> components = new ArrayList<>();
-                    for (PhysicalEntity component : complexBP.getComponent()) {
-                        components.add(component.getRDFId().split("#")[1]);
-                    }
-                    complex.setComponents(components);
-                    break;
-                case "componentStoichiometry":
-                    Map<String, Float> stoichiometries = new HashMap<>();
-                    for (Stoichiometry stoichiometry : complexBP.getComponentStoichiometry()) {
-                        stoichiometries.put(
-                                stoichiometry.getPhysicalEntity().toString().split("#")[1],
-                                stoichiometry.getStoichiometricCoefficient());
-                    }
-                    complex.setStoichiometry(stoichiometries);
-                    break;
-                default:
-                    // Nonspecific attributes
-                    complex.getAttributes().put(REACTOME_FEAT + entry.getKey(), entry.getValue());
-                    break;
-            }
-        }
-        return complex;
-    }
-
-
     private org.opencb.bionetdb.core.models.SmallMolecule createSmallMolecule(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.SmallMolecule smallMolecule;
-        smallMolecule = new org.opencb.bionetdb.core.models.SmallMolecule();
-
+        org.opencb.bionetdb.core.models.SmallMolecule smallMolecule =
+                new org.opencb.bionetdb.core.models.SmallMolecule();
         SmallMolecule smallMoleculeBP = (SmallMolecule) bioPAXElement;
 
-        // Getting BioPAX element properties
-        Map<String, List> properties = getBpeProperties(bioPAXElement);
+        // Common properties
+        setCommonProperties(smallMoleculeBP, smallMolecule);
 
-        // Setting id
-        smallMolecule.setId(bioPAXElement.getRDFId().split("#")[1]);
+        // SmallMolecule properties
+        if (smallMoleculeBP.getEntityReference() != null) {
 
-        // Retrieving attributes values
-        for (Map.Entry<String, List> entry : properties.entrySet()) {
+            EntityReference entityReference = smallMoleculeBP.getEntityReference();
 
-            switch (entry.getKey()) {
-                case "displayName":
-                    smallMolecule.setName(entry.getValue().toString());
-                    break;
-                case "name":
-                    smallMolecule.setAltNames(entry.getValue());
-                    break;
-                case "cellularLocation":
-                    List<CellularLocationVocabulary> cellularLocationVocabularies = entry.getValue();
-                    List<String> cellularLocations = new ArrayList<>();
-                    for (CellularLocationVocabulary cellularLocationVocabulary : cellularLocationVocabularies) {
-                        cellularLocations.addAll(cellularLocationVocabulary.getTerm());
-                    }
-                    smallMolecule.setCellularLocation(cellularLocations);
-                    break;
-                case "dataSource":
-                    smallMolecule.setSource(entry.getValue());
-                    break;
-                case "entityReference":
-                    if (!entry.getValue().isEmpty()) {
-                        // TODO Get organism and NCBI taxonomy from "entityReference"
-                        Map<String, List> propertiesER;
-                        propertiesER = getBpeProperties(smallMoleculeBP.getEntityReference());
-                        smallMolecule.setAltIds(propertiesER.get("name"));
-                    }
-                    break;
-                default:
-                    // Nonspecific attributes
-                    smallMolecule.getAttributes().put(REACTOME_FEAT + entry.getKey(),
-                            entry.getValue());
-                    break;
-            }
+            // altIds
+            List<String> altIds = new ArrayList<>();
+            altIds.addAll(entityReference.getName());
+            smallMolecule.setAltIds(altIds);
+
+            // description
+            smallMolecule.setDescription(entityReference.getComment().toString());
         }
         return smallMolecule;
     }
 
+    private org.opencb.bionetdb.core.models.Complex createComplex(BioPAXElement bioPAXElement) {
+        org.opencb.bionetdb.core.models.Complex complex = new org.opencb.bionetdb.core.models.Complex();
+        Complex complexBP = (Complex) bioPAXElement;
 
+        // Common properties
+        setCommonProperties(complexBP, complex);
+
+        // Complex properties
+
+        // Components
+        Set<PhysicalEntity> components = complexBP.getComponent();
+        for (PhysicalEntity component : components) {
+            complex.getComponents().add(component.getRDFId().split("#")[1]);
+        }
+
+        // Stoichiometry
+        List<Map<String, Object>> stoichiometry = new ArrayList<>();
+        Set<Stoichiometry> stoichiometryItems = complexBP.getComponentStoichiometry();
+        for (Stoichiometry stoichiometryItem : stoichiometryItems) {
+            Map<String, Object> stchmtr = new HashMap<>();
+            stchmtr.put("component", stoichiometryItem.getPhysicalEntity().toString().split("#")[1]);
+            stchmtr.put("coefficient", stoichiometryItem.getStoichiometricCoefficient());
+            stoichiometry.add(stchmtr);
+        }
+        complex.setStoichiometry(stoichiometry);
+
+        return complex;
+    }
+
+    private void setCommonProperties (PhysicalEntity physicalEntityBP,
+                                      org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity) {
+        // = SPECIFIC PROPERTIES =
+
+        // id
+        physicalEntity.setId(physicalEntityBP.getRDFId().split("#")[1]);
+
+        // name
+        physicalEntity.setName(physicalEntityBP.getDisplayName());
+
+        // altNames
+        List<String> altNames = new ArrayList<>();
+        altNames.addAll(physicalEntityBP.getName());
+        physicalEntity.setAltNames(altNames);
+
+        // cellularLocation.names
+        List<String> cellularLocationsNames = new ArrayList<>();
+        cellularLocationsNames.addAll(physicalEntityBP.getCellularLocation().getTerm());
+
+        // cellularLocation.ids
+        List<String> cellularLocationsIds = new ArrayList<>();
+        Set<Xref> CellLocXrefs = physicalEntityBP.getCellularLocation().getXref();
+        for (Xref CellLocXref : CellLocXrefs) {
+            cellularLocationsIds.add(CellLocXref.getId());
+        }
+
+        // cellularLocation
+        Map<String, List<String>> cellularLocations = new HashMap<>();
+        cellularLocations.put("name", cellularLocationsNames);
+        cellularLocations.put("id", cellularLocationsIds);
+        physicalEntity.setCellularLocation(cellularLocations);
+
+        // source
+        List<String> sources = new ArrayList<>();
+        Set<Provenance> provenances = physicalEntityBP.getDataSource();
+        for (Provenance provenance : provenances) {
+            sources.addAll(provenance.getName());
+        }
+        physicalEntity.setSource(sources);
+
+        // TODO [WARNING]: MemberPhysicalEntity and MemberPhysicalEntityOf
+        // Please avoid using this property in your BioPAX L3 models unless absolutely sure/required,
+        // for there is an alternative way (using PhysicalEntity/entityReference/memberEntityReference),
+        // and this will probably be deprecated in the future BioPAX releases.
+        // http://www.biopax.org/m2site/paxtools-4.2.0/apidocs/org/biopax/paxtools/impl/level3/PhysicalEntityImpl.html
+
+        // members
+        List<String> members = new ArrayList<>();
+        Set<PhysicalEntity> pes = physicalEntityBP.getMemberPhysicalEntity();
+        for (PhysicalEntity pe : pes) {
+            members.add(pe.getRDFId().split("#")[1]);
+        }
+        physicalEntity.setMembers(members);
+
+        //memberOf
+        List<String> membersOf = new ArrayList<>();
+        Set<PhysicalEntity> pesOf = physicalEntityBP.getMemberPhysicalEntityOf();
+        for (PhysicalEntity peOf : pesOf) {
+            membersOf.add(peOf.getRDFId().split("#")[1]);
+        }
+        physicalEntity.setMemberOfSet(membersOf);
+
+        //componentOf
+        List<String> componentOf = new ArrayList<>();
+        Set<Complex> complexes = physicalEntityBP.getComponentOf();
+        for (Complex complex : complexes) {
+            componentOf.add(complex.getRDFId().split("#")[1]);
+        }
+        physicalEntity.setComponentOfComplex(componentOf);
+
+        //participantOf
+        List<String> participantOf = new ArrayList<>();
+        Set<Interaction> interactions = physicalEntityBP.getParticipantOf();
+        for (Interaction interaction : interactions) {
+            participantOf.add(interaction.getRDFId().split("#")[1]);
+        }
+        physicalEntity.setParticipantOfInteraction(participantOf);
+
+        // = NONSPECIFIC PROPERTIES =
+
+        // xref
+        List<Map<String, String>> xreferences = new ArrayList<>();
+        Set<Xref> xrefs = physicalEntityBP.getXref();
+        for (Xref xref : xrefs) {
+            Map<String, String> db = new HashMap<>();
+            db.put("db", xref.getDb());
+            db.put("dbVersion", xref.getDbVersion());
+            db.put("id", xref.getId());
+            db.put("idVersion", xref.getIdVersion());
+            xreferences.add(db);
+        }
+        physicalEntity.getAttributes().put(REACTOME_FEAT + "xref", xreferences);
+
+        // comment
+        physicalEntity.getAttributes().put(REACTOME_FEAT + "comment",
+                physicalEntityBP.getComment().toString());
+
+        // availability
+        physicalEntity.getAttributes().put(REACTOME_FEAT + "availability",
+                physicalEntityBP.getAvailability().toString());
+
+        // annotations
+        physicalEntity.getAttributes().put(REACTOME_FEAT + "annotations",
+                physicalEntityBP.getAnnotations());
+
+        // features
+        List<Map<String, Object>> features = new ArrayList<>();
+        Set<EntityFeature> entityFeatures = physicalEntityBP.getFeature();
+        for (EntityFeature entityFeature : entityFeatures) {
+            Map<String, Object> feature = new HashMap<>();
+            String featureName = entityFeature.getModelInterface().getSimpleName();
+            feature.put("type", featureName);
+            feature.put("name", entityFeature.toString());
+            features.add(feature);
+        }
+        physicalEntity.setFeatures(features);
+    }
+
+    @Deprecated
     public Map<String, List> getBpeProperties(BioPAXElement bpe) {
         // Getting editors of the BioPAX element
         Set<PropertyEditor> editors = this.editorMap.getEditorsOf(bpe);
@@ -393,13 +389,4 @@ public class BioPaxParser {
         }
         return props;
     }
-
-    @Deprecated
-    private void setCommonProperties (org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity, Map<String, List> properties){
-        physicalEntity.setName(properties.get("displayName").toString());
-        physicalEntity.setAltNames(properties.get("name"));
-        physicalEntity.setCellularLocation(properties.get("cellularLocation"));
-        physicalEntity.setSource(properties.get("dataSource"));
-    }
-
 }

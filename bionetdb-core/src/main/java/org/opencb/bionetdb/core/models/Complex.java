@@ -11,7 +11,7 @@ import java.util.Map;
 public class Complex extends PhysicalEntity {
 
     private List<String> components;
-    private Map<String, Float> stoichiometry;
+    private List<Map<String, Object>> stoichiometry;
 
     public Complex() {
         super("", "", "", Type.COMPLEX);
@@ -25,7 +25,7 @@ public class Complex extends PhysicalEntity {
 
     private void init() {
         this.components = new ArrayList<>();
-        this.stoichiometry = new HashMap<>();
+        this.stoichiometry = new ArrayList<>();
     }
 
     public List<String> getComponents() {
@@ -36,11 +36,11 @@ public class Complex extends PhysicalEntity {
         this.components = components;
     }
 
-    public Map<String, Float> getStoichiometry() {
+    public List<Map<String, Object>> getStoichiometry() {
         return stoichiometry;
     }
 
-    public void setStoichiometry(Map<String, Float> stoichiometry) {
+    public void setStoichiometry(List<Map<String, Object>> stoichiometry) {
         this.stoichiometry = stoichiometry;
     }
 }
