@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * Created by dapregi on 19/08/15.
  */
-public class Reaction extends Interaction {
+public class Assembly extends Interaction {
 
     private List<String> reactants;
     private List<String> products;
@@ -13,13 +13,13 @@ public class Reaction extends Interaction {
     private Boolean spontaneous;
     private List<Map<String, Object>> stoichiometry;
 
-    public Reaction() {
-        super("", "", "", Type.REACTION);
+    public Assembly() {
+        super("", "", "", Type.ASSEMBLY);
         init();
     }
 
-    public Reaction(String id, String name, String description) {
-        super(id, name, description, Type.REACTION);
+    public Assembly(String id, String name, String description) {
+        super(id, name, description, Type.ASSEMBLY);
         init();
     }
 

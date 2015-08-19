@@ -53,7 +53,6 @@ public class PhysicalEntity {
 
         // init rest of attributes
         init();
-
     }
 
     private void init() {
