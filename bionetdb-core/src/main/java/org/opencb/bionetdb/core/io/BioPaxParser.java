@@ -677,6 +677,13 @@ public class BioPaxParser {
         // id
         interaction.setId(interactionBP.getRDFId().split("#")[1]);
 
+        // description
+        for (String comment : interactionBP.getComment()) {
+            if (!comment.matches("(Authored:|Edited:|Reviewed:).+")){
+                interaction.setDescription(interaction.getDescription() + comment + ";;");
+            }
+        }
+
         // name
         interaction.setName(interactionBP.getDisplayName());
 
@@ -684,7 +691,7 @@ public class BioPaxParser {
         List<String> sources = new ArrayList<>();
         Set<Provenance> provenances = interactionBP.getDataSource();
         for (Provenance provenance : provenances) {
-            interaction.getSource().addAll(provenance.getName());
+            sources.addAll(provenance.getName());
         }
         interaction.setSource(sources);
 
@@ -694,7 +701,7 @@ public class BioPaxParser {
             interaction.getParticipants().add(entity.getRDFId().split("#")[1]);
         }
 
-        // participantOf
+        // participantOfInteraction
         Set<Interaction> participantOfInters = interactionBP.getParticipantOf();
         for (Interaction participantOfInter : participantOfInters) {
             interaction.getParticipantOf().add(participantOfInter.getRDFId().split("#")[1]);
@@ -706,13 +713,7 @@ public class BioPaxParser {
             interaction.getControlledBy().add(control.getRDFId().split("#")[1]);
         }
 
-        // pathwayComponentOf
-        Set<Pathway> pathways = interactionBP.getPathwayComponentOf();
-        for (Pathway pathway : pathways) {
-            interaction.getPathwayComponentOf().add(pathway.getRDFId().split("#")[1]);
-        }
-
-        // processOf
+        // processOfPathway
         Set<PathwayStep> pathwaySteps = interactionBP.getStepProcessOf();
         for (PathwayStep pathwayStep : pathwaySteps) {
             interaction.getProcessOf().add(pathwayStep.getPathwayOrderOf().getRDFId().split("#")[1]);
@@ -733,10 +734,6 @@ public class BioPaxParser {
         }
         interaction.getAttributes().put(REACTOME_FEAT + "xref", xreferences);
 
-        // comment
-        interaction.getAttributes().put(REACTOME_FEAT + "comment",
-                interactionBP.getComment().toString());
-
         // availability
         interaction.getAttributes().put(REACTOME_FEAT + "availability",
                 interactionBP.getAvailability().toString());
@@ -749,13 +746,9 @@ public class BioPaxParser {
         interaction.getAttributes().put(REACTOME_FEAT + "annotations",
                 interactionBP.getAnnotations());
 
-        // annotations
+        // interactionType
         interaction.getAttributes().put(REACTOME_FEAT + "interactionType",
                 interactionBP.getInteractionType().toString());
-
-        // annotations
-        interaction.getAttributes().put(REACTOME_FEAT + "name",
-                interactionBP.getName().toString());
 
     }
 

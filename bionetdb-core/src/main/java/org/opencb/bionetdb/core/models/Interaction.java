@@ -15,7 +15,6 @@ public class Interaction {
     protected List<String> processOf;
     protected List<String> participantOf;
     protected List<String> controlledBy;
-    protected List<String> pathwayComponentOf;
 
     protected Type type;
 
@@ -56,7 +55,6 @@ public class Interaction {
         this.processOf = new ArrayList<>();
         this.participantOf = new ArrayList<>();
         this.controlledBy = new ArrayList<>();
-        this.pathwayComponentOf = new ArrayList<>();
     }
 
     public String getId() {
@@ -129,13 +127,5 @@ public class Interaction {
 
     public void setControlledBy(List<String> controlledOf) {
         this.controlledBy = controlledOf;
-    }
-
-    public List<String> getPathwayComponentOf() {
-        return pathwayComponentOf;
-    }
-
-    public void setPathwayComponentOf(List<String> pathwayComponentOf) {
-        this.pathwayComponentOf = pathwayComponentOf;
     }
 }
