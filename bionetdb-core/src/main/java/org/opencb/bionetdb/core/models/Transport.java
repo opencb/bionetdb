@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * Created by dapregi on 19/08/15.
  */
-public class Reaction extends Interaction {
+public class Transport extends Interaction {
 
     private List<String> reactants;
     private List<String> products;
@@ -13,13 +13,13 @@ public class Reaction extends Interaction {
     private Boolean spontaneous;
     private List<Map<String, Object>> stoichiometry;
 
-    public Reaction() {
-        super("", "", "", Type.REACTION);
+    public Transport() {
+        super("", "", "", Type.TRANSPORT);
         init();
     }
 
-    public Reaction(String id, String name, String description) {
-        super(id, name, description, Type.REACTION);
+    public Transport(String id, String name, String description) {
+        super(id, name, description, Type.TRANSPORT);
         init();
     }
 
