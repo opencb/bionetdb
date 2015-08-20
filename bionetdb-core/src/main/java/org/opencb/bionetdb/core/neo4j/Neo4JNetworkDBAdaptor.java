@@ -24,12 +24,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public void insert(Network network) {
+    public void insert(Network network, QueryOptions queryOptions) {
 
     }
 
     @Override
-    public void insert(List<Interaction> interactionList) {
+    public void insert(List<Interaction> interactionList, QueryOptions queryOptions) {
 
     }
 

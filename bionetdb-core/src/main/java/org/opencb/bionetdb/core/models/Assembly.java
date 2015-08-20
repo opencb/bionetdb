@@ -5,6 +5,7 @@ import java.util.*;
 /**
  * Created by dapregi on 19/08/15.
  */
+@Deprecated
 public class Assembly extends Interaction {
 
     private List<String> reactants;

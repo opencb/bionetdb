@@ -13,15 +13,38 @@ public class Reaction extends Interaction {
     private Boolean spontaneous;
     private List<Map<String, Object>> stoichiometry;
 
+    private ReactionType reactionType;
+
+    enum ReactionType {
+        REACTION    ("reaction"),
+        ASSEMBLY    ("assembly"),
+        TRANSPORT   ("transport");
+
+        private final String reactionType;
+
+        ReactionType(String reactionType) {
+            this.reactionType = reactionType;
+        }
+    }
+
     public Reaction() {
         super("", "", "", Type.REACTION);
+        this.reactionType = ReactionType.REACTION;
         init();
     }
 
     public Reaction(String id, String name, String description) {
         super(id, name, description, Type.REACTION);
+        this.reactionType = ReactionType.REACTION;
         init();
     }
+
+    public Reaction(String id, String name, ReactionType reactionType, String description) {
+        super(id, name, description, Type.REACTION);
+        this.reactionType = reactionType;
+        init();
+    }
+
 
     private void init() {
         this.reactants = new ArrayList<>();

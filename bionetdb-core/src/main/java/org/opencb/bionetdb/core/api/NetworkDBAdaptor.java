@@ -14,9 +14,9 @@ import java.util.List;
 public interface NetworkDBAdaptor {
 
 
-    void insert(Network network);
+    void insert(Network network, QueryOptions queryOptions);
 
-    void insert(List<Interaction> interactionList);
+    void insert(List<Interaction> interactionList, QueryOptions queryOptions);
 
 
     QueryResult get(Query query, QueryOptions queryOptions);

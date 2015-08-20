@@ -5,6 +5,7 @@ import java.util.*;
 /**
  * Created by dapregi on 19/08/15.
  */
+@Deprecated
 public class Transport extends Interaction {
 
     private List<String> reactants;

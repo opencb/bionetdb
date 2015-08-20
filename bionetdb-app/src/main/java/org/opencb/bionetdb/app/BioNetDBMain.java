@@ -4,6 +4,7 @@ import com.beust.jcommander.ParameterException;
 import org.opencb.bionetdb.app.cli.BuildCommandExecutor;
 import org.opencb.bionetdb.app.cli.CliOptionsParser;
 import org.opencb.bionetdb.app.cli.CommandExecutor;
+import org.opencb.bionetdb.app.cli.LoadCommandExecutor;
 
 /**
  * Created by imedina on 05/08/15.
@@ -46,12 +47,9 @@ public class BioNetDBMain {
                     case "build":
                         commandExecutor = new BuildCommandExecutor(cliOptionsParser.getBuildCommandOptions());
                         break;
-//                    case "build":
-//                        commandExecutor = new BuildCommandExecutor(cliOptionsParser.getBuildCommandOptions());
-//                        break;
-//                    case "load":
-//                        commandExecutor = new LoadCommandExecutor(cliOptionsParser.getLoadCommandOptions());
-//                        break;
+                    case "load":
+                        commandExecutor = new LoadCommandExecutor(cliOptionsParser.getLoadCommandOptions());
+                        break;
 //                    case "query":
 //                        commandExecutor = new QueryCommandExecutor(cliOptionsParser.getQueryCommandOptions());
 //                        break;
