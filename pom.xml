@@ -54,6 +54,11 @@
             <name>Daniel</name>
             <email>dperezgil89@gmail.com</email>
         </developer>
+        <developer>
+            <id>pfurio</id>
+            <name>Pedro</name>
+            <email>pedrofurio@gmail.com</email>
+        </developer>
     </developers>
 
     <mailingLists>
