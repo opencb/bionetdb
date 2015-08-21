@@ -20,7 +20,7 @@ public class Interaction {
 
     protected Map<String, Object> attributes;
 
-    enum Type {
+    public enum Type {
         REACTION    ("reaction"),
         CATALYSIS   ("catalysis"),
         REGULATION  ("regulation"),
@@ -127,5 +127,9 @@ public class Interaction {
 
     public void setControlledBy(List<String> controlledOf) {
         this.controlledBy = controlledOf;
+    }
+
+    public Type getType() {
+        return type;
     }
 }
