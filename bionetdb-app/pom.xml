@@ -27,7 +27,7 @@
         <dependency>
             <groupId>org.sbml.libsbml</groupId>
             <artifactId>libsbml</artifactId>
-            <systemPath>${basedir}/../bionetdb-core/src/main/resources/libsbmlj.jar</systemPath>
+            <systemPath>${basedir}/app/ext-libs/libsbmlj.jar</systemPath>
         </dependency>
 
         <dependency>

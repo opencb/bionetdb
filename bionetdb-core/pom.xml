@@ -33,7 +33,7 @@
         <dependency>
             <groupId>org.sbml.libsbml</groupId>
             <artifactId>libsbml</artifactId>
-            <systemPath>${basedir}/src/main/resources/libsbmlj.jar</systemPath>
+            <systemPath>${basedir}/../bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

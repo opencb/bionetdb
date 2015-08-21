@@ -26,6 +26,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public void insert(Network network, QueryOptions queryOptions) {
 
+        System.out.println("oleeeeeeeee!!!!!!!!!");
     }
 
     @Override
