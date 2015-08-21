@@ -16,6 +16,7 @@ fi
 ## Copy all the binaries, dependencies and files
 cp -r bionetdb-app/target/appassembler/* build/
 cp -r bionetdb-app/app/ext-libs/* build/libs
+cp -r bionetdb-app/app/example build/
 #cp  bionetdb-core/target/classes/configuration.json build/
 cp bionetdb-server/target/bionetdb.war build/
 cp README.md build/

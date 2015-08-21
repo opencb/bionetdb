@@ -34,7 +34,7 @@ public class LoadCommandExecutor extends CommandExecutor {
 
             NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(loadCommandOptions.database);
 
-            //networkDBAdaptor.insert(network);
+            networkDBAdaptor.insert(network, null);
 
         } catch (IOException e) {
             e.printStackTrace();
