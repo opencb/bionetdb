@@ -9,8 +9,8 @@ public class Reaction extends Interaction {
 
     private List<String> reactants;
     private List<String> products;
-    private Boolean reversible;
-    private Boolean spontaneous;
+    private boolean reversible;
+    private boolean spontaneous;
     private List<Map<String, Object>> stoichiometry;
 
     private ReactionType reactionType;
@@ -33,25 +33,24 @@ public class Reaction extends Interaction {
         init();
     }
 
-    public Reaction(String id, String name, String description) {
-        super(id, name, description, Type.REACTION);
+    public Reaction (ReactionType reactionType) {
+        super("", "", "", Type.REACTION);
         this.reactionType = ReactionType.REACTION;
         init();
     }
 
-    public Reaction(String id, String name, ReactionType reactionType, String description) {
+    public Reaction(String id, String name, String description, ReactionType reactionType) {
         super(id, name, description, Type.REACTION);
         this.reactionType = reactionType;
         init();
     }
 
-
     private void init() {
         this.reactants = new ArrayList<>();
         this.products = new ArrayList<>();
         this.stoichiometry = new ArrayList<>();
-        this.reversible = null;
-        this.spontaneous = null;
+        this.reversible = false;
+        this.spontaneous = false;
     }
 
     public List<String> getReactants() {

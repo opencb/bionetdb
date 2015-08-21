@@ -12,8 +12,8 @@ public class Interaction {
     protected String description;
     protected List<String> source;
     protected List<String> participants;
-    protected List<String> processOf;
-    protected List<String> participantOf;
+    protected List<String> processOfPathway;
+    protected List<String> participantOfInteraction;
     protected List<String> controlledBy;
 
     protected Type type;
@@ -52,8 +52,8 @@ public class Interaction {
         this.attributes = new HashMap<>();
         this.source = new ArrayList<>();
         this.participants = new ArrayList<>();
-        this.processOf = new ArrayList<>();
-        this.participantOf = new ArrayList<>();
+        this.processOfPathway = new ArrayList<>();
+        this.participantOfInteraction = new ArrayList<>();
         this.controlledBy = new ArrayList<>();
     }
 
@@ -105,20 +105,20 @@ public class Interaction {
         this.participants = participants;
     }
 
-    public List<String> getProcessOf() {
-        return processOf;
+    public List<String> getProcessOfPathway() {
+        return processOfPathway;
     }
 
-    public void setProcessOf(List<String> processOf) {
-        this.processOf = processOf;
+    public void setProcessOfPathway(List<String> processOfPathway) {
+        this.processOfPathway = processOfPathway;
     }
 
-    public List<String> getParticipantOf() {
-        return participantOf;
+    public List<String> getParticipantOfInteraction() {
+        return participantOfInteraction;
     }
 
-    public void setParticipantOf(List<String> participantOf) {
-        this.participantOf = participantOf;
+    public void setParticipantOfInteraction(List<String> participantOfInteraction) {
+        this.participantOfInteraction = participantOfInteraction;
     }
 
     public List<String> getControlledBy() {

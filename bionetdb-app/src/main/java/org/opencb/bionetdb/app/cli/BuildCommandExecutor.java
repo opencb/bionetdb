@@ -3,6 +3,7 @@ package org.opencb.bionetdb.app.cli;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.bionetdb.core.io.BioPaxParser;
+import org.opencb.bionetdb.core.io.SbmlParser;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.commons.utils.FileUtils;
 
@@ -34,6 +35,9 @@ public class BuildCommandExecutor extends CommandExecutor {
 
             BioPaxParser bioPaxParser = new BioPaxParser("L3");
             Network network = bioPaxParser.parse(inputPath);
+
+            //SbmlParser sbmlParser = new SbmlParser();
+            //Network network = sbmlParser.parse(inputPath);
 
             // Print to file
             Path outputPath;

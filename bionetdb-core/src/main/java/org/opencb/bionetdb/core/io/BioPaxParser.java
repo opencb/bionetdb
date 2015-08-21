@@ -2,7 +2,6 @@ package org.opencb.bionetdb.core.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.biopax.paxtools.controller.EditorMap;
-import org.biopax.paxtools.controller.PropertyEditor;
 import org.biopax.paxtools.controller.SimpleEditorMap;
 import org.biopax.paxtools.io.BioPAXIOHandler;
 import org.biopax.paxtools.io.SimpleIOHandler;
@@ -35,7 +34,6 @@ import java.util.zip.GZIPInputStream;
 public class BioPaxParser {
 
     private String level;
-    private EditorMap editorMap;
 
     private ObjectMapper objectMapper;
 
@@ -49,19 +47,6 @@ public class BioPaxParser {
     }
 
     private void init() {
-
-        switch (level.toLowerCase()) {
-            case "l1":
-                editorMap = SimpleEditorMap.L1;
-                break;
-            case "l2":
-                editorMap = SimpleEditorMap.L2;
-                break;
-            case "l3":
-            default:
-                editorMap = SimpleEditorMap.L3;
-                break;
-        }
     }
 
     public Network parse(Path path) throws IOException {
@@ -310,19 +295,19 @@ public class BioPaxParser {
             physicalEntity.getMembers().add(pe.getRDFId().split("#")[1]);
         }
 
-        //memberOf
+        // memberOfSet
         Set<PhysicalEntity> pesOf = physicalEntityBP.getMemberPhysicalEntityOf();
         for (PhysicalEntity peOf : pesOf) {
             physicalEntity.getMemberOfSet().add(peOf.getRDFId().split("#")[1]);
         }
 
-        //componentOf
+        // componentOfComplex
         Set<Complex> complexes = physicalEntityBP.getComponentOf();
         for (Complex complex : complexes) {
             physicalEntity.getComponentOfComplex().add(complex.getRDFId().split("#")[1]);
         }
 
-        //participantOf
+        // participantOfInteraction
         Set<Interaction> interactions = physicalEntityBP.getParticipantOf();
         for (Interaction interaction : interactions) {
             physicalEntity.getParticipantOfInteraction().add(interaction.getRDFId().split("#")[1]);
@@ -704,7 +689,7 @@ public class BioPaxParser {
         // participantOfInteraction
         Set<Interaction> participantOfInters = interactionBP.getParticipantOf();
         for (Interaction participantOfInter : participantOfInters) {
-            interaction.getParticipantOf().add(participantOfInter.getRDFId().split("#")[1]);
+            interaction.getParticipantOfInteraction().add(participantOfInter.getRDFId().split("#")[1]);
         }
 
         // controlledBy
@@ -716,7 +701,7 @@ public class BioPaxParser {
         // processOfPathway
         Set<PathwayStep> pathwaySteps = interactionBP.getStepProcessOf();
         for (PathwayStep pathwayStep : pathwaySteps) {
-            interaction.getProcessOf().add(pathwayStep.getPathwayOrderOf().getRDFId().split("#")[1]);
+            interaction.getProcessOfPathway().add(pathwayStep.getPathwayOrderOf().getRDFId().split("#")[1]);
         }
 
         // = NONSPECIFIC PROPERTIES =
@@ -752,21 +737,4 @@ public class BioPaxParser {
 
     }
 
-    // TODO extract pathway hierarchy
-
-    @Deprecated
-    public Map<String, List> getBpeProperties(BioPAXElement bpe) {
-        // Getting editors of the BioPAX element
-        Set<PropertyEditor> editors = this.editorMap.getEditorsOf(bpe);
-
-        // Creating table to store values
-        Map<String, List> props = new HashMap<>();
-
-        // Retrieving properties and their values
-        for (PropertyEditor editor : editors) {
-            // First column is property and second column is value
-            props.put(editor.getProperty(), new ArrayList<>(editor.getValueFromBean(bpe)));
-        }
-        return props;
-    }
 }
