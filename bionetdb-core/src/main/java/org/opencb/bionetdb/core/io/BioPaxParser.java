@@ -575,12 +575,6 @@ public class BioPaxParser {
             interaction.getParticipants().add(entity.getRDFId().split("#")[1]);
         }
 
-        // participantOfInteraction
-        Set<Interaction> participantOfInters = interactionBP.getParticipantOf();
-        for (Interaction participantOfInter : participantOfInters) {
-            interaction.getParticipantOfInteraction().add(participantOfInter.getRDFId().split("#")[1]);
-        }
-
         // controlledBy
         Set<Control> controls = interactionBP.getControlledOf();
         for (Control control : controls) {

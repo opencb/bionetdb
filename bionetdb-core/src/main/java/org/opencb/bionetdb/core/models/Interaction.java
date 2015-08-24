@@ -13,7 +13,6 @@ public class Interaction {
     protected List<String> source;
     protected List<String> participants;
     protected List<String> processOfPathway;
-    protected List<String> participantOfInteraction;
     protected List<String> controlledBy;
     protected List<Map<String, String>> xrefs;
 
@@ -52,7 +51,6 @@ public class Interaction {
         this.source = new ArrayList<>();
         this.participants = new ArrayList<>();
         this.processOfPathway = new ArrayList<>();
-        this.participantOfInteraction = new ArrayList<>();
         this.controlledBy = new ArrayList<>();
         this.xrefs = new ArrayList<>();
     }
@@ -111,14 +109,6 @@ public class Interaction {
 
     public void setProcessOfPathway(List<String> processOfPathway) {
         this.processOfPathway = processOfPathway;
-    }
-
-    public List<String> getParticipantOfInteraction() {
-        return participantOfInteraction;
-    }
-
-    public void setParticipantOfInteraction(List<String> participantOfInteraction) {
-        this.participantOfInteraction = participantOfInteraction;
     }
 
     public List<String> getControlledBy() {
