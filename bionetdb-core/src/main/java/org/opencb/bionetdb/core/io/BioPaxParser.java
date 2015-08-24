@@ -69,6 +69,9 @@ public class BioPaxParser {
 
             switch (bioPAXElement.getModelInterface().getSimpleName()) {
                 // Physical Entities
+                case "PhysicalEntity":
+                    network.getPhysicalEntities().add(createPhysicalEntity(bioPAXElement));
+                    break;
                 case "Dna":
                     network.getPhysicalEntities().add(createDna(bioPAXElement));
                     break;
@@ -107,6 +110,16 @@ public class BioPaxParser {
         }
         inputStream.close();
         return network;
+    }
+
+    private org.opencb.bionetdb.core.models.PhysicalEntity createPhysicalEntity(BioPAXElement bioPAXElement) {
+        org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity = new org.opencb.bionetdb.core.models.PhysicalEntity();
+        PhysicalEntity physicalEntityBP = (PhysicalEntity) bioPAXElement;
+
+        // Common properties
+        setPhysicalEntityCommonProperties(physicalEntityBP, physicalEntity);
+
+        return physicalEntity;
     }
 
     private org.opencb.bionetdb.core.models.Dna createDna(BioPAXElement bioPAXElement) {
@@ -361,15 +374,15 @@ public class BioPaxParser {
 
         // comment
         physicalEntity.getAttributes().put(REACTOME_FEAT + "comment",
-                physicalEntityBP.getComment().toString());
+                physicalEntityBP.getComment());
 
         // availability
         physicalEntity.getAttributes().put(REACTOME_FEAT + "availability",
-                physicalEntityBP.getAvailability().toString());
+                physicalEntityBP.getAvailability());
 
         // evidence
         physicalEntity.getAttributes().put(REACTOME_FEAT + "evidence",
-                physicalEntityBP.getEvidence().toString());
+                physicalEntityBP.getEvidence());
 
         // annotations
         physicalEntity.getAttributes().put(REACTOME_FEAT + "annotations",
@@ -623,11 +636,11 @@ public class BioPaxParser {
 
         // availability
         interaction.getAttributes().put(REACTOME_FEAT + "availability",
-                interactionBP.getAvailability().toString());
+                interactionBP.getAvailability());
 
         // evidence
         interaction.getAttributes().put(REACTOME_FEAT + "evidence",
-                interactionBP.getEvidence().toString());
+                interactionBP.getEvidence());
 
         // annotations
         interaction.getAttributes().put(REACTOME_FEAT + "annotations",
@@ -635,7 +648,7 @@ public class BioPaxParser {
 
         // interactionType
         interaction.getAttributes().put(REACTOME_FEAT + "interactionType",
-                interactionBP.getInteractionType().toString());
+                interactionBP.getInteractionType());
 
     }
 
