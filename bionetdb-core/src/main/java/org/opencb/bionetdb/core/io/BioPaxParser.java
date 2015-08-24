@@ -140,7 +140,9 @@ public class BioPaxParser {
             dna.setAltIds(altIds);
 
             // description
-            dna.setDescription(entityReference.getComment().toString());
+            for (String comment : entityReference.getComment()) {
+                dna.setDescription(dna.getDescription() + comment + ";;");
+            }
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -175,7 +177,9 @@ public class BioPaxParser {
             rna.setAltIds(altIds);
 
             // description
-            rna.setDescription(entityReference.getComment().toString());
+            for (String comment : entityReference.getComment()) {
+                rna.setDescription(rna.getDescription() + comment + ";;");
+            }
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -209,7 +213,9 @@ public class BioPaxParser {
             protein.setAltIds(altIds);
 
             // description
-            protein.setDescription(entityReference.getComment().toString());
+            for (String comment : entityReference.getComment()) {
+                protein.setDescription(protein.getDescription() + comment + ";;");
+            }
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -244,7 +250,9 @@ public class BioPaxParser {
             smallMolecule.setAltIds(altIds);
 
             // description
-            smallMolecule.setDescription(entityReference.getComment().toString());
+            for (String comment : entityReference.getComment()) {
+                smallMolecule.setDescription(smallMolecule.getDescription() + comment + ";;");
+            }
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
