@@ -26,7 +26,7 @@ public class Neo4JNetworkDBAdaptorTest {
 
     @Test
     public void testInsert() throws Exception {
-        String database = "/Users/pfurio/Downloads/neo4j-community-2.2.4/data";
+        String database = "/Users/pfurio/Downloads/neodb";
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
         Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
         Network network = bioPaxParser.parse(inputPath);
