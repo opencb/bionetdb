@@ -15,6 +15,7 @@ import org.biopax.paxtools.model.level3.Process;
 import org.biopax.paxtools.model.level3.Protein;
 import org.biopax.paxtools.model.level3.Rna;
 import org.biopax.paxtools.model.level3.SmallMolecule;
+import org.biopax.paxtools.model.level3.Xref;
 import org.opencb.bionetdb.core.models.*;
 
 import java.io.FileInputStream;
@@ -140,19 +141,20 @@ public class BioPaxParser {
             dna.setAltIds(altIds);
 
             // description
-            dna.setDescription(entityReference.getComment().toString());
+            for (String comment : entityReference.getComment()) {
+                dna.setDescription(dna.getDescription() + comment + ";;");
+            }
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                Map<String, String> db = new HashMap<>();
-                db.put("db", xref.getDb());
-                db.put("dbVersion", xref.getDbVersion());
-                db.put("id", xref.getId());
-                db.put("idVersion", xref.getIdVersion());
-                dna.getXrefs().add(db);
+                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
+                x.setDb(xref.getDb());
+                x.setDbVersion(xref.getDbVersion());
+                x.setId(xref.getId());
+                x.setIdVersion(xref.getIdVersion());
+                dna.getXrefs().add(x);
             }
-
         }
         return dna;
     }
@@ -175,17 +177,19 @@ public class BioPaxParser {
             rna.setAltIds(altIds);
 
             // description
-            rna.setDescription(entityReference.getComment().toString());
+            for (String comment : entityReference.getComment()) {
+                rna.setDescription(rna.getDescription() + comment + ";;");
+            }
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                Map<String, String> db = new HashMap<>();
-                db.put("db", xref.getDb());
-                db.put("dbVersion", xref.getDbVersion());
-                db.put("id", xref.getId());
-                db.put("idVersion", xref.getIdVersion());
-                rna.getXrefs().add(db);
+                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
+                x.setDb(xref.getDb());
+                x.setDbVersion(xref.getDbVersion());
+                x.setId(xref.getId());
+                x.setIdVersion(xref.getIdVersion());
+                rna.getXrefs().add(x);
             }
         }
         return rna;
@@ -209,17 +213,19 @@ public class BioPaxParser {
             protein.setAltIds(altIds);
 
             // description
-            protein.setDescription(entityReference.getComment().toString());
+            for (String comment : entityReference.getComment()) {
+                protein.setDescription(protein.getDescription() + comment + ";;");
+            }
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                Map<String, String> db = new HashMap<>();
-                db.put("db", xref.getDb());
-                db.put("dbVersion", xref.getDbVersion());
-                db.put("id", xref.getId());
-                db.put("idVersion", xref.getIdVersion());
-                protein.getXrefs().add(db);
+                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
+                x.setDb(xref.getDb());
+                x.setDbVersion(xref.getDbVersion());
+                x.setId(xref.getId());
+                x.setIdVersion(xref.getIdVersion());
+                protein.getXrefs().add(x);
             }
         }
         return protein;
@@ -244,17 +250,19 @@ public class BioPaxParser {
             smallMolecule.setAltIds(altIds);
 
             // description
-            smallMolecule.setDescription(entityReference.getComment().toString());
+            for (String comment : entityReference.getComment()) {
+                smallMolecule.setDescription(smallMolecule.getDescription() + comment + ";;");
+            }
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                Map<String, String> db = new HashMap<>();
-                db.put("db", xref.getDb());
-                db.put("dbVersion", xref.getDbVersion());
-                db.put("id", xref.getId());
-                db.put("idVersion", xref.getIdVersion());
-                smallMolecule.getXrefs().add(db);
+                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
+                x.setDb(xref.getDb());
+                x.setDbVersion(xref.getDbVersion());
+                x.setId(xref.getId());
+                x.setIdVersion(xref.getIdVersion());
+                smallMolecule.getXrefs().add(x);
             }
         }
         return smallMolecule;
@@ -362,12 +370,12 @@ public class BioPaxParser {
         // xref
         Set<Xref> xrefs = physicalEntityBP.getXref();
         for (Xref xref : xrefs) {
-            Map<String, String> db = new HashMap<>();
-            db.put("db", xref.getDb());
-            db.put("dbVersion", xref.getDbVersion());
-            db.put("id", xref.getId());
-            db.put("idVersion", xref.getIdVersion());
-            physicalEntity.getXrefs().add(db);
+            org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
+            x.setDb(xref.getDb());
+            x.setDbVersion(xref.getDbVersion());
+            x.setId(xref.getId());
+            x.setIdVersion(xref.getIdVersion());
+            physicalEntity.getXrefs().add(x);
         }
 
         // = NONSPECIFIC PROPERTIES =
@@ -624,12 +632,12 @@ public class BioPaxParser {
         // xref
         Set<Xref> xrefs = interactionBP.getXref();
         for (Xref xref : xrefs) {
-            Map<String, String> db = new HashMap<>();
-            db.put("db", xref.getDb());
-            db.put("dbVersion", xref.getDbVersion());
-            db.put("id", xref.getId());
-            db.put("idVersion", xref.getIdVersion());
-            interaction.getXrefs().add(db);
+            org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
+            x.setDb(xref.getDb());
+            x.setDbVersion(xref.getDbVersion());
+            x.setId(xref.getId());
+            x.setIdVersion(xref.getIdVersion());
+            interaction.getXrefs().add(x);
         }
 
         // = NONSPECIFIC PROPERTIES =
