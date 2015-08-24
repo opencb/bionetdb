@@ -2,7 +2,6 @@ package org.opencb.bionetdb.core.neo4j;
 
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.models.*;
@@ -30,6 +29,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor, Closeable {
     private static enum RelTypes implements RelationshipType
     {
         REACTANT,
+        XREF,
         CONTROLLED,
         CONTROLLER
     }
@@ -46,7 +46,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor, Closeable {
             tx.success();
         }
 
-        Label nodeLabel = DynamicLabel.label( "Node" );
+        Label nodeLabel = DynamicLabel.label("Node");
 
         try ( Transaction tx = this.database.beginTx() ) {
             for (PhysicalEntity p : network.getPhysicalEntities()) {
@@ -75,21 +75,15 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor, Closeable {
                     // Left & right
                     Reaction myreaction = (Reaction) i;
 
-                    Result result = this.database.execute("MATCH (n {ID: '" + i.getId() + "'}) return n");
-                    Iterator<Node> myiterator = result.columnAs("n");
-                    Node r = myiterator.next();
+                    Node r = this.database.findNode(nodeLabel, "ID", i.getId());
 
                     for (String myID : myreaction.getReactants()) {
-                        result = this.database.execute("MATCH (n {ID: '" + myID + "'}) return n");
-                        Iterator<Node> myiterator2 = result.columnAs("n");
-                        Node n = myiterator2.next();
+                        Node n = this.database.findNode(nodeLabel, "ID", myID);
                         n.createRelationshipTo(r, RelTypes.REACTANT);
                     }
 
                     for (String myID : myreaction.getProducts()) {
-                        result = this.database.execute("MATCH (n {ID: '" + myID + "'}) return n");
-                        Iterator<Node> myiterator2 = result.columnAs("n");
-                        Node n = myiterator2.next();
+                        Node n = this.database.findNode(nodeLabel, "ID", myID);
                         r.createRelationshipTo(n, RelTypes.REACTANT);
                     }
                 }
@@ -107,10 +101,48 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor, Closeable {
     }
 
     @Override
+    public void addXrefs(String nodeID, List<Xref> xref_list) {
+
+        Label nodeLabel = DynamicLabel.label( "Xref" );
+        Label origLabel = DynamicLabel.label("Node");
+
+        try ( Transaction tx = this.database.beginTx() ) {
+            // TODO: Change this node n to a query of any node containing the ID in the ID field or the xrefs
+            Node n = this.database.findNode(origLabel, "ID", nodeID);
+            for (Xref x : xref_list) {
+                Node xref_node = this.database.createNode(nodeLabel);
+                xref_node.setProperty("db", x.getDb());
+                xref_node.setProperty("id", x.getId());
+                xref_node.setProperty("dbVersion", x.getDbVersion());
+                xref_node.setProperty("idVersion", x.getIdVersion());
+                n.createRelationshipTo(xref_node, RelTypes.XREF);
+            }
+            tx.success();
+        }
+    }
+/*
+    @Override
+    public QueryResult getXrefs(String idNode) {
+        String myresult = "";
+        try ( Transaction tx = this.database.beginTx() ) {
+
+            Result result = this.database.execute("MATCH (n {ID: '" + idNode + "'}) -[u]-> (m:Xref) return m.db");
+            Iterator<String> myiterator = result.columnAs("m.db");
+            while (myiterator.hasNext()) {
+                String r = myiterator.next();
+                myresult.concat(r.toString());
+            }
+
+            tx.success();
+        }
+
+        return new QueryResult(myresult);
+    }
+*/
+    @Override
     public QueryResult get(Query query, QueryOptions queryOptions) {
 
-        Result result = this.database.execute( query.get("query").toString());
-        //return new QueryResult("get", 0, 0, 0, null, null, Collections.singletonList(result));
+        Result result = this.database.execute(query.get("query").toString());
         return new QueryResult(result.toString());
 
     }
