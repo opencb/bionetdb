@@ -1,8 +1,6 @@
 package org.opencb.bionetdb.core.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.biopax.paxtools.controller.EditorMap;
-import org.biopax.paxtools.controller.SimpleEditorMap;
 import org.biopax.paxtools.io.BioPAXIOHandler;
 import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
@@ -91,6 +89,10 @@ public class BioPaxParser {
                 case "BiochemicalReaction":
                 case "TemplateReaction":
                 case "Degradation":
+                case "ComplexAssembly":
+                case "MolecularInteraction":
+                case "Transport":
+                case "TransportWithBiochemicalReaction":
                     network.getInteractions().add(createReaction(bioPAXElement));
                     break;
                 case "Catalysis":
@@ -99,14 +101,6 @@ public class BioPaxParser {
                 case "Modulation":
                 case "TemplateReactionRegulation":
                     network.getInteractions().add(createRegulation(bioPAXElement));
-                    break;
-                case "ComplexAssembly":
-                case "MolecularInteraction":
-                    network.getInteractions().add(createAssembly(bioPAXElement));
-                    break;
-                case "Transport":
-                case "TransportWithBiochemicalReaction":
-                    network.getInteractions().add(createTransport(bioPAXElement));
                     break;
             }
 
@@ -134,6 +128,12 @@ public class BioPaxParser {
 
             // description
             dna.setDescription(entityReference.getComment().toString());
+
+            // ensemblId
+            Set<Xref> xrefs = entityReference.getXref();
+            for (Xref xref : xrefs) {
+                dna.setEnsemblId(xref.getId());
+            }
         }
         return dna;
     }
@@ -157,6 +157,12 @@ public class BioPaxParser {
 
             // description
             rna.setDescription(entityReference.getComment().toString());
+
+            // ensemblId
+            Set<Xref> xrefs = entityReference.getXref();
+            for (Xref xref : xrefs) {
+                rna.setEnsemblId(xref.getId());
+            }
         }
         return rna;
     }
@@ -210,6 +216,12 @@ public class BioPaxParser {
 
             // description
             smallMolecule.setDescription(entityReference.getComment().toString());
+
+            // chebiId
+            Set<Xref> xrefs = entityReference.getXref();
+            for (Xref xref : xrefs) {
+                smallMolecule.setChebiId(xref.getId());
+            }
         }
         return smallMolecule;
     }
@@ -243,7 +255,7 @@ public class BioPaxParser {
         return complex;
     }
 
-    private void setPhysicalEntityCommonProperties (PhysicalEntity physicalEntityBP,
+    private void setPhysicalEntityCommonProperties(PhysicalEntity physicalEntityBP,
                                       org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity) {
         // = SPECIFIC PROPERTIES =
 
@@ -313,10 +325,7 @@ public class BioPaxParser {
             physicalEntity.getParticipantOfInteraction().add(interaction.getRDFId().split("#")[1]);
         }
 
-        // = NONSPECIFIC PROPERTIES =
-
         // xref
-        List<Map<String, String>> xreferences = new ArrayList<>();
         Set<Xref> xrefs = physicalEntityBP.getXref();
         for (Xref xref : xrefs) {
             Map<String, String> db = new HashMap<>();
@@ -324,9 +333,10 @@ public class BioPaxParser {
             db.put("dbVersion", xref.getDbVersion());
             db.put("id", xref.getId());
             db.put("idVersion", xref.getIdVersion());
-            xreferences.add(db);
+            physicalEntity.getXrefs().add(db);
         }
-        physicalEntity.getAttributes().put(REACTOME_FEAT + "xref", xreferences);
+
+        // = NONSPECIFIC PROPERTIES =
 
         // comment
         physicalEntity.getAttributes().put(REACTOME_FEAT + "comment",
@@ -360,9 +370,14 @@ public class BioPaxParser {
     private org.opencb.bionetdb.core.models.Reaction createReaction(BioPAXElement bioPAXElement) {
         org.opencb.bionetdb.core.models.Reaction reaction = new org.opencb.bionetdb.core.models.Reaction();
 
-        switch (bioPAXElement.getModelInterface().getSimpleName()) {
+        String className = bioPAXElement.getModelInterface().getSimpleName();
+
+        switch (className) {
             case "TemplateReaction":
                 TemplateReaction templateReactBP = (TemplateReaction) bioPAXElement;
+
+                // Setting up reaction type
+                reaction.setReactionType(Reaction.ReactionType.REACTION);
 
                 // Common Interaction properties
                 setInteractionCommonProperties(templateReactBP, reaction);
@@ -382,12 +397,22 @@ public class BioPaxParser {
                 break;
             case "BiochemicalReaction":
             case "Degradation":
+            case "ComplexAssembly":
+            case "Transport":
+            case "TransportWithBiochemicalReaction":
                 Conversion conversionBP = (Conversion) bioPAXElement;
+
+                // Setting up reaction type
+                if (className.equals("BiochemicalReaction") || className.equals("Degradation")) {
+                    reaction.setReactionType(Reaction.ReactionType.REACTION);
+                } else if (className.equals("ComplexAssembly")) {
+                    reaction.setReactionType(Reaction.ReactionType.ASSEMBLY);
+                } else if (className.equals("Transport") || className.equals("TransportWithBiochemicalReaction")) {
+                    reaction.setReactionType(Reaction.ReactionType.TRANSPORT);
+                }
 
                 // Common Interaction properties
                 setInteractionCommonProperties(conversionBP, reaction);
-
-                // Degradation properties
 
                 // Left items
                 List<String> leftItems = new ArrayList<String>();
@@ -443,6 +468,15 @@ public class BioPaxParser {
                     stoichiometry.add(stchmtr);
                 }
                 reaction.setStoichiometry(stoichiometry);
+                break;
+            case "MolecularInteraction":
+                MolecularInteraction molecularInteractionBP = (MolecularInteraction) bioPAXElement;
+
+                // Setting up reaction type
+                reaction.setReactionType(Reaction.ReactionType.ASSEMBLY);
+
+                // Common Interaction properties
+                setInteractionCommonProperties(molecularInteractionBP, reaction);
                 break;
         }
         return reaction;
@@ -510,152 +544,7 @@ public class BioPaxParser {
         return regulation;
     }
 
-    private org.opencb.bionetdb.core.models.Assembly createAssembly(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.Assembly assembly = new org.opencb.bionetdb.core.models.Assembly();
-
-        switch (bioPAXElement.getModelInterface().getSimpleName()) {
-            case "MolecularInteraction":
-                MolecularInteraction molecularInteractionBP = (MolecularInteraction) bioPAXElement;
-
-                // Common Interaction properties
-                setInteractionCommonProperties(molecularInteractionBP, assembly);
-                break;
-            case "ComplexAssembly":
-                ComplexAssembly complexAssemblyBP = (ComplexAssembly) bioPAXElement;
-
-                // Common Interaction properties
-                setInteractionCommonProperties(complexAssemblyBP, assembly);
-
-                // ComplexAssembly properties
-
-                // Left items
-                List<String> leftItems = new ArrayList<String>();
-                Set<PhysicalEntity> lefts = complexAssemblyBP.getLeft();
-                for (PhysicalEntity left : lefts) {
-                    leftItems.add(left.getRDFId().split("#")[1]);
-                }
-
-                // Right items
-                List<String> rightItems = new ArrayList<>();
-                Set<PhysicalEntity> rights = complexAssemblyBP.getRight();
-                for (PhysicalEntity right : rights) {
-                    rightItems.add(right.getRDFId().split("#")[1]);
-                }
-
-                if (complexAssemblyBP.getConversionDirection() != null) {
-                    switch (complexAssemblyBP.getConversionDirection().toString()) {
-                        case "REVERSIBLE":
-                            assembly.setReversible(true);
-                            // NO BREAK HERE
-                        case "LEFT-TO-RIGHT":
-                        case "LEFT_TO_RIGHT":
-                            assembly.setReactants(leftItems);
-                            assembly.setProducts(rightItems);
-                            break;
-                        case "RIGHT-TO-LEFT":
-                        case "RIGHT_TO_LEFT":
-                            assembly.setReactants(rightItems);
-                            assembly.setProducts(leftItems);
-                            break;
-                    }
-                } else {
-                    assembly.setReactants(leftItems);
-                    assembly.setProducts(rightItems);
-                }
-
-                // Spontaneous
-                if (complexAssemblyBP.getSpontaneous() != null) {
-                    if (complexAssemblyBP.getSpontaneous()) {
-                        assembly.setSpontaneous(true);
-                    } else {
-                        assembly.setSpontaneous(false);
-                    }
-                }
-
-                // Stoichiometry
-                List<Map<String, Object>> stoichiometry = new ArrayList<>();
-                Set<Stoichiometry> stoichiometryItems = complexAssemblyBP.getParticipantStoichiometry();
-                for (Stoichiometry stoichiometryItem : stoichiometryItems) {
-                    Map<String, Object> stchmtr = new HashMap<>();
-                    stchmtr.put("component", stoichiometryItem.getPhysicalEntity().toString().split("#")[1]);
-                    stchmtr.put("coefficient", stoichiometryItem.getStoichiometricCoefficient());
-                    stoichiometry.add(stchmtr);
-                }
-                assembly.setStoichiometry(stoichiometry);
-                break;
-        }
-        return assembly;
-    }
-
-    private org.opencb.bionetdb.core.models.Transport createTransport(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.Transport transport = new org.opencb.bionetdb.core.models.Transport();
-
-        Conversion conversionBP = (Conversion) bioPAXElement;
-
-        // Common Interaction properties
-        setInteractionCommonProperties(conversionBP, transport);
-
-        // Transport properties
-
-        // Left items
-        List<String> leftItems = new ArrayList<String>();
-        Set<PhysicalEntity> lefts = conversionBP.getLeft();
-        for (PhysicalEntity left : lefts) {
-            leftItems.add(left.getRDFId().split("#")[1]);
-        }
-
-        // Right items
-        List<String> rightItems = new ArrayList<>();
-        Set<PhysicalEntity> rights = conversionBP.getRight();
-        for (PhysicalEntity right : rights) {
-            rightItems.add(right.getRDFId().split("#")[1]);
-        }
-
-        if (conversionBP.getConversionDirection() != null) {
-            switch (conversionBP.getConversionDirection().toString()) {
-                case "REVERSIBLE":
-                    transport.setReversible(true);
-                    // NO BREAK HERE
-                case "LEFT-TO-RIGHT":
-                case "LEFT_TO_RIGHT":
-                    transport.setReactants(leftItems);
-                    transport.setProducts(rightItems);
-                    break;
-                case "RIGHT-TO-LEFT":
-                case "RIGHT_TO_LEFT":
-                    transport.setReactants(rightItems);
-                    transport.setProducts(leftItems);
-                    break;
-            }
-        } else {
-            transport.setReactants(leftItems);
-            transport.setProducts(rightItems);
-        }
-
-        // Spontaneous
-        if (conversionBP.getSpontaneous() != null) {
-            if (conversionBP.getSpontaneous()) {
-                transport.setSpontaneous(true);
-            } else {
-                transport.setSpontaneous(false);
-            }
-        }
-
-        // Stoichiometry
-        List<Map<String, Object>> stoichiometry = new ArrayList<>();
-        Set<Stoichiometry> stoichiometryItems = conversionBP.getParticipantStoichiometry();
-        for (Stoichiometry stoichiometryItem : stoichiometryItems) {
-            Map<String, Object> stchmtr = new HashMap<>();
-            stchmtr.put("component", stoichiometryItem.getPhysicalEntity().toString().split("#")[1]);
-            stchmtr.put("coefficient", stoichiometryItem.getStoichiometricCoefficient());
-            stoichiometry.add(stchmtr);
-        }
-        transport.setStoichiometry(stoichiometry);
-
-        return transport;
-    }
-
-    private void setInteractionCommonProperties (Interaction interactionBP,
+    private void setInteractionCommonProperties(Interaction interactionBP,
                                                      org.opencb.bionetdb.core.models.Interaction interaction) {
         // = SPECIFIC PROPERTIES =
 
@@ -704,10 +593,7 @@ public class BioPaxParser {
             interaction.getProcessOfPathway().add(pathwayStep.getPathwayOrderOf().getRDFId().split("#")[1]);
         }
 
-        // = NONSPECIFIC PROPERTIES =
-
         // xref
-        List<Map<String, String>> xreferences = new ArrayList<>();
         Set<Xref> xrefs = interactionBP.getXref();
         for (Xref xref : xrefs) {
             Map<String, String> db = new HashMap<>();
@@ -715,9 +601,10 @@ public class BioPaxParser {
             db.put("dbVersion", xref.getDbVersion());
             db.put("id", xref.getId());
             db.put("idVersion", xref.getIdVersion());
-            xreferences.add(db);
+            interaction.getXrefs().add(db);
         }
-        interaction.getAttributes().put(REACTOME_FEAT + "xref", xreferences);
+
+        // = NONSPECIFIC PROPERTIES =
 
         // availability
         interaction.getAttributes().put(REACTOME_FEAT + "availability",

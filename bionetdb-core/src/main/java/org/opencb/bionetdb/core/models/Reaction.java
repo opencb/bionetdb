@@ -15,7 +15,7 @@ public class Reaction extends Interaction {
 
     private ReactionType reactionType;
 
-    enum ReactionType {
+    public enum ReactionType {
         REACTION    ("reaction"),
         ASSEMBLY    ("assembly"),
         TRANSPORT   ("transport");
@@ -69,6 +69,22 @@ public class Reaction extends Interaction {
         this.products = products;
     }
 
+    public boolean isReversible() {
+        return reversible;
+    }
+
+    public void setReversible(boolean reversible) {
+        this.reversible = reversible;
+    }
+
+    public boolean isSpontaneous() {
+        return spontaneous;
+    }
+
+    public void setSpontaneous(boolean spontaneous) {
+        this.spontaneous = spontaneous;
+    }
+
     public List<Map<String, Object>> getStoichiometry() {
         return stoichiometry;
     }
@@ -77,19 +93,11 @@ public class Reaction extends Interaction {
         this.stoichiometry = stoichiometry;
     }
 
-    public Boolean getReversible() {
-        return reversible;
+    public ReactionType getReactionType() {
+        return reactionType;
     }
 
-    public void setReversible(Boolean reversible) {
-        this.reversible = reversible;
-    }
-
-    public Boolean getSpontaneous() {
-        return spontaneous;
-    }
-
-    public void setSpontaneous(Boolean spontaneous) {
-        this.spontaneous = spontaneous;
+    public void setReactionType(ReactionType reactionType) {
+        this.reactionType = reactionType;
     }
 }

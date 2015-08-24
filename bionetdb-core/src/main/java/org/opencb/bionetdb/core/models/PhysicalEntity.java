@@ -19,6 +19,7 @@ public class PhysicalEntity {
     protected List<String> componentOfComplex;
     protected List<String> participantOfInteraction;
     protected List<Map<String, Object>> features;
+    protected List<Map<String, String>> xrefs;
 
     protected Type type;
 
@@ -66,6 +67,7 @@ public class PhysicalEntity {
         this.componentOfComplex = new ArrayList<>();
         this.participantOfInteraction = new ArrayList<>();
         this.features = new ArrayList<>();
+        this.xrefs = new ArrayList<>();
     }
 
     class Display {
@@ -179,5 +181,21 @@ public class PhysicalEntity {
 
     public void setFeatures(List<Map<String, Object>> features) {
         this.features = features;
+    }
+
+    public List<Map<String, String>> getXrefs() {
+        return xrefs;
+    }
+
+    public void setXrefs(List<Map<String, String>> xrefs) {
+        this.xrefs = xrefs;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
     }
 }

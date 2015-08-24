@@ -7,9 +7,6 @@ import org.opencb.bionetdb.core.models.*;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-//import org.opencb.datastore.core.Query;
-//import org.opencb.datastore.core.QueryOptions;
-//import org.opencb.datastore.core.QueryResult;
 
 import java.io.Closeable;
 import java.io.IOException;

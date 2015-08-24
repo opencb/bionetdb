@@ -15,6 +15,7 @@ public class Interaction {
     protected List<String> processOfPathway;
     protected List<String> participantOfInteraction;
     protected List<String> controlledBy;
+    protected List<Map<String, String>> xrefs;
 
     protected Type type;
 
@@ -23,9 +24,7 @@ public class Interaction {
     public enum Type {
         REACTION    ("reaction"),
         CATALYSIS   ("catalysis"),
-        REGULATION  ("regulation"),
-        ASSEMBLY    ("assembly"),
-        TRANSPORT   ("transport");
+        REGULATION  ("regulation");
 
         private final String type;
 
@@ -55,6 +54,7 @@ public class Interaction {
         this.processOfPathway = new ArrayList<>();
         this.participantOfInteraction = new ArrayList<>();
         this.controlledBy = new ArrayList<>();
+        this.xrefs = new ArrayList<>();
     }
 
     public String getId() {
@@ -131,5 +131,17 @@ public class Interaction {
 
     public Type getType() {
         return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
+    public List<Map<String, String>> getXrefs() {
+        return xrefs;
+    }
+
+    public void setXrefs(List<Map<String, String>> xrefs) {
+        this.xrefs = xrefs;
     }
 }
