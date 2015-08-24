@@ -129,11 +129,17 @@ public class BioPaxParser {
             // description
             dna.setDescription(entityReference.getComment().toString());
 
-            // ensemblId
+            // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                dna.setEnsemblId(xref.getId());
+                Map<String, String> db = new HashMap<>();
+                db.put("db", xref.getDb());
+                db.put("dbVersion", xref.getDbVersion());
+                db.put("id", xref.getId());
+                db.put("idVersion", xref.getIdVersion());
+                dna.getXrefs().add(db);
             }
+
         }
         return dna;
     }
@@ -158,10 +164,15 @@ public class BioPaxParser {
             // description
             rna.setDescription(entityReference.getComment().toString());
 
-            // ensemblId
+            // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                rna.setEnsemblId(xref.getId());
+                Map<String, String> db = new HashMap<>();
+                db.put("db", xref.getDb());
+                db.put("dbVersion", xref.getDbVersion());
+                db.put("id", xref.getId());
+                db.put("idVersion", xref.getIdVersion());
+                rna.getXrefs().add(db);
             }
         }
         return rna;
@@ -187,10 +198,15 @@ public class BioPaxParser {
             // description
             protein.setDescription(entityReference.getComment().toString());
 
-            // uniProtId
+            // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                protein.setUniProtId(xref.getId());
+                Map<String, String> db = new HashMap<>();
+                db.put("db", xref.getDb());
+                db.put("dbVersion", xref.getDbVersion());
+                db.put("id", xref.getId());
+                db.put("idVersion", xref.getIdVersion());
+                protein.getXrefs().add(db);
             }
         }
         return protein;
@@ -217,10 +233,15 @@ public class BioPaxParser {
             // description
             smallMolecule.setDescription(entityReference.getComment().toString());
 
-            // chebiId
+            // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                smallMolecule.setChebiId(xref.getId());
+                Map<String, String> db = new HashMap<>();
+                db.put("db", xref.getDb());
+                db.put("dbVersion", xref.getDbVersion());
+                db.put("id", xref.getId());
+                db.put("idVersion", xref.getIdVersion());
+                smallMolecule.getXrefs().add(db);
             }
         }
         return smallMolecule;

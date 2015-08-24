@@ -5,8 +5,6 @@ package org.opencb.bionetdb.core.models;
  */
 public class Protein extends PhysicalEntity {
 
-    private String uniProtId;
-
     public Protein() {
         super("", "", "", Type.PROTEIN);
         init();
@@ -18,16 +16,5 @@ public class Protein extends PhysicalEntity {
     }
 
     private void init() {
-        this.uniProtId = new String();
     }
-
-
-    public String getUniProtId() {
-        return uniProtId;
-    }
-
-    public void setUniProtId(String uniProtId) {
-        this.uniProtId = uniProtId;
-    }
-
 }
