@@ -19,7 +19,7 @@ public class PhysicalEntity {
     protected List<String> componentOfComplex;
     protected List<String> participantOfInteraction;
     protected List<Map<String, Object>> features;
-    protected List<Map<String, String>> xrefs;
+    protected List<Xref> xrefs;
 
     protected Type type;
 
@@ -48,7 +48,6 @@ public class PhysicalEntity {
         this.name = "";
         this.description =  "";
         this.type = Type.PHYSICALENTITY;
-
         // init rest of attributes
         init();
     }
@@ -190,11 +189,11 @@ public class PhysicalEntity {
         this.features = features;
     }
 
-    public List<Map<String, String>> getXrefs() {
+    public List<Xref> getXrefs() {
         return xrefs;
     }
 
-    public void setXrefs(List<Map<String, String>> xrefs) {
+    public void setXrefs(List<Xref> xrefs) {
         this.xrefs = xrefs;
     }
 

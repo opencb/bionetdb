@@ -14,7 +14,7 @@ public class Interaction {
     protected List<String> participants;
     protected List<String> processOfPathway;
     protected List<String> controlledBy;
-    protected List<Map<String, String>> xrefs;
+    protected List<Xref> xrefs;
 
     protected Type type;
 
@@ -127,11 +127,11 @@ public class Interaction {
         this.type = type;
     }
 
-    public List<Map<String, String>> getXrefs() {
+    public List<Xref> getXrefs() {
         return xrefs;
     }
 
-    public void setXrefs(List<Map<String, String>> xrefs) {
+    public void setXrefs(List<Xref> xrefs) {
         this.xrefs = xrefs;
     }
 }
