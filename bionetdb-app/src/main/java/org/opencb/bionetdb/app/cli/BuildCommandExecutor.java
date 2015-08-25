@@ -38,9 +38,7 @@ public class BuildCommandExecutor extends CommandExecutor {
                 BioPaxParser bioPaxParser = new BioPaxParser("L3");
                 network = bioPaxParser.parse(inputPath);
             } else {
-                System.out.println("1");
                 if (inputPath.getFileName().toString().endsWith("sbml") || inputPath.getFileName().toString().endsWith("sbml.gz")) {
-                System.out.println("2");
                     SbmlParser sbmlParser = new SbmlParser();
                     network = sbmlParser.parse(inputPath);
                 }

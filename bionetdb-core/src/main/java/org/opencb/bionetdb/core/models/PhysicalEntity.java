@@ -44,10 +44,6 @@ public class PhysicalEntity {
     }
 
     public PhysicalEntity() {
-        this.id = "";
-        this.name = "";
-        this.description =  "";
-
         // init rest of attributes
         init();
     }
