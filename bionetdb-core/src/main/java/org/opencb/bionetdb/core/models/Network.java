@@ -17,18 +17,21 @@ public class Network {
     private List<PhysicalEntity> physicalEntities;
     private List<Interaction> interactions;
 
-//    private List<Network> children;
-
     protected Map<String, Object> attributes;
 
     public Network() {
+        this.id = "";
+        this.name = "";
+        this.description = "";
+
+        // init rest of attributes
         init();
     }
 
     public Network(String id, String name, String description) {
-        this.description = description;
         this.id = id;
         this.name = name;
+        this.description = description;
 
         // init rest of attributes
         init();

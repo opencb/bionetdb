@@ -307,7 +307,9 @@ public class BioPaxParser {
         physicalEntity.setId(physicalEntityBP.getRDFId().split("#")[1]);
 
         // name
-        physicalEntity.setName(physicalEntityBP.getDisplayName());
+        if (physicalEntityBP.getDisplayName() != null) {
+            physicalEntity.setName(physicalEntityBP.getDisplayName());
+        }
 
         // altNames
         List<String> altNames = new ArrayList<>();
@@ -596,14 +598,18 @@ public class BioPaxParser {
         interaction.setId(interactionBP.getRDFId().split("#")[1]);
 
         // description
-        for (String comment : interactionBP.getComment()) {
-            if (!comment.matches("(Authored:|Edited:|Reviewed:).+")){
-                interaction.setDescription(interaction.getDescription() + comment + ";;");
+        if (interactionBP.getComment() != null) {
+            for (String comment : interactionBP.getComment()) {
+                if (!comment.matches("(Authored:|Edited:|Reviewed:).+")) {
+                    interaction.setDescription(interaction.getDescription() + comment + ";;");
+                }
             }
         }
 
         // name
-        interaction.setName(interactionBP.getDisplayName());
+        if (interactionBP.getDisplayName() != null) {
+            interaction.setName(interactionBP.getDisplayName());
+        }
 
         // source
         List<String> sources = new ArrayList<>();
