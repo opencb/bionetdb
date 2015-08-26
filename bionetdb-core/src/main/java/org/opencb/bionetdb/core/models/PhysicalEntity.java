@@ -28,7 +28,7 @@ public class PhysicalEntity {
     // TODO think about his!
     protected Display display;
 
-    enum Type {
+    public enum Type {
         UNDEFINEDENTITY ("undefinedEntity"),
         PROTEIN       ("protein"),
         DNA           ("dna"),
