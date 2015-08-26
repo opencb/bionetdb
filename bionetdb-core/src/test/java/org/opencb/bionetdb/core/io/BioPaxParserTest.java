@@ -20,7 +20,7 @@ public class BioPaxParserTest {
         Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
         Network network = bioPaxParser.parse(inputPath);
 
-        assertEquals("Different number of physical entities: ", 4758, network.getPhysicalEntities().size());
+        assertEquals("Different number of physical entities: ", 5057, network.getPhysicalEntities().size());
         assertEquals("Different number of interactions: ", 1971, network.getInteractions().size());
     }
 }

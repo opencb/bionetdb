@@ -54,7 +54,6 @@ public class SbmlParser {
         }
     }
 
-
     private ObjectMapper objectMapper;
 
     private static final String REACTOME_FEAT = "reactome.";
@@ -75,17 +74,15 @@ public class SbmlParser {
         Model model = sbml.getModel();
 
         // Species
-        ListOfSpecies listOfSpecies= model.getListOfSpecies();
         for (int i=0; i < model.getNumSpecies(); i++) {
             Species species = model.getSpecies(i);
             network.getPhysicalEntities().add(createPhysicalEntity(species, model));
         }
 
         // Reactions
-        ListOfReactions listOfReactions= model.getListOfReactions();
         for (int i=0; i < model.getNumReactions(); i++) {
             Reaction reaction = model.getReaction(i);
-            network.getInteractions().add(createInteraction(reaction));
+            network.getInteractions().add(createInteraction(reaction, model));
         }
 
         return network;
@@ -250,7 +247,7 @@ public class SbmlParser {
             Pattern pattern = Pattern.compile("<.+>(.+)<.+>");
             Matcher matcher = pattern.matcher(species.getNotes().getChild(i).toXMLString());
             if (matcher.matches()) {
-                sb.append(matcher.group(1) + ";;");
+                sb.append(matcher.group(1)).append(";;");
             }
         }
         physicalEntity.getAttributes().put(REACTOME_FEAT + "comment", sb.toString());
@@ -260,7 +257,7 @@ public class SbmlParser {
 
         Map<String, List<String>> compartmentInfo = new HashMap<>();
 
-        compartmentInfo.put("name", Arrays.asList(compartment.getName()));
+        compartmentInfo.put("name", Collections.singletonList(compartment.getName()));
 
         String id = compartment.getAnnotation().getChild("RDF").getChild("Description").getChild("is")
                 .getChild("Bag").getChild("li").getAttributes().getValue("resource");
@@ -268,17 +265,101 @@ public class SbmlParser {
         // From "urn:miriam:obo.go:GO%3A0005759" to "GO:0005759"
         // Fixing bad formatted colon: from "%3A" to ":"
         List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
-        compartmentInfo.put("id", Arrays.asList(String.join(":", idElements.subList(idElements.size() - 2, idElements.size()))));
+        compartmentInfo.put("id", Collections.singletonList(String.join(":", idElements.subList(idElements.size() - 2, idElements.size()))));
 
         return compartmentInfo;
     }
 
-    private Interaction createInteraction(Reaction reaction) {
-        Interaction interaction = new Interaction();
+    private Interaction createInteraction(Reaction reactionSBML, Model model) {
+        org.opencb.bionetdb.core.models.Reaction reaction = new org.opencb.bionetdb.core.models.Reaction();
 
-        // TODO
+        // id
+        reaction.setId(reactionSBML.getId());
 
-        return interaction;
+        // name
+        reaction.setName(reactionSBML.getName());
+
+        // TODO think about this
+        // cellular location
+        //interaction.setCellularLocation(getCompartmentInfo(model.getCompartment(reaction.getCompartment())));
+
+        // xrefs
+        XMLNode description = reactionSBML.getAnnotation().getChild("RDF").getChild("Description");
+        if (description.hasChild("is")) {
+            XMLNode ids = description.getChild("is").getChild("Bag");
+            for (int i = 0; i < ids.getNumChildren(); i++) {
+                Xref idXref = new Xref();
+                String id = ids.getChild(i).getAttributes().getValue("resource");
+                // Fixing bad formatted colon: from "%3A" to ":"
+                List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
+                List<String> xrefElements = idElements.subList(idElements.size() - 2, idElements.size());
+                if (xrefElements.get(0).contains("kegg.compound")) {
+                    idXref.setDb("kegg");
+                } else {
+                    idXref.setDb(xrefElements.get(0).toLowerCase());
+                }
+                idXref.setId(xrefElements.get(1));
+                reaction.getXrefs().add(idXref);
+            }
+        }
+
+        // evidence
+        if (description.hasChild("isDescribedBy")) {
+            XMLNode evs = description.getChild("isDescribedBy").getChild("Bag");
+            for (int i = 0; i < evs.getNumChildren(); i++) {
+                Xref evXref = new Xref();
+                String ev = evs.getChild(i).getAttributes().getValue("resource");
+                // Fixing bad formatted colon: from "%3A" to ":"
+                List<String> evElements = Arrays.asList(ev.replace("%3A", ":").split(":"));
+                List<String> xrefElements = evElements.subList(evElements.size() - 2, evElements.size());
+                evXref.setDb(xrefElements.get(0).toLowerCase());
+                evXref.setId(xrefElements.get(1));
+                reaction.getXrefs().add(evXref);
+            }
+        }
+
+        // reversible
+        reaction.setReversible(reactionSBML.getReversible());
+
+        // reactants
+        for (int i=0; i < reactionSBML.getNumReactants(); i++) {
+            SpeciesReference reactant = reactionSBML.getReactant(i);
+            reaction.getReactants().add(reactant.getSpecies());
+        }
+
+        // products
+        for (int i=0; i < reactionSBML.getNumProducts(); i++) {
+            SpeciesReference product = reactionSBML.getProduct(i);
+            reaction.getProducts().add(product.getSpecies());
+        }
+
+        // controlledBy
+        for (int i=0; i < reactionSBML.getNumModifiers(); i++) {
+            ModifierSpeciesReference modifier = reactionSBML.getModifier(i);
+            reaction.getControlledBy().add(modifier.getSpecies());
+        }
+
+        // participants
+        reaction.getParticipants().addAll(reaction.getReactants());
+        reaction.getParticipants().addAll(reaction.getProducts());
+        reaction.getParticipants().addAll(reaction.getControlledBy());
+
+        // processOfPathway
+        reaction.getProcessOfPathway().add(model.getId());
+
+        // comments
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < reactionSBML.getNotes().getNumChildren(); i++) {
+            Pattern pattern = Pattern.compile("<.+>(.+)<.+>");
+            Matcher matcher = pattern.matcher(reactionSBML.getNotes().getChild(i).toXMLString());
+            if (matcher.matches()) {
+                sb.append(matcher.group(1)).append(";;");
+            }
+        }
+        reaction.getAttributes().put(REACTOME_FEAT + "comment", sb.toString());
+
+
+        return reaction;
     }
 
 }
