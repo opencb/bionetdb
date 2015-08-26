@@ -13,6 +13,8 @@ build
 *.log
 sonar-project.properties
 
+!bionetdb-app/app/ext-libs/*
+
 # Maven
 target/
 

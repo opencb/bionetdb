@@ -28,8 +28,8 @@ public class PhysicalEntity {
     // TODO think about his!
     protected Display display;
 
-    enum Type {
-        PHYSICALENTITY ("physicalEntity"),
+    public enum Type {
+        UNDEFINEDENTITY ("undefinedEntity"),
         PROTEIN       ("protein"),
         DNA           ("dna"),
         RNA           ("rna"),
@@ -44,10 +44,6 @@ public class PhysicalEntity {
     }
 
     public PhysicalEntity() {
-        this.id = "";
-        this.name = "";
-        this.description =  "";
-        this.type = Type.PHYSICALENTITY;
         // init rest of attributes
         init();
     }

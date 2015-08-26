@@ -80,6 +80,7 @@
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
                     <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
+                    <extraJvmArguments>-Djava.library.path=build/libs</extraJvmArguments>
                     <programs>
                         <program>
                             <name>bionetdb.sh</name>

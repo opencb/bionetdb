@@ -114,13 +114,15 @@ public class BioPaxParser {
     }
 
     private org.opencb.bionetdb.core.models.PhysicalEntity createPhysicalEntity(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity = new org.opencb.bionetdb.core.models.PhysicalEntity();
+        org.opencb.bionetdb.core.models.UndefinedEntity undefinedEntity;
+        undefinedEntity = new UndefinedEntity();
+
         PhysicalEntity physicalEntityBP = (PhysicalEntity) bioPAXElement;
 
         // Common properties
-        setPhysicalEntityCommonProperties(physicalEntityBP, physicalEntity);
+        setPhysicalEntityCommonProperties(physicalEntityBP, undefinedEntity);
 
-        return physicalEntity;
+        return undefinedEntity;
     }
 
     private org.opencb.bionetdb.core.models.Dna createDna(BioPAXElement bioPAXElement) {
@@ -149,7 +151,7 @@ public class BioPaxParser {
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
                 org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setDb(xref.getDb());
+                x.setDb(xref.getDb().toLowerCase());
                 x.setDbVersion(xref.getDbVersion());
                 x.setId(xref.getId());
                 x.setIdVersion(xref.getIdVersion());
@@ -185,7 +187,7 @@ public class BioPaxParser {
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
                 org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setDb(xref.getDb());
+                x.setDb(xref.getDb().toLowerCase());
                 x.setDbVersion(xref.getDbVersion());
                 x.setId(xref.getId());
                 x.setIdVersion(xref.getIdVersion());
@@ -221,7 +223,7 @@ public class BioPaxParser {
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
                 org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setDb(xref.getDb());
+                x.setDb(xref.getDb().toLowerCase());
                 x.setDbVersion(xref.getDbVersion());
                 x.setId(xref.getId());
                 x.setIdVersion(xref.getIdVersion());
@@ -258,7 +260,7 @@ public class BioPaxParser {
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
                 org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setDb(xref.getDb());
+                x.setDb(xref.getDb().toLowerCase());
                 x.setDbVersion(xref.getDbVersion());
                 x.setId(xref.getId());
                 x.setIdVersion(xref.getIdVersion());
@@ -371,7 +373,7 @@ public class BioPaxParser {
         Set<Xref> xrefs = physicalEntityBP.getXref();
         for (Xref xref : xrefs) {
             org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-            x.setDb(xref.getDb());
+            x.setDb(xref.getDb().toLowerCase());
             x.setDbVersion(xref.getDbVersion());
             x.setId(xref.getId());
             x.setIdVersion(xref.getIdVersion());
@@ -633,7 +635,7 @@ public class BioPaxParser {
         Set<Xref> xrefs = interactionBP.getXref();
         for (Xref xref : xrefs) {
             org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-            x.setDb(xref.getDb());
+            x.setDb(xref.getDb().toLowerCase());
             x.setDbVersion(xref.getDbVersion());
             x.setId(xref.getId());
             x.setIdVersion(xref.getIdVersion());
