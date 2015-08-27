@@ -156,11 +156,14 @@ public class CliOptionsParser {
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
 
-        @Parameter(names = {"-i", "--input-file"}, description = "Input file with the data file to be annotated", required = true, arity = 1)
+        @Parameter(names = {"-i", "--input"}, description = "Input file with the data file to be annotated", required = true, arity = 1)
         public String input;
 
         @Parameter(names = {"-o", "--output-file"}, description = "Output file with the annotations", required = false, arity = 1)
         public String output;
+
+        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = true, arity = 1)
+        public String database;
 
         @Parameter(names = {"-s", "--species"}, description = "Name of the species to be downloaded, valid format include 'Homo sapiens' or 'hsapiens'", required = true, arity = 1)
         public String species = "Homo sapiens";

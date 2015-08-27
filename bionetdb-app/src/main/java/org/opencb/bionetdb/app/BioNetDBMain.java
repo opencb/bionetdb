@@ -1,10 +1,7 @@
 package org.opencb.bionetdb.app;
 
 import com.beust.jcommander.ParameterException;
-import org.opencb.bionetdb.app.cli.BuildCommandExecutor;
-import org.opencb.bionetdb.app.cli.CliOptionsParser;
-import org.opencb.bionetdb.app.cli.CommandExecutor;
-import org.opencb.bionetdb.app.cli.LoadCommandExecutor;
+import org.opencb.bionetdb.app.cli.*;
 
 /**
  * Created by imedina on 05/08/15.
@@ -53,6 +50,9 @@ public class BioNetDBMain {
 //                    case "query":
 //                        commandExecutor = new QueryCommandExecutor(cliOptionsParser.getQueryCommandOptions());
 //                        break;
+                    case "annotation":
+                        commandExecutor = new AnnotateCommandExecutor(cliOptionsParser.getVariantAnnotationCommandOptions());
+                        break;
                     default:
                         break;
                 }
