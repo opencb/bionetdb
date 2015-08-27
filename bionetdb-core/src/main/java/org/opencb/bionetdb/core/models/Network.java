@@ -51,13 +51,17 @@ public class Network {
         attributes = new HashMap<>();
     }
 
+    public PhysicalEntity getPhysicalEntity(String id) {
+        return physicalEntities.get(physicalEntitiesIndex.get(id));
+    }
+
     public void setPhysicalEntity(PhysicalEntity physicalEntity) {
         physicalEntities.add(physicalEntity);
         physicalEntitiesIndex.put(physicalEntity.getId(), physicalEntities.indexOf(physicalEntity));
     }
 
-    public PhysicalEntity getPhysicalEntity(String id) {
-        return physicalEntities.get(physicalEntitiesIndex.get(id));
+    public Interaction getInteraction(String id) {
+        return interactions.get(interactionsIndex.get(id));
     }
 
     public void setInteraction(Interaction interaction) {
@@ -65,8 +69,26 @@ public class Network {
         interactionsIndex.put(interaction.getId(), physicalEntities.indexOf(interaction));
     }
 
-    public Interaction getInteraction(String id) {
-        return interactions.get(interactionsIndex.get(id));
+    public List<PhysicalEntity> getPhysicalEntities() {
+        return physicalEntities;
+    }
+
+    public void setPhysicalEntities(List<PhysicalEntity> physicalEntities) {
+        this.physicalEntities = physicalEntities;
+        for (PhysicalEntity physicalEntity : physicalEntities) {
+            physicalEntitiesIndex.put(physicalEntity.getId(), this.physicalEntities.indexOf(physicalEntity));
+        }
+    }
+
+    public List<Interaction> getInteractions() {
+        return interactions;
+    }
+
+    public void setInteractions(List<Interaction> interactions) {
+        this.interactions = interactions;
+        for (Interaction interaction : interactions) {
+            interactionsIndex.put(interaction.getId(), this.interactions.indexOf(interaction));
+        }
     }
 
     public String getId() {
@@ -91,22 +113,6 @@ public class Network {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public List<PhysicalEntity> getPhysicalEntities() {
-        return physicalEntities;
-    }
-
-    public void setPhysicalEntities(List<PhysicalEntity> physicalEntities) {
-        this.physicalEntities = physicalEntities;
-    }
-
-    public List<Interaction> getInteractions() {
-        return interactions;
-    }
-
-    public void setInteractions(List<Interaction> interactions) {
-        this.interactions = interactions;
     }
 
     public Map<String, Object> getAttributes() {
