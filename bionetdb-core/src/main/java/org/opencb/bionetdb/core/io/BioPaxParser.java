@@ -71,22 +71,22 @@ public class BioPaxParser {
             switch (bioPAXElement.getModelInterface().getSimpleName()) {
                 // Physical Entities
                 case "PhysicalEntity":
-                    network.getPhysicalEntities().add(createPhysicalEntity(bioPAXElement));
+                    network.setPhysicalEntity(createUndefinedEntity(bioPAXElement));
                     break;
                 case "Dna":
-                    network.getPhysicalEntities().add(createDna(bioPAXElement));
+                    network.setPhysicalEntity(createDna(bioPAXElement));
                     break;
                 case "Rna":
-                    network.getPhysicalEntities().add(createRna(bioPAXElement));
+                    network.setPhysicalEntity(createRna(bioPAXElement));
                     break;
                 case "Protein":
-                    network.getPhysicalEntities().add(createProtein(bioPAXElement));
+                    network.setPhysicalEntity(createProtein(bioPAXElement));
                     break;
                 case "Complex":
-                    network.getPhysicalEntities().add(createComplex(bioPAXElement));
+                    network.setPhysicalEntity(createComplex(bioPAXElement));
                     break;
                 case "SmallMolecule":
-                    network.getPhysicalEntities().add(createSmallMolecule(bioPAXElement));
+                    network.setPhysicalEntity(createSmallMolecule(bioPAXElement));
                     break;
 
                 // Interactions
@@ -97,14 +97,14 @@ public class BioPaxParser {
                 case "MolecularInteraction":
                 case "Transport":
                 case "TransportWithBiochemicalReaction":
-                    network.getInteractions().add(createReaction(bioPAXElement));
+                    network.setInteraction(createReaction(bioPAXElement));
                     break;
                 case "Catalysis":
-                    network.getInteractions().add(createCatalysis(bioPAXElement));
+                    network.setInteraction(createCatalysis(bioPAXElement));
                     break;
                 case "Modulation":
                 case "TemplateReactionRegulation":
-                    network.getInteractions().add(createRegulation(bioPAXElement));
+                    network.setInteraction(createRegulation(bioPAXElement));
                     break;
             }
 
@@ -113,7 +113,7 @@ public class BioPaxParser {
         return network;
     }
 
-    private org.opencb.bionetdb.core.models.PhysicalEntity createPhysicalEntity(BioPAXElement bioPAXElement) {
+    private org.opencb.bionetdb.core.models.PhysicalEntity createUndefinedEntity(BioPAXElement bioPAXElement) {
         org.opencb.bionetdb.core.models.UndefinedEntity undefinedEntity;
         undefinedEntity = new UndefinedEntity();
 
@@ -151,7 +151,7 @@ public class BioPaxParser {
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
                 org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setDb(xref.getDb().toLowerCase());
+                x.setDb(xref.getDb());
                 x.setDbVersion(xref.getDbVersion());
                 x.setId(xref.getId());
                 x.setIdVersion(xref.getIdVersion());
@@ -187,7 +187,7 @@ public class BioPaxParser {
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
                 org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setDb(xref.getDb().toLowerCase());
+                x.setDb(xref.getDb());
                 x.setDbVersion(xref.getDbVersion());
                 x.setId(xref.getId());
                 x.setIdVersion(xref.getIdVersion());
@@ -223,7 +223,7 @@ public class BioPaxParser {
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
                 org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setDb(xref.getDb().toLowerCase());
+                x.setDb(xref.getDb());
                 x.setDbVersion(xref.getDbVersion());
                 x.setId(xref.getId());
                 x.setIdVersion(xref.getIdVersion());
@@ -260,7 +260,7 @@ public class BioPaxParser {
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
                 org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setDb(xref.getDb().toLowerCase());
+                x.setDb(xref.getDb());
                 x.setDbVersion(xref.getDbVersion());
                 x.setId(xref.getId());
                 x.setIdVersion(xref.getIdVersion());
@@ -375,7 +375,7 @@ public class BioPaxParser {
         Set<Xref> xrefs = physicalEntityBP.getXref();
         for (Xref xref : xrefs) {
             org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-            x.setDb(xref.getDb().toLowerCase());
+            x.setDb(xref.getDb());
             x.setDbVersion(xref.getDbVersion());
             x.setId(xref.getId());
             x.setIdVersion(xref.getIdVersion());
@@ -641,7 +641,7 @@ public class BioPaxParser {
         Set<Xref> xrefs = interactionBP.getXref();
         for (Xref xref : xrefs) {
             org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-            x.setDb(xref.getDb().toLowerCase());
+            x.setDb(xref.getDb());
             x.setDbVersion(xref.getDbVersion());
             x.setId(xref.getId());
             x.setIdVersion(xref.getIdVersion());

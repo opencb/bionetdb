@@ -1,5 +1,7 @@
 package org.opencb.bionetdb.core.models;
 
+import org.neo4j.register.Register;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +17,9 @@ public class Network {
     private String description;
 
     private List<PhysicalEntity> physicalEntities;
+    private Map<String, Integer> physicalEntitiesIndex;
     private List<Interaction> interactions;
+    private Map<String, Integer> interactionsIndex;
 
     protected Map<String, Object> attributes;
 
@@ -41,7 +45,28 @@ public class Network {
         physicalEntities = new ArrayList<>();
         interactions = new ArrayList<>();
 
+        physicalEntitiesIndex = new HashMap<>();
+        interactionsIndex =new HashMap<>();
+
         attributes = new HashMap<>();
+    }
+
+    public void setPhysicalEntity(PhysicalEntity physicalEntity) {
+        physicalEntities.add(physicalEntity);
+        physicalEntitiesIndex.put(physicalEntity.getId(), physicalEntities.indexOf(physicalEntity));
+    }
+
+    public PhysicalEntity getPhysicalEntity(String id) {
+        return physicalEntities.get(physicalEntitiesIndex.get(id));
+    }
+
+    public void setInteraction(Interaction interaction) {
+        interactions.add(interaction);
+        interactionsIndex.put(interaction.getId(), physicalEntities.indexOf(interaction));
+    }
+
+    public Interaction getInteraction(String id) {
+        return interactions.get(interactionsIndex.get(id));
     }
 
     public String getId() {
