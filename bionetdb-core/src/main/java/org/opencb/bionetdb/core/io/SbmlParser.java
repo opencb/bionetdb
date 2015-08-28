@@ -110,12 +110,13 @@ public class SbmlParser {
 
         switch (getClassToConvert(species)) {
             case UNDEFINEDENTITY:
+                physicalEntity = createUndefinedEntity(species);
                 break;
             case DNA:
-                physicalEntity = createDNA(species);
+                physicalEntity = createDna(species);
                 break;
             case RNA:
-                physicalEntity = createRNA(species);
+                physicalEntity = createRna(species);
                 break;
             case PROTEIN:
                 physicalEntity = createProtein(species);
@@ -163,7 +164,16 @@ public class SbmlParser {
         return type;
     }
 
-    private Dna createDNA(Species species) {
+    private UndefinedEntity createUndefinedEntity(Species species) {
+        UndefinedEntity undefinedEntity = new UndefinedEntity();
+
+        // Common properties
+        setPhysicalEntityCommonProperties(undefinedEntity, species);
+
+        return undefinedEntity;
+    }
+
+    private Dna createDna(Species species) {
         Dna dna = new Dna();
 
         // Common properties
@@ -172,7 +182,7 @@ public class SbmlParser {
         return dna;
     }
 
-    private Rna createRNA(Species species) {
+    private Rna createRna(Species species) {
         Rna rna = new Rna();
 
         // Common properties
