@@ -76,15 +76,17 @@ public class SbmlParser {
         // Species
         for (int i=0; i < model.getNumSpecies(); i++) {
             Species species = model.getSpecies(i);
-            network.getPhysicalEntities().add(createPhysicalEntity(species, model));
+            network.setPhysicalEntity(createPhysicalEntity(species, model));
         }
+
+        // Fixing complexes info
+        fixComplexesInfo(network);
 
         // Reactions
         for (int i=0; i < model.getNumReactions(); i++) {
             Reaction reaction = model.getReaction(i);
-            network.getInteractions().add(createInteraction(reaction, model));
+            network.setInteraction(createInteraction(reaction, model));
         }
-
         return network;
     }
 
@@ -187,7 +189,7 @@ public class SbmlParser {
             XMLNode components = description.getChild("hasPart").getChild("Bag");
             for (int i = 0; i < components.getNumChildren(); i++) {
                 String component = components.getChild(i).getAttributes().getValue("resource");
-                List<String> componentElements = Arrays.asList(component.replace("%3A", ":").split(":"));
+                List<String> componentElements = Arrays.asList(component.replace("%3A", ":").replace("kegg.compound", "kegg").split(":"));
                 List<String> componentXrefElements =
                         componentElements.subList(componentElements.size() - 2, componentElements.size());
                 complex.getComponents().add(String.join(":", componentXrefElements));
@@ -269,6 +271,44 @@ public class SbmlParser {
 
         return compartmentInfo;
     }
+
+    private void fixComplexesInfo(Network network) {
+        /**
+         * This method transforms the xrefs from the complex attribute "components" into their
+         * specific ids.
+         *
+         * This method also populates the "componentOfComplex" attribute of the physical entities
+         * which are part of the complex
+         */
+
+        List<PhysicalEntity> physicalEntities= network.getPhysicalEntities();
+
+        // Creating two related lists for every physical entity: xref and its corresponding id
+        List<String> xrefs = new ArrayList<>();
+        List<String> ids = new ArrayList<>();
+        for (PhysicalEntity physicalEntity : physicalEntities) {
+            for (Xref peXref : physicalEntity.getXrefs()) {
+                xrefs.add(peXref.getDb() + peXref.getDbVersion() + ":" + peXref.getId() + peXref.getIdVersion());
+                ids.add(physicalEntity.getId());
+            }
+        }
+
+        // Populating "components" and "componentOfComplex" attributes
+        for (PhysicalEntity physicalEntity : physicalEntities) {
+            if (physicalEntity.getType() == PhysicalEntity.Type.COMPLEX) {
+                Complex complex = (Complex) physicalEntity;
+                for (String component : complex.getComponents()) {
+                    String componentId = component.toLowerCase();
+                    if (xrefs.contains(componentId)) {
+                        complex.getComponents().set(complex.getComponents().indexOf(component),
+                                ids.get(xrefs.indexOf(componentId)));
+                        network.getPhysicalEntity(ids.get(xrefs.indexOf(componentId))).getComponentOfComplex().add(complex.getId());
+                    }
+                }
+            }
+        }
+    }
+
 
     private Interaction createInteraction(Reaction reactionSBML, Model model) {
         org.opencb.bionetdb.core.models.Reaction reaction = new org.opencb.bionetdb.core.models.Reaction();

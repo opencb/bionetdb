@@ -514,6 +514,18 @@ public class BioPaxParser {
                     stoichiometry.add(stchmtr);
                 }
                 reaction.setStoichiometry(stoichiometry);
+
+                // Adding EC number to xrefs
+                if (className.equals("BiochemicalReaction")) {
+                    BiochemicalReaction br = (BiochemicalReaction) bioPAXElement;
+                    for (String ecNumber : br.getECNumber()) {
+                        org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
+                        xref.setDb("ec");
+                        xref.setId(ecNumber);
+                        reaction.getXrefs().add(xref);
+                    }
+                }
+
                 break;
             case "MolecularInteraction":
                 MolecularInteraction molecularInteractionBP = (MolecularInteraction) bioPAXElement;

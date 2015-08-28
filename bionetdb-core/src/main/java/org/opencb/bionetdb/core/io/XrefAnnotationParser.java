@@ -50,7 +50,7 @@ public class XrefAnnotationParser {
             Xref xref = new Xref();
             List<String> items = Arrays.asList(line.split("\t"));
             if (!line.startsWith("#")) {
-                xref.setDb(items.get(1).toLowerCase());
+                xref.setDb(items.get(1));
                 xref.setId(items.get(2));
                 if (items.size() > 3) {
                     xref.setDbVersion(items.get(3));

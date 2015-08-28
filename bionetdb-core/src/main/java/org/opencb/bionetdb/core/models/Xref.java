@@ -30,7 +30,7 @@ public class Xref {
 
     public void setDb(String db) {
         if (db != null) {
-            this.db = db;
+            this.db = db.toLowerCase();
         }
     }
 
