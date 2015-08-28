@@ -74,7 +74,7 @@ public class SbmlParser {
         Model model = sbml.getModel();
 
         // Species
-        for (int i=0; i < model.getNumSpecies(); i++) {
+        for (int i = 0; i < model.getNumSpecies(); i++) {
             Species species = model.getSpecies(i);
             network.setPhysicalEntity(createPhysicalEntity(species, model));
         }
@@ -83,13 +83,23 @@ public class SbmlParser {
         fixComplexesInfo(network);
 
         // Reactions
-        for (int i=0; i < model.getNumReactions(); i++) {
+        for (int i = 0; i < model.getNumReactions(); i++) {
             Reaction reaction = model.getReaction(i);
             network.setInteraction(createInteraction(reaction, model));
         }
 
         // Adding to PhysicalEntities the interactions where they participate
         fixParticipantOfInteractionInfo(network);
+
+        // Catalysis
+        for (int i = 0; i < model.getNumReactions(); i++) {
+            Reaction reaction = model.getReaction(i);
+            Catalysis catalysis;
+            catalysis = createCatalysis(reaction);
+            if (catalysis != null) {
+                network.setInteraction(catalysis);
+            }
+        }
 
         return network;
     }
@@ -369,19 +379,19 @@ public class SbmlParser {
         reaction.setReversible(reactionSBML.getReversible());
 
         // reactants
-        for (int i=0; i < reactionSBML.getNumReactants(); i++) {
+        for (int i = 0; i < reactionSBML.getNumReactants(); i++) {
             SpeciesReference reactant = reactionSBML.getReactant(i);
             reaction.getReactants().add(reactant.getSpecies());
         }
 
         // products
-        for (int i=0; i < reactionSBML.getNumProducts(); i++) {
+        for (int i = 0; i < reactionSBML.getNumProducts(); i++) {
             SpeciesReference product = reactionSBML.getProduct(i);
             reaction.getProducts().add(product.getSpecies());
         }
 
         // controlledBy
-        for (int i=0; i < reactionSBML.getNumModifiers(); i++) {
+        for (int i = 0; i < reactionSBML.getNumModifiers(); i++) {
             ModifierSpeciesReference modifier = reactionSBML.getModifier(i);
             reaction.getControlledBy().add(modifier.getSpecies());
         }
@@ -405,8 +415,40 @@ public class SbmlParser {
         }
         reaction.getAttributes().put(REACTOME_FEAT + "comment", sb.toString());
 
-
         return reaction;
     }
 
+    private Catalysis createCatalysis(Reaction reaction) {
+
+        Catalysis catalysis = new Catalysis();
+
+        if (reaction.getNumModifiers() == 0) {
+            catalysis = null;
+        } else {
+            // id
+            catalysis.setId("catalysis_" + reaction.getId());
+
+            // controllers
+            for (int i = 0; i < reaction.getNumModifiers(); i++) {
+                ModifierSpeciesReference modifier = reaction.getModifier(i);
+                catalysis.getControllers().add(modifier.getSpecies());
+            }
+
+            // controlledProcesses
+            catalysis.getControlledProcesses().add(reaction.getId());
+
+            // processOfPathway
+            catalysis.getProcessOfPathway().add(reaction.getModel().getId());
+
+            // participants
+            catalysis.getParticipants().addAll(catalysis.getControlledProcesses());
+            catalysis.getParticipants().addAll(catalysis.getControllers());
+
+            // controlType
+            catalysis.setControlType("ACTIVATION");
+
+        }
+
+        return catalysis;
+    }
 }
