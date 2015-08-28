@@ -76,7 +76,7 @@ public class SbmlParser {
         // Species
         for (int i = 0; i < model.getNumSpecies(); i++) {
             Species species = model.getSpecies(i);
-            network.setPhysicalEntity(createPhysicalEntity(species, model));
+            network.setPhysicalEntity(createPhysicalEntity(species));
         }
 
         // Fixing complexes info
@@ -85,13 +85,10 @@ public class SbmlParser {
         // Reactions
         for (int i = 0; i < model.getNumReactions(); i++) {
             Reaction reaction = model.getReaction(i);
-            network.setInteraction(createInteraction(reaction, model));
+            network.setInteraction(createInteraction(reaction, network));
         }
 
-        // Adding to PhysicalEntities the interactions where they participate
-        fixParticipantOfInteractionInfo(network);
-
-        // Catalysis
+/*        // Catalysis
         for (int i = 0; i < model.getNumReactions(); i++) {
             Reaction reaction = model.getReaction(i);
             Catalysis catalysis;
@@ -99,12 +96,15 @@ public class SbmlParser {
             if (catalysis != null) {
                 network.setInteraction(catalysis);
             }
-        }
+        }*/
+
+        // Adding to PhysicalEntities the interactions where they participate
+        fixParticipantOfInteractionInfo(network);
 
         return network;
     }
 
-    private PhysicalEntity createPhysicalEntity(Species species, Model model) {
+    private PhysicalEntity createPhysicalEntity(Species species) {
 
         PhysicalEntity physicalEntity = null;
 
@@ -112,19 +112,19 @@ public class SbmlParser {
             case UNDEFINEDENTITY:
                 break;
             case DNA:
-                physicalEntity = createDNA(species, model);
+                physicalEntity = createDNA(species);
                 break;
             case RNA:
-                physicalEntity = createRNA(species, model);
+                physicalEntity = createRNA(species);
                 break;
             case PROTEIN:
-                physicalEntity = createProtein(species, model);
+                physicalEntity = createProtein(species);
                 break;
             case COMPLEX:
-                physicalEntity = createComplex(species, model);
+                physicalEntity = createComplex(species);
                 break;
             case SMALLMOLECULE:
-                physicalEntity = createSmallMolecule(species, model);
+                physicalEntity = createSmallMolecule(species);
                 break;
         }
         return physicalEntity;
@@ -163,38 +163,38 @@ public class SbmlParser {
         return type;
     }
 
-    private Dna createDNA(Species species, Model model) {
+    private Dna createDNA(Species species) {
         Dna dna = new Dna();
 
         // Common properties
-        setPhysicalEntityCommonProperties(dna, species, model);
+        setPhysicalEntityCommonProperties(dna, species);
 
         return dna;
     }
 
-    private Rna createRNA(Species species, Model model) {
+    private Rna createRNA(Species species) {
         Rna rna = new Rna();
 
         // Common properties
-        setPhysicalEntityCommonProperties(rna, species, model);
+        setPhysicalEntityCommonProperties(rna, species);
 
         return rna;
     }
 
-    private Protein createProtein(Species species, Model model) {
+    private Protein createProtein(Species species) {
         Protein protein = new Protein();
 
         // Common properties
-        setPhysicalEntityCommonProperties(protein, species, model);
+        setPhysicalEntityCommonProperties(protein, species);
 
         return protein;
     }
 
-    private Complex createComplex(Species species, Model model) {
+    private Complex createComplex(Species species) {
         Complex complex = new Complex();
 
         // Common properties
-        setPhysicalEntityCommonProperties(complex, species, model);
+        setPhysicalEntityCommonProperties(complex, species);
 
         // Complex properties
         // If description has "hasPart" attribute, the entity is a complex
@@ -212,16 +212,16 @@ public class SbmlParser {
         return complex;
     }
 
-    private SmallMolecule createSmallMolecule(Species species, Model model) {
+    private SmallMolecule createSmallMolecule(Species species) {
         SmallMolecule smallMolecule = new SmallMolecule();
 
         // Common properties
-        setPhysicalEntityCommonProperties(smallMolecule, species, model);
+        setPhysicalEntityCommonProperties(smallMolecule, species);
 
         return smallMolecule;
     }
 
-    private void setPhysicalEntityCommonProperties(PhysicalEntity physicalEntity, Species species, Model model) {
+    private void setPhysicalEntityCommonProperties(PhysicalEntity physicalEntity, Species species) {
         // id
         physicalEntity.setId(species.getId());
 
@@ -229,7 +229,7 @@ public class SbmlParser {
         physicalEntity.setName(species.getName());
 
         // cellular location
-        physicalEntity.setCellularLocation(getCompartmentInfo(model.getCompartment(species.getCompartment())));
+        physicalEntity.setCellularLocation(getCompartmentInfo(species.getModel().getCompartment(species.getCompartment())));
 
         // xrefs
         XMLNode description = species.getAnnotation().getChild("RDF").getChild("Description");
@@ -326,12 +326,14 @@ public class SbmlParser {
     private void fixParticipantOfInteractionInfo(Network network) {
         for (Interaction interaction : network.getInteractions()) {
             for (String participant : interaction.getParticipants()) {
-                network.getPhysicalEntity(participant).getParticipantOfInteraction().add(interaction.getId());
+                if (network.getNetworkElementType(participant) == Network.Type.PHYSICALENTITY) {
+                    network.getPhysicalEntity(participant).getParticipantOfInteraction().add(interaction.getId());
+                }
             }
         }
     }
 
-    private Interaction createInteraction(Reaction reactionSBML, Model model) {
+    private Interaction createInteraction(Reaction reactionSBML, Network network) {
         org.opencb.bionetdb.core.models.Reaction reaction = new org.opencb.bionetdb.core.models.Reaction();
 
         // id
@@ -391,9 +393,10 @@ public class SbmlParser {
         }
 
         // controlledBy
-        for (int i = 0; i < reactionSBML.getNumModifiers(); i++) {
-            ModifierSpeciesReference modifier = reactionSBML.getModifier(i);
-            reaction.getControlledBy().add(modifier.getSpecies());
+        if (reactionSBML.getNumModifiers() > 0) {
+            Catalysis catalysis = createCatalysis(reactionSBML);
+            network.setInteraction(catalysis);
+            reaction.getControlledBy().add(catalysis.getId());
         }
 
         // participants
@@ -402,7 +405,7 @@ public class SbmlParser {
         reaction.getParticipants().addAll(reaction.getControlledBy());
 
         // processOfPathway
-        reaction.getProcessOfPathway().add(model.getId());
+        reaction.getProcessOfPathway().add(reactionSBML.getModel().getId());
 
         // comments
         StringBuilder sb = new StringBuilder();
@@ -422,32 +425,27 @@ public class SbmlParser {
 
         Catalysis catalysis = new Catalysis();
 
-        if (reaction.getNumModifiers() == 0) {
-            catalysis = null;
-        } else {
-            // id
-            catalysis.setId("catalysis_" + reaction.getId());
+        // id
+        catalysis.setId("catalysis_" + reaction.getId());
 
-            // controllers
-            for (int i = 0; i < reaction.getNumModifiers(); i++) {
-                ModifierSpeciesReference modifier = reaction.getModifier(i);
-                catalysis.getControllers().add(modifier.getSpecies());
-            }
-
-            // controlledProcesses
-            catalysis.getControlledProcesses().add(reaction.getId());
-
-            // processOfPathway
-            catalysis.getProcessOfPathway().add(reaction.getModel().getId());
-
-            // participants
-            catalysis.getParticipants().addAll(catalysis.getControlledProcesses());
-            catalysis.getParticipants().addAll(catalysis.getControllers());
-
-            // controlType
-            catalysis.setControlType("ACTIVATION");
-
+        // controllers
+        for (int i = 0; i < reaction.getNumModifiers(); i++) {
+            ModifierSpeciesReference modifier = reaction.getModifier(i);
+            catalysis.getControllers().add(modifier.getSpecies());
         }
+
+        // controlledProcesses
+        catalysis.getControlledProcesses().add(reaction.getId());
+
+        // processOfPathway
+        catalysis.getProcessOfPathway().add(reaction.getModel().getId());
+
+        // participants
+        catalysis.getParticipants().addAll(catalysis.getControlledProcesses());
+        catalysis.getParticipants().addAll(catalysis.getControllers());
+
+        // controlType
+        catalysis.setControlType("ACTIVATION");
 
         return catalysis;
     }

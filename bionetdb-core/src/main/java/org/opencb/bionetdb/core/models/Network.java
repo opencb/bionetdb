@@ -23,6 +23,19 @@ public class Network {
 
     protected Map<String, Object> attributes;
 
+    protected Type type;
+
+    public enum Type {
+        PHYSICALENTITY ("physicalEntity"),
+        INTERACTION    ("interaction");
+
+        private final String type;
+
+        Type(String type) {
+            this.type = type;
+        }
+    }
+
     public Network() {
         this.id = "";
         this.name = "";
@@ -89,6 +102,16 @@ public class Network {
         for (Interaction interaction : interactions) {
             interactionsIndex.put(interaction.getId(), this.interactions.indexOf(interaction));
         }
+    }
+
+    public Type getNetworkElementType (String id) {
+        Type elementType = null;
+        if (physicalEntitiesIndex.containsKey(id)) {
+            elementType = Type.PHYSICALENTITY;
+        } else if (interactionsIndex.containsKey(id)) {
+            elementType = Type.INTERACTION;
+        }
+        return elementType;
     }
 
     public String getId() {
