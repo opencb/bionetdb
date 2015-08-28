@@ -87,6 +87,10 @@ public class SbmlParser {
             Reaction reaction = model.getReaction(i);
             network.setInteraction(createInteraction(reaction, model));
         }
+
+        // Adding to PhysicalEntities the interactions where they participate
+        fixParticipantOfInteractionInfo(network);
+
         return network;
     }
 
@@ -281,7 +285,7 @@ public class SbmlParser {
          * which are part of the complex
          */
 
-        List<PhysicalEntity> physicalEntities= network.getPhysicalEntities();
+        List<PhysicalEntity> physicalEntities = network.getPhysicalEntities();
 
         // Creating two related lists for every physical entity: xref and its corresponding id
         List<String> xrefs = new ArrayList<>();
@@ -309,6 +313,13 @@ public class SbmlParser {
         }
     }
 
+    private void fixParticipantOfInteractionInfo(Network network) {
+        for (Interaction interaction : network.getInteractions()) {
+            for (String participant : interaction.getParticipants()) {
+                network.getPhysicalEntity(participant).getParticipantOfInteraction().add(interaction.getId());
+            }
+        }
+    }
 
     private Interaction createInteraction(Reaction reactionSBML, Model model) {
         org.opencb.bionetdb.core.models.Reaction reaction = new org.opencb.bionetdb.core.models.Reaction();
@@ -318,10 +329,6 @@ public class SbmlParser {
 
         // name
         reaction.setName(reactionSBML.getName());
-
-        // TODO think about this
-        // cellular location
-        //interaction.setCellularLocation(getCompartmentInfo(model.getCompartment(reaction.getCompartment())));
 
         // xrefs
         XMLNode description = reactionSBML.getAnnotation().getChild("RDF").getChild("Description");
