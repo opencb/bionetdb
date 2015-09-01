@@ -3,19 +3,14 @@ package org.opencb.bionetdb.core.neo4j;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.schema.Schema;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.models.*;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
-import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
-import java.util.*;
-
-import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+import java.util.List;
 
 /**
  * Created by imedina on 05/08/15.
@@ -28,42 +23,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public Neo4JNetworkDBAdaptor(String database) {
         this.DB_PATH = database;
-        //this.database = new GraphDatabaseFactory().newEmbeddedDatabase( this.DB_PATH );
         this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( this.DB_PATH ).
                 setConfig( GraphDatabaseSettings.node_keys_indexable, "id" ).
-                //setConfig( GraphDatabaseSettings.relationship_keys_indexable, "ID" ).
-                setConfig( GraphDatabaseSettings.node_auto_indexing, "true" ).
-                //setConfig( GraphDatabaseSettings.relationship_auto_indexing, "true" ).
+                setConfig(GraphDatabaseSettings.node_auto_indexing, "true").
                 newGraphDatabase();
         this.openedDB = true;
-/*
-        // Creation of the indexes
-        try ( Transaction tx = this.database.beginTx() ) {
-            Schema schema = this.database.schema();
-            for (PhysicalEntity.Type mytype : PhysicalEntity.Type.values()) {
-                schema.indexFor(DynamicLabel.label(mytype.toString()))
-                        .on("ID")
-                        .create();
-            }
-
-            for (Interaction.Type mytype : Interaction.Type.values()) {
-                schema.indexFor(DynamicLabel.label(mytype.toString()))
-                        .on("ID")
-                        .create();
-            }
-
-            // Include the two other types of Reaction manually
-            schema.indexFor(DynamicLabel.label("ASSEMBLY"))
-                    .on("ID")
-                    .create();
-            schema.indexFor(DynamicLabel.label("TRANSPORT"))
-                    .on("ID")
-                    .create();
-
-
-            tx.success();
-        }
-*/
     }
 
     private enum RelTypes implements RelationshipType
@@ -74,6 +38,50 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         CONTROLLER
     }
 
+    /**
+     * The function will look for a node in the database. If it does not exist, it will create it.
+     * @param label Label of the node
+     * @param query Query parameters used to look for the node
+     * @param queryOptions
+     * @return Returns a node.
+     */
+    // TODO: Improve query & queryOptions usage
+    private Node getOrCreateNode(String label, Query query, QueryOptions queryOptions) {
+
+        Label mylabel = DynamicLabel.label(label);
+        Node result = this.database.findNode(mylabel, "id", query.get("id"));
+
+        if (result == null) {
+            result = this.database.createNode(mylabel);
+        }
+        return result;
+    }
+
+
+    /**
+     * The function will create an interaction between two nodes if it is not already created.
+     * @param origin Node from which we want to create the interaction
+     * @param destination Destination node
+     * @param relationType Type of relationship between nodes
+     */
+    private void addInteraction(Node origin, Node destination, RelTypes relationType) {
+
+        if (origin.hasRelationship(relationType, Direction.OUTGOING)) {
+            for (Relationship r : origin.getRelationships(relationType, Direction.OUTGOING)) {
+                if (r.getEndNode().equals(destination)) {
+                    return;
+                }
+            }
+        }
+
+        origin.createRelationshipTo(destination, relationType);
+    }
+
+    /**
+     * Insert an entire network into the Neo4J database
+     * @param network Object containing all the nodes and interactions
+     * @param queryOptions
+     */
     @Override
     public void insert(Network network, QueryOptions queryOptions) {
 
@@ -82,27 +90,22 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     }
 
-    @Override
-    public void insertInteractions(List<Interaction> interactionList, QueryOptions queryOptions) {
+    /**
+     * Insert all the interactions into the Neo4J database
+     * @param interactionList List containing all the interactions to be inserted in the database
+     * @param queryOptions
+     */
+    private void insertInteractions(List<Interaction> interactionList, QueryOptions queryOptions) {
 
         // 1. Insert all interactions as nodes
         try ( Transaction tx = this.database.beginTx() ) {
 
-            Label nodeLabel = DynamicLabel.label("Interaction");
-
             for (Interaction i : interactionList) {
-                // Insert all the Interation nodes
-                /*if (i.getType() == Interaction.Type.REACTION) {
-                    nodeLabel = DynamicLabel.label(((Reaction) i).getReactionType().toString());
-                } else {
-                    nodeLabel = DynamicLabel.label(i.getType().toString());
-                }*/
-                Node mynode = this.database.createNode(nodeLabel);
+                Node mynode =  getOrCreateNode("Interaction", new Query("id", i.getId()), null);
 
                 if (i.getName() != null) mynode.setProperty("name", i.getName());
                 if (i.getId() != null) mynode.setProperty("id", i.getId());
                 if (i.getDescription() != null) mynode.setProperty("description", i.getDescription());
-
             }
             tx.success();
         }
@@ -123,12 +126,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
                         for (String myID : myreaction.getReactants()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            n.createRelationshipTo(r, RelTypes.REACTANT);
+                            addInteraction(n,r,RelTypes.REACTANT);
                         }
 
                         for (String myID : myreaction.getProducts()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            r.createRelationshipTo(n, RelTypes.REACTANT);
+                            addInteraction(r, n, RelTypes.REACTANT);
                         }
 
                         break;
@@ -140,13 +143,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         // Left reactions (controllers)
                         for (String myID : catalysis.getControllers()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            n.createRelationshipTo(r, RelTypes.CONTROLLER);
+                            addInteraction(n, r, RelTypes.CONTROLLER);
                         }
 
                         // Right reactions (controlled)
                         for (String myID : catalysis.getControlledProcesses()) {
                             Node n = this.database.findNode(interactionLabel, "id", myID);
-                            r.createRelationshipTo(n, RelTypes.CONTROLLED);
+                            addInteraction(r, n, RelTypes.CONTROLLED);
                         }
 
                         break;
@@ -159,13 +162,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         // Left reactions (controllers)
                         for (String myID : regulation.getControllers()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            n.createRelationshipTo(r, RelTypes.CONTROLLER);
+                            addInteraction(n, r, RelTypes.CONTROLLER);
                         }
 
                         // Right reactions (controlled)
                         for (String myID : regulation.getControlledProcesses()) {
                             Node n = this.database.findNode(interactionLabel, "id", myID);
-                            r.createRelationshipTo(n, RelTypes.CONTROLLED);
+                            addInteraction(r, n, RelTypes.CONTROLLED);
                         }
 
                         break;
@@ -178,23 +181,56 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-    @Override
-    public void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) {
+    /**
+     * Insert physical entities into the Neo4J database
+     * @param physicalEntityList List containing all the physical entities to be inserted in the database
+     * @param queryOptions
+     */
+    private void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) {
 
         try ( Transaction tx = this.database.beginTx() ) {
-            Label nodeLabel = DynamicLabel.label("PhysicalEntity");
             for (PhysicalEntity p : physicalEntityList) {
                 // Insert all the Physical entity nodes
-                Node mynode = this.database.createNode(nodeLabel);
+                Node mynode = getOrCreateNode("PhysicalEntity", new Query("id", p.getId()), null);
                 mynode.setProperty("id", p.getId());
                 mynode.setProperty("name", p.getName());
                 mynode.setProperty("description", p.getDescription());
+                addXrefNode(mynode, new Xref(null, null, p.getId(), null));
             }
+
+            tx.success();
+        }
+
+    }
+
+    /**
+     * Method to annotate (create or modify) Xref elements into the Neo4J database
+     * @param node Main node from which we are going to add the annotation
+     * @param xref Xref object containing information to be added in the database
+     */
+    private void addXrefNode(Node node, Xref xref) {
+
+        try ( Transaction tx = this.database.beginTx() ) {
+
+            Node xref_node = getOrCreateNode("Xref", new Query("id", xref.getId()), null);
+
+            if (xref.getDb() != null) xref_node.setProperty("db", xref.getDb());
+            if (xref.getId() != null) xref_node.setProperty("id", xref.getId());
+            if (xref.getDbVersion() != null) xref_node.setProperty("dbVersion", xref.getDbVersion());
+            if (xref.getIdVersion() != null) xref_node.setProperty("idVersion", xref.getIdVersion());
+
+            if (!xref_node.hasRelationship(RelTypes.XREF, Direction.INCOMING))
+                node.createRelationshipTo(xref_node, RelTypes.XREF);
 
             tx.success();
         }
     }
 
+    /**
+     * Method to annotate Xrefs in the database
+     * @param nodeID ID of the node we want to annotate
+     * @param xref_list List containing all the Xref annotations to be added in the database
+     */
     @Override
     public void addXrefs(String nodeID, List<Xref> xref_list) {
 
@@ -214,40 +250,17 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
 
             for (Xref x : xref_list) {
-                Node xref_node = this.database.createNode(xrefLabel);
-                if (x.getDb() != null) xref_node.setProperty("db", x.getDb());
-                if (x.getId() != null) xref_node.setProperty("id", x.getId());
-                if (x.getDbVersion() != null) xref_node.setProperty("dbVersion", x.getDbVersion());
-                if (x.getIdVersion() != null) xref_node.setProperty("idVersion", x.getIdVersion());
-                n.createRelationshipTo(xref_node, RelTypes.XREF);
+                addXrefNode(n, x);
             }
             tx.success();
         }
     }
-/*
-    @Override
-    public QueryResult getXrefs(String idNode) {
-        String myresult = "";
-        try ( Transaction tx = this.database.beginTx() ) {
 
-            Result result = this.database.execute("MATCH (n {ID: '" + idNode + "'}) -[u]-> (m:Xref) return m.db");
-            Iterator<String> myiterator = result.columnAs("m.db");
-            while (myiterator.hasNext()) {
-                String r = myiterator.next();
-                myresult.concat(r.toString());
-            }
-
-            tx.success();
-        }
-
-        return new QueryResult(myresult);
-    }
-*/
     @Override
     public QueryResult get(Query query, QueryOptions queryOptions) {
 
         Result result = this.database.execute(query.get("query").toString());
-        return new QueryResult(result.resultAsString());
+        return new QueryResult(result.columnAs(queryOptions.get("columnsAs").toString()).next().toString());
 
     }
 
@@ -258,7 +271,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     @Override
     public QueryResult stats(Query query, QueryOptions queryOptions) {
-        return null;
+        String nnodes = this.database.execute("START n=node(*) RETURN count(n)").columnAs("count(n)").next().toString();
+        String nrelat = this.database.execute("START n=relationship(*) RETURN count(n)").columnAs("count(n)").next().toString();
+        return new QueryResult("Nodes: " + nnodes + "\tRelationships: " + nrelat);
     }
 
     public boolean isOpened() throws IOException {
