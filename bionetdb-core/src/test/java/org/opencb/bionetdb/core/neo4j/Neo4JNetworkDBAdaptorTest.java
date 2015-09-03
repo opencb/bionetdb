@@ -1,29 +1,21 @@
 package org.opencb.bionetdb.core.neo4j;
 
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Xref;
 import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.QueryOptions;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.Assert.*;
+import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 /**
@@ -33,40 +25,68 @@ public class Neo4JNetworkDBAdaptorTest {
 
     @Test
     public void testInsert() throws Exception {
-        String database = "/Users/pfurio/Downloads/neodb";
+        String database = "/tmp/neodb";
+        new File(database).mkdirs();
         NetworkDBAdaptor networkDBAdaptor = null;
+        long startTime = System.currentTimeMillis();
+
         try {
             System.out.println("Parsing network...");
             BioPaxParser bioPaxParser = new BioPaxParser("L3");
             Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
+            //Path inputPath = Paths.get("/Users/pfurio/Downloads/biopax/Homo_sapiens.owl.gz");
             Network network = bioPaxParser.parse(inputPath);
+            long stopTime = System.currentTimeMillis();
+            System.out.println("Parsed in " + (stopTime-startTime)/1000 + " seconds");
 
             System.out.println("Creating database...");
             networkDBAdaptor = new Neo4JNetworkDBAdaptor(database);
+            startTime = System.currentTimeMillis();
+            System.out.println("Database created in " + (startTime - stopTime) / 1000 + " seconds");
 
+            startTime = System.currentTimeMillis();
             System.out.println("Inserting data...");
             networkDBAdaptor.insert(network, null);
-            System.out.println(networkDBAdaptor.get(new Query("query", "MATCH (x) -[y:XREF]-> (z) RETURN x.id, z.id"), null));
+            stopTime = System.currentTimeMillis();
+            System.out.println("Data inserted in " + (stopTime - startTime)/1000 + " seconds");
+
+            // Nodes + relationships
+            String firstInsert = networkDBAdaptor.stats(null, null).getId();
+
+            startTime = System.currentTimeMillis();
+            System.out.println("Inserting the same data...");
+            networkDBAdaptor.insert(network, null);
+            stopTime = System.currentTimeMillis();
+            System.out.println("Data ¿reinserted? in " + (stopTime - startTime)/1000 + " seconds");
+
+            // Nodes + relationships
+            String secondInsert = networkDBAdaptor.stats(null, null).getId();
+            assertEquals("Insert both times the same network", firstInsert, secondInsert);
 
             System.out.println("Annotating Xrefs via physical entity ID...");
-            //System.out.println("XREFS:" + networkDBAdaptor.getXrefs("Protein1686").toString());
 
             List<Xref> mylist = new ArrayList<Xref>();
             for (int i = 0; i < 4; i++) {
                 mylist.add(new Xref("db" + i, "dbVersion" + i, "id" + i, "idVersion" + i));
             }
 
+            String query = "MATCH (z:Xref) WHERE z.id = 'id3' RETURN count(z)";
             networkDBAdaptor.addXrefs("Protein1686", mylist);
-            System.out.println(networkDBAdaptor.get(new Query("query", "MATCH (x) -[y:XREF]-> (z) RETURN x.id, z.id"), null));
+            QueryOptions query_options = new QueryOptions();
+            query_options.put("columnsAs", "count(z)");
+            String myresult = networkDBAdaptor.get(new Query("query", query), query_options).getId();
+            assertEquals("Annotation of Xref to one protein", "1", myresult);
 
-
-            System.out.println("Annotating Xrefs via XREF ID...");
+            System.out.println("Annotating Xrefs via Node ID...");
             mylist.clear();
-            for (int i = 4; i < 8; i++) {
+            for (int i = 3; i < 8; i++) {
                 mylist.add(new Xref("db" + i, "dbVersion" + i, "id" + i, "idVersion" + i));
             }
             networkDBAdaptor.addXrefs("id2", mylist);
-            System.out.println(networkDBAdaptor.get(new Query("query", "MATCH (x) -[y:XREF]-> (z) RETURN x.id, z.id"), null));
+            myresult = networkDBAdaptor.get(new Query("query", query), query_options).getId();
+            assertEquals("Annotation of the same node via an Xref ID", "1", myresult);
+
+            System.out.println(networkDBAdaptor.stats(null, null).getId());
 
         }
         finally {

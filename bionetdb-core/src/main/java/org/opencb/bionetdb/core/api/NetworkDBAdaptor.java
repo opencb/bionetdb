@@ -18,10 +18,6 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     void insert(Network network, QueryOptions queryOptions);
 
-    void insertInteractions(List<Interaction> interactionList, QueryOptions queryOptions);
-
-    void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions);
-
     void addXrefs(String nodeID, List<Xref> xref_list);
 
     //TODO: To remove
