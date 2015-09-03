@@ -289,7 +289,7 @@ public class SbmlParser {
     private void fixComplexesInfo(Network network) {
         /**
          * This method transforms the xrefs from the complex attribute "components" into their
-         * specific ids. If the id does not exist, it creates a new PhysicalEntity with that id.
+         * specific IDs. If the ID does not exist, it creates a new PhysicalEntity with that ID.
          *
          * This method also populates the "componentOfComplex" attribute of the physical entities
          * which are part of the complex
@@ -351,6 +351,12 @@ public class SbmlParser {
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             complexx.getXrefs().add(xref);
                             newPhysicalEntities.add(complexx);
+                        } else {
+                            UndefinedEntity undefinedEntity = new UndefinedEntity(componentId, "", "");
+                            undefinedEntity.getComponentOfComplex().add(complex.getId());
+                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                            undefinedEntity.getXrefs().add(xref);
+                            newPhysicalEntities.add(undefinedEntity);
                         }
                     }
                 }
