@@ -98,45 +98,45 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private void insertInteractions(List<Interaction> interactionList, QueryOptions queryOptions) {
 
         // 1. Insert all interactions as nodes
-        try ( Transaction tx = this.database.beginTx() ) {
-
+        try (Transaction tx = this.database.beginTx()) {
             for (Interaction i : interactionList) {
                 Node mynode =  getOrCreateNode("Interaction", new Query("id", i.getId()), null);
-
-                if (i.getName() != null) mynode.setProperty("name", i.getName());
-                if (i.getId() != null) mynode.setProperty("id", i.getId());
-                if (i.getDescription() != null) mynode.setProperty("description", i.getDescription());
+                if (i.getName() != null) {
+                    mynode.setProperty("name", i.getName());
+                }
+                if (i.getId() != null) {
+                    mynode.setProperty("id", i.getId());
+                }
+                if (i.getDescription() != null) {
+                    mynode.setProperty("description", i.getDescription());
+                }
             }
             tx.success();
         }
 
         // 2. Insert the interactions
-        try ( Transaction tx = this.database.beginTx() ) {
+        try (Transaction tx = this.database.beginTx()) {
             Label interactionLabel = DynamicLabel.label("Interaction");
-            Label pEntityLabel     = DynamicLabel.label("PhysicalEntity");
+            Label pEntityLabel = DynamicLabel.label("PhysicalEntity");
             Node r;
             for (Interaction i : interactionList) {
-
                 switch(i.getType()) {
                     case REACTION:
-
                         // Left & right
                         Reaction myreaction = (Reaction) i;
                         r = this.database.findNode(interactionLabel, "id", i.getId());
 
                         for (String myID : myreaction.getReactants()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addInteraction(n,r,RelTypes.REACTANT);
+                            addInteraction(n, r, RelTypes.REACTANT);
                         }
 
                         for (String myID : myreaction.getProducts()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
                             addInteraction(r, n, RelTypes.REACTANT);
                         }
-
                         break;
                     case CATALYSIS:
-
                         Catalysis catalysis = (Catalysis) i;
                         r = this.database.findNode(interactionLabel, "id", i.getId());
 
@@ -151,11 +151,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                             Node n = this.database.findNode(interactionLabel, "id", myID);
                             addInteraction(r, n, RelTypes.CONTROLLED);
                         }
-
                         break;
-
                     case REGULATION:
-
                         Regulation regulation = (Regulation) i;
                         r = this.database.findNode(interactionLabel, "id", i.getId());
 
@@ -170,9 +167,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                             Node n = this.database.findNode(interactionLabel, "id", myID);
                             addInteraction(r, n, RelTypes.CONTROLLED);
                         }
-
                         break;
-
                     default:
                         break;
                 }
@@ -187,7 +182,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param queryOptions
      */
     private void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) {
-
         try ( Transaction tx = this.database.beginTx() ) {
             for (PhysicalEntity p : physicalEntityList) {
                 // Insert all the Physical entity nodes
@@ -197,10 +191,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 mynode.setProperty("description", p.getDescription());
                 addXrefNode(mynode, new Xref(null, null, p.getId(), null));
             }
-
             tx.success();
         }
-
     }
 
     /**
