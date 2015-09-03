@@ -88,16 +88,6 @@ public class SbmlParser {
             network.setInteraction(createInteraction(reaction, network));
         }
 
-/*        // Catalysis
-        for (int i = 0; i < model.getNumReactions(); i++) {
-            Reaction reaction = model.getReaction(i);
-            Catalysis catalysis;
-            catalysis = createCatalysis(reaction);
-            if (catalysis != null) {
-                network.setInteraction(catalysis);
-            }
-        }*/
-
         // Adding to PhysicalEntities the interactions where they participate
         fixParticipantOfInteractionInfo(network);
 
@@ -144,9 +134,7 @@ public class SbmlParser {
             }
             String res = sb.toString().toLowerCase();
 
-            if (res.contains("bind")){
-                type = PhysicalEntity.Type.COMPLEX;
-            } else if (res.contains("uniprot") || res.contains("interpro") || res.contains("pirsf")) {
+            if (res.contains("uniprot") || res.contains("interpro") || res.contains("pirsf")) {
                 type = PhysicalEntity.Type.PROTEIN;
             } else if (res.contains("kegg") || res.contains("chebi")) {
                 type = PhysicalEntity.Type.SMALLMOLECULE;
@@ -154,6 +142,8 @@ public class SbmlParser {
                 type = PhysicalEntity.Type.DNA;
             } else if (res.contains("enst")) {
                 type = PhysicalEntity.Type.RNA;
+            } else if (res.contains("bind")) {
+                type = PhysicalEntity.Type.COMPLEX;
             }
         }
 
@@ -299,7 +289,7 @@ public class SbmlParser {
     private void fixComplexesInfo(Network network) {
         /**
          * This method transforms the xrefs from the complex attribute "components" into their
-         * specific ids.
+         * specific ids. If the id does not exist, it creates a new PhysicalEntity with that id.
          *
          * This method also populates the "componentOfComplex" attribute of the physical entities
          * which are part of the complex
@@ -318,19 +308,61 @@ public class SbmlParser {
         }
 
         // Populating "components" and "componentOfComplex" attributes
+        List<PhysicalEntity> newPhysicalEntities = new ArrayList<>();
         for (PhysicalEntity physicalEntity : physicalEntities) {
             if (physicalEntity.getType() == PhysicalEntity.Type.COMPLEX) {
                 Complex complex = (Complex) physicalEntity;
                 for (String component : complex.getComponents()) {
-                    String componentId = component.toLowerCase();
+                    String componentId = component.replace("%3A", ":").split(":")[0].toLowerCase() + ":" +
+                            component.replace("%3A", ":").split(":")[1];
                     if (xrefs.contains(componentId)) {
                         complex.getComponents().set(complex.getComponents().indexOf(component),
                                 ids.get(xrefs.indexOf(componentId)));
                         network.getPhysicalEntity(ids.get(xrefs.indexOf(componentId))).getComponentOfComplex().add(complex.getId());
+                    } else {
+                        // If component xref cannot be transformed into an ID, a new PhysicalEntity is created
+                        if (componentId.contains("uniprot") || componentId.contains("interpro") || componentId.contains("pirsf")) {
+                            Protein protein = new Protein(componentId, "", "");
+                            protein.getComponentOfComplex().add(complex.getId());
+                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                            protein.getXrefs().add(xref);
+                            newPhysicalEntities.add(protein);
+                        } else if (componentId.contains("kegg") || componentId.contains("chebi")) {
+                            SmallMolecule smallMolecule = new SmallMolecule(componentId, "", "");
+                            smallMolecule.getComponentOfComplex().add(complex.getId());
+                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                            smallMolecule.getXrefs().add(xref);
+                            newPhysicalEntities.add(smallMolecule);
+                        } else if (componentId.contains("ensg")) {
+                            Dna dna = new Dna(componentId, "", "");
+                            dna.getComponentOfComplex().add(complex.getId());
+                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                            dna.getXrefs().add(xref);
+                            newPhysicalEntities.add(dna);
+                        } else if (componentId.contains("enst")) {
+                            Rna rna = new Rna(componentId, "", "");
+                            rna.getComponentOfComplex().add(complex.getId());
+                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                            rna.getXrefs().add(xref);
+                            newPhysicalEntities.add(rna);
+                        } else if (componentId.contains("bind")) {
+                            Complex complexx = new Complex(componentId, "", "");
+                            complexx.getComponentOfComplex().add(complex.getId());
+                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                            complexx.getXrefs().add(xref);
+                            newPhysicalEntities.add(complexx);
+                        }
                     }
                 }
             }
         }
+
+        if (!newPhysicalEntities.isEmpty()) {
+            for (PhysicalEntity newPhysicalEntity : newPhysicalEntities) {
+                network.getPhysicalEntities().add(newPhysicalEntity);
+            }
+        }
+
     }
 
     private void fixParticipantOfInteractionInfo(Network network) {
