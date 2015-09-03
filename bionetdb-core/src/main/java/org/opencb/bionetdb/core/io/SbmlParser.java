@@ -88,16 +88,6 @@ public class SbmlParser {
             network.setInteraction(createInteraction(reaction, network));
         }
 
-/*        // Catalysis
-        for (int i = 0; i < model.getNumReactions(); i++) {
-            Reaction reaction = model.getReaction(i);
-            Catalysis catalysis;
-            catalysis = createCatalysis(reaction);
-            if (catalysis != null) {
-                network.setInteraction(catalysis);
-            }
-        }*/
-
         // Adding to PhysicalEntities the interactions where they participate
         fixParticipantOfInteractionInfo(network);
 
@@ -144,9 +134,7 @@ public class SbmlParser {
             }
             String res = sb.toString().toLowerCase();
 
-            if (res.contains("bind")){
-                type = PhysicalEntity.Type.COMPLEX;
-            } else if (res.contains("uniprot") || res.contains("interpro") || res.contains("pirsf")) {
+            if (res.contains("uniprot") || res.contains("interpro") || res.contains("pirsf")) {
                 type = PhysicalEntity.Type.PROTEIN;
             } else if (res.contains("kegg") || res.contains("chebi")) {
                 type = PhysicalEntity.Type.SMALLMOLECULE;
@@ -154,6 +142,8 @@ public class SbmlParser {
                 type = PhysicalEntity.Type.DNA;
             } else if (res.contains("enst")) {
                 type = PhysicalEntity.Type.RNA;
+            } else if (res.contains("bind")) {
+                type = PhysicalEntity.Type.COMPLEX;
             }
         }
 
