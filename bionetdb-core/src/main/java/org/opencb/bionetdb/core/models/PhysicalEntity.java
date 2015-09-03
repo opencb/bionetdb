@@ -10,7 +10,7 @@ public class PhysicalEntity {
     protected String id;
     protected String name;
     protected String description;
-    protected Map<String, List<String>> cellularLocation;
+    protected List<CellularLocation> cellularLocation;
     protected List<String> source;
     protected List<String> altNames;
     protected List<String> altIds;
@@ -60,7 +60,7 @@ public class PhysicalEntity {
 
     private void init() {
         this.attributes = new HashMap<>();
-        this.cellularLocation = new HashMap<>();
+        this.cellularLocation = new ArrayList<>();
         this.source = new ArrayList<>();
         this.altNames = new ArrayList<>();
         this.altIds = new ArrayList<>();
@@ -104,11 +104,11 @@ public class PhysicalEntity {
         this.description = description;
     }
 
-    public Map<String, List<String>> getCellularLocation() {
+    public List<CellularLocation> getCellularLocation() {
         return cellularLocation;
     }
 
-    public void setCellularLocation(Map<String, List<String>> cellularLocation) {
+    public void setCellularLocation(List<CellularLocation> cellularLocation) {
         this.cellularLocation = cellularLocation;
     }
 

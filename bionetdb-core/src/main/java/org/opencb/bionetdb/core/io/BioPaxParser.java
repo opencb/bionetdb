@@ -316,22 +316,29 @@ public class BioPaxParser {
         altNames.addAll(physicalEntityBP.getName());
         physicalEntity.setAltNames(altNames);
 
-        // cellularLocation.names
-        List<String> cellularLocationsNames = new ArrayList<>();
-        cellularLocationsNames.addAll(physicalEntityBP.getCellularLocation().getTerm());
-
-        // cellularLocation.ids
-        List<String> cellularLocationsIds = new ArrayList<>();
-        Set<Xref> CellLocXrefs = physicalEntityBP.getCellularLocation().getXref();
-        for (Xref CellLocXref : CellLocXrefs) {
-            cellularLocationsIds.add(CellLocXref.getId());
-        }
 
         // cellularLocation
-        Map<String, List<String>> cellularLocations = new HashMap<>();
-        cellularLocations.put("name", cellularLocationsNames);
-        cellularLocations.put("id", cellularLocationsIds);
-        physicalEntity.setCellularLocation(cellularLocations);
+        CellularLocation cellularLocation = new CellularLocation();
+        CellularLocationVocabulary cellularLocationVocabulary = physicalEntityBP.getCellularLocation();
+        for (String name : cellularLocationVocabulary.getTerm()) {
+            cellularLocation.getNames().add(name);
+        }
+        for (Xref cellLocXref : cellularLocationVocabulary.getXref()) {
+            org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
+            if (cellLocXref.getDb().toLowerCase().contains("gene ontology")) {
+                xref.setDb("go");
+                xref.setDbVersion(cellLocXref.getDbVersion());
+                xref.setId(cellLocXref.getId().split(":")[1]);
+                xref.setIdVersion(cellLocXref.getIdVersion());
+            } else {
+                xref.setDb(cellLocXref.getDb());
+                xref.setDbVersion(cellLocXref.getDbVersion());
+                xref.setId(cellLocXref.getId());
+                xref.setIdVersion(cellLocXref.getIdVersion());
+            }
+            cellularLocation.getXrefs().add(xref);
+        }
+        physicalEntity.getCellularLocation().add(cellularLocation);
 
         // source
         List<String> sources = new ArrayList<>();

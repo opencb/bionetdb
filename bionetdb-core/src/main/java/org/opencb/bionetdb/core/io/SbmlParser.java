@@ -229,7 +229,7 @@ public class SbmlParser {
         physicalEntity.setName(species.getName());
 
         // cellular location
-        physicalEntity.setCellularLocation(getCompartmentInfo(species.getModel().getCompartment(species.getCompartment())));
+        physicalEntity.getCellularLocation().add(getCompartmentInfo(species.getModel().getCompartment(species.getCompartment())));
 
         // xrefs
         XMLNode description = species.getAnnotation().getChild("RDF").getChild("Description");
@@ -269,21 +269,26 @@ public class SbmlParser {
         physicalEntity.getAttributes().put(REACTOME_FEAT + "comment", sb.toString());
     }
 
-    private Map<String, List<String>> getCompartmentInfo (Compartment compartment) {
+    private CellularLocation getCompartmentInfo (Compartment compartment) {
 
-        Map<String, List<String>> compartmentInfo = new HashMap<>();
+        CellularLocation cellularLocation = new CellularLocation();
 
-        compartmentInfo.put("name", Collections.singletonList(compartment.getName()));
+        // Names
+        cellularLocation.getNames().add(compartment.getName());
 
-        String id = compartment.getAnnotation().getChild("RDF").getChild("Description").getChild("is")
-                .getChild("Bag").getChild("li").getAttributes().getValue("resource");
-
+        // Xrefs
+        String cellularLocXref = compartment.getAnnotation().getChild("RDF").getChild("Description")
+                .getChild("is").getChild("Bag").getChild("li").getAttributes().getValue("resource");
         // From "urn:miriam:obo.go:GO%3A0005759" to "GO:0005759"
         // Fixing bad formatted colon: from "%3A" to ":"
-        List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
-        compartmentInfo.put("id", Collections.singletonList(String.join(":", idElements.subList(idElements.size() - 2, idElements.size()))));
+        List<String> idElements = Arrays.asList(cellularLocXref.replace("%3A", ":").split(":"));
 
-        return compartmentInfo;
+        org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
+        xref.setDb(idElements.get(idElements.size()-2));
+        xref.setId(idElements.get(idElements.size()-1));
+        cellularLocation.getXrefs().add(xref);
+
+        return cellularLocation;
     }
 
     private void fixComplexesInfo(Network network) {
