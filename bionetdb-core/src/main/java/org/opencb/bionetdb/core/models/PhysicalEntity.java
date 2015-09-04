@@ -10,10 +10,8 @@ public class PhysicalEntity {
     protected String id;
     protected String name;
     protected String description;
-    protected Map<String, List<String>> cellularLocation;
+    protected List<CellularLocation> cellularLocation;
     protected List<String> source;
-    protected List<String> altNames;
-    protected List<String> altIds;
     protected List<String> members;
     protected List<String> memberOfSet;
     protected List<String> componentOfComplex;
@@ -60,10 +58,8 @@ public class PhysicalEntity {
 
     private void init() {
         this.attributes = new HashMap<>();
-        this.cellularLocation = new HashMap<>();
+        this.cellularLocation = new ArrayList<>();
         this.source = new ArrayList<>();
-        this.altNames = new ArrayList<>();
-        this.altIds = new ArrayList<>();
         this.members = new ArrayList<>();
         this.memberOfSet = new ArrayList<>();
         this.componentOfComplex = new ArrayList<>();
@@ -104,11 +100,11 @@ public class PhysicalEntity {
         this.description = description;
     }
 
-    public Map<String, List<String>> getCellularLocation() {
+    public List<CellularLocation> getCellularLocation() {
         return cellularLocation;
     }
 
-    public void setCellularLocation(Map<String, List<String>> cellularLocation) {
+    public void setCellularLocation(List<CellularLocation> cellularLocation) {
         this.cellularLocation = cellularLocation;
     }
 
@@ -118,22 +114,6 @@ public class PhysicalEntity {
 
     public void setSource(List<String> source) {
         this.source = source;
-    }
-
-    public List<String> getAltNames() {
-        return altNames;
-    }
-
-    public void setAltNames(List<String> altNames) {
-        this.altNames = altNames;
-    }
-
-    public List<String> getAltIds() {
-        return altIds;
-    }
-
-    public void setAltIds(List<String> altIds) {
-        this.altIds = altIds;
     }
 
     public Map<String, Object> getAttributes() {
@@ -191,6 +171,23 @@ public class PhysicalEntity {
 
     public void setXrefs(List<Xref> xrefs) {
         this.xrefs = xrefs;
+    }
+
+    public void setXref(Xref xref) {
+        // Adding xref unless it exists
+        boolean duplicate = false;
+        for (Xref currentXref : this.getXrefs()) {
+            if(xref.getSource().equals(currentXref.getSource()) &&
+                    xref.getSourceVersion().equals(currentXref.getSourceVersion()) &&
+                    xref.getId().equals(currentXref.getId()) &&
+                    xref.getIdVersion().equals(currentXref.getIdVersion())) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) {
+            this.getXrefs().add(xref);
+        }
     }
 
     public Type getType() {

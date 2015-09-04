@@ -206,9 +206,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
             Node xref_node = getOrCreateNode("Xref", new Query("id", xref.getId()), null);
 
-            if (xref.getDb() != null) xref_node.setProperty("db", xref.getDb());
+            if (xref.getSource() != null) xref_node.setProperty("source", xref.getSource());
             if (xref.getId() != null) xref_node.setProperty("id", xref.getId());
-            if (xref.getDbVersion() != null) xref_node.setProperty("dbVersion", xref.getDbVersion());
+            if (xref.getSourceVersion() != null) xref_node.setProperty("sourceVersion", xref.getSourceVersion());
             if (xref.getIdVersion() != null) xref_node.setProperty("idVersion", xref.getIdVersion());
 
             if (!xref_node.hasRelationship(RelTypes.XREF, Direction.INCOMING))

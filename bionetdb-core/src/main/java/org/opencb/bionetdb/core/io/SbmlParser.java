@@ -229,7 +229,7 @@ public class SbmlParser {
         physicalEntity.setName(species.getName());
 
         // cellular location
-        physicalEntity.setCellularLocation(getCompartmentInfo(species.getModel().getCompartment(species.getCompartment())));
+        physicalEntity.getCellularLocation().add(getCompartmentInfo(species.getModel().getCompartment(species.getCompartment())));
 
         // xrefs
         XMLNode description = species.getAnnotation().getChild("RDF").getChild("Description");
@@ -242,20 +242,20 @@ public class SbmlParser {
                 List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
                 List<String> xrefElements = idElements.subList(idElements.size() - 2, idElements.size());
                 if (xrefElements.get(0).contains("kegg.compound")) {
-                    xref.setDb("kegg");
+                    xref.setSource("kegg");
                 } else {
-                    xref.setDb(xrefElements.get(0).toLowerCase());
+                    xref.setSource(xrefElements.get(0).toLowerCase());
                 }
                 xref.setId(xrefElements.get(1));
-                physicalEntity.getXrefs().add(xref);
+                physicalEntity.setXref(xref);
             }
         }
 
         Xref xref = new Xref();
         List<String> sboElements = Arrays.asList(species.getSBOTermID().split(":"));
-        xref.setDb(sboElements.get(0).toLowerCase());
+        xref.setSource(sboElements.get(0).toLowerCase());
         xref.setId(sboElements.get(1));
-        physicalEntity.getXrefs().add(xref);
+        physicalEntity.setXref(xref);
 
         // comments
         StringBuilder sb = new StringBuilder();
@@ -269,27 +269,32 @@ public class SbmlParser {
         physicalEntity.getAttributes().put(REACTOME_FEAT + "comment", sb.toString());
     }
 
-    private Map<String, List<String>> getCompartmentInfo (Compartment compartment) {
+    private CellularLocation getCompartmentInfo (Compartment compartment) {
 
-        Map<String, List<String>> compartmentInfo = new HashMap<>();
+        CellularLocation cellularLocation = new CellularLocation();
 
-        compartmentInfo.put("name", Collections.singletonList(compartment.getName()));
+        // Names
+        cellularLocation.getNames().add(compartment.getName());
 
-        String id = compartment.getAnnotation().getChild("RDF").getChild("Description").getChild("is")
-                .getChild("Bag").getChild("li").getAttributes().getValue("resource");
-
+        // Xrefs
+        String cellularLocXref = compartment.getAnnotation().getChild("RDF").getChild("Description")
+                .getChild("is").getChild("Bag").getChild("li").getAttributes().getValue("resource");
         // From "urn:miriam:obo.go:GO%3A0005759" to "GO:0005759"
         // Fixing bad formatted colon: from "%3A" to ":"
-        List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
-        compartmentInfo.put("id", Collections.singletonList(String.join(":", idElements.subList(idElements.size() - 2, idElements.size()))));
+        List<String> idElements = Arrays.asList(cellularLocXref.replace("%3A", ":").split(":"));
 
-        return compartmentInfo;
+        org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
+        xref.setSource(idElements.get(idElements.size() - 2));
+        xref.setId(idElements.get(idElements.size()-1));
+        cellularLocation.setXref(xref);
+
+        return cellularLocation;
     }
 
     private void fixComplexesInfo(Network network) {
         /**
          * This method transforms the xrefs from the complex attribute "components" into their
-         * specific ids. If the id does not exist, it creates a new PhysicalEntity with that id.
+         * specific IDs. If the ID does not exist, it creates a new PhysicalEntity with that ID.
          *
          * This method also populates the "componentOfComplex" attribute of the physical entities
          * which are part of the complex
@@ -302,7 +307,7 @@ public class SbmlParser {
         List<String> ids = new ArrayList<>();
         for (PhysicalEntity physicalEntity : physicalEntities) {
             for (Xref peXref : physicalEntity.getXrefs()) {
-                xrefs.add(peXref.getDb() + peXref.getDbVersion() + ":" + peXref.getId() + peXref.getIdVersion());
+                xrefs.add(peXref.getSource() + peXref.getSourceVersion() + ":" + peXref.getId() + peXref.getIdVersion());
                 ids.add(physicalEntity.getId());
             }
         }
@@ -325,32 +330,38 @@ public class SbmlParser {
                             Protein protein = new Protein(componentId, "", "");
                             protein.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
-                            protein.getXrefs().add(xref);
+                            protein.setXref(xref);
                             newPhysicalEntities.add(protein);
                         } else if (componentId.contains("kegg") || componentId.contains("chebi")) {
                             SmallMolecule smallMolecule = new SmallMolecule(componentId, "", "");
                             smallMolecule.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
-                            smallMolecule.getXrefs().add(xref);
+                            smallMolecule.setXref(xref);
                             newPhysicalEntities.add(smallMolecule);
                         } else if (componentId.contains("ensg")) {
                             Dna dna = new Dna(componentId, "", "");
                             dna.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
-                            dna.getXrefs().add(xref);
+                            dna.setXref(xref);
                             newPhysicalEntities.add(dna);
                         } else if (componentId.contains("enst")) {
                             Rna rna = new Rna(componentId, "", "");
                             rna.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
-                            rna.getXrefs().add(xref);
+                            rna.setXref(xref);
                             newPhysicalEntities.add(rna);
                         } else if (componentId.contains("bind")) {
                             Complex complexx = new Complex(componentId, "", "");
                             complexx.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
-                            complexx.getXrefs().add(xref);
+                            complexx.setXref(xref);
                             newPhysicalEntities.add(complexx);
+                        } else {
+                            UndefinedEntity undefinedEntity = new UndefinedEntity(componentId, "", "");
+                            undefinedEntity.getComponentOfComplex().add(complex.getId());
+                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                            undefinedEntity.setXref(xref);
+                            newPhysicalEntities.add(undefinedEntity);
                         }
                     }
                 }
@@ -395,12 +406,12 @@ public class SbmlParser {
                 List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
                 List<String> xrefElements = idElements.subList(idElements.size() - 2, idElements.size());
                 if (xrefElements.get(0).contains("kegg.compound")) {
-                    idXref.setDb("kegg");
+                    idXref.setSource("kegg");
                 } else {
-                    idXref.setDb(xrefElements.get(0).toLowerCase());
+                    idXref.setSource(xrefElements.get(0).toLowerCase());
                 }
                 idXref.setId(xrefElements.get(1));
-                reaction.getXrefs().add(idXref);
+                reaction.setXref(idXref);
             }
         }
 
@@ -413,9 +424,9 @@ public class SbmlParser {
                 // Fixing bad formatted colon: from "%3A" to ":"
                 List<String> evElements = Arrays.asList(ev.replace("%3A", ":").split(":"));
                 List<String> xrefElements = evElements.subList(evElements.size() - 2, evElements.size());
-                evXref.setDb(xrefElements.get(0).toLowerCase());
+                evXref.setSource(xrefElements.get(0).toLowerCase());
                 evXref.setId(xrefElements.get(1));
-                reaction.getXrefs().add(evXref);
+                reaction.setXref(evXref);
             }
         }
 
