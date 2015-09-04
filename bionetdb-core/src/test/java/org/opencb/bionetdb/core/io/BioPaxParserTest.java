@@ -13,7 +13,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class BioPaxParserTest {
 
-
     @Test
     public void testParse() throws Exception {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");

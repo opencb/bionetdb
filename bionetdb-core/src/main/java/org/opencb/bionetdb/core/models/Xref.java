@@ -5,42 +5,42 @@ package org.opencb.bionetdb.core.models;
  */
 public class Xref {
 
-    private String db;
-    private String dbVersion;
+    private String source;
+    private String sourceVersion;
     private String id;
     private String idVersion;
 
     public Xref() {
-        this.db = "";
-        this.dbVersion = "";
+        this.source = "";
+        this.sourceVersion = "";
         this.id = "";
         this.idVersion = "";
     }
 
-    public Xref(String db, String dbVersion, String id, String idVersion) {
-        this.db = db;
-        this.dbVersion = dbVersion;
+    public Xref(String source, String sourceVersion, String id, String idVersion) {
+        this.source = source;
+        this.sourceVersion = sourceVersion;
         this.id = id;
         this.idVersion = idVersion;
     }
 
-    public String getDb() {
-        return db;
+    public String getSource() {
+        return source;
     }
 
-    public void setDb(String db) {
-        if (db != null) {
-            this.db = db.toLowerCase();
+    public void setSource(String source) {
+        if (source != null) {
+            this.source = source.toLowerCase();
         }
     }
 
-    public String getDbVersion() {
-        return dbVersion;
+    public String getSourceVersion() {
+        return sourceVersion;
     }
 
-    public void setDbVersion(String dbVersion) {
-        if (dbVersion != null) {
-            this.dbVersion = dbVersion;
+    public void setSourceVersion(String sourceVersion) {
+        if (sourceVersion != null) {
+            this.sourceVersion = sourceVersion;
         }
     }
 
