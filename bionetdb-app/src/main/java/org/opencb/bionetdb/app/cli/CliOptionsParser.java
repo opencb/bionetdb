@@ -20,6 +20,7 @@ public class CliOptionsParser {
     private LoadCommandOptions loadCommandOptions;
     private QueryCommandOptions queryCommandOptions;
     private VariantAnnotationCommandOptions variantAnnotationCommandOptions;
+    private ExpressionCommandOptions expressionCommandOptions;
 
 
     public CliOptionsParser() {
@@ -34,11 +35,13 @@ public class CliOptionsParser {
         loadCommandOptions = new LoadCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
         variantAnnotationCommandOptions = new VariantAnnotationCommandOptions();
+        expressionCommandOptions = new ExpressionCommandOptions();
 
         jcommander.addCommand("build", buildCommandOptions);
         jcommander.addCommand("load", loadCommandOptions);
         jcommander.addCommand("query", queryCommandOptions);
         jcommander.addCommand("annotation", variantAnnotationCommandOptions);
+        jcommander.addCommand("expression",expressionCommandOptions);
 
     }
 
@@ -185,6 +188,21 @@ public class CliOptionsParser {
 
     }
 
+    @Parameters(commandNames = {"expression"}, commandDescription = "Include expression data into the database")
+    public class ExpressionCommandOptions {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+
+        @Parameter(names = {"--data"}, description = "File in tabular format containing the expression values to be added", required = true, arity = 1)
+        public String data;
+
+        @Parameter(names = {"--metadata"}, description = "File containing metadata information of the expression data", required = false, arity = 1)
+        public String metadata;
+
+    }
+
 
     public void printUsage(){
         if(getCommand().isEmpty()) {
@@ -260,6 +278,8 @@ public class CliOptionsParser {
     public QueryCommandOptions getQueryCommandOptions() {
         return queryCommandOptions;
     }
+
+    public ExpressionCommandOptions getExpressionCommandOptions () { return expressionCommandOptions; }
 
     public VariantAnnotationCommandOptions getVariantAnnotationCommandOptions() {
         return variantAnnotationCommandOptions;

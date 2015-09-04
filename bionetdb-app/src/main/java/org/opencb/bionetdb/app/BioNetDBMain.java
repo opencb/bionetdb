@@ -53,6 +53,9 @@ public class BioNetDBMain {
                     case "annotation":
                         commandExecutor = new AnnotateCommandExecutor(cliOptionsParser.getVariantAnnotationCommandOptions());
                         break;
+                    case "expression":
+                        commandExecutor = new ExpressionCommandExecutor(cliOptionsParser.getExpressionCommandOptions());
+                        break;
                     default:
                         break;
                 }
