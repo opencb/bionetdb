@@ -54,8 +54,6 @@ public class SbmlParser {
         }
     }
 
-    private ObjectMapper objectMapper;
-
     private static final String REACTOME_FEAT = "reactome.";
 
     public SbmlParser() {
@@ -291,15 +289,14 @@ public class SbmlParser {
         return cellularLocation;
     }
 
+    /**
+     * This method transforms the xrefs from the complex attribute "components" into their
+     * specific IDs. If the ID does not exist, it creates a new PhysicalEntity with that ID.
+     *
+     * This method also populates the "componentOfComplex" attribute of the physical entities
+     * which are part of the complex
+     */
     private void fixComplexesInfo(Network network) {
-        /**
-         * This method transforms the xrefs from the complex attribute "components" into their
-         * specific IDs. If the ID does not exist, it creates a new PhysicalEntity with that ID.
-         *
-         * This method also populates the "componentOfComplex" attribute of the physical entities
-         * which are part of the complex
-         */
-
         List<PhysicalEntity> physicalEntities = network.getPhysicalEntities();
 
         // Creating two related lists for every physical entity: xref and its corresponding id

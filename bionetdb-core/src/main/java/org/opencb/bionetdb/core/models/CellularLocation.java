@@ -12,7 +12,7 @@ public class CellularLocation {
     private List<Xref> xrefs;
 
     public CellularLocation() {
-        this.names = new ArrayList<>();;
+        this.names = new ArrayList<>();
         this.xrefs = new ArrayList<>();
     }
 
