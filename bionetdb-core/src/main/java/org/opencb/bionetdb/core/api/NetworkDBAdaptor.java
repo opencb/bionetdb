@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.api;
 
+import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Xref;
 import org.opencb.datastore.core.Query;
@@ -46,6 +47,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     void insert(Network network, QueryOptions queryOptions);
 
     void addXrefs(String nodeID, List<Xref> xref_list);
+
+    void addExpressionData(String tissue, String timeseries, List<Expression> myExpression);
 
     //TODO: To remove
     //public QueryResult getXrefs(String idNode);

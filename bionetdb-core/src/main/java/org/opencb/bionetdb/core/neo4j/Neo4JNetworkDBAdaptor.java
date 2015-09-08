@@ -35,7 +35,55 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         REACTANT,
         XREF,
         CONTROLLED,
-        CONTROLLER
+        CONTROLLER,
+        TISSUE,
+        TIMESERIES
+    }
+
+    @Override
+    public void addExpressionData(String tissue, String timeseries, List<Expression> myExpression) {
+        for (Expression exprElem : myExpression) {
+            Node xref_node = getNode("Xref", "id", exprElem.getId());
+            Node origin = xref_node.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
+
+            // Find or create tissueNode and the relationship
+            Node tissueNode = null;
+            for (Relationship relationShip : origin.getRelationships(RelTypes.TISSUE, Direction.OUTGOING)) {
+                if (relationShip.getEndNode().getProperty("tissue").equals(tissue)) {
+                    tissueNode = relationShip.getEndNode();
+                    break;
+                }
+            }
+            if (tissueNode == null) {
+                tissueNode = createNode("Tissue");
+                tissueNode.setProperty("tissue", exprElem.getId());
+                addInteraction(origin, tissueNode, RelTypes.TISSUE);
+            }
+
+            // Find or create timeSeriesNode and the relationship
+            Node timeSeriesNode = null;
+            for (Relationship relationShip : tissueNode.getRelationships(RelTypes.TIMESERIES, Direction.OUTGOING)) {
+                if (relationShip.getEndNode().getProperty("timeseries").equals(timeseries)) {
+                    timeSeriesNode = relationShip.getEndNode();
+                    break;
+                }
+            }
+            if (timeSeriesNode == null) {
+                timeSeriesNode = createNode("TimeSeries");
+                timeSeriesNode.setProperty("timeseries", exprElem.getId());
+                addInteraction(tissueNode, timeSeriesNode, RelTypes.TISSUE);
+            }
+
+            // Add or change the properties of the timeseries node in the database
+            if (exprElem.getExpression() != -1)
+                timeSeriesNode.setProperty("expression", exprElem.getExpression());
+            if (exprElem.getPvalue() != -1)
+                timeSeriesNode.setProperty("pvalue", exprElem.getPvalue());
+            if (exprElem.getOdds() != -1)
+                timeSeriesNode.setProperty("odds", exprElem.getOdds());
+            if (exprElem.getUpregulated() != -1)
+                timeSeriesNode.setProperty("upregulated", exprElem.getUpregulated());
+        }
     }
 
     /**
@@ -48,15 +96,22 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     // TODO: Improve query & queryOptions usage
     private Node getOrCreateNode(String label, Query query, QueryOptions queryOptions) {
 
-        Label mylabel = DynamicLabel.label(label);
-        Node result = this.database.findNode(mylabel, "id", query.get("id"));
-
+        Node result = getNode(label, "id", query.get("id"));
         if (result == null) {
-            result = this.database.createNode(mylabel);
+            result = createNode(label);
         }
         return result;
     }
 
+    private Node getNode (String label, String key, Object value) {
+        Label mylabel = DynamicLabel.label(label);
+        return this.database.findNode(mylabel, key, value);
+    }
+
+    private Node createNode (String label) {
+        Label mylabel = DynamicLabel.label(label);
+        return this.database.createNode(mylabel);
+    }
 
     /**
      * The function will create an interaction between two nodes if it is not already created.

@@ -194,12 +194,17 @@ public class CliOptionsParser {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-
-        @Parameter(names = {"--data"}, description = "File in tabular format containing the expression values to be added", required = true, arity = 1)
-        public String data;
+        @Parameter(names = {"--database"}, description = "Path to the database", required = true, arity = 1)
+        public String database;
 
         @Parameter(names = {"--metadata"}, description = "File containing metadata information of the expression data", required = false, arity = 1)
         public String metadata;
+
+        @Parameter(names = {"--tissue"}, description = "Tissues to be imported from the metadata file separated by commas. If left empty, all the tissues will be considered.", required = false, arity = 1)
+        public List<String> tissues;
+
+        @Parameter(names = {"--timeseries"}, description = "Timeseries to be imported from the metadata file separated by commas. If left empty, all the tissues will be considered.", required = false, arity = 1)
+        public List<String> timeseries;
 
     }
 
