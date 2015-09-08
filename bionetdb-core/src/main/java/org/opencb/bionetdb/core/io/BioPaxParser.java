@@ -34,10 +34,7 @@ public class BioPaxParser {
 
     private String level;
 
-    private ObjectMapper objectMapper;
-
     private static final String REACTOME_FEAT = "reactome.";
-
 
     public BioPaxParser(String level) {
         this.level = level;
@@ -342,15 +339,13 @@ public class BioPaxParser {
             org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
             if (cellLocXref.getDb().toLowerCase().contains("gene ontology")) {
                 xref.setSource("go");
-                xref.setSourceVersion(cellLocXref.getDbVersion());
                 xref.setId(cellLocXref.getId().split(":")[1]);
-                xref.setIdVersion(cellLocXref.getIdVersion());
             } else {
                 xref.setSource(cellLocXref.getDb());
-                xref.setSourceVersion(cellLocXref.getDbVersion());
                 xref.setId(cellLocXref.getId());
-                xref.setIdVersion(cellLocXref.getIdVersion());
             }
+            xref.setSourceVersion(cellLocXref.getDbVersion());
+            xref.setIdVersion(cellLocXref.getIdVersion());
             cellularLocation.setXref(xref);
         }
         physicalEntity.getCellularLocation().add(cellularLocation);
@@ -471,19 +466,25 @@ public class BioPaxParser {
                 Conversion conversionBP = (Conversion) bioPAXElement;
 
                 // Setting up reaction type
-                if (className.equals("BiochemicalReaction") || className.equals("Degradation")) {
-                    reaction.setReactionType(Reaction.ReactionType.REACTION);
-                } else if (className.equals("ComplexAssembly")) {
-                    reaction.setReactionType(Reaction.ReactionType.ASSEMBLY);
-                } else if (className.equals("Transport") || className.equals("TransportWithBiochemicalReaction")) {
-                    reaction.setReactionType(Reaction.ReactionType.TRANSPORT);
+                switch (className) {
+                    case "BiochemicalReaction":
+                    case "Degradation":
+                        reaction.setReactionType(Reaction.ReactionType.REACTION);
+                        break;
+                    case "ComplexAssembly":
+                        reaction.setReactionType(Reaction.ReactionType.ASSEMBLY);
+                        break;
+                    case "Transport":
+                    case "TransportWithBiochemicalReaction":
+                        reaction.setReactionType(Reaction.ReactionType.TRANSPORT);
+                        break;
                 }
 
                 // Common Interaction properties
                 setInteractionCommonProperties(conversionBP, reaction);
 
                 // Left items
-                List<String> leftItems = new ArrayList<String>();
+                List<String> leftItems = new ArrayList<>();
                 Set<PhysicalEntity> lefts = conversionBP.getLeft();
                 for (PhysicalEntity left : lefts) {
                     leftItems.add(left.getRDFId().split("#")[1]);

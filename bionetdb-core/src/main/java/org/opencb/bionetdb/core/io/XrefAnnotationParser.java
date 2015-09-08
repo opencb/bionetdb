@@ -13,26 +13,25 @@ import java.util.zip.GZIPInputStream;
  */
 public class XrefAnnotationParser {
 
+    /**
+     * This method parses annotation files in tabular format with commented header:
+     *
+     *     e.g.:
+     *         #name    source  id   sourceVersion  idVersion
+     *         Entity1  DB1     ID1  db1            id1
+     *         Entity2  DB2     ID2
+     *         Entity3  DB3     ID3  db3
+     *
+     * - Field 1: entity reference id for which the new info will be added.
+     * - Field 2: database name
+     * - Field 3: entity id
+     * - Field 4: database version
+     * - Field 5: id version
+     *
+     * First three fields are mandatory: "name", "database" and "id".
+     * Unknown info is represented as an empty string.
+     */
     public Map<String, Xref> parseXrefAnnotationFile(Path path) throws IOException {
-
-        /**
-         * This method parses annotation files in tabular format with commented header:
-         *
-         *     e.g.:
-         *         #name    db   id   dbVersion  idVersion
-         *         Entity1  DB1  ID1  db1        id1
-         *         Entity2  DB2  ID2
-         *         Entity3  DB3  ID3  db3
-         *
-         * - Field 1: entity reference id for which the new info will be added.
-         * - Field 2: database name
-         * - Field 3: entity id
-         * - Field 4: database version
-         * - Field 5: id version
-         *
-         * First three fields are mandatory: "name", "database" and "id".
-         * Unknown info is represented as an empty string.
-         */
 
         // Reading GZip input stream
         InputStream inputStream;
