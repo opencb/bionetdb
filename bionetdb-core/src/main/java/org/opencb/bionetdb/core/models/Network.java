@@ -69,8 +69,10 @@ public class Network {
     }
 
     public void setPhysicalEntity(PhysicalEntity physicalEntity) {
-        physicalEntities.add(physicalEntity);
-        physicalEntitiesIndex.put(physicalEntity.getId(), physicalEntities.indexOf(physicalEntity));
+        if (!physicalEntitiesIndex.containsKey(physicalEntity.getId())) {
+            physicalEntities.add(physicalEntity);
+            physicalEntitiesIndex.put(physicalEntity.getId(), physicalEntities.indexOf(physicalEntity));
+        }
     }
 
     public Interaction getInteraction(String id) {
@@ -78,8 +80,10 @@ public class Network {
     }
 
     public void setInteraction(Interaction interaction) {
-        interactions.add(interaction);
-        interactionsIndex.put(interaction.getId(), physicalEntities.indexOf(interaction));
+        if (!interactionsIndex.containsKey(interaction.getId())) {
+            interactions.add(interaction);
+            interactionsIndex.put(interaction.getId(), interactions.indexOf(interaction));
+        }
     }
 
     public List<PhysicalEntity> getPhysicalEntities() {
