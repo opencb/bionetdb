@@ -20,6 +20,7 @@ public class CliOptionsParser {
     private LoadCommandOptions loadCommandOptions;
     private QueryCommandOptions queryCommandOptions;
     private VariantAnnotationCommandOptions variantAnnotationCommandOptions;
+    private ExpressionCommandOptions expressionCommandOptions;
 
 
     public CliOptionsParser() {
@@ -34,11 +35,13 @@ public class CliOptionsParser {
         loadCommandOptions = new LoadCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
         variantAnnotationCommandOptions = new VariantAnnotationCommandOptions();
+        expressionCommandOptions = new ExpressionCommandOptions();
 
         jcommander.addCommand("build", buildCommandOptions);
         jcommander.addCommand("load", loadCommandOptions);
         jcommander.addCommand("query", queryCommandOptions);
         jcommander.addCommand("annotation", variantAnnotationCommandOptions);
+        jcommander.addCommand("expression",expressionCommandOptions);
 
     }
 
@@ -185,6 +188,29 @@ public class CliOptionsParser {
 
     }
 
+    @Parameters(commandNames = {"expression"}, commandDescription = "Include expression data into the database")
+    public class ExpressionCommandOptions {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--database"}, description = "Path to the database", required = true, arity = 1)
+        public String database;
+
+        @Parameter(names = {"--metadata"}, description = "File containing metadata information of the expression data", required = false, arity = 1)
+        public String metadata;
+
+        @Parameter(names = {"--tissue"}, description = "Tissues to be imported from the metadata file separated by commas. If left empty, all the tissues will be considered.", required = false, arity = 1)
+        public List<String> tissues;
+
+        @Parameter(names = {"--timeseries"}, description = "Timeseries to be imported from the metadata file separated by commas. If left empty, all the tissues will be considered.", required = false, arity = 1)
+        public List<String> timeseries;
+
+        @Parameter(names = {"--add"}, description = "Create nodes with IDs not found in the database. By default, they will be ignored.")
+        public boolean add;
+
+    }
+
 
     public void printUsage(){
         if(getCommand().isEmpty()) {
@@ -260,6 +286,8 @@ public class CliOptionsParser {
     public QueryCommandOptions getQueryCommandOptions() {
         return queryCommandOptions;
     }
+
+    public ExpressionCommandOptions getExpressionCommandOptions () { return expressionCommandOptions; }
 
     public VariantAnnotationCommandOptions getVariantAnnotationCommandOptions() {
         return variantAnnotationCommandOptions;

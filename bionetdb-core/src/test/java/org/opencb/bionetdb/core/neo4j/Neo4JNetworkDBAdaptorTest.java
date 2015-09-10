@@ -1,8 +1,11 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import junit.framework.Assert;
 import org.junit.Test;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.io.BioPaxParser;
+import org.opencb.bionetdb.core.io.ExpressionParser;
+import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Xref;
 import org.opencb.datastore.core.Query;
@@ -14,7 +17,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import static junit.framework.Assert.assertNotSame;
 import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
@@ -86,6 +91,46 @@ public class Neo4JNetworkDBAdaptorTest {
             myresult = networkDBAdaptor.get(new Query("query", query), query_options).getId();
             assertEquals("Annotation of the same node via an Xref ID", "1", myresult);
 
+            System.out.println(networkDBAdaptor.stats(null, null).getId());
+
+            System.out.println("\n\nTesting the insertion of expression data");
+            System.out.println("========================================\n\n");
+
+            Path metadata = Paths.get(getClass().getResource("/expression/myfactors.txt").toURI());
+            ExpressionParser expressionParser = new ExpressionParser(metadata);
+
+            System.out.println("Inserting new expression data...");
+            Map<String, Map<String, String>> allExpressionFiles = expressionParser.getMyFiles();
+            for (String tissue : allExpressionFiles.keySet()) {
+                for (String timeseries : allExpressionFiles.get(tissue).keySet()) {
+                    List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
+                    networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, false);
+                }
+            }
+            String expressStats = networkDBAdaptor.stats(null, null).getId();
+            System.out.println(expressStats);
+
+            System.out.println("Reinserting same expression data...");
+            for (String tissue : allExpressionFiles.keySet()) {
+                for (String timeseries : allExpressionFiles.get(tissue).keySet()) {
+                    List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
+                    networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, false);
+                }
+            }
+
+            assertEquals("The number of nodes/relations has changed after reinserting the same expression info",
+                    expressStats, networkDBAdaptor.stats(null, null).getId());
+
+            System.out.println("Reinserting same expression data, but wanting ids not found in the database to be created together with the expression info");
+            for (String tissue : allExpressionFiles.keySet()) {
+                for (String timeseries : allExpressionFiles.get(tissue).keySet()) {
+                    List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
+                    networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, true);
+                }
+            }
+
+            assertNotSame("Expression data from nodes not found in the database have not created new nodes/relations",
+                    expressStats, networkDBAdaptor.stats(null, null).getId());
             System.out.println(networkDBAdaptor.stats(null, null).getId());
 
         }
