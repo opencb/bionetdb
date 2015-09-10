@@ -4,12 +4,14 @@ import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.exceptions.DBException;
 import org.opencb.bionetdb.core.models.*;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,7 +114,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         StringBuilder myquery = new StringBuilder();
         myquery.append("MATCH (n:").append(label).append(") WHERE ");
         for (String key : properties.keySet()) {
-            //myquery.append("n.").append(key).append("= \"").append(properties.get(key)).append("\" AND ");
             myquery.append("n.").append(key).append("= \"").append(((String) properties.get(key)).replace("\"","'")).append("\" AND ");
         }
         myquery.setLength(myquery.length() - 4); // Remove last AND
@@ -176,7 +177,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param queryOptions
      */
     @Override
-    public void insert(Network network, QueryOptions queryOptions) {
+    public void insert(Network network, QueryOptions queryOptions) throws DBException {
 
         this.insertPhysicalEntities(network.getPhysicalEntities(), queryOptions);
         this.insertInteractions(network.getInteractions(), queryOptions);
@@ -355,11 +356,22 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return null;
     }
 
+    private int getTotalNodes() {
+        return Integer.parseInt(this.database.execute("START n=node(*) RETURN count(n)").columnAs("count(n)").next().toString());
+    }
+
+    private int getTotalRelationships() {
+        return Integer.parseInt(this.database.execute("START n=relationship(*) RETURN count(n)").columnAs("count(n)").next().toString());
+    }
+
     @Override
-    public QueryResult stats(Query query, QueryOptions queryOptions) {
-        String nnodes = this.database.execute("START n=node(*) RETURN count(n)").columnAs("count(n)").next().toString();
-        String nrelat = this.database.execute("START n=relationship(*) RETURN count(n)").columnAs("count(n)").next().toString();
-        return new QueryResult("Nodes: " + nnodes + "\tRelationships: " + nrelat);
+    public QueryResult getStats(Query query, QueryOptions queryOptions) {
+        long startTime = System.currentTimeMillis();
+        List<Integer> myoutput = new ArrayList<>(2);
+        myoutput.add(getTotalNodes());
+        myoutput.add(getTotalRelationships());
+        int time = (int) (System.currentTimeMillis() - startTime);
+        return new QueryResult<>("stats", time, 2, 2, null, null, myoutput);
     }
 
     public boolean isOpened() throws IOException {
@@ -369,12 +381,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             throw new IOException("Database is closed.");
     }
 
-
-    @Override
-    public void close() throws Exception {
-
+    public void close() {
         this.database.shutdown();
-
     }
 
 }
