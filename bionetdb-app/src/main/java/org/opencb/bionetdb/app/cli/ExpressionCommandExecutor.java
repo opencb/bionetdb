@@ -41,7 +41,7 @@ public class ExpressionCommandExecutor extends CommandExecutor {
                     if ((expressionCommandOptions.tissues == null || expressionCommandOptions.tissues.contains(tissue)) &&
                             (expressionCommandOptions.timeseries == null || expressionCommandOptions.timeseries.contains(timeseries))) {
                         List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
-                        networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression);
+                        networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, expressionCommandOptions.add);
                     }
                 }
             }

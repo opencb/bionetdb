@@ -206,6 +206,9 @@ public class CliOptionsParser {
         @Parameter(names = {"--timeseries"}, description = "Timeseries to be imported from the metadata file separated by commas. If left empty, all the tissues will be considered.", required = false, arity = 1)
         public List<String> timeseries;
 
+        @Parameter(names = {"--add"}, description = "Create nodes with IDs not found in the database. By default, they will be ignored.")
+        public boolean add;
+
     }
 
 

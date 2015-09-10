@@ -21,12 +21,16 @@ public class ExpressionParser {
     public ExpressionParser(Path metadata) throws IOException {
         myFiles = new HashMap<>();
         List<String> allLines = readAllLines(metadata);
-        Map<String, String> timeseries = new HashMap<>();
         for (String line : allLines) {
             String[] fields = line.split("\t");
-            timeseries.put(fields[1], fields[2]);
-            this.myFiles.put(fields[0], timeseries);
-            timeseries.clear();
+            Map<String, String> timeseries;
+            if (myFiles.containsKey(fields[0]))
+                timeseries = myFiles.get(fields[0]);
+            else
+                timeseries = new HashMap<>();
+            timeseries.put(fields[1], metadata.getParent().toString() + "/" + fields[2]);
+            if (!myFiles.containsKey(fields[0]))
+                myFiles.put(fields[0], timeseries);
         }
     }
 

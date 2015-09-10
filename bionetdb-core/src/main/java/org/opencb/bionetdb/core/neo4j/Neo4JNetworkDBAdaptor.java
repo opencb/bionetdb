@@ -10,7 +10,9 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 05/08/15.
@@ -41,76 +43,112 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public void addExpressionData(String tissue, String timeseries, List<Expression> myExpression) {
-        for (Expression exprElem : myExpression) {
-            Node xref_node = getNode("Xref", "id", exprElem.getId());
-            Node origin = xref_node.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
+    public void addExpressionData(String tissue, String timeseries, List<Expression> myExpression, boolean addNodes) {
+        try (Transaction tx = this.database.beginTx()) {
+            for (Expression exprElem : myExpression) {
+                Map <String, Object> myProperty = new HashMap<>();
+                myProperty.put("id", exprElem.getId());
+                Node xref_node = getNode("Xref", myProperty);
+                Node origin = null;
+                // If the node does not already exist, it does not make sense inserting expression data.
+                if (xref_node == null && addNodes == true) {
+                    // Create basic node with info
+                    origin = createNode("PhysicalEntity", myProperty);
+                    addXrefNode(origin, new Xref(null, null, exprElem.getId(), null));
+                    xref_node = getNode("Xref", myProperty);
+                }
+                if (xref_node != null) {
+                    if (origin == null)
+                        origin = xref_node.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
+                    // Find or create tissueNode and the relationship
+                    Node tissueNode = null;
+                    for (Relationship relationShip : origin.getRelationships(RelTypes.TISSUE, Direction.OUTGOING)) {
+                        if (relationShip.getEndNode().getProperty("tissue").equals(tissue)) {
+                            tissueNode = relationShip.getEndNode();
+                            break;
+                        }
+                    }
+                    if (tissueNode == null) {
+                        myProperty = new HashMap<>();
+                        myProperty.put("tissue", tissue);
+                        tissueNode = createNode("Tissue", myProperty);
+                        addInteraction(origin, tissueNode, RelTypes.TISSUE);
+                    }
 
-            // Find or create tissueNode and the relationship
-            Node tissueNode = null;
-            for (Relationship relationShip : origin.getRelationships(RelTypes.TISSUE, Direction.OUTGOING)) {
-                if (relationShip.getEndNode().getProperty("tissue").equals(tissue)) {
-                    tissueNode = relationShip.getEndNode();
-                    break;
+                    // Find or create timeSeriesNode and the relationship
+                    Node timeSeriesNode = null;
+                    for (Relationship relationShip : tissueNode.getRelationships(RelTypes.TIMESERIES, Direction.OUTGOING)) {
+                        if (relationShip.getEndNode().getProperty("timeseries").equals(timeseries)) {
+                            timeSeriesNode = relationShip.getEndNode();
+                            break;
+                        }
+                    }
+                    if (timeSeriesNode == null) {
+                        myProperty = new HashMap<>();
+                        myProperty.put("timeseries", timeseries);
+                        timeSeriesNode = createNode("TimeSeries", myProperty);
+                        addInteraction(tissueNode, timeSeriesNode, RelTypes.TIMESERIES);
+                    }
+
+                    // Add or change the properties of the timeseries node in the database
+                    if (exprElem.getExpression() != -1)
+                        timeSeriesNode.setProperty("expression", exprElem.getExpression());
+                    if (exprElem.getPvalue() != -1)
+                        timeSeriesNode.setProperty("pvalue", exprElem.getPvalue());
+                    if (exprElem.getOdds() != -1)
+                        timeSeriesNode.setProperty("odds", exprElem.getOdds());
+                    if (exprElem.getUpregulated() != -1)
+                        timeSeriesNode.setProperty("upregulated", exprElem.getUpregulated());
                 }
             }
-            if (tissueNode == null) {
-                tissueNode = createNode("Tissue");
-                tissueNode.setProperty("tissue", exprElem.getId());
-                addInteraction(origin, tissueNode, RelTypes.TISSUE);
-            }
-
-            // Find or create timeSeriesNode and the relationship
-            Node timeSeriesNode = null;
-            for (Relationship relationShip : tissueNode.getRelationships(RelTypes.TIMESERIES, Direction.OUTGOING)) {
-                if (relationShip.getEndNode().getProperty("timeseries").equals(timeseries)) {
-                    timeSeriesNode = relationShip.getEndNode();
-                    break;
-                }
-            }
-            if (timeSeriesNode == null) {
-                timeSeriesNode = createNode("TimeSeries");
-                timeSeriesNode.setProperty("timeseries", exprElem.getId());
-                addInteraction(tissueNode, timeSeriesNode, RelTypes.TISSUE);
-            }
-
-            // Add or change the properties of the timeseries node in the database
-            if (exprElem.getExpression() != -1)
-                timeSeriesNode.setProperty("expression", exprElem.getExpression());
-            if (exprElem.getPvalue() != -1)
-                timeSeriesNode.setProperty("pvalue", exprElem.getPvalue());
-            if (exprElem.getOdds() != -1)
-                timeSeriesNode.setProperty("odds", exprElem.getOdds());
-            if (exprElem.getUpregulated() != -1)
-                timeSeriesNode.setProperty("upregulated", exprElem.getUpregulated());
+            tx.success();
         }
+    }
+
+    private Node getNode (String label, Map<String, Object> properties) {
+        // TODO: Considering all the properties as String. This has to be changed.
+        // TODO: At the moment, all the properties Im inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
+        // Cypher query
+        StringBuilder myquery = new StringBuilder();
+        myquery.append("MATCH (n:").append(label).append(") WHERE ");
+        for (String key : properties.keySet()) {
+            //myquery.append("n.").append(key).append("= \"").append(properties.get(key)).append("\" AND ");
+            myquery.append("n.").append(key).append("= \"").append(((String) properties.get(key)).replace("\"","'")).append("\" AND ");
+        }
+        myquery.setLength(myquery.length() - 4); // Remove last AND
+        myquery.append("RETURN n");
+
+        Result result = this.database.execute(myquery.toString());
+
+        if (result.hasNext())
+            return (Node) result.next().get("n");
+        else
+            return null;
+    }
+
+    private Node createNode (String label, Map<String, Object> properties) {
+        // TODO: At the moment, all the properties Im inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
+
+        Label mylabel = DynamicLabel.label(label);
+        Node mynode = this.database.createNode(mylabel);
+        for (String key : properties.keySet())
+        //    mynode.setProperty(key, properties.get(key));
+            mynode.setProperty(key, ((String) properties.get(key)).replace("\"","'"));
+        return mynode;
     }
 
     /**
-     * The function will look for a node in the database. If it does not exist, it will create it.
-     * @param label Label of the node
-     * @param query Query parameters used to look for the node
-     * @param queryOptions
-     * @return Returns a node.
+     * @param label: Label of the node
+     * @param properties: Map containing all the properties to be added. Key "id" must be among all the possible keys.
+     * @return Node that has been created.
      */
-    // TODO: Improve query & queryOptions usage
-    private Node getOrCreateNode(String label, Query query, QueryOptions queryOptions) {
-
-        Node result = getNode(label, "id", query.get("id"));
-        if (result == null) {
-            result = createNode(label);
+    private Node getOrCreateNode(String label, Map<String, Object> properties) {
+        Node mynode = getNode(label, properties);
+        if (mynode == null) {
+            mynode = createNode(label, properties);
+            // addXrefNode(mynode, new Xref(null, null, properties.get("id").toString(), null));
         }
-        return result;
-    }
-
-    private Node getNode (String label, String key, Object value) {
-        Label mylabel = DynamicLabel.label(label);
-        return this.database.findNode(mylabel, key, value);
-    }
-
-    private Node createNode (String label) {
-        Label mylabel = DynamicLabel.label(label);
-        return this.database.createNode(mylabel);
+        return mynode;
     }
 
     /**
@@ -155,7 +193,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // 1. Insert all interactions as nodes
         try (Transaction tx = this.database.beginTx()) {
             for (Interaction i : interactionList) {
-                Node mynode =  getOrCreateNode("Interaction", new Query("id", i.getId()), null);
+                Map <String, Object> myProperties = new HashMap<>();
+                myProperties.put("id", i.getId());
+                Node mynode =  getOrCreateNode("Interaction", myProperties  );
                 if (i.getName() != null) {
                     mynode.setProperty("name", i.getName());
                 }
@@ -240,37 +280,40 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         try ( Transaction tx = this.database.beginTx() ) {
             for (PhysicalEntity p : physicalEntityList) {
                 // Insert all the Physical entity nodes
-                Node mynode = getOrCreateNode("PhysicalEntity", new Query("id", p.getId()), null);
-                mynode.setProperty("id", p.getId());
-                mynode.setProperty("name", p.getName());
-                mynode.setProperty("description", p.getDescription());
-                addXrefNode(mynode, new Xref(null, null, p.getId(), null));
+                Map<String, Object> myProperties = new HashMap<>();
+                myProperties.put("id", p.getId());
+                myProperties.put("name", p.getName());
+                myProperties.put("description", p.getDescription());
+                Node n = getOrCreateNode("PhysicalEntity", myProperties);
+                addXrefNode(n, new Xref(null, null, p.getId(), null));
             }
             tx.success();
         }
     }
 
     /**
-     * Method to annotate (create or modify) Xref elements into the Neo4J database
+     * Create xref annotation and creates the link from node to xref_node
      * @param node Main node from which we are going to add the annotation
      * @param xref Xref object containing information to be added in the database
      */
     private void addXrefNode(Node node, Xref xref) {
 
-        try ( Transaction tx = this.database.beginTx() ) {
+        Map <String, Object> myProperties = new HashMap<>();
+        if (xref.getSource() != null)
+            myProperties.put("source", xref.getSource());
+        if (xref.getId() != null)
+            myProperties.put("id", xref.getId());
+        if (xref.getSourceVersion() != null)
+            myProperties.put("sourceVersion", xref.getSourceVersion());
+        if (xref.getIdVersion() != null)
+            myProperties.put("idVersion", xref.getIdVersion());
 
-            Node xref_node = getOrCreateNode("Xref", new Query("id", xref.getId()), null);
+        // TODO: Problems: This will check first if there exists an Xref with all those properties.
+        // TODO: If there exist an Xref with the same id, but different properties, it will create another node.
+        Node xref_node = getOrCreateNode("Xref", myProperties);
 
-            if (xref.getSource() != null) xref_node.setProperty("source", xref.getSource());
-            if (xref.getId() != null) xref_node.setProperty("id", xref.getId());
-            if (xref.getSourceVersion() != null) xref_node.setProperty("sourceVersion", xref.getSourceVersion());
-            if (xref.getIdVersion() != null) xref_node.setProperty("idVersion", xref.getIdVersion());
-
-            if (!xref_node.hasRelationship(RelTypes.XREF, Direction.INCOMING))
-                node.createRelationshipTo(xref_node, RelTypes.XREF);
-
-            tx.success();
-        }
+        if (!xref_node.hasRelationship(RelTypes.XREF, Direction.INCOMING))
+            node.createRelationshipTo(xref_node, RelTypes.XREF);
     }
 
     /**
@@ -281,23 +324,19 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public void addXrefs(String nodeID, List<Xref> xref_list) {
 
-        Label xrefLabel    = DynamicLabel.label("Xref");
-        Label pEntityLabel = DynamicLabel.label("PhysicalEntity");
-        try ( Transaction tx = this.database.beginTx() ) {
-            // 1. We look for the ID in physical entities directly
-            Node n = this.database.findNode(pEntityLabel, "id", nodeID);
+        Map <String, Object> myProperties = new HashMap<>();
+        myProperties.put("id", nodeID);
 
-            // 2. Otherwise, we look in other xrefs
-            if (n == null) {
-                Node xrefNode = this.database.findNode(xrefLabel, "id", nodeID);
-                if (xrefNode != null) {
-                    //Look for the physical entity to which the xref is associated with
-                    n = xrefNode.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
+        try ( Transaction tx = this.database.beginTx()) {
+            Node xrefNode = getNode("Xref", myProperties);
+            if (xrefNode != null) {
+                //Look for the physical entity to which the xref is associated with
+                Node n = xrefNode.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
+                for (Xref x : xref_list) {
+                    addXrefNode(n, x);
                 }
-            }
-
-            for (Xref x : xref_list) {
-                addXrefNode(n, x);
+            } else {
+                // TODO: Exception telling that the node "nodeID" does not exist, so we cannot annotate.
             }
             tx.success();
         }

@@ -48,7 +48,14 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     void addXrefs(String nodeID, List<Xref> xref_list);
 
-    void addExpressionData(String tissue, String timeseries, List<Expression> myExpression);
+    /**
+     *
+     * @param tissue Tissue of the current expression experiment
+     * @param timeseries Timeseries of the current expression experiment
+     * @param myExpression List of expression data to be add in the database
+     * @param add Boolean to know if nodes not found in the database have to be created and insert their expression or not
+     */
+    void addExpressionData(String tissue, String timeseries, List<Expression> myExpression, boolean addNodes);
 
     //TODO: To remove
     //public QueryResult getXrefs(String idNode);
