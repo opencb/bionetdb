@@ -36,7 +36,7 @@ public class LoadCommandExecutor extends CommandExecutor {
 
             networkDBAdaptor.insert(network, null);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

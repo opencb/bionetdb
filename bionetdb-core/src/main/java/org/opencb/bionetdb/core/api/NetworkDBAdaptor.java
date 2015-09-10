@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.api;
 
+import org.opencb.bionetdb.core.exceptions.DBException;
 import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Xref;
@@ -44,7 +45,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     }
 
 
-    void insert(Network network, QueryOptions queryOptions);
+    void insert(Network network, QueryOptions queryOptions) throws DBException;
 
     void addXrefs(String nodeID, List<Xref> xref_list);
 
@@ -65,6 +66,6 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions);
 
 
-    QueryResult stats(Query query, QueryOptions queryOptions);
+    QueryResult getStats(Query query, QueryOptions queryOptions);
 
 }
