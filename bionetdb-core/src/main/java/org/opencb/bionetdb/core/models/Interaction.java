@@ -23,7 +23,8 @@ public class Interaction {
     public enum Type {
         REACTION    ("reaction"),
         CATALYSIS   ("catalysis"),
-        REGULATION  ("regulation");
+        REGULATION  ("regulation"),
+        COLOCALIZATION ("colocalization");
 
         private final String type;
 
@@ -76,7 +77,7 @@ public class Interaction {
     }
 
     public void setDescription(String description) {
-        this.description = description;
+        this.description = description.replace("\\\"", "\'").replace("\"", "\'");
     }
 
     public Map<String, Object> getAttributes() {

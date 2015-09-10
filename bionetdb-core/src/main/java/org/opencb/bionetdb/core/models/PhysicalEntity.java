@@ -97,7 +97,7 @@ public class PhysicalEntity {
     }
 
     public void setDescription(String description) {
-        this.description = description;
+        this.description = description.replace("\\\"", "\'").replace("\"", "\'");
     }
 
     public List<CellularLocation> getCellularLocation() {

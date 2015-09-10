@@ -411,7 +411,7 @@ public class BioPaxParser {
 
         // evidence
         physicalEntity.getAttributes().put(REACTOME_FEAT + "evidence",
-                physicalEntityBP.getEvidence());
+                physicalEntityBP.getEvidence().toString());
 
         // annotations
         physicalEntity.getAttributes().put(REACTOME_FEAT + "annotations",
@@ -691,7 +691,7 @@ public class BioPaxParser {
 
         // evidence
         interaction.getAttributes().put(REACTOME_FEAT + "evidence",
-                interactionBP.getEvidence());
+                interactionBP.getEvidence().toString());
 
         // annotations
         interaction.getAttributes().put(REACTOME_FEAT + "annotations",
