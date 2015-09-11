@@ -15,6 +15,11 @@
     <version>${bionetdb.version}</version>
     <packaging>jar</packaging>
 
+    <properties>
+        <app.dir>${project.basedir}/app</app.dir>
+        <build.dir>${project.basedir}/../build</build.dir>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.opencb.bionetdb</groupId>
@@ -88,6 +93,68 @@
                         </program>
                     </programs>
                 </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>clean-libs</id>
+                        <phase>clean</phase>
+                        <configuration>
+                            <target>
+                                <echo>Preparing ${build.dir} folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>install-app</id>
+                        <phase>install</phase>
+                        <configuration>
+                            <target>
+                                <echo>Preparing ${build.dir} folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                                <exec executable="mkdir">
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Copying app to ${build.dir}</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin"/>
+                                    <arg value="${project.basedir}/target/appassembler/libs"/>
+                                    <arg value="${app.dir}/examples"/>
+                                    <arg value="${project.basedir}/../bionetdb-server/target/bionetdb.war"/>
+                                    <arg value="${project.basedir}/../LICENSE"/>
+                                    <arg value="${project.basedir}/../README.md"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Copying ext-libs to ${build.dir}/libs</echo>
+                                <exec executable="cp">
+                                    <arg value="${app.dir}/ext-libs/libsbml.so.5.11.4"/>
+                                    <arg value="${app.dir}/ext-libs/libsbml-static.a"/>
+                                    <arg value="${app.dir}/ext-libs/libsbmlj.jar"/>
+                                    <arg value="${app.dir}/ext-libs/libsbmlj.so"/>
+                                    <arg value="${build.dir}/libs/"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
