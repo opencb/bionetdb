@@ -34,38 +34,42 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         this.DB_PATH = database;
         this.openedDB = true;
         this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.DB_PATH)
-                .setConfig(GraphDatabaseSettings.node_auto_indexing, "true")
-                .setConfig(GraphDatabaseSettings.relationship_auto_indexing, "true")
-                .setConfig(GraphDatabaseSettings.node_keys_indexable, "id")
+                //            .setConfig(GraphDatabaseSettings.node_auto_indexing, "true")
+                //            .setConfig(GraphDatabaseSettings.relationship_auto_indexing, "true")
+                //            .setConfig(GraphDatabaseSettings.node_keys_indexable, "id")
                 .newGraphDatabase();
 
-//        try (Transaction tx = this.database.beginTx()) {
-//            IndexManager index = this.database.index();
-//            Index<Node> id = index.forNodes("PhysicalEntity");
-////        RelationshipIndex roles = index.forRelationships( "roles" );
-//            tx.success();
-//        }
-
-        IndexDefinition indexDefinition;
-        IndexDefinition indexDefinition2;
         try (Transaction tx = this.database.beginTx()) {
             Schema schema = this.database.schema();
-            indexDefinition = schema.indexFor( DynamicLabel.label( "PhysicalEntity" ) )
+            schema.indexFor( DynamicLabel.label( "PhysicalEntity" ) )
                     .on( "id" )
                     .create();
-            indexDefinition2 = schema.indexFor(DynamicLabel.label("PhysicalEntity"))
+            schema.indexFor(DynamicLabel.label("PhysicalEntity"))
                     .on( "name" )
                     .create();
-//            indexDefinition2 = schema.indexFor( DynamicLabel.label( "PhysicalEntity" ) )
-//                    .on( "description" )
-//                    .create();
+
+            schema.indexFor( DynamicLabel.label( "Xref" ) )
+                    .on( "id" )
+                    .create();
+
+            schema.indexFor(DynamicLabel.label("Tissue"))
+                    .on( "tissue" )
+                    .create();
+
+            schema.indexFor(DynamicLabel.label("TimeSeries"))
+                    .on( "timeseries" )
+                    .create();
+
+            schema.indexFor( DynamicLabel.label( "Interaction" ) )
+                    .on( "id" )
+                    .create();
+            schema.indexFor(DynamicLabel.label("Interaction"))
+                    .on( "name" )
+                    .create();
+
             tx.success();
         }
 
-//        try (Transaction tx = this.database.beginTx()) {
-//            Schema schema = this.database.schema();
-//            schema.awaitIndexOnline(indexDefinition, 10, TimeUnit.SECONDS);
-//        }
     }
 
     private enum RelTypes implements RelationshipType {
