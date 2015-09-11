@@ -153,9 +153,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // TODO: Considering all the properties as String. This has to be changed.
         // TODO: At the moment, all the properties I'm inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
         // Cypher query
+        Node n = this.database.findNode(DynamicLabel.label(label),"id",properties.get("id"));
+        /*
         StringBuilder myquery = new StringBuilder();
         myquery.append("MATCH (n:").append(label).append(") WHERE ");
-        for (String key : properties.keySet()) {
+/*        for (String key : properties.keySet()) {
             myquery.append("n.")
                     .append(key)
                     .append("= \"")
@@ -164,6 +166,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         myquery.setLength(myquery.length() - 4); // Remove last AND
         myquery.append("RETURN n");
+        */
+        /*
+        myquery.append("n.id = \"")
+                .append(properties.get("id"))
+                .append("\" RETURN n");
+
 
         Result result = this.database.execute(myquery.toString());
         if (result.hasNext()) {
@@ -171,6 +179,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         } else {
             return null;
         }
+        */
+        return n;
     }
 
     private Node createNode (String label, ObjectMap properties) {
