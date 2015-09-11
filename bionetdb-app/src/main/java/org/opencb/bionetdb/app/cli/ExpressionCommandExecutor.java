@@ -6,6 +6,7 @@ import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.datastore.core.QueryOptions;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -35,13 +36,16 @@ public class ExpressionCommandExecutor extends CommandExecutor {
             ExpressionParser expressionParser = new ExpressionParser(metadata);
             NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(expressionCommandOptions.database);
 
+            QueryOptions options = new QueryOptions();
+            options.put("addNodes", this.expressionCommandOptions.add);
+
             Map<String, Map<String, String>> allExpressionFiles = expressionParser.getMyFiles();
             for (String tissue : allExpressionFiles.keySet()) {
                 for (String timeseries : allExpressionFiles.get(tissue).keySet()) {
                     if ((expressionCommandOptions.tissues == null || expressionCommandOptions.tissues.contains(tissue)) &&
                             (expressionCommandOptions.timeseries == null || expressionCommandOptions.timeseries.contains(timeseries))) {
                         List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
-                        networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, expressionCommandOptions.add);
+                        networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, options);
                     }
                 }
             }

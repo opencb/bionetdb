@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.api;
 
-import org.opencb.bionetdb.core.exceptions.DBException;
+import org.opencb.bionetdb.core.exceptions.NetworkDBException;
 import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Xref;
@@ -45,18 +45,18 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     }
 
 
-    void insert(Network network, QueryOptions queryOptions) throws DBException;
+    void insert(Network network, QueryOptions queryOptions) throws NetworkDBException;
 
     void addXrefs(String nodeID, List<Xref> xref_list);
 
     /**
      *
      * @param tissue Tissue of the current expression experiment
-     * @param timeseries Timeseries of the current expression experiment
+     * @param timeSeries Timeseries of the current expression experiment
      * @param myExpression List of expression data to be add in the database
-     * @param add Boolean to know if nodes not found in the database have to be created and insert their expression or not
+     * @param options Boolean to know if nodes not found in the database have to be created and insert their expression or not
      */
-    void addExpressionData(String tissue, String timeseries, List<Expression> myExpression, boolean addNodes);
+    void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options);
 
     //TODO: To remove
     //public QueryResult getXrefs(String idNode);

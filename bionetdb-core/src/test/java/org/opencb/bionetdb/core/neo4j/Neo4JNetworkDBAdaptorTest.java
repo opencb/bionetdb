@@ -1,19 +1,16 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.exceptions.DBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Xref;
-import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
@@ -88,6 +85,8 @@ public class Neo4JNetworkDBAdaptorTest {
         Network network = bioPaxParser.parse(inputPath);
         System.out.println("The file has been parsed.");
 
+        QueryOptions options = new QueryOptions("addNodes", false);
+
         networkDBAdaptor.insert(network, null);
         System.out.println("Data has been inserted in the database.");
 
@@ -98,7 +97,7 @@ public class Neo4JNetworkDBAdaptorTest {
         for (String tissue : allExpressionFiles.keySet()) {
             for (String timeseries : allExpressionFiles.get(tissue).keySet()) {
                 List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
-                networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, false);
+                networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, options);
             }
         }
         System.out.println("Expression data has been inserted in the database.");
@@ -110,7 +109,7 @@ public class Neo4JNetworkDBAdaptorTest {
         for (String tissue : allExpressionFiles.keySet()) {
             for (String timeseries : allExpressionFiles.get(tissue).keySet()) {
                 List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
-                networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, false);
+                networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, options);
             }
         }
         System.out.println("The same expression data has been tried to be inserted in the database.");
@@ -118,10 +117,11 @@ public class Neo4JNetworkDBAdaptorTest {
         assertEquals("The number of nodes after inserting the expression data is not correct", 12090, myResult.getResult().get(0));
         assertEquals("The number of relationships after inserting the expression data is not correct", 10975, myResult.getResult().get(1));
 
+        options.put("addNodes", true);
         for (String tissue : allExpressionFiles.keySet()) {
             for (String timeseries : allExpressionFiles.get(tissue).keySet()) {
                 List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
-                networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, true);
+                networkDBAdaptor.addExpressionData(tissue, timeseries, myExpression, options);
             }
         }
         System.out.println("The same expression data allowing the annotation of nodes not in the database has been tried to be inserted in the database.");
