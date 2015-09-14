@@ -5,6 +5,8 @@ package org.opencb.bionetdb.core.models;
  */
 public class Protein extends PhysicalEntity {
 
+    private boolean peptide;
+
     public Protein() {
         super("", "", "", Type.PROTEIN);
         init();
@@ -16,5 +18,14 @@ public class Protein extends PhysicalEntity {
     }
 
     private void init() {
+        this.peptide = false;
+    }
+
+    public boolean isPeptide() {
+        return peptide;
+    }
+
+    public void setPeptide(boolean peptide) {
+        this.peptide = peptide;
     }
 }

@@ -8,6 +8,23 @@ import java.util.Map;
  */
 public class Rna extends PhysicalEntity {
 
+    protected RnaType rnaType;
+
+    public enum RnaType {
+        MRNA   ("mRNA"),
+        RRNA   ("rRNA"),
+        TRNA   ("tRNA"),
+        LNCRNA ("lncRNA"),
+        MIRNA  ("miRNA"),
+        SNRNA  ("snRNA");
+
+        private final String rnaType;
+
+        RnaType(String rnaType) {
+            this.rnaType = rnaType;
+        }
+    }
+
     public Rna() {
         super("", "", "", Type.RNA);
         init();
@@ -25,13 +42,18 @@ public class Rna extends PhysicalEntity {
     }
 
     public Map<String, TissueExpression> getExpression() {
-
         return expression;
     }
 
     private void init() {
         this.expression = new HashMap<>();
-
     }
 
+    public RnaType getRnaType() {
+        return rnaType;
+    }
+
+    public void setRnaType(RnaType rnaType) {
+        this.rnaType = rnaType;
+    }
 }
