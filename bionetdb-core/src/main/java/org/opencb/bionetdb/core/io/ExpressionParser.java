@@ -1,15 +1,17 @@
 package org.opencb.bionetdb.core.io;
 
 import org.opencb.bionetdb.core.models.Expression;
+import org.opencb.commons.utils.FileUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.nio.file.Files.readAllLines;
 
 /**
  * Created by pfurio on 8/9/15.
@@ -19,56 +21,59 @@ public class ExpressionParser {
     private Map<String, Map<String, String>> myFiles;
 
     public ExpressionParser(Path metadata) throws IOException {
+        FileUtils.checkFile(metadata);
+
         myFiles = new HashMap<>();
-        List<String> allLines = readAllLines(metadata);
+        List<String> allLines = Files.readAllLines(metadata);
         for (String line : allLines) {
             String[] fields = line.split("\t");
-            Map<String, String> timeseries;
-            if (myFiles.containsKey(fields[0]))
-                timeseries = myFiles.get(fields[0]);
-            else
-                timeseries = new HashMap<>();
-            timeseries.put(fields[1], metadata.getParent().toString() + "/" + fields[2]);
+            Map<String, String> timeSeries;
+            if (myFiles.containsKey(fields[0])) {
+                timeSeries = myFiles.get(fields[0]);
+            } else {
+                timeSeries = new HashMap<>();
+            }
+            timeSeries.put(fields[1], metadata.getParent().toString() + "/" + fields[2]);
             if (!myFiles.containsKey(fields[0]))
-                myFiles.put(fields[0], timeseries);
+                myFiles.put(fields[0], timeSeries);
         }
     }
 
-    public Map<String, Map<String, String>> getMyFiles() {
-        return myFiles;
-    }
-
     public List<Expression> parse(String tissue, String time) throws IOException {
-
         String expressionFile = myFiles.get(tissue).get(time);
         List<Expression> myExpressionList = new ArrayList<>();
 
-        // Open expression file
-        BufferedReader br = new BufferedReader(new FileReader(expressionFile));
+        int colId = -1;
+        int colExpr = -1;
+        int colPval = -1;
+        int colOdds = -1;
+        int colUpreg = -1;
+
+        // Open expression file, this can be gzipped
+        Path expressionFilePath = Paths.get(expressionFile);
+        BufferedReader br = FileUtils.newBufferedReader(expressionFilePath);
+
+        // Finding the index position for each column
         String currentLine = br.readLine();
-
-        int col_id, col_expr, col_pval, col_odds, col_upreg;
-        col_id = col_expr = col_pval = col_odds = col_upreg = -1;
         String[] headers = currentLine.split("\t", -1);
-        if (headers.length == 2 || headers.length == 5) {
-
+        if (headers.length > 1) {
             // Get the column where we can find each of the columns
             for (int i = 0; i < headers.length; i++) {
                 switch(headers[i]) {
                     case "ID":
-                        col_id = i;
+                        colId = i;
                         break;
                     case "Expression":
-                        col_expr = i;
+                        colExpr = i;
                         break;
                     case "Pvalue":
-                        col_pval = i;
+                        colPval = i;
                         break;
                     case "Odds":
-                        col_odds = i;
+                        colOdds = i;
                         break;
                     case "Upregulated":
-                        col_upreg = i;
+                        colUpreg = i;
                         break;
                     default:
                         break;
@@ -76,24 +81,43 @@ public class ExpressionParser {
             }
 
             // It we have the geneID at least and some expression, pvalues, odds or upregulations...
-            if (col_id != -1 && (col_expr != -1 ||col_odds != -1 ||col_pval != -1 ||col_upreg != -1)) {
+            if (colId != -1 && (colExpr != -1 ||colOdds != -1 ||colPval != -1 ||colUpreg != -1)) {
                 while ((currentLine = br.readLine()) != null) {
                     String[] line_spl = currentLine.split("\t", -1);
-                    Expression myexpr = new Expression(line_spl[col_id]);
-                    if (col_expr != -1)
-                        myexpr.setExpression(Double.parseDouble(line_spl[col_expr]));
-                    if (col_odds != -1)
-                        myexpr.setOdds(Double.parseDouble(line_spl[col_odds]));
-                    if (col_pval != -1)
-                        myexpr.setPvalue(Double.parseDouble(line_spl[col_pval]));
-                    if (col_upreg != -1)
-                        myexpr.setUpregulated(Integer.parseInt(line_spl[col_upreg]));
-                    myExpressionList.add(myexpr);
+                    Expression myExpr = new Expression(line_spl[colId]);
+                    if (colExpr != -1) {
+                        myExpr.setExpression(Double.parseDouble(line_spl[colExpr]));
+                    }
+                    if (colOdds != -1) {
+                        myExpr.setOdds(Double.parseDouble(line_spl[colOdds]));
+                    }
+                    if (colPval != -1) {
+                        myExpr.setPvalue(Double.parseDouble(line_spl[colPval]));
+                    }
+                    if (colUpreg != -1) {
+                        myExpr.setUpregulated(Integer.parseInt(line_spl[colUpreg]));
+                    }
+                    myExpressionList.add(myExpr);
                 }
             }
         }
 
         return myExpressionList;
+    }
+
+    @Override
+    public String toString() {
+        return "ExpressionParser{" +
+                "myFiles=" + myFiles +
+                '}';
+    }
+
+    public Map<String, Map<String, String>> getMyFiles() {
+        return myFiles;
+    }
+
+    public void setMyFiles(Map<String, Map<String, String>> myFiles) {
+        this.myFiles = myFiles;
     }
 
 }

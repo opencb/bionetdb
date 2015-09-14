@@ -13,6 +13,10 @@ public class Expression {
     private double odds;
     private int upregulated;
 
+    public Expression() {
+        this("");
+    }
+
     public Expression(String id) {
         this.id = id;
         this.expression = -1;
@@ -21,40 +25,55 @@ public class Expression {
         this.upregulated = -1;
     }
 
-    public void setExpression(double expression) {
-        this.expression = expression;
-    }
-
-    public void setPvalue(double pvalue) {
-        this.pvalue = pvalue;
-    }
-
-    public void setOdds(double odds) {
-        this.odds = odds;
-    }
-
-    public void setUpregulated(int upregulated) {
-        this.upregulated = upregulated;
+    @Override
+    public String toString() {
+        return "Expression{" +
+                "id='" + id + '\'' +
+                ", expression=" + expression +
+                ", pvalue=" + pvalue +
+                ", odds=" + odds +
+                ", upregulated=" + upregulated +
+                '}';
     }
 
     public String getId() {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public double getExpression() {
         return expression;
+    }
+
+    public void setExpression(double expression) {
+        this.expression = expression;
     }
 
     public double getPvalue() {
         return pvalue;
     }
 
+    public void setPvalue(double pvalue) {
+        this.pvalue = pvalue;
+    }
+
     public double getOdds() {
         return odds;
     }
 
+    public void setOdds(double odds) {
+        this.odds = odds;
+    }
+
     public int getUpregulated() {
         return upregulated;
+    }
+
+    public void setUpregulated(int upregulated) {
+        this.upregulated = upregulated;
     }
 
 }

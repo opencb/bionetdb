@@ -32,7 +32,6 @@ public class XrefAnnotationParser {
      * Unknown info is represented as an empty string.
      */
     public Map<String, Xref> parseXrefAnnotationFile(Path path) throws IOException {
-
         // Reading GZip input stream
         InputStream inputStream;
         if (path.toFile().getName().endsWith(".gz")) {

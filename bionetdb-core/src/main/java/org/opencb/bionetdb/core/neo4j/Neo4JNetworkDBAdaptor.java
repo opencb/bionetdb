@@ -1,20 +1,25 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.exceptions.DBException;
+import org.opencb.bionetdb.core.exceptions.NetworkDBException;
 import org.opencb.bionetdb.core.models.*;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by imedina on 05/08/15.
@@ -27,15 +32,47 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public Neo4JNetworkDBAdaptor(String database) {
         this.DB_PATH = database;
-        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( this.DB_PATH ).
-                setConfig( GraphDatabaseSettings.node_keys_indexable, "id" ).
-                setConfig(GraphDatabaseSettings.node_auto_indexing, "true").
-                newGraphDatabase();
         this.openedDB = true;
+        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.DB_PATH)
+                //            .setConfig(GraphDatabaseSettings.node_auto_indexing, "true")
+                //            .setConfig(GraphDatabaseSettings.relationship_auto_indexing, "true")
+                //            .setConfig(GraphDatabaseSettings.node_keys_indexable, "id")
+                .newGraphDatabase();
+
+        try (Transaction tx = this.database.beginTx()) {
+            Schema schema = this.database.schema();
+            schema.indexFor( DynamicLabel.label( "PhysicalEntity" ) )
+                    .on( "id" )
+                    .create();
+            schema.indexFor(DynamicLabel.label("PhysicalEntity"))
+                    .on( "name" )
+                    .create();
+
+            schema.indexFor( DynamicLabel.label( "Xref" ) )
+                    .on( "id" )
+                    .create();
+
+            schema.indexFor(DynamicLabel.label("Tissue"))
+                    .on( "tissue" )
+                    .create();
+
+            schema.indexFor(DynamicLabel.label("TimeSeries"))
+                    .on( "timeseries" )
+                    .create();
+
+            schema.indexFor( DynamicLabel.label( "Interaction" ) )
+                    .on( "id" )
+                    .create();
+            schema.indexFor(DynamicLabel.label("Interaction"))
+                    .on( "name" )
+                    .create();
+
+            tx.success();
+        }
+
     }
 
-    private enum RelTypes implements RelationshipType
-    {
+    private enum RelTypes implements RelationshipType {
         REACTANT,
         XREF,
         CONTROLLED,
@@ -45,23 +82,26 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public void addExpressionData(String tissue, String timeseries, List<Expression> myExpression, boolean addNodes) {
+    public void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options) {
         try (Transaction tx = this.database.beginTx()) {
             for (Expression exprElem : myExpression) {
-                Map <String, Object> myProperty = new HashMap<>();
-                myProperty.put("id", exprElem.getId());
-                Node xref_node = getNode("Xref", myProperty);
+                ObjectMap myProperty = new ObjectMap("id", exprElem.getId());
+                Node xrefNode = getNode("Xref", myProperty);
                 Node origin = null;
+
+                // parsing options
+                boolean addNodes = options.getBoolean("addNodes", false);
+
                 // If the node does not already exist, it does not make sense inserting expression data.
-                if (xref_node == null && addNodes == true) {
+                if (xrefNode == null && addNodes == true) {
                     // Create basic node with info
                     origin = createNode("PhysicalEntity", myProperty);
                     addXrefNode(origin, new Xref(null, null, exprElem.getId(), null));
-                    xref_node = getNode("Xref", myProperty);
+                    xrefNode = getNode("Xref", myProperty);
                 }
-                if (xref_node != null) {
+                if (xrefNode != null) {
                     if (origin == null)
-                        origin = xref_node.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
+                        origin = xrefNode.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
                     // Find or create tissueNode and the relationship
                     Node tissueNode = null;
                     for (Relationship relationShip : origin.getRelationships(RelTypes.TISSUE, Direction.OUTGOING)) {
@@ -71,7 +111,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         }
                     }
                     if (tissueNode == null) {
-                        myProperty = new HashMap<>();
+                        myProperty = new ObjectMap();
                         myProperty.put("tissue", tissue);
                         tissueNode = createNode("Tissue", myProperty);
                         addInteraction(origin, tissueNode, RelTypes.TISSUE);
@@ -80,14 +120,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     // Find or create timeSeriesNode and the relationship
                     Node timeSeriesNode = null;
                     for (Relationship relationShip : tissueNode.getRelationships(RelTypes.TIMESERIES, Direction.OUTGOING)) {
-                        if (relationShip.getEndNode().getProperty("timeseries").equals(timeseries)) {
+                        if (relationShip.getEndNode().getProperty("timeseries").equals(timeSeries)) {
                             timeSeriesNode = relationShip.getEndNode();
                             break;
                         }
                     }
                     if (timeSeriesNode == null) {
-                        myProperty = new HashMap<>();
-                        myProperty.put("timeseries", timeseries);
+                        myProperty = new ObjectMap();
+                        myProperty.put("timeseries", timeSeries);
                         timeSeriesNode = createNode("TimeSeries", myProperty);
                         addInteraction(tissueNode, timeSeriesNode, RelTypes.TIMESERIES);
                     }
@@ -107,34 +147,50 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-    private Node getNode (String label, Map<String, Object> properties) {
+    private Node getNode (String label, ObjectMap properties) {
+        IndexManager index = database.index();
+//        System.out.println("Arrays.toString(index.nodeIndexNames()) = " + Arrays.toString(index.nodeIndexNames()));
         // TODO: Considering all the properties as String. This has to be changed.
-        // TODO: At the moment, all the properties Im inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
+        // TODO: At the moment, all the properties I'm inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
         // Cypher query
+        Node n = this.database.findNode(DynamicLabel.label(label),"id",properties.get("id"));
+        /*
         StringBuilder myquery = new StringBuilder();
         myquery.append("MATCH (n:").append(label).append(") WHERE ");
-        for (String key : properties.keySet()) {
-            myquery.append("n.").append(key).append("= \"").append(((String) properties.get(key)).replace("\"","'")).append("\" AND ");
+/*        for (String key : properties.keySet()) {
+            myquery.append("n.")
+                    .append(key)
+                    .append("= \"")
+                    .append(properties.getString(key))
+                    .append("\" AND ");
         }
         myquery.setLength(myquery.length() - 4); // Remove last AND
         myquery.append("RETURN n");
+        */
+        /*
+        myquery.append("n.id = \"")
+                .append(properties.get("id"))
+                .append("\" RETURN n");
+
 
         Result result = this.database.execute(myquery.toString());
-
-        if (result.hasNext())
+        if (result.hasNext()) {
             return (Node) result.next().get("n");
-        else
+        } else {
             return null;
+        }
+        */
+        return n;
     }
 
-    private Node createNode (String label, Map<String, Object> properties) {
+    private Node createNode (String label, ObjectMap properties) {
         // TODO: At the moment, all the properties Im inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
 
         Label mylabel = DynamicLabel.label(label);
         Node mynode = this.database.createNode(mylabel);
         for (String key : properties.keySet())
-        //    mynode.setProperty(key, properties.get(key));
-            mynode.setProperty(key, ((String) properties.get(key)).replace("\"","'"));
+            //    mynode.setProperty(key, properties.get(key));
+            mynode.setProperty(key, properties.getString(key));
         return mynode;
     }
 
@@ -143,7 +199,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param properties: Map containing all the properties to be added. Key "id" must be among all the possible keys.
      * @return Node that has been created.
      */
-    private Node getOrCreateNode(String label, Map<String, Object> properties) {
+    private Node getOrCreateNode(String label, ObjectMap properties) {
         Node mynode = getNode(label, properties);
         if (mynode == null) {
             mynode = createNode(label, properties);
@@ -159,7 +215,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param relationType Type of relationship between nodes
      */
     private void addInteraction(Node origin, Node destination, RelTypes relationType) {
-
         if (origin.hasRelationship(relationType, Direction.OUTGOING)) {
             for (Relationship r : origin.getRelationships(relationType, Direction.OUTGOING)) {
                 if (r.getEndNode().equals(destination)) {
@@ -167,7 +222,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 }
             }
         }
-
         origin.createRelationshipTo(destination, relationType);
     }
 
@@ -177,11 +231,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param queryOptions
      */
     @Override
-    public void insert(Network network, QueryOptions queryOptions) throws DBException {
-
+    public void insert(Network network, QueryOptions queryOptions) throws NetworkDBException {
         this.insertPhysicalEntities(network.getPhysicalEntities(), queryOptions);
         this.insertInteractions(network.getInteractions(), queryOptions);
-
     }
 
     /**
@@ -194,9 +246,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // 1. Insert all interactions as nodes
         try (Transaction tx = this.database.beginTx()) {
             for (Interaction i : interactionList) {
-                Map <String, Object> myProperties = new HashMap<>();
+                ObjectMap myProperties = new ObjectMap();
                 myProperties.put("id", i.getId());
-                Node mynode =  getOrCreateNode("Interaction", myProperties  );
+                Node mynode =  getOrCreateNode("Interaction", myProperties);
                 if (i.getName() != null) {
                     mynode.setProperty("name", i.getName());
                 }
@@ -281,7 +333,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         try ( Transaction tx = this.database.beginTx() ) {
             for (PhysicalEntity p : physicalEntityList) {
                 // Insert all the Physical entity nodes
-                Map<String, Object> myProperties = new HashMap<>();
+                ObjectMap myProperties = new ObjectMap();
                 myProperties.put("id", p.getId());
                 myProperties.put("name", p.getName());
                 myProperties.put("description", p.getDescription());
@@ -298,8 +350,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param xref Xref object containing information to be added in the database
      */
     private void addXrefNode(Node node, Xref xref) {
-
-        Map <String, Object> myProperties = new HashMap<>();
+        ObjectMap myProperties = new ObjectMap();
         if (xref.getSource() != null)
             myProperties.put("source", xref.getSource());
         if (xref.getId() != null)
@@ -324,10 +375,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      */
     @Override
     public void addXrefs(String nodeID, List<Xref> xref_list) {
-
-        Map <String, Object> myProperties = new HashMap<>();
-        myProperties.put("id", nodeID);
-
+        ObjectMap myProperties = new ObjectMap("id", nodeID);
         try ( Transaction tx = this.database.beginTx()) {
             Node xrefNode = getNode("Xref", myProperties);
             if (xrefNode != null) {
@@ -345,10 +393,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     @Override
     public QueryResult get(Query query, QueryOptions queryOptions) {
-
         Result result = this.database.execute(query.get("query").toString());
         return new QueryResult(result.columnAs(queryOptions.get("columnsAs").toString()).next().toString());
-
     }
 
     @Override
