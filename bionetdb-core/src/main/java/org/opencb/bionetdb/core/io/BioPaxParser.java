@@ -399,6 +399,25 @@ public class BioPaxParser {
             physicalEntity.setXref(x);
         }
 
+        // publications
+        for (Evidence evidence : physicalEntityBP.getEvidence()) {
+            for (Xref xref : evidence.getXref()) {
+                PublicationXref pubXref = (PublicationXref) xref;
+                Publication publication = new Publication();
+                publication.setSource(pubXref.getDb());
+                publication.setId(pubXref.getId());
+                publication.setTitle(pubXref.getTitle());
+                publication.setYear(pubXref.getYear());
+                for (String author : pubXref.getAuthor()) {
+                    publication.setAuthor(author);
+                }
+                for (String source : pubXref.getSource()) {
+                    publication.setJournal(source);
+                }
+                physicalEntity.setPublication(publication);
+            }
+        }
+
         // = NONSPECIFIC PROPERTIES =
 
         // comment
@@ -408,10 +427,6 @@ public class BioPaxParser {
         // availability
         physicalEntity.getAttributes().put(REACTOME_FEAT + "availability",
                 physicalEntityBP.getAvailability());
-
-        // evidence
-        physicalEntity.getAttributes().put(REACTOME_FEAT + "evidence",
-                physicalEntityBP.getEvidence().toString());
 
         // annotations
         physicalEntity.getAttributes().put(REACTOME_FEAT + "annotations",
@@ -538,6 +553,8 @@ public class BioPaxParser {
                 }
                 reaction.setStoichiometry(stoichiometry);
 
+                // TODO Think about this. EC numbers cannot be in xrefs because they are not unique ids
+/*
                 // Adding EC number to xrefs
                 if (className.equals("BiochemicalReaction")) {
                     BiochemicalReaction br = (BiochemicalReaction) bioPAXElement;
@@ -548,7 +565,7 @@ public class BioPaxParser {
                         reaction.setXref(xref);
                     }
                 }
-
+*/
                 break;
             case "MolecularInteraction":
                 MolecularInteraction molecularInteractionBP = (MolecularInteraction) bioPAXElement;
@@ -683,15 +700,30 @@ public class BioPaxParser {
             interaction.setXref(x);
         }
 
+        // publications
+        for (Evidence evidence : interactionBP.getEvidence()) {
+            for (Xref xref : evidence.getXref()) {
+                PublicationXref pubXref = (PublicationXref) xref;
+                Publication publication = new Publication();
+                publication.setSource(pubXref.getDb());
+                publication.setId(pubXref.getId());
+                publication.setTitle(pubXref.getTitle());
+                publication.setYear(pubXref.getYear());
+                for (String author : pubXref.getAuthor()) {
+                    publication.setAuthor(author);
+                }
+                for (String source : pubXref.getSource()) {
+                    publication.setJournal(source);
+                }
+                interaction.setPublication(publication);
+            }
+        }
+
         // = NONSPECIFIC PROPERTIES =
 
         // availability
         interaction.getAttributes().put(REACTOME_FEAT + "availability",
                 interactionBP.getAvailability());
-
-        // evidence
-        interaction.getAttributes().put(REACTOME_FEAT + "evidence",
-                interactionBP.getEvidence().toString());
 
         // annotations
         interaction.getAttributes().put(REACTOME_FEAT + "annotations",

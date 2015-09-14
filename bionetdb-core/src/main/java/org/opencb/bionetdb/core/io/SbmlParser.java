@@ -239,6 +239,10 @@ public class SbmlParser {
                 // Fixing bad formatted colon: from "%3A" to ":"
                 List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
                 List<String> xrefElements = idElements.subList(idElements.size() - 2, idElements.size());
+                // Excluding not unique ids
+                if (xrefElements.get(0).contains("go") || xrefElements.get(0).contains("ec") || xrefElements.get(0).contains("sbo")) {
+                    continue;
+                }
                 if (xrefElements.get(0).contains("kegg.compound")) {
                     xref.setSource("kegg");
                 } else {
@@ -402,6 +406,10 @@ public class SbmlParser {
                 // Fixing bad formatted colon: from "%3A" to ":"
                 List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
                 List<String> xrefElements = idElements.subList(idElements.size() - 2, idElements.size());
+                // Excluding not unique ids
+                if (xrefElements.get(0).contains("go") || xrefElements.get(0).contains("ec") || xrefElements.get(0).contains("sbo")) {
+                    continue;
+                }
                 if (xrefElements.get(0).contains("kegg.compound")) {
                     idXref.setSource("kegg");
                 } else {
@@ -416,14 +424,14 @@ public class SbmlParser {
         if (description.hasChild("isDescribedBy")) {
             XMLNode evs = description.getChild("isDescribedBy").getChild("Bag");
             for (int i = 0; i < evs.getNumChildren(); i++) {
-                Xref evXref = new Xref();
+                Publication publication = new Publication();
                 String ev = evs.getChild(i).getAttributes().getValue("resource");
                 // Fixing bad formatted colon: from "%3A" to ":"
                 List<String> evElements = Arrays.asList(ev.replace("%3A", ":").split(":"));
                 List<String> xrefElements = evElements.subList(evElements.size() - 2, evElements.size());
-                evXref.setSource(xrefElements.get(0).toLowerCase());
-                evXref.setId(xrefElements.get(1));
-                reaction.setXref(evXref);
+                publication.setSource(xrefElements.get(0));
+                publication.setId(xrefElements.get(1));
+                reaction.setPublication(publication);
             }
         }
 

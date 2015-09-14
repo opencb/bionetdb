@@ -18,6 +18,7 @@ public class PhysicalEntity {
     protected List<String> participantOfInteraction;
     protected List<Map<String, Object>> features;
     protected List<Xref> xrefs;
+    protected List<Publication> publications;
 
     protected Type type;
 
@@ -66,6 +67,7 @@ public class PhysicalEntity {
         this.participantOfInteraction = new ArrayList<>();
         this.features = new ArrayList<>();
         this.xrefs = new ArrayList<>();
+        this.publications = new ArrayList<>();
     }
 
     class Display {
@@ -196,5 +198,28 @@ public class PhysicalEntity {
 
     public void setType(Type type) {
         this.type = type;
+    }
+
+    public List<Publication> getPublications() {
+        return publications;
+    }
+
+    public void setPublications(List<Publication> publications) {
+        this.publications = publications;
+    }
+
+    public void setPublication(Publication publication) {
+        // Adding publication unless it exists
+        boolean duplicate = false;
+        for (Publication currentPublication : this.getPublications()) {
+            if(publication.getSource().equals(currentPublication.getSource()) &&
+                    publication.getId().equals(currentPublication.getId())) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) {
+            this.getPublications().add(publication);
+        }
     }
 }

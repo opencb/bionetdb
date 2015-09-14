@@ -15,6 +15,7 @@ public class Interaction {
     protected List<String> processOfPathway;
     protected List<String> controlledBy;
     protected List<Xref> xrefs;
+    protected List<Publication> publications;
 
     protected Type type;
 
@@ -54,6 +55,7 @@ public class Interaction {
         this.processOfPathway = new ArrayList<>();
         this.controlledBy = new ArrayList<>();
         this.xrefs = new ArrayList<>();
+        this.publications = new ArrayList<>();
     }
 
     public String getId() {
@@ -150,6 +152,29 @@ public class Interaction {
         }
         if (!duplicate) {
             this.getXrefs().add(xref);
+        }
+    }
+
+    public List<Publication> getPublications() {
+        return publications;
+    }
+
+    public void setPublications(List<Publication> publications) {
+        this.publications = publications;
+    }
+
+    public void setPublication(Publication publication) {
+        // Adding publication unless it exists
+        boolean duplicate = false;
+        for (Publication currentPublication : this.getPublications()) {
+            if(publication.getSource().equals(currentPublication.getSource()) &&
+                    publication.getId().equals(currentPublication.getId())) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) {
+            this.getPublications().add(publication);
         }
     }
 }
