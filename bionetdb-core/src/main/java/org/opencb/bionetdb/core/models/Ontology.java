@@ -9,12 +9,15 @@ public class Ontology {
     private String sourceVersion;
     private String id;
     private String idVersion;
+    private String name;
+    private String description;
 
     public Ontology() {
         this.source = "";
         this.sourceVersion = "";
         this.id = "";
         this.idVersion = "";
+        init();
     }
 
     public Ontology(String source, String sourceVersion, String id, String idVersion) {
@@ -22,6 +25,11 @@ public class Ontology {
         this.sourceVersion = sourceVersion;
         this.id = id;
         this.idVersion = idVersion;
+    }
+
+    private void init() {
+        this.name = "";
+        this.description = "";
     }
 
     public String getSource() {
@@ -62,5 +70,21 @@ public class Ontology {
         if (idVersion != null) {
             this.idVersion = idVersion;
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
