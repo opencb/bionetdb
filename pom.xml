@@ -112,6 +112,11 @@
                 <systemPath>${basedir}/bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>
             </dependency>
             <dependency>
+                <groupId>psidev.psi.mi</groupId>
+                <artifactId>psimitab</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+            <dependency>
                 <groupId>commons-lang</groupId>
                 <artifactId>commons-lang</artifactId>
                 <version>2.6</version>
