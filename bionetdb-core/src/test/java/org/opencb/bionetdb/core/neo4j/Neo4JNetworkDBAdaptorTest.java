@@ -66,16 +66,16 @@ public class Neo4JNetworkDBAdaptorTest {
         long stopTime = System.currentTimeMillis();
         System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
         QueryResult myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes introduced in the database is not correct", 12085, myResult.getResult().get(0));
-        assertEquals("The number of relationships introduced in the database is not correct", 10970, myResult.getResult().get(1));
+        assertEquals("The number of nodes introduced in the database is not correct", 27795, myResult.getResult().get(0));
+        assertEquals("The number of relationships introduced in the database is not correct", 28988, myResult.getResult().get(1));
 
         startTime = System.currentTimeMillis();
         networkDBAdaptor.insert(network, null);
         stopTime = System.currentTimeMillis();
         System.out.println("Trying to insert the same data took " + (stopTime - startTime)/1000 + " seconds.");
         myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes introduced in the database is not correct", 12085, myResult.getResult().get(0));
-        assertEquals("The number of relationships introduced in the database is not correct", 10970, myResult.getResult().get(1));
+        assertEquals("The number of nodes introduced in the database is not correct", 27795, myResult.getResult().get(0));
+        assertEquals("The number of relationships introduced in the database is not correct", 28988, myResult.getResult().get(1));
     }
 
     @Test

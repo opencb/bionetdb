@@ -78,7 +78,42 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         CONTROLLED,
         CONTROLLER,
         TISSUE,
-        TIMESERIES
+        TIMESERIES,
+        ONTOLOGY,
+        COMPONENTOFCOMPLEX
+    }
+
+    /**
+     * Insert an entire network into the Neo4J database
+     * @param network Object containing all the nodes and interactions
+     * @param queryOptions
+     */
+    @Override
+    public void insert(Network network, QueryOptions queryOptions) throws NetworkDBException {
+        this.insertPhysicalEntities(network.getPhysicalEntities(), queryOptions);
+        this.insertInteractions(network.getInteractions(), queryOptions);
+    }
+
+    /**
+     * Method to annotate Xrefs in the database
+     * @param nodeID ID of the node we want to annotate
+     * @param xref_list List containing all the Xref annotations to be added in the database
+     */
+    @Override
+    public void addXrefs(String nodeID, List<Xref> xref_list) {
+        try ( Transaction tx = this.database.beginTx()) {
+            Node xrefNode = getNode("Xref", new ObjectMap("id", nodeID));
+            if (xrefNode != null) {
+                //Look for the physical entity to which the xref is associated with
+                Node n = xrefNode.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
+                for (Xref x : xref_list) {
+                    addXrefNode(n, x);
+                }
+            } else {
+                // TODO: Exception telling that the node "nodeID" does not exist, so we cannot annotate.
+            }
+            tx.success();
+        }
     }
 
     @Override
@@ -147,93 +182,123 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-    private Node getNode (String label, ObjectMap properties) {
-        IndexManager index = database.index();
-//        System.out.println("Arrays.toString(index.nodeIndexNames()) = " + Arrays.toString(index.nodeIndexNames()));
-        // TODO: Considering all the properties as String. This has to be changed.
-        // TODO: At the moment, all the properties I'm inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
-        // Cypher query
-        Node n = this.database.findNode(DynamicLabel.label(label),"id",properties.get("id"));
-        /*
-        StringBuilder myquery = new StringBuilder();
-        myquery.append("MATCH (n:").append(label).append(") WHERE ");
-/*        for (String key : properties.keySet()) {
-            myquery.append("n.")
-                    .append(key)
-                    .append("= \"")
-                    .append(properties.getString(key))
-                    .append("\" AND ");
+    private ObjectMap parsePhysicalEntity (PhysicalEntity myPhysicalEntity) {
+        ObjectMap myOutput = new ObjectMap("id", myPhysicalEntity.getId());
+        if (myPhysicalEntity.getName() != null) {
+            myOutput.put("name", myPhysicalEntity.getName());
         }
-        myquery.setLength(myquery.length() - 4); // Remove last AND
-        myquery.append("RETURN n");
-        */
-        /*
-        myquery.append("n.id = \"")
-                .append(properties.get("id"))
-                .append("\" RETURN n");
-
-
-        Result result = this.database.execute(myquery.toString());
-        if (result.hasNext()) {
-            return (Node) result.next().get("n");
-        } else {
-            return null;
+        if (myPhysicalEntity.getDescription() != null) {
+            myOutput.put("description",myPhysicalEntity.getDescription());
         }
-        */
-        return n;
+        if (myPhysicalEntity.getType() != null) {
+            myOutput.put("type", myPhysicalEntity.getType());
+        }
+        if (myPhysicalEntity.getSource().size() > 0) {
+            myOutput.put("source", myPhysicalEntity.getSource());
+        }
+        return myOutput;
     }
 
-    private Node createNode (String label, ObjectMap properties) {
-        // TODO: At the moment, all the properties Im inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
-
-        Label mylabel = DynamicLabel.label(label);
-        Node mynode = this.database.createNode(mylabel);
-        for (String key : properties.keySet())
-            //    mynode.setProperty(key, properties.get(key));
-            mynode.setProperty(key, properties.getString(key));
-        return mynode;
-    }
-
-    /**
-     * @param label: Label of the node
-     * @param properties: Map containing all the properties to be added. Key "id" must be among all the possible keys.
-     * @return Node that has been created.
+    /***
+     * Insert all the elements present in the Ontology object into an ObjectMap object
+     * @param myOntology
+     * @return ObjectMap object containing the values present in myOntology
      */
-    private Node getOrCreateNode(String label, ObjectMap properties) {
-        Node mynode = getNode(label, properties);
-        if (mynode == null) {
-            mynode = createNode(label, properties);
-            // addXrefNode(mynode, new Xref(null, null, properties.get("id").toString(), null));
+    private ObjectMap parseOntology (Ontology myOntology) {
+        ObjectMap myOutput = new ObjectMap("id", myOntology.getId());
+        if (myOntology.getSource() != null) {
+            myOutput.put("source", myOntology.getSource());
         }
-        return mynode;
+        if (myOntology.getDescription() != null) {
+            myOutput.put("description", myOntology.getDescription());
+        }
+        if (myOntology.getName() != null) {
+            myOutput.put("name", myOntology.getName());
+        }
+        if (myOntology.getIdVersion() != null) {
+            myOutput.put("idVersion", myOntology.getIdVersion());
+        }
+        if (myOntology.getSourceVersion() != null) {
+            myOutput.put("sourceVersion", myOntology.getSourceVersion());
+        }
+        return myOutput;
     }
 
-    /**
-     * The function will create an interaction between two nodes if it is not already created.
-     * @param origin Node from which we want to create the interaction
-     * @param destination Destination node
-     * @param relationType Type of relationship between nodes
-     */
-    private void addInteraction(Node origin, Node destination, RelTypes relationType) {
-        if (origin.hasRelationship(relationType, Direction.OUTGOING)) {
-            for (Relationship r : origin.getRelationships(relationType, Direction.OUTGOING)) {
-                if (r.getEndNode().equals(destination)) {
-                    return;
-                }
-            }
-        }
-        origin.createRelationshipTo(destination, relationType);
-    }
 
     /**
-     * Insert an entire network into the Neo4J database
-     * @param network Object containing all the nodes and interactions
+     * Insert physical entities into the Neo4J database
+     * @param physicalEntityList List containing all the physical entities to be inserted in the database
      * @param queryOptions
      */
-    @Override
-    public void insert(Network network, QueryOptions queryOptions) throws NetworkDBException {
-        this.insertPhysicalEntities(network.getPhysicalEntities(), queryOptions);
-        this.insertInteractions(network.getInteractions(), queryOptions);
+    private void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) throws NetworkDBException {
+        try ( Transaction tx = this.database.beginTx() ) {
+            // 1. Insert the Physical Entities and the basic nodes they are connected to
+            for (PhysicalEntity p : physicalEntityList) {
+                // StringBuilder xrefs = new StringBuilder();
+                // 1. Check if the Xrefs are already inserted in the database within other node
+                List<Node> nodesToMerge = new ArrayList<>();
+                for (Xref xref : p.getXrefs()) {
+                    Node aux_xref = getNode("Xref", new ObjectMap("id", xref.getId()));
+                    if (aux_xref != null) {
+                        // xrefs.append(xref.getId() + " - ");
+                        // Add the node that the current PE has to be merged with
+                        nodesToMerge.add(aux_xref.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode());
+                    }
+                }
+                // 2. Insert or merge the current PE
+  //              if (nodesToMerge.size() == 0) {
+                    // Insert all the Physical entity nodes
+                    Node n = getOrCreateNode("PhysicalEntity", parsePhysicalEntity(p));
+                    //Node n = getOrCreateNode("PhysicalEntity", myProperties);
+                    //addXrefNode(n, new Xref(null, null, p.getId(), null));
+
+                    // 2.1. Insert the ontologies
+                    for (Ontology o : p.getOntologies()) {
+                        Node ont = getOrCreateNode("Ontology", parseOntology(o));
+                        addInteraction(n, ont, RelTypes.ONTOLOGY);
+                    }
+
+                    // 2.1. Insert the Xrefs
+                    for (Xref xref : p.getXrefs()) {
+                        addXrefNode(n, xref);
+                    }
+/*
+                } else {
+                    // System.out.println(nodesToMerge.get(0).getProperty("id") + " = " + p.getId() + ": " + xrefs.toString());
+                    // TODO: merge the nodes... Remember that we could be trying to reinsert the same network
+
+                }
+*/
+                // 3. Insert or merge Xrefs...
+
+            }
+            // 2. Insert the existing relationships between Physical Entities
+            for (PhysicalEntity p : physicalEntityList) {
+                if (p.getComponentOfComplex().size() > 0) {
+                    Node pe_node = getNode("PhysicalEntity", new ObjectMap("id", p.getId()));
+                    if (pe_node == null) {
+                        throw new NetworkDBException("Physical entities are not properly inserted in the database. " +
+                                "Cannot find a physical entity that is supposed to exist.");
+                    }
+                    for (String complexID : p.getComponentOfComplex()) {
+                        Node complex_node = getNode("PhysicalEntity", new ObjectMap("id", complexID));
+                        if (complex_node == null) {
+                            throw new NetworkDBException("Complex: Physical entities are not properly inserted in " +
+                                    "the database. Cannot find a physical entity that is supposed to exist.");
+                        }
+                        if (complex_node.getProperty("type").equals(PhysicalEntity.Type.COMPLEX.toString())) {
+                            addInteraction(pe_node, complex_node, RelTypes.COMPONENTOFCOMPLEX);
+                        } else {
+                            throw new NetworkDBException("The relationship 'Component of complex' cannot be created " +
+                                    "because the destiny node is not of type complex. Check Physical Entity " +
+                                    complexID);
+                        }
+                    }
+                }
+            }
+            tx.success();
+        }
+
     }
 
     /**
@@ -324,24 +389,82 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-    /**
-     * Insert physical entities into the Neo4J database
-     * @param physicalEntityList List containing all the physical entities to be inserted in the database
-     * @param queryOptions
-     */
-    private void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) {
-        try ( Transaction tx = this.database.beginTx() ) {
-            for (PhysicalEntity p : physicalEntityList) {
-                // Insert all the Physical entity nodes
-                ObjectMap myProperties = new ObjectMap();
-                myProperties.put("id", p.getId());
-                myProperties.put("name", p.getName());
-                myProperties.put("description", p.getDescription());
-                Node n = getOrCreateNode("PhysicalEntity", myProperties);
-                addXrefNode(n, new Xref(null, null, p.getId(), null));
-            }
-            tx.success();
+    private Node getNode (String label, ObjectMap properties) {
+        IndexManager index = database.index();
+//        System.out.println("Arrays.toString(index.nodeIndexNames()) = " + Arrays.toString(index.nodeIndexNames()));
+        // TODO: Considering all the properties as String. This has to be changed.
+        // TODO: At the moment, all the properties I'm inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
+        // Cypher query
+        Node n = this.database.findNode(DynamicLabel.label(label),"id",properties.get("id"));
+        /*
+        StringBuilder myquery = new StringBuilder();
+        myquery.append("MATCH (n:").append(label).append(") WHERE ");
+/*        for (String key : properties.keySet()) {
+            myquery.append("n.")
+                    .append(key)
+                    .append("= \"")
+                    .append(properties.getString(key))
+                    .append("\" AND ");
         }
+        myquery.setLength(myquery.length() - 4); // Remove last AND
+        myquery.append("RETURN n");
+        */
+        /*
+        myquery.append("n.id = \"")
+                .append(properties.get("id"))
+                .append("\" RETURN n");
+
+
+        Result result = this.database.execute(myquery.toString());
+        if (result.hasNext()) {
+            return (Node) result.next().get("n");
+        } else {
+            return null;
+        }
+        */
+        return n;
+    }
+
+    private Node createNode (String label, ObjectMap properties) {
+        // TODO: At the moment, all the properties Im inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
+
+        Label mylabel = DynamicLabel.label(label);
+        Node mynode = this.database.createNode(mylabel);
+        for (String key : properties.keySet())
+            //    mynode.setProperty(key, properties.get(key));
+            mynode.setProperty(key, properties.getString(key));
+        return mynode;
+    }
+
+    /**
+     * @param label: Label of the node
+     * @param properties: Map containing all the properties to be added. Key "id" must be among all the possible keys.
+     * @return Node that has been created.
+     */
+    private Node getOrCreateNode(String label, ObjectMap properties) {
+        Node mynode = getNode(label, properties);
+        if (mynode == null) {
+            mynode = createNode(label, properties);
+        }
+        return mynode;
+    }
+
+    // TODO: Rename to addRelationship
+    /**
+     * The function will create an interaction between two nodes if the relation does not exist
+     * @param origin Node from which we want to create the interaction
+     * @param destination Destination node
+     * @param relationType Type of relationship between nodes
+     */
+    private void addInteraction(Node origin, Node destination, RelTypes relationType) {
+        if (origin.hasRelationship(relationType, Direction.OUTGOING)) {
+            for (Relationship r : origin.getRelationships(relationType, Direction.OUTGOING)) {
+                if (r.getEndNode().equals(destination)) {
+                    return;
+                }
+            }
+        }
+        origin.createRelationshipTo(destination, relationType);
     }
 
     /**
@@ -360,8 +483,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (xref.getIdVersion() != null)
             myProperties.put("idVersion", xref.getIdVersion());
 
-        // TODO: Problems: This will check first if there exists an Xref with all those properties.
-        // TODO: If there exist an Xref with the same id, but different properties, it will create another node.
         Node xref_node = getOrCreateNode("Xref", myProperties);
 
         if (!xref_node.hasRelationship(RelTypes.XREF, Direction.INCOMING))
@@ -369,26 +490,143 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     /**
-     * Method to annotate Xrefs in the database
-     * @param nodeID ID of the node we want to annotate
-     * @param xref_list List containing all the Xref annotations to be added in the database
+     * This method will be called every time we consider that two existing nodes are the same and should be merged
+     * @param node1
+     * @param node2
      */
-    @Override
-    public void addXrefs(String nodeID, List<Xref> xref_list) {
-        ObjectMap myProperties = new ObjectMap("id", nodeID);
-        try ( Transaction tx = this.database.beginTx()) {
-            Node xrefNode = getNode("Xref", myProperties);
-            if (xrefNode != null) {
-                //Look for the physical entity to which the xref is associated with
-                Node n = xrefNode.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
-                for (Xref x : xref_list) {
-                    addXrefNode(n, x);
-                }
-            } else {
-                // TODO: Exception telling that the node "nodeID" does not exist, so we cannot annotate.
-            }
-            tx.success();
+    // TODO: Maybe we would have to add the type of nodes we want to merge... Now it is done considering they are PE
+    private void mergeNodes (Node node1, Node node2) {
+        Node myNewNode = null;
+        // TODO: 1. Merge the basic information from both nodes into this one.
+        // 2. Destroy the relationships present in both nodes and apply them to the new node.
+        // TODO: Check expression data
+        // TODO: What would happen if two different nodes have different expression data....??
+        // TODO: What if both of them have expression for the same tissues, but for different timeseries??
+        // Expression data
+        for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.TISSUE, Direction.OUTGOING)) {
+            addInteraction(myNewNode, nodeAux, RelTypes.TISSUE);
         }
+        // Ontologies
+        for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.ONTOLOGY, Direction.OUTGOING)) {
+            addInteraction(myNewNode, nodeAux, RelTypes.ONTOLOGY);
+        }
+        // Xrefs
+        for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.XREF, Direction.OUTGOING)) {
+            addInteraction(myNewNode, nodeAux, RelTypes.XREF);
+        }
+        // Reactant outgoing
+        for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.REACTANT, Direction.OUTGOING)) {
+            addInteraction(myNewNode, nodeAux, RelTypes.REACTANT);
+        }
+        // Reactant incoming
+        for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.REACTANT, Direction.INCOMING)) {
+            addInteraction(nodeAux, myNewNode, RelTypes.REACTANT);
+        }
+        // Controller
+        for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.CONTROLLER, Direction.OUTGOING)) {
+            addInteraction(myNewNode, nodeAux, RelTypes.CONTROLLER);
+        }
+        // Controlled
+        for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.CONTROLLED, Direction.INCOMING)) {
+            addInteraction(nodeAux, myNewNode, RelTypes.CONTROLLED);
+        }
+        // TODO: This will launch an exception if the nodes still contain relationships
+        node1.delete();
+        node2.delete();
+    }
+
+    /**
+     * Method necessary to merge nodes. This method will check for a pair of nodes, the nodes that can be achieved
+     * given the same relationship and direction and return the set comprised by the two of them.
+     * All the relationships from node1 and node2 to the set returned by the method will be removed from the database.
+     * @param node1 Node
+     * @param node2 Node
+     * @param relation Relationship to follow
+     * @param direction Direction of the relationship
+     */
+    private Set<Node> getUniqueNodes (Node node1, Node node2, RelTypes relation, Direction direction) {
+        Set<Node> myUniqueNodes = new HashSet<>();
+        // TODO: Be sure that this set only stores non-repeated nodes
+        for (Relationship relationShip : node1.getRelationships(relation, direction)) {
+            myUniqueNodes.add(relationShip.getOtherNode(node1));
+            relationShip.delete();
+        }
+        for (Relationship relationShip : node2.getRelationships(relation, direction)) {
+            myUniqueNodes.add(relationShip.getOtherNode(node2));
+            relationShip.delete();
+        }
+        return myUniqueNodes;
+    }
+
+    /**
+     * This method will parse the node information into a Physical Entity object
+     * @param node
+     * @return PhysicalEntity object
+     */
+    private PhysicalEntity Node2PhysicalEntity (Node node) throws NetworkDBException {
+        PhysicalEntity p = null;
+        switch ((PhysicalEntity.Type) node.getProperty("type")) {
+            case COMPLEX:
+                p = new Complex();
+                break;
+            case UNDEFINEDENTITY:
+                p = new UndefinedEntity();
+                break;
+            case PROTEIN:
+                p = new Protein();
+                break;
+            case DNA:
+                p = new Dna();
+                break;
+            case RNA:
+                p = new Rna();
+                break;
+            case SMALLMOLECULE:
+                p = new SmallMolecule();
+                break;
+            default:
+                break;
+        }
+        if (p == null) {
+            throw new NetworkDBException("The node intended to be parsed to a Physical Entity seems not to be a proper" +
+                    "Physical Entity node");
+        } else {
+            p.setId((String) node.getProperty("id"));
+            p.setName((String) node.getProperty("name"));
+            p.setDescription((String) node.getProperty("description"));
+            p.setSource((List<String>) node.getProperty("source"));
+
+            if (node.hasRelationship(RelTypes.ONTOLOGY)) {
+                List<Ontology> ontologyList = new ArrayList<>();
+                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.ONTOLOGY)) {
+                    Node ontologyNode = relationship.getEndNode();
+                    Ontology myOntology = new Ontology();
+                    if (ontologyNode.hasProperty("source")) {
+                        myOntology.setSource((String) ontologyNode.getProperty("source"));
+                    }
+                    if (ontologyNode.hasProperty("sourceVersion")) {
+                        myOntology.setSource((String) ontologyNode.getProperty("sourceVersion"));
+                    }
+                    if (ontologyNode.hasProperty("id")) {
+                        myOntology.setSource((String) ontologyNode.getProperty("id"));
+                    }
+                    if (ontologyNode.hasProperty("idVersion")) {
+                        myOntology.setSource((String) ontologyNode.getProperty("idVersion"));
+                    }
+                    if (ontologyNode.hasProperty("name")) {
+                        myOntology.setSource((String) ontologyNode.getProperty("name"));
+                    }
+                    if (ontologyNode.hasProperty("description")) {
+                        myOntology.setSource((String) ontologyNode.getProperty("description"));
+                    }
+                    ontologyList.add(myOntology);
+                }
+                p.setOntologies(ontologyList);
+            }
+        }
+
+
+        return p;
     }
 
     @Override
