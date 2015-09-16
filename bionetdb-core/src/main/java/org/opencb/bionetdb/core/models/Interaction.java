@@ -15,6 +15,7 @@ public class Interaction {
     protected List<String> processOfPathway;
     protected List<String> controlledBy;
     protected List<Xref> xrefs;
+    protected List<Ontology> ontologies;
     protected List<Publication> publications;
 
     protected Type type;
@@ -55,6 +56,7 @@ public class Interaction {
         this.processOfPathway = new ArrayList<>();
         this.controlledBy = new ArrayList<>();
         this.xrefs = new ArrayList<>();
+        this.ontologies = new ArrayList<>();
         this.publications = new ArrayList<>();
     }
 
@@ -79,7 +81,7 @@ public class Interaction {
     }
 
     public void setDescription(String description) {
-        this.description = description.replace("\\\"", "\'").replace("\"", "\'");
+        this.description = description.replace("\\\"", "\'").replace("\"", "\'").replace("&apos;", "\'");
     }
 
     public Map<String, Object> getAttributes() {
@@ -152,6 +154,31 @@ public class Interaction {
         }
         if (!duplicate) {
             this.getXrefs().add(xref);
+        }
+    }
+
+    public List<Ontology> getOntologies() {
+        return ontologies;
+    }
+
+    public void setOntologies(List<Ontology> ontologies) {
+        this.ontologies = ontologies;
+    }
+
+    public void setOntology(Ontology ontology) {
+        // Adding ontology unless it exists
+        boolean duplicate = false;
+        for (Ontology currentOntology : this.getOntologies()) {
+            if(ontology.getSource().equals(currentOntology.getSource()) &&
+                    ontology.getSourceVersion().equals(currentOntology.getSourceVersion()) &&
+                    ontology.getId().equals(currentOntology.getId()) &&
+                    ontology.getIdVersion().equals(currentOntology.getIdVersion())) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) {
+            this.getOntologies().add(ontology);
         }
     }
 

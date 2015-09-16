@@ -388,15 +388,27 @@ public class BioPaxParser {
             physicalEntity.getParticipantOfInteraction().add(interaction.getRDFId().split("#")[1]);
         }
 
-        // xref
         Set<Xref> xrefs = physicalEntityBP.getXref();
         for (Xref xref : xrefs) {
-            org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-            x.setSource(xref.getDb());
-            x.setSourceVersion(xref.getDbVersion());
-            x.setId(xref.getId());
-            x.setIdVersion(xref.getIdVersion());
-            physicalEntity.setXref(x);
+            if (xref.getDb() != null) {
+                String source = xref.getDb().toLowerCase();
+                if (source.contains("sbo") || source.contains("go") || source.contains("mi") ||
+                        source.contains("mint") || source.contains("ec") || source.contains("pubmed")) {
+                    Ontology ontology = new Ontology();
+                    ontology.setSource(xref.getDb());
+                    ontology.setSourceVersion(xref.getDbVersion());
+                    ontology.setId(xref.getId());
+                    ontology.setIdVersion(xref.getIdVersion());
+                    physicalEntity.setOntology(ontology);
+                } else {
+                    org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
+                    x.setSource(xref.getDb());
+                    x.setSourceVersion(xref.getDbVersion());
+                    x.setId(xref.getId());
+                    x.setIdVersion(xref.getIdVersion());
+                    physicalEntity.setXref(x);
+                }
+            }
         }
 
         // publications
@@ -553,19 +565,17 @@ public class BioPaxParser {
                 }
                 reaction.setStoichiometry(stoichiometry);
 
-                // TODO Think about this. EC numbers cannot be in xrefs because they are not unique ids
-/*
                 // Adding EC number to xrefs
                 if (className.equals("BiochemicalReaction")) {
                     BiochemicalReaction br = (BiochemicalReaction) bioPAXElement;
                     for (String ecNumber : br.getECNumber()) {
-                        org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
-                        xref.setSource("ec");
-                        xref.setId(ecNumber);
-                        reaction.setXref(xref);
+                        Ontology ontology = new Ontology();
+                        ontology.setSource("ec");
+                        ontology.setId(ecNumber);
+                        reaction.setOntology(ontology);
                     }
                 }
-*/
+
                 break;
             case "MolecularInteraction":
                 MolecularInteraction molecularInteractionBP = (MolecularInteraction) bioPAXElement;
@@ -692,12 +702,30 @@ public class BioPaxParser {
         // xref
         Set<Xref> xrefs = interactionBP.getXref();
         for (Xref xref : xrefs) {
-            org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-            x.setSource(xref.getDb());
-            x.setSourceVersion(xref.getDbVersion());
-            x.setId(xref.getId());
-            x.setIdVersion(xref.getIdVersion());
-            interaction.setXref(x);
+            if (xref.getDb() != null) {
+                String source = xref.getDb().toLowerCase();
+                if (source.contains("sbo") || source.contains("go") || source.contains("mi") ||
+                        source.contains("mint") || source.contains("ec")) {
+                    Ontology ontology = new Ontology();
+                    ontology.setSource(xref.getDb());
+                    ontology.setSourceVersion(xref.getDbVersion());
+                    ontology.setId(xref.getId());
+                    ontology.setIdVersion(xref.getIdVersion());
+                    interaction.setOntology(ontology);
+                } else if (source.contains("pubmed")) {
+                    Publication publication = new Publication();
+                    publication.setSource(xref.getDb());
+                    publication.setId(xref.getId());
+                    interaction.setPublication(publication);
+                } else {
+                    org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
+                    x.setSource(xref.getDb());
+                    x.setSourceVersion(xref.getDbVersion());
+                    x.setId(xref.getId());
+                    x.setIdVersion(xref.getIdVersion());
+                    interaction.setXref(x);
+                }
+            }
         }
 
         // publications
@@ -734,5 +762,4 @@ public class BioPaxParser {
                 interactionBP.getInteractionType());
 
     }
-
 }

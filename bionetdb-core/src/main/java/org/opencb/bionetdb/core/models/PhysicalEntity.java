@@ -18,6 +18,7 @@ public class PhysicalEntity {
     protected List<String> participantOfInteraction;
     protected List<Map<String, Object>> features;
     protected List<Xref> xrefs;
+    protected List<Ontology> ontologies;
     protected List<Publication> publications;
 
     protected Type type;
@@ -68,6 +69,7 @@ public class PhysicalEntity {
         this.features = new ArrayList<>();
         this.xrefs = new ArrayList<>();
         this.publications = new ArrayList<>();
+        this.ontologies = new ArrayList<>();
     }
 
     class Display {
@@ -99,7 +101,7 @@ public class PhysicalEntity {
     }
 
     public void setDescription(String description) {
-        this.description = description.replace("\\\"", "\'").replace("\"", "\'");
+        this.description = description.replace("\\\"", "\'").replace("\"", "\'").replace("&apos;", "\'");
     }
 
     public List<CellularLocation> getCellularLocation() {
@@ -189,6 +191,31 @@ public class PhysicalEntity {
         }
         if (!duplicate) {
             this.getXrefs().add(xref);
+        }
+    }
+
+    public List<Ontology> getOntologies() {
+        return ontologies;
+    }
+
+    public void setOntologies(List<Ontology> ontologies) {
+        this.ontologies = ontologies;
+    }
+
+    public void setOntology(Ontology ontology) {
+        // Adding ontology unless it exists
+        boolean duplicate = false;
+        for (Ontology currentOntology : this.getOntologies()) {
+            if(ontology.getSource().equals(currentOntology.getSource()) &&
+                    ontology.getSourceVersion().equals(currentOntology.getSourceVersion()) &&
+                    ontology.getId().equals(currentOntology.getId()) &&
+                    ontology.getIdVersion().equals(currentOntology.getIdVersion())) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) {
+            this.getOntologies().add(ontology);
         }
     }
 

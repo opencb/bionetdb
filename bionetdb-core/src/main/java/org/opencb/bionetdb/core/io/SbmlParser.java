@@ -223,6 +223,17 @@ public class SbmlParser {
         // id
         physicalEntity.setId(species.getId());
 
+        // comments
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < species.getNotes().getNumChildren(); i++) {
+            Pattern pattern = Pattern.compile("<.+>(.+)<.+>");
+            Matcher matcher = pattern.matcher(species.getNotes().getChild(i).toXMLString());
+            if (matcher.matches()) {
+                sb.append(matcher.group(1)).append(";;");
+            }
+        }
+        physicalEntity.setDescription(sb.toString());
+
         // name
         physicalEntity.setName(species.getName());
 
@@ -234,41 +245,43 @@ public class SbmlParser {
         if (description.hasChild("is")) {
             XMLNode ids = description.getChild("is").getChild("Bag");
             for (int i = 0; i < ids.getNumChildren(); i++) {
-                Xref xref = new Xref();
                 String id = ids.getChild(i).getAttributes().getValue("resource");
                 // Fixing bad formatted colon: from "%3A" to ":"
                 List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
                 List<String> xrefElements = idElements.subList(idElements.size() - 2, idElements.size());
-                // Excluding not unique ids
-                if (xrefElements.get(0).contains("go") || xrefElements.get(0).contains("ec") || xrefElements.get(0).contains("sbo")) {
-                    continue;
+                if (!xrefElements.get(0).isEmpty()) {
+                    String source = xrefElements.get(0).toLowerCase();
+                    if (source.contains("sbo") || source.contains("go") || source.contains("mi") ||
+                            source.contains("mint") || source.contains("ec")) {
+                        Ontology ontology = new Ontology();
+                        ontology.setSource(xrefElements.get(0));
+                        ontology.setId(xrefElements.get(1));
+                        physicalEntity.setOntology(ontology);
+                    } else if (source.contains("pubmed")) {
+                        Publication publication = new Publication();
+                        publication.setSource(xrefElements.get(0));
+                        publication.setId(xrefElements.get(1));
+                        physicalEntity.setPublication(publication);
+                    } else {
+                        Xref xref = new Xref();
+                        if (xrefElements.get(0).contains("kegg.compound")) {
+                            xref.setSource("kegg");
+                        } else {
+                            xref.setSource(xrefElements.get(0));
+                        }
+                        xref.setId(xrefElements.get(1));
+                        physicalEntity.setXref(xref);
+                    }
                 }
-                if (xrefElements.get(0).contains("kegg.compound")) {
-                    xref.setSource("kegg");
-                } else {
-                    xref.setSource(xrefElements.get(0).toLowerCase());
-                }
-                xref.setId(xrefElements.get(1));
-                physicalEntity.setXref(xref);
             }
         }
 
-        Xref xref = new Xref();
+        Ontology ontology = new Ontology();
         List<String> sboElements = Arrays.asList(species.getSBOTermID().split(":"));
-        xref.setSource(sboElements.get(0).toLowerCase());
-        xref.setId(sboElements.get(1));
-        physicalEntity.setXref(xref);
+        ontology.setSource(sboElements.get(0).toLowerCase());
+        ontology.setId(sboElements.get(1));
+        physicalEntity.setOntology(ontology);
 
-        // comments
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < species.getNotes().getNumChildren(); i++) {
-            Pattern pattern = Pattern.compile("<.+>(.+)<.+>");
-            Matcher matcher = pattern.matcher(species.getNotes().getChild(i).toXMLString());
-            if (matcher.matches()) {
-                sb.append(matcher.group(1)).append(";;");
-            }
-        }
-        physicalEntity.getAttributes().put(REACTOME_FEAT + "comment", sb.toString());
     }
 
     private CellularLocation getCompartmentInfo (Compartment compartment) {
@@ -406,10 +419,6 @@ public class SbmlParser {
                 // Fixing bad formatted colon: from "%3A" to ":"
                 List<String> idElements = Arrays.asList(id.replace("%3A", ":").split(":"));
                 List<String> xrefElements = idElements.subList(idElements.size() - 2, idElements.size());
-                // Excluding not unique ids
-                if (xrefElements.get(0).contains("go") || xrefElements.get(0).contains("ec") || xrefElements.get(0).contains("sbo")) {
-                    continue;
-                }
                 if (xrefElements.get(0).contains("kegg.compound")) {
                     idXref.setSource("kegg");
                 } else {
