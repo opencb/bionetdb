@@ -28,18 +28,18 @@ public class Reaction extends Interaction {
     }
 
     public Reaction() {
-        super("", "", "", Type.REACTION);
+        super("", "", Collections.<String>emptyList(), Type.REACTION);
         this.reactionType = ReactionType.REACTION;
         init();
     }
 
     public Reaction (ReactionType reactionType) {
-        super("", "", "", Type.REACTION);
+        super("", "", Collections.<String>emptyList(), Type.REACTION);
         this.reactionType = ReactionType.REACTION;
         init();
     }
 
-    public Reaction(String id, String name, String description, ReactionType reactionType) {
+    public Reaction(String id, String name, List<String> description, ReactionType reactionType) {
         super(id, name, description, Type.REACTION);
         this.reactionType = reactionType;
         init();

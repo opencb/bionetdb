@@ -13,11 +13,11 @@ public class Catalysis extends Interaction {
     private String controlType;
 
     public Catalysis() {
-        super("", "", "", Type.CATALYSIS);
+        super("", "", Collections.<String>emptyList(), Type.CATALYSIS);
         init();
     }
 
-    public Catalysis(String id, String name, String description) {
+    public Catalysis(String id, String name, List<String> description) {
         super(id, name, description, Type.CATALYSIS);
         init();
     }

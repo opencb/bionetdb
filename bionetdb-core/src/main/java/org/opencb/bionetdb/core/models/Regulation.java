@@ -12,11 +12,11 @@ public class Regulation extends Interaction {
     private String controlType;
 
     public Regulation() {
-        super("", "", "", Type.REGULATION);
+        super("", "", Collections.<String>emptyList(), Type.REGULATION);
         init();
     }
 
-    public Regulation(String id, String name, String description) {
+    public Regulation(String id, String name, List<String> description) {
         super(id, name, description, Type.REGULATION);
         init();
     }

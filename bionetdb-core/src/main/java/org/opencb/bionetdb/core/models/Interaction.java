@@ -9,7 +9,7 @@ public class Interaction {
 
     protected String id;
     protected String name;
-    protected String description;
+    protected List<String> description;
     protected List<String> source;
     protected List<String> participants;
     protected List<String> processOfPathway;
@@ -39,8 +39,8 @@ public class Interaction {
         init();
     }
 
-    public Interaction(String description, String id, String name, Type type) {
-        this.description = description;
+    public Interaction(String id, String name, List<String> description, Type type) {
+        this.description = new ArrayList<>();
         this.id = id;
         this.name = name;
         this.type = type;
@@ -76,12 +76,12 @@ public class Interaction {
         this.name = name;
     }
 
-    public String getDescription() {
+    public List<String> getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description.replace("\\\"", "\'").replace("\"", "\'").replace("&apos;", "\'");
+    public void setDescription(List<String> description) {
+        this.description = description;
     }
 
     public Map<String, Object> getAttributes() {

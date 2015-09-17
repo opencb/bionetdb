@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.core.models;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -12,11 +13,11 @@ public class Protein extends PhysicalEntity {
     private List<Domain> domains;
 
     public Protein() {
-        super("", "", "", Type.PROTEIN);
+        super("", "", Collections.<String>emptyList(), Type.PROTEIN);
         init();
     }
 
-    public Protein(String id, String name, String description) {
+    public Protein(String id, String name, List<String> description) {
         super(id, name, description, Type.PROTEIN);
         init();
     }
@@ -41,4 +42,5 @@ public class Protein extends PhysicalEntity {
     public void setDomains(List<Domain> domains) {
         this.domains = domains;
     }
+
 }

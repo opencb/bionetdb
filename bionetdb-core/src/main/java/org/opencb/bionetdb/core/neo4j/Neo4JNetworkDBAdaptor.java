@@ -593,7 +593,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         } else {
             p.setId((String) node.getProperty("id"));
             p.setName((String) node.getProperty("name"));
-            p.setDescription((String) node.getProperty("description"));
+            p.setDescription((List<String>) node.getProperty("description"));
             p.setSource((List<String>) node.getProperty("source"));
 
             if (node.hasRelationship(RelTypes.ONTOLOGY)) {

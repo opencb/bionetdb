@@ -143,9 +143,8 @@ public class BioPaxParser {
             }
 
             // description
-            for (String comment : entityReference.getComment()) {
-                dna.setDescription(dna.getDescription() + comment + ";;");
-            }
+            dna.getDescription().addAll(entityReference.getComment());
+
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -182,9 +181,7 @@ public class BioPaxParser {
             }
 
             // description
-            for (String comment : entityReference.getComment()) {
-                rna.setDescription(rna.getDescription() + comment + ";;");
-            }
+            rna.getDescription().addAll(entityReference.getComment());
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -221,9 +218,7 @@ public class BioPaxParser {
             }
 
             // description
-            for (String comment : entityReference.getComment()) {
-                protein.setDescription(protein.getDescription() + comment + ";;");
-            }
+            protein.getDescription().addAll(entityReference.getComment());
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -261,9 +256,7 @@ public class BioPaxParser {
             }
 
             // description
-            for (String comment : entityReference.getComment()) {
-                smallMolecule.setDescription(smallMolecule.getDescription() + comment + ";;");
-            }
+            smallMolecule.getDescription().addAll(entityReference.getComment());
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -667,7 +660,7 @@ public class BioPaxParser {
         if (interactionBP.getComment() != null) {
             for (String comment : interactionBP.getComment()) {
                 if (!comment.matches("(Authored:|Edited:|Reviewed:).+")) {
-                    interaction.setDescription(interaction.getDescription() + comment + ";;");
+                    interaction.getDescription().add(comment);
                 }
             }
         }

@@ -1,6 +1,8 @@
 package org.opencb.bionetdb.core.models;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -9,11 +11,11 @@ import java.util.Map;
 public class Dna extends PhysicalEntity {
 
     public Dna() {
-        super("", "", "", Type.DNA);
+        super("", "", Collections.<String>emptyList(), Type.DNA);
         init();
     }
 
-    public Dna(String id, String name, String description) {
+    public Dna(String id, String name, List<String> description) {
         super(id, name, description, Type.DNA);
         init();
     }

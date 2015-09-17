@@ -224,15 +224,13 @@ public class SbmlParser {
         physicalEntity.setId(species.getId());
 
         // comments
-        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < species.getNotes().getNumChildren(); i++) {
             Pattern pattern = Pattern.compile("<.+>(.+)<.+>");
             Matcher matcher = pattern.matcher(species.getNotes().getChild(i).toXMLString());
             if (matcher.matches()) {
-                sb.append(matcher.group(1)).append(";;");
+                physicalEntity.getDescription().add(matcher.group(1));
             }
         }
-        physicalEntity.setDescription(sb.toString());
 
         // name
         physicalEntity.setName(species.getName());
@@ -340,37 +338,37 @@ public class SbmlParser {
                     } else {
                         // If component xref cannot be transformed into an ID, a new PhysicalEntity is created
                         if (componentId.contains("uniprot") || componentId.contains("interpro") || componentId.contains("pirsf")) {
-                            Protein protein = new Protein(componentId, "", "");
+                            Protein protein = new Protein(componentId, "", Collections.<String>emptyList());
                             protein.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             protein.setXref(xref);
                             newPhysicalEntities.add(protein);
                         } else if (componentId.contains("kegg") || componentId.contains("chebi")) {
-                            SmallMolecule smallMolecule = new SmallMolecule(componentId, "", "");
+                            SmallMolecule smallMolecule = new SmallMolecule(componentId, "", Collections.<String>emptyList());
                             smallMolecule.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             smallMolecule.setXref(xref);
                             newPhysicalEntities.add(smallMolecule);
                         } else if (componentId.contains("ensg")) {
-                            Dna dna = new Dna(componentId, "", "");
+                            Dna dna = new Dna(componentId, "", Collections.<String>emptyList());
                             dna.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             dna.setXref(xref);
                             newPhysicalEntities.add(dna);
                         } else if (componentId.contains("enst")) {
-                            Rna rna = new Rna(componentId, "", "");
+                            Rna rna = new Rna(componentId, "", Collections.<String>emptyList());
                             rna.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             rna.setXref(xref);
                             newPhysicalEntities.add(rna);
                         } else if (componentId.contains("bind")) {
-                            Complex complexx = new Complex(componentId, "", "");
+                            Complex complexx = new Complex(componentId, "", Collections.<String>emptyList());
                             complexx.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             complexx.setXref(xref);
                             newPhysicalEntities.add(complexx);
                         } else {
-                            UndefinedEntity undefinedEntity = new UndefinedEntity(componentId, "", "");
+                            UndefinedEntity undefinedEntity = new UndefinedEntity(componentId, "", Collections.<String>emptyList());
                             undefinedEntity.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             undefinedEntity.setXref(xref);
@@ -474,15 +472,15 @@ public class SbmlParser {
         reaction.getProcessOfPathway().add(reactionSBML.getModel().getId());
 
         // comments
-        StringBuilder sb = new StringBuilder();
+        List<String> comments = new ArrayList<>();
         for (int i = 0; i < reactionSBML.getNotes().getNumChildren(); i++) {
             Pattern pattern = Pattern.compile("<.+>(.+)<.+>");
             Matcher matcher = pattern.matcher(reactionSBML.getNotes().getChild(i).toXMLString());
             if (matcher.matches()) {
-                sb.append(matcher.group(1)).append(";;");
+                comments.add(matcher.group(1));
             }
         }
-        reaction.getAttributes().put(REACTOME_FEAT + "comment", sb.toString());
+        reaction.getAttributes().put(REACTOME_FEAT + "comment", comments);
 
         return reaction;
     }

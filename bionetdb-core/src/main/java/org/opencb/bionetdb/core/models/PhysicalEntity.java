@@ -9,7 +9,7 @@ public class PhysicalEntity {
 
     protected String id;
     protected String name;
-    protected String description;
+    protected List<String> description;
     protected List<CellularLocation> cellularLocation;
     protected List<String> source;
     protected List<String> members;
@@ -48,10 +48,10 @@ public class PhysicalEntity {
         init();
     }
 
-    public PhysicalEntity(String id, String name, String description, Type type) {
+    public PhysicalEntity(String id, String name, List<String> description, Type type) {
         this.id = id;
         this.name = name;
-        this.description = description;
+        this.description = new ArrayList<>();
         this.type = type;
 
         // init rest of attributes
@@ -96,12 +96,12 @@ public class PhysicalEntity {
         this.name = name;
     }
 
-    public String getDescription() {
+    public List<String> getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description.replace("\\\"", "\'").replace("\"", "\'").replace("&apos;", "\'");
+    public void setDescription(List<String> description) {
+        this.description = description;
     }
 
     public List<CellularLocation> getCellularLocation() {
