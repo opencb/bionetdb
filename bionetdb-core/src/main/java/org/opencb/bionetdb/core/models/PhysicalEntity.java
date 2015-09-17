@@ -25,7 +25,7 @@ public class PhysicalEntity {
 
     protected Map<String, Object> attributes;
 
-    // TODO think about his!
+    // TODO think about this!
     protected Display display;
 
     public enum Type {

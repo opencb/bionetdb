@@ -336,17 +336,17 @@ public class BioPaxParser {
             cellularLocation.getNames().add(name);
         }
         for (Xref cellLocXref : cellularLocationVocabulary.getXref()) {
-            org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
-            if (cellLocXref.getDb().toLowerCase().contains("gene ontology")) {
-                xref.setSource("go");
-                xref.setId(cellLocXref.getId().split(":")[1]);
+            Ontology ontology= new Ontology();
+            if (cellLocXref.getDb().toLowerCase().equals("gene ontology")) {
+                ontology.setSource("go");
+                ontology.setId(cellLocXref.getId().split(":")[1]);
             } else {
-                xref.setSource(cellLocXref.getDb());
-                xref.setId(cellLocXref.getId());
+                ontology.setSource(cellLocXref.getDb());
+                ontology.setId(cellLocXref.getId());
             }
-            xref.setSourceVersion(cellLocXref.getDbVersion());
-            xref.setIdVersion(cellLocXref.getIdVersion());
-            cellularLocation.setXref(xref);
+            ontology.setSourceVersion(cellLocXref.getDbVersion());
+            ontology.setIdVersion(cellLocXref.getIdVersion());
+            cellularLocation.setOntology(ontology);
         }
         physicalEntity.getCellularLocation().add(cellularLocation);
 
@@ -392,14 +392,18 @@ public class BioPaxParser {
         for (Xref xref : xrefs) {
             if (xref.getDb() != null) {
                 String source = xref.getDb().toLowerCase();
-                if (source.contains("sbo") || source.contains("go") || source.contains("mi") ||
-                        source.contains("mint") || source.contains("ec") || source.contains("pubmed")) {
+                if (source.equals("sbo") || source.equals("go") || source.equals("mi") || source.equals("ec")) {
                     Ontology ontology = new Ontology();
                     ontology.setSource(xref.getDb());
                     ontology.setSourceVersion(xref.getDbVersion());
                     ontology.setId(xref.getId());
                     ontology.setIdVersion(xref.getIdVersion());
                     physicalEntity.setOntology(ontology);
+                } else if (source.equals("pubmed")) {
+                    Publication publication = new Publication();
+                    publication.setSource(xref.getDb());
+                    publication.setId(xref.getId());
+                    physicalEntity.setPublication(publication);
                 } else {
                     org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
                     x.setSource(xref.getDb());
@@ -704,15 +708,14 @@ public class BioPaxParser {
         for (Xref xref : xrefs) {
             if (xref.getDb() != null) {
                 String source = xref.getDb().toLowerCase();
-                if (source.contains("sbo") || source.contains("go") || source.contains("mi") ||
-                        source.contains("mint") || source.contains("ec")) {
+                if (source.equals("sbo") || source.equals("go") || source.equals("mi") || source.equals("ec")) {
                     Ontology ontology = new Ontology();
                     ontology.setSource(xref.getDb());
                     ontology.setSourceVersion(xref.getDbVersion());
                     ontology.setId(xref.getId());
                     ontology.setIdVersion(xref.getIdVersion());
                     interaction.setOntology(ontology);
-                } else if (source.contains("pubmed")) {
+                } else if (source.equals("pubmed")) {
                     Publication publication = new Publication();
                     publication.setSource(xref.getDb());
                     publication.setId(xref.getId());

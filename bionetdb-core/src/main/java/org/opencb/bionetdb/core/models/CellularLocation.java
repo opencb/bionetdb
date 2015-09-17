@@ -9,16 +9,16 @@ import java.util.List;
 public class CellularLocation {
 
     private List<String> names;
-    private List<Xref> xrefs;
+    private List<Ontology> ontologies;
 
     public CellularLocation() {
         this.names = new ArrayList<>();
-        this.xrefs = new ArrayList<>();
+        this.ontologies = new ArrayList<>();
     }
 
-    public CellularLocation(List<String> names, List<Xref> xrefs) {
+    public CellularLocation(List<String> names, List<Ontology> ontologies) {
         this.names = names;
-        this.xrefs = xrefs;
+        this.ontologies = ontologies;
     }
 
     public List<String> getNames() {
@@ -29,28 +29,28 @@ public class CellularLocation {
         this.names = names;
     }
 
-    public List<Xref> getXrefs() {
-        return xrefs;
+    public List<Ontology> getOntologies() {
+        return ontologies;
     }
 
-    public void setXrefs(List<Xref> xrefs) {
-        this.xrefs = xrefs;
+    public void setOntologies(List<Ontology> ontologies) {
+        this.ontologies = ontologies;
     }
 
-    public void setXref(Xref xref) {
-        // Adding xref unless it exists
+    public void setOntology(Ontology ontology) {
+        // Adding ontology unless it exists
         boolean duplicate = false;
-        for (Xref currentXref : this.getXrefs()) {
-            if(xref.getSource().equals(currentXref.getSource()) &&
-                    xref.getSourceVersion().equals(currentXref.getSourceVersion()) &&
-                    xref.getId().equals(currentXref.getId()) &&
-                    xref.getIdVersion().equals(currentXref.getIdVersion())) {
+        for (Ontology currentOntology : this.getOntologies()) {
+            if (ontology.getSource().equals(currentOntology.getSource()) &&
+                    ontology.getSourceVersion().equals(currentOntology.getSourceVersion()) &&
+                    ontology.getId().equals(currentOntology.getId()) &&
+                    ontology.getIdVersion().equals(currentOntology.getIdVersion())) {
                 duplicate = true;
                 break;
             }
         }
         if (!duplicate) {
-            this.getXrefs().add(xref);
+            this.getOntologies().add(ontology);
         }
     }
 }

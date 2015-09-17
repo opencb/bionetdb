@@ -251,20 +251,19 @@ public class SbmlParser {
                 List<String> xrefElements = idElements.subList(idElements.size() - 2, idElements.size());
                 if (!xrefElements.get(0).isEmpty()) {
                     String source = xrefElements.get(0).toLowerCase();
-                    if (source.contains("sbo") || source.contains("go") || source.contains("mi") ||
-                            source.contains("mint") || source.contains("ec")) {
+                    if (source.equals("sbo") || source.equals("go") || source.equals("mi") || source.equals("ec")) {
                         Ontology ontology = new Ontology();
                         ontology.setSource(xrefElements.get(0));
                         ontology.setId(xrefElements.get(1));
                         physicalEntity.setOntology(ontology);
-                    } else if (source.contains("pubmed")) {
+                    } else if (source.equals("pubmed")) {
                         Publication publication = new Publication();
                         publication.setSource(xrefElements.get(0));
                         publication.setId(xrefElements.get(1));
                         physicalEntity.setPublication(publication);
                     } else {
                         Xref xref = new Xref();
-                        if (xrefElements.get(0).contains("kegg.compound")) {
+                        if (xrefElements.get(0).equals("kegg.compound")) {
                             xref.setSource("kegg");
                         } else {
                             xref.setSource(xrefElements.get(0));
@@ -298,10 +297,10 @@ public class SbmlParser {
         // Fixing bad formatted colon: from "%3A" to ":"
         List<String> idElements = Arrays.asList(cellularLocXref.replace("%3A", ":").split(":"));
 
-        org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
-        xref.setSource(idElements.get(idElements.size() - 2));
-        xref.setId(idElements.get(idElements.size()-1));
-        cellularLocation.setXref(xref);
+        Ontology ontologies = new Ontology();
+        ontologies.setSource(idElements.get(idElements.size() - 2));
+        ontologies.setId(idElements.get(idElements.size()-1));
+        cellularLocation.setOntology(ontologies);
 
         return cellularLocation;
     }
