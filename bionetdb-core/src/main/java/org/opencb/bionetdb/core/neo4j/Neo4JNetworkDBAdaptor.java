@@ -80,7 +80,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         TISSUE,
         TIMESERIES,
         ONTOLOGY,
-        COMPONENTOFCOMPLEX
+        COMPONENTOFCOMPLEX,
+        CELLULARLOCATION,
+        CEL_ONTOLOGY
     }
 
     /**
@@ -224,6 +226,23 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return myOutput;
     }
 
+    /***
+     * Insert all the elements present in the CellularLocation object into an ObjectMap object
+     * @param myCellularLocation
+     * @return ObjectMap object containing the values present in myCellularLocation
+     */
+    private ObjectMap parseCellularLocation (CellularLocation myCellularLocation) {
+        ObjectMap myOutput = new ObjectMap("id", myCellularLocation.getName());
+        List<Ontology> myOntologies = myCellularLocation.getOntologies();
+        List<ObjectMap> allOntologies = new ArrayList<>();
+        if (myOntologies.size() > 0) {
+            for (Ontology myOntology : myOntologies) {
+                allOntologies.add(parseOntology(myOntology));
+            }
+        }
+        myOutput.put("ontologies", allOntologies);
+        return myOutput;
+    }
 
     /**
      * Insert physical entities into the Neo4J database
@@ -246,29 +265,35 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     }
                 }
                 // 2. Insert or merge the current PE
-  //              if (nodesToMerge.size() == 0) {
-                    // Insert all the Physical entity nodes
-                    Node n = getOrCreateNode("PhysicalEntity", parsePhysicalEntity(p));
-                    //Node n = getOrCreateNode("PhysicalEntity", myProperties);
-                    //addXrefNode(n, new Xref(null, null, p.getId(), null));
+                //              if (nodesToMerge.size() == 0) {
+                // Insert all the Physical entity nodes
+                Node n = getOrCreateNode("PhysicalEntity", parsePhysicalEntity(p));
+                //Node n = getOrCreateNode("PhysicalEntity", myProperties);
+                //addXrefNode(n, new Xref(null, null, p.getId(), null));
 
-                    // 2.1. Insert the ontologies
-                    for (Ontology o : p.getOntologies()) {
-                        Node ont = getOrCreateNode("Ontology", parseOntology(o));
-                        addInteraction(n, ont, RelTypes.ONTOLOGY);
-                    }
-
-                    // 2.1. Insert the Xrefs
-                    for (Xref xref : p.getXrefs()) {
-                        addXrefNode(n, xref);
-                    }
-/*
-                } else {
-                    // System.out.println(nodesToMerge.get(0).getProperty("id") + " = " + p.getId() + ": " + xrefs.toString());
-                    // TODO: merge the nodes... Remember that we could be trying to reinsert the same network
-
+                // 2.1. Insert the ontologies
+                for (Ontology o : p.getOntologies()) {
+                    Node ont = getOrCreateNode("Ontology", parseOntology(o));
+                    addInteraction(n, ont, RelTypes.ONTOLOGY);
                 }
-*/
+
+                    /* Insert the cellular locations */
+                for (CellularLocation c : p.getCellularLocation()) {
+                    Node cel = getOrCreateCellularLocationNode(parseCellularLocation(c));
+                    addInteraction(n, cel, RelTypes.CELLULARLOCATION);
+                }
+
+                // 2.1. Insert the Xrefs
+                for (Xref xref : p.getXrefs()) {
+                    addXrefNode(n, xref);
+                }
+    /*
+                    } else {
+                        // System.out.println(nodesToMerge.get(0).getProperty("id") + " = " + p.getId() + ": " + xrefs.toString());
+                        // TODO: merge the nodes... Remember that we could be trying to reinsert the same network
+
+                    }
+    */
                 // 3. Insert or merge Xrefs...
 
             }
@@ -321,7 +346,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     mynode.setProperty("id", i.getId());
                 }
                 if (i.getDescription() != null) {
-                    mynode.setProperty("description", i.getDescription());
+                    mynode.setProperty("description", i.getDescription().toArray(new String[0]));
                 }
             }
             tx.success();
@@ -391,37 +416,37 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private Node getNode (String label, ObjectMap properties) {
         IndexManager index = database.index();
-//        System.out.println("Arrays.toString(index.nodeIndexNames()) = " + Arrays.toString(index.nodeIndexNames()));
+        //        System.out.println("Arrays.toString(index.nodeIndexNames()) = " + Arrays.toString(index.nodeIndexNames()));
         // TODO: Considering all the properties as String. This has to be changed.
         // TODO: At the moment, all the properties I'm inserting are strings. However, when issue #18 gets resolved, we should change the insertion of properties.
         // Cypher query
-        Node n = this.database.findNode(DynamicLabel.label(label),"id",properties.get("id"));
-        /*
-        StringBuilder myquery = new StringBuilder();
-        myquery.append("MATCH (n:").append(label).append(") WHERE ");
-/*        for (String key : properties.keySet()) {
-            myquery.append("n.")
-                    .append(key)
-                    .append("= \"")
-                    .append(properties.getString(key))
-                    .append("\" AND ");
-        }
-        myquery.setLength(myquery.length() - 4); // Remove last AND
-        myquery.append("RETURN n");
-        */
-        /*
-        myquery.append("n.id = \"")
-                .append(properties.get("id"))
-                .append("\" RETURN n");
+        Node n = this.database.findNode(DynamicLabel.label(label), "id", properties.get("id"));
+            /*
+            StringBuilder myquery = new StringBuilder();
+            myquery.append("MATCH (n:").append(label).append(") WHERE ");
+    /*        for (String key : properties.keySet()) {
+                myquery.append("n.")
+                        .append(key)
+                        .append("= \"")
+                        .append(properties.getString(key))
+                        .append("\" AND ");
+            }
+            myquery.setLength(myquery.length() - 4); // Remove last AND
+            myquery.append("RETURN n");
+            */
+            /*
+            myquery.append("n.id = \"")
+                    .append(properties.get("id"))
+                    .append("\" RETURN n");
 
 
-        Result result = this.database.execute(myquery.toString());
-        if (result.hasNext()) {
-            return (Node) result.next().get("n");
-        } else {
-            return null;
-        }
-        */
+            Result result = this.database.execute(myquery.toString());
+            if (result.hasNext()) {
+                return (Node) result.next().get("n");
+            } else {
+                return null;
+            }
+            */
         return n;
     }
 
@@ -445,6 +470,24 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Node mynode = getNode(label, properties);
         if (mynode == null) {
             mynode = createNode(label, properties);
+        }
+        return mynode;
+    }
+
+    /**
+     * Checks if the cellular location given in properties is already in database. If not, it creates it and
+     * returns the node.
+     * @param properties
+     * @return
+     */
+    private Node getOrCreateCellularLocationNode (ObjectMap properties) {
+        Node mynode = getOrCreateNode("CellularLocation", new ObjectMap("id", properties.get("id")));
+        // gets or creates ontology node
+        if (properties.containsKey("ontologies")) {
+            for (ObjectMap myOntology : (List<ObjectMap>) properties.get("ontologies")) {
+                Node ontNode = getOrCreateNode("Ontology", myOntology);
+                addInteraction(mynode, ontNode, RelTypes.CEL_ONTOLOGY);
+            }
         }
         return mynode;
     }
@@ -559,6 +602,56 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     /**
+     * Parses the Node node into an ontology bean
+     * @param node
+     * @return
+     * @throws NetworkDBException
+     */
+    private Ontology Node2Ontology (Node node) throws NetworkDBException {
+        Ontology myOntology = new Ontology();
+        if (node.hasProperty("source")) {
+            myOntology.setSource((String) node.getProperty("source"));
+        }
+        if (node.hasProperty("sourceVersion")) {
+            myOntology.setSource((String) node.getProperty("sourceVersion"));
+        }
+        if (node.hasProperty("id")) {
+            myOntology.setSource((String) node.getProperty("id"));
+        }
+        if (node.hasProperty("idVersion")) {
+            myOntology.setSource((String) node.getProperty("idVersion"));
+        }
+        if (node.hasProperty("name")) {
+            myOntology.setSource((String) node.getProperty("name"));
+        }
+        if (node.hasProperty("description")) {
+            myOntology.setSource((String) node.getProperty("description"));
+        }
+        return myOntology;
+    }
+
+    /**
+     * Returns Parses the Node node into a cellular location bean
+     * @param node
+     * @return
+     * @throws NetworkDBException
+     */
+    private CellularLocation Node2CellularLocation (Node node) throws NetworkDBException {
+        CellularLocation myCellularLocation = new CellularLocation();
+        if (node.hasProperty("id")) {
+            myCellularLocation.setName((String) node.getProperty("id"));
+        }
+        if (node.hasRelationship(RelTypes.CEL_ONTOLOGY, Direction.OUTGOING)) {
+            List<Ontology> myOntologies = new ArrayList<>();
+            for (Relationship myRelationship : node.getRelationships(RelTypes.CEL_ONTOLOGY, Direction.OUTGOING)) {
+                myOntologies.add(Node2Ontology(myRelationship.getEndNode()));
+            }
+            myCellularLocation.setOntologies(myOntologies);
+        }
+        return myCellularLocation;
+    }
+
+    /**
      * This method will parse the node information into a Physical Entity object
      * @param node
      * @return PhysicalEntity object
@@ -600,31 +693,20 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 List<Ontology> ontologyList = new ArrayList<>();
                 for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.ONTOLOGY)) {
                     Node ontologyNode = relationship.getEndNode();
-                    Ontology myOntology = new Ontology();
-                    if (ontologyNode.hasProperty("source")) {
-                        myOntology.setSource((String) ontologyNode.getProperty("source"));
-                    }
-                    if (ontologyNode.hasProperty("sourceVersion")) {
-                        myOntology.setSource((String) ontologyNode.getProperty("sourceVersion"));
-                    }
-                    if (ontologyNode.hasProperty("id")) {
-                        myOntology.setSource((String) ontologyNode.getProperty("id"));
-                    }
-                    if (ontologyNode.hasProperty("idVersion")) {
-                        myOntology.setSource((String) ontologyNode.getProperty("idVersion"));
-                    }
-                    if (ontologyNode.hasProperty("name")) {
-                        myOntology.setSource((String) ontologyNode.getProperty("name"));
-                    }
-                    if (ontologyNode.hasProperty("description")) {
-                        myOntology.setSource((String) ontologyNode.getProperty("description"));
-                    }
-                    ontologyList.add(myOntology);
+                    ontologyList.add(Node2Ontology(ontologyNode));
                 }
                 p.setOntologies(ontologyList);
             }
-        }
 
+            if (node.hasRelationship(RelTypes.CELLULARLOCATION)) {
+                List<CellularLocation> cellularLocationList = new ArrayList<>();
+                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.CELLULARLOCATION)) {
+                    Node cellularLocationNode = relationship.getEndNode();
+                    cellularLocationList.add(Node2CellularLocation(cellularLocationNode));
+                }
+                p.setCellularLocation(cellularLocationList);
+            }
+        }
 
         return p;
     }

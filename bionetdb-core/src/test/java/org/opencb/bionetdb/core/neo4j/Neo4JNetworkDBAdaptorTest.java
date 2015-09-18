@@ -66,16 +66,16 @@ public class Neo4JNetworkDBAdaptorTest {
         long stopTime = System.currentTimeMillis();
         System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
         QueryResult myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes introduced in the database is not correct", 27795, myResult.getResult().get(0));
-        assertEquals("The number of relationships introduced in the database is not correct", 28988, myResult.getResult().get(1));
+        assertEquals("The number of nodes introduced in the database is not correct", 27893, myResult.getResult().get(0));
+        assertEquals("The number of relationships introduced in the database is not correct", 34094, myResult.getResult().get(1));
 
         startTime = System.currentTimeMillis();
         networkDBAdaptor.insert(network, null);
         stopTime = System.currentTimeMillis();
         System.out.println("Trying to insert the same data took " + (stopTime - startTime)/1000 + " seconds.");
         myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes introduced in the database is not correct", 27795, myResult.getResult().get(0));
-        assertEquals("The number of relationships introduced in the database is not correct", 28988, myResult.getResult().get(1));
+        assertEquals("The number of nodes introduced in the database is not correct", 27893, myResult.getResult().get(0));
+        assertEquals("The number of relationships introduced in the database is not correct", 34094, myResult.getResult().get(1));
     }
 
     @Test
@@ -102,7 +102,7 @@ public class Neo4JNetworkDBAdaptorTest {
         }
         System.out.println("Expression data has been inserted in the database.");
         QueryResult myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes after inserting the expression data is not correct", 12090, myResult.getResult().get(0));
+        assertEquals("The number of nodes after inserting the expression data is not correct", 27893, myResult.getResult().get(0));
         assertEquals("The number of relationships after inserting the expression data is not correct", 10975, myResult.getResult().get(1));
 
         // TODO: Add asserts to check the number of nodes inserted
@@ -114,7 +114,7 @@ public class Neo4JNetworkDBAdaptorTest {
         }
         System.out.println("The same expression data has been tried to be inserted in the database.");
         myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes after inserting the expression data is not correct", 12090, myResult.getResult().get(0));
+        assertEquals("The number of nodes after inserting the expression data is not correct", 27893, myResult.getResult().get(0));
         assertEquals("The number of relationships after inserting the expression data is not correct", 10975, myResult.getResult().get(1));
 
         options.put("addNodes", true);
