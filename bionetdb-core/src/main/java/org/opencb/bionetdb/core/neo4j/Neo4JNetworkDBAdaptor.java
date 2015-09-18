@@ -124,60 +124,62 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             for (Expression exprElem : myExpression) {
                 ObjectMap myProperty = new ObjectMap("id", exprElem.getId());
                 Node xrefNode = getNode("Xref", myProperty);
-                Node origin = null;
-
                 // parsing options
                 boolean addNodes = options.getBoolean("addNodes", false);
 
                 // If the node does not already exist, it does not make sense inserting expression data.
                 if (xrefNode == null && addNodes == true) {
                     // Create basic node with info
-                    origin = createNode("PhysicalEntity", myProperty);
+                    Node origin = createNode("PhysicalEntity", myProperty);
                     addXrefNode(origin, new Xref(null, null, exprElem.getId(), null));
                     xrefNode = getNode("Xref", myProperty);
                 }
+
                 if (xrefNode != null) {
-                    if (origin == null)
-                        origin = xrefNode.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
-                    // Find or create tissueNode and the relationship
-                    Node tissueNode = null;
-                    for (Relationship relationShip : origin.getRelationships(RelTypes.TISSUE, Direction.OUTGOING)) {
-                        if (relationShip.getEndNode().getProperty("tissue").equals(tissue)) {
-                            tissueNode = relationShip.getEndNode();
-                            break;
-                        }
-                    }
-                    if (tissueNode == null) {
-                        myProperty = new ObjectMap();
-                        myProperty.put("tissue", tissue);
-                        tissueNode = createNode("Tissue", myProperty);
-                        addInteraction(origin, tissueNode, RelTypes.TISSUE);
-                    }
+                    Node origin = null;
+                    for (Relationship relationship : xrefNode.getRelationships(RelTypes.XREF, Direction.INCOMING)) {
+                        origin = relationship.getStartNode();
 
-                    // Find or create timeSeriesNode and the relationship
-                    Node timeSeriesNode = null;
-                    for (Relationship relationShip : tissueNode.getRelationships(RelTypes.TIMESERIES, Direction.OUTGOING)) {
-                        if (relationShip.getEndNode().getProperty("timeseries").equals(timeSeries)) {
-                            timeSeriesNode = relationShip.getEndNode();
-                            break;
+                        // Find or create tissueNode and the relationship
+                        Node tissueNode = null;
+                        for (Relationship relationShip : origin.getRelationships(RelTypes.TISSUE, Direction.OUTGOING)) {
+                            if (relationShip.getEndNode().getProperty("tissue").equals(tissue)) {
+                                tissueNode = relationShip.getEndNode();
+                                break;
+                            }
                         }
-                    }
-                    if (timeSeriesNode == null) {
-                        myProperty = new ObjectMap();
-                        myProperty.put("timeseries", timeSeries);
-                        timeSeriesNode = createNode("TimeSeries", myProperty);
-                        addInteraction(tissueNode, timeSeriesNode, RelTypes.TIMESERIES);
-                    }
+                        if (tissueNode == null) {
+                            myProperty = new ObjectMap();
+                            myProperty.put("tissue", tissue);
+                            tissueNode = createNode("Tissue", myProperty);
+                            addInteraction(origin, tissueNode, RelTypes.TISSUE);
+                        }
 
-                    // Add or change the properties of the timeseries node in the database
-                    if (exprElem.getExpression() != -1)
-                        timeSeriesNode.setProperty("expression", exprElem.getExpression());
-                    if (exprElem.getPvalue() != -1)
-                        timeSeriesNode.setProperty("pvalue", exprElem.getPvalue());
-                    if (exprElem.getOdds() != -1)
-                        timeSeriesNode.setProperty("odds", exprElem.getOdds());
-                    if (exprElem.getUpregulated() != -1)
-                        timeSeriesNode.setProperty("upregulated", exprElem.getUpregulated());
+                        // Find or create timeSeriesNode and the relationship
+                        Node timeSeriesNode = null;
+                        for (Relationship relationShip : tissueNode.getRelationships(RelTypes.TIMESERIES, Direction.OUTGOING)) {
+                            if (relationShip.getEndNode().getProperty("timeseries").equals(timeSeries)) {
+                                timeSeriesNode = relationShip.getEndNode();
+                                break;
+                            }
+                        }
+                        if (timeSeriesNode == null) {
+                            myProperty = new ObjectMap();
+                            myProperty.put("timeseries", timeSeries);
+                            timeSeriesNode = createNode("TimeSeries", myProperty);
+                            addInteraction(tissueNode, timeSeriesNode, RelTypes.TIMESERIES);
+                        }
+
+                        // Add or change the properties of the timeseries node in the database
+                        if (exprElem.getExpression() != -1)
+                            timeSeriesNode.setProperty("expression", exprElem.getExpression());
+                        if (exprElem.getPvalue() != -1)
+                            timeSeriesNode.setProperty("pvalue", exprElem.getPvalue());
+                        if (exprElem.getOdds() != -1)
+                            timeSeriesNode.setProperty("odds", exprElem.getOdds());
+                        if (exprElem.getUpregulated() != -1)
+                            timeSeriesNode.setProperty("upregulated", exprElem.getUpregulated());
+                    }
                 }
             }
             tx.success();
@@ -253,23 +255,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         try ( Transaction tx = this.database.beginTx() ) {
             // 1. Insert the Physical Entities and the basic nodes they are connected to
             for (PhysicalEntity p : physicalEntityList) {
-                // StringBuilder xrefs = new StringBuilder();
-                // 1. Check if the Xrefs are already inserted in the database within other node
-                List<Node> nodesToMerge = new ArrayList<>();
-                for (Xref xref : p.getXrefs()) {
-                    Node aux_xref = getNode("Xref", new ObjectMap("id", xref.getId()));
-                    if (aux_xref != null) {
-                        // xrefs.append(xref.getId() + " - ");
-                        // Add the node that the current PE has to be merged with
-                        nodesToMerge.add(aux_xref.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode());
-                    }
-                }
-                // 2. Insert or merge the current PE
-                //              if (nodesToMerge.size() == 0) {
-                // Insert all the Physical entity nodes
                 Node n = getOrCreateNode("PhysicalEntity", parsePhysicalEntity(p));
-                //Node n = getOrCreateNode("PhysicalEntity", myProperties);
-                //addXrefNode(n, new Xref(null, null, p.getId(), null));
 
                 // 2.1. Insert the ontologies
                 for (Ontology o : p.getOntologies()) {
@@ -528,8 +514,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         Node xref_node = getOrCreateNode("Xref", myProperties);
 
-        if (!xref_node.hasRelationship(RelTypes.XREF, Direction.INCOMING))
-            node.createRelationshipTo(xref_node, RelTypes.XREF);
+        addInteraction(node, xref_node, RelTypes.XREF);
     }
 
     /**

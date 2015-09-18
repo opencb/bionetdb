@@ -67,7 +67,7 @@ public class Neo4JNetworkDBAdaptorTest {
         System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
         QueryResult myResult = networkDBAdaptor.getStats(null, null);
         assertEquals("The number of nodes introduced in the database is not correct", 27893, myResult.getResult().get(0));
-        assertEquals("The number of relationships introduced in the database is not correct", 34094, myResult.getResult().get(1));
+        assertEquals("The number of relationships introduced in the database is not correct", 40384, myResult.getResult().get(1));
 
         startTime = System.currentTimeMillis();
         networkDBAdaptor.insert(network, null);
@@ -75,7 +75,7 @@ public class Neo4JNetworkDBAdaptorTest {
         System.out.println("Trying to insert the same data took " + (stopTime - startTime)/1000 + " seconds.");
         myResult = networkDBAdaptor.getStats(null, null);
         assertEquals("The number of nodes introduced in the database is not correct", 27893, myResult.getResult().get(0));
-        assertEquals("The number of relationships introduced in the database is not correct", 34094, myResult.getResult().get(1));
+        assertEquals("The number of relationships introduced in the database is not correct", 40384, myResult.getResult().get(1));
     }
 
     @Test
@@ -102,10 +102,9 @@ public class Neo4JNetworkDBAdaptorTest {
         }
         System.out.println("Expression data has been inserted in the database.");
         QueryResult myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes after inserting the expression data is not correct", 27893, myResult.getResult().get(0));
-        assertEquals("The number of relationships after inserting the expression data is not correct", 10975, myResult.getResult().get(1));
+        assertEquals("The number of nodes after inserting the expression data is not correct", 27933, myResult.getResult().get(0));
+        assertEquals("The number of relationships after inserting the expression data is not correct", 40424, myResult.getResult().get(1));
 
-        // TODO: Add asserts to check the number of nodes inserted
         for (String tissue : allExpressionFiles.keySet()) {
             for (String timeseries : allExpressionFiles.get(tissue).keySet()) {
                 List<Expression> myExpression = expressionParser.parse(tissue, timeseries);
@@ -114,8 +113,8 @@ public class Neo4JNetworkDBAdaptorTest {
         }
         System.out.println("The same expression data has been tried to be inserted in the database.");
         myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes after inserting the expression data is not correct", 27893, myResult.getResult().get(0));
-        assertEquals("The number of relationships after inserting the expression data is not correct", 10975, myResult.getResult().get(1));
+        assertEquals("The number of nodes after inserting the expression data is not correct", 27933, myResult.getResult().get(0));
+        assertEquals("The number of relationships after inserting the expression data is not correct", 40424, myResult.getResult().get(1));
 
         options.put("addNodes", true);
         for (String tissue : allExpressionFiles.keySet()) {
@@ -126,8 +125,8 @@ public class Neo4JNetworkDBAdaptorTest {
         }
         System.out.println("The same expression data allowing the annotation of nodes not in the database has been tried to be inserted in the database.");
         myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes after inserting the expression data is not correct", 12097, myResult.getResult().get(0));
-        assertEquals("The number of relationships after inserting the expression data is not correct", 10981, myResult.getResult().get(1));
+        assertEquals("The number of nodes after inserting the expression data is not correct", 27940, myResult.getResult().get(0));
+        assertEquals("The number of relationships after inserting the expression data is not correct", 40430, myResult.getResult().get(1));
 
     }
 

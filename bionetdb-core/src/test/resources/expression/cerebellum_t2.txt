@@ -1,3 +1,3 @@
 ID	Expression	Pvalue	Upregulated	Odds
-Protein1686	1	0.02	1	3
+CMK1	1	0.02	1	3
 KKDELAVAK	2	0.01	2	12
