@@ -286,7 +286,7 @@ public class SbmlParser {
         CellularLocation cellularLocation = new CellularLocation();
 
         // Names
-        cellularLocation.getNames().add(compartment.getName());
+        cellularLocation.setName(compartment.getName());
 
         // Xrefs
         String cellularLocXref = compartment.getAnnotation().getChild("RDF").getChild("Description")

@@ -326,7 +326,7 @@ public class BioPaxParser {
         CellularLocation cellularLocation = new CellularLocation();
         CellularLocationVocabulary cellularLocationVocabulary = physicalEntityBP.getCellularLocation();
         for (String name : cellularLocationVocabulary.getTerm()) {
-            cellularLocation.getNames().add(name);
+            cellularLocation.setName(name);
         }
         for (Xref cellLocXref : cellularLocationVocabulary.getXref()) {
             Ontology ontology= new Ontology();

@@ -8,25 +8,25 @@ import java.util.List;
  */
 public class CellularLocation {
 
-    private List<String> names;
+    private String name;
     private List<Ontology> ontologies;
 
     public CellularLocation() {
-        this.names = new ArrayList<>();
+        this.name = "";
         this.ontologies = new ArrayList<>();
     }
 
-    public CellularLocation(List<String> names, List<Ontology> ontologies) {
-        this.names = names;
+    public CellularLocation(String name, List<Ontology> ontologies) {
+        this.name = name;
         this.ontologies = ontologies;
     }
 
-    public List<String> getNames() {
-        return names;
+    public String getName() {
+        return name;
     }
 
-    public void setNames(List<String> names) {
-        this.names = names;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public List<Ontology> getOntologies() {
