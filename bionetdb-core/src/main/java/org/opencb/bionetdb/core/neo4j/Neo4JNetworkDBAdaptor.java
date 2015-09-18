@@ -17,6 +17,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
+import javax.management.relation.Relation;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -107,10 +108,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             Node xrefNode = getNode("Xref", new ObjectMap("id", nodeID));
             if (xrefNode != null) {
                 //Look for the physical entity to which the xref is associated with
-                Node n = xrefNode.getSingleRelationship(RelTypes.XREF, Direction.INCOMING).getStartNode();
-                for (Xref x : xref_list) {
-                    addXrefNode(n, x);
+                for (Relationship relationship : xrefNode.getRelationships(RelTypes.XREF, Direction.INCOMING)) {
+                    Node n = relationship.getStartNode();
+                    for (Xref x : xref_list) {
+                        addXrefNode(n, x);
+                    }
                 }
+                
             } else {
                 // TODO: Exception telling that the node "nodeID" does not exist, so we cannot annotate.
             }
