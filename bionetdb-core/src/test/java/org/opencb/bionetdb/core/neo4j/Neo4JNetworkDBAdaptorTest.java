@@ -145,11 +145,11 @@ public class Neo4JNetworkDBAdaptorTest {
         for (int i = 0; i < 4; i++) {
             myList.add(new Xref("db" + i, "dbVersion" + i, "id" + i, "idVersion" + i));
         }
-        networkDBAdaptor.addXrefs("Protein1686", myList);
+        networkDBAdaptor.addXrefs("CMK1", myList);
         System.out.println("New xrefs added to the database.");
         QueryResult myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes after inserting the expression data is not correct", 12089, myResult.getResult().get(0));
-        assertEquals("The number of relationships after inserting the expression data is not correct", 10974, myResult.getResult().get(1));
+        assertEquals("The number of nodes after inserting the expression data is not correct", 27897, myResult.getResult().get(0));
+        assertEquals("The number of relationships after inserting the expression data is not correct", 40416, myResult.getResult().get(1));
 
         System.out.println("Creating new xrefs containing one that was already inserted...");
         myList.clear();
@@ -159,8 +159,8 @@ public class Neo4JNetworkDBAdaptorTest {
         networkDBAdaptor.addXrefs("id2", myList);
         System.out.println("New xrefs added to the database.");
         myResult = networkDBAdaptor.getStats(null, null);
-        assertEquals("The number of nodes after inserting the expression data is not correct", 12093, myResult.getResult().get(0));
-        assertEquals("The number of relationships after inserting the expression data is not correct", 10978, myResult.getResult().get(1));
+        assertEquals("The number of nodes after inserting the expression data is not correct", 27901, myResult.getResult().get(0));
+        assertEquals("The number of relationships after inserting the expression data is not correct", 40448, myResult.getResult().get(1));
     }
 
 }

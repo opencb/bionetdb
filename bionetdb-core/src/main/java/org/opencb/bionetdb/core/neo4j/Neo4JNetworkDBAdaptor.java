@@ -1,13 +1,8 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.exceptions.NetworkDBException;
@@ -17,10 +12,11 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
-import javax.management.relation.Relation;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by imedina on 05/08/15.
@@ -103,7 +99,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param xref_list List containing all the Xref annotations to be added in the database
      */
     @Override
-    public void addXrefs(String nodeID, List<Xref> xref_list) {
+    public void addXrefs(String nodeID, List<Xref> xref_list) throws NetworkDBException {
         try ( Transaction tx = this.database.beginTx()) {
             Node xrefNode = getNode("Xref", new ObjectMap("id", nodeID));
             if (xrefNode != null) {
@@ -114,9 +110,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         addXrefNode(n, x);
                     }
                 }
-                
+
             } else {
-                // TODO: Exception telling that the node "nodeID" does not exist, so we cannot annotate.
+                throw new NetworkDBException("The node to be annotated does not exist in the database.");
             }
             tx.success();
         }
@@ -156,7 +152,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                             myProperty = new ObjectMap();
                             myProperty.put("tissue", tissue);
                             tissueNode = createNode("Tissue", myProperty);
-                            addInteraction(origin, tissueNode, RelTypes.TISSUE);
+                            addRelationship(origin, tissueNode, RelTypes.TISSUE);
                         }
 
                         // Find or create timeSeriesNode and the relationship
@@ -171,7 +167,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                             myProperty = new ObjectMap();
                             myProperty.put("timeseries", timeSeries);
                             timeSeriesNode = createNode("TimeSeries", myProperty);
-                            addInteraction(tissueNode, timeSeriesNode, RelTypes.TIMESERIES);
+                            addRelationship(tissueNode, timeSeriesNode, RelTypes.TIMESERIES);
                         }
 
                         // Add or change the properties of the timeseries node in the database
@@ -189,6 +185,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             tx.success();
         }
     }
+
 
     private ObjectMap parsePhysicalEntity (PhysicalEntity myPhysicalEntity) {
         ObjectMap myOutput = new ObjectMap("id", myPhysicalEntity.getId());
@@ -264,13 +261,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 // 2.1. Insert the ontologies
                 for (Ontology o : p.getOntologies()) {
                     Node ont = getOrCreateNode("Ontology", parseOntology(o));
-                    addInteraction(n, ont, RelTypes.ONTOLOGY);
+                    addRelationship(n, ont, RelTypes.ONTOLOGY);
                 }
 
                     /* Insert the cellular locations */
                 for (CellularLocation c : p.getCellularLocation()) {
                     Node cel = getOrCreateCellularLocationNode(parseCellularLocation(c));
-                    addInteraction(n, cel, RelTypes.CELLULARLOCATION);
+                    addRelationship(n, cel, RelTypes.CELLULARLOCATION);
                 }
 
                 // 2.1. Insert the Xrefs
@@ -302,7 +299,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                                     "the database. Cannot find a physical entity that is supposed to exist.");
                         }
                         if (complex_node.getProperty("type").equals(PhysicalEntity.Type.COMPLEX.toString())) {
-                            addInteraction(pe_node, complex_node, RelTypes.COMPONENTOFCOMPLEX);
+                            addRelationship(pe_node, complex_node, RelTypes.COMPONENTOFCOMPLEX);
                         } else {
                             throw new NetworkDBException("The relationship 'Component of complex' cannot be created " +
                                     "because the destiny node is not of type complex. Check Physical Entity " +
@@ -356,12 +353,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
                         for (String myID : myreaction.getReactants()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addInteraction(n, r, RelTypes.REACTANT);
+                            addRelationship(n, r, RelTypes.REACTANT);
                         }
 
                         for (String myID : myreaction.getProducts()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addInteraction(r, n, RelTypes.REACTANT);
+                            addRelationship(r, n, RelTypes.REACTANT);
                         }
                         break;
                     case CATALYSIS:
@@ -371,13 +368,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         // Left reactions (controllers)
                         for (String myID : catalysis.getControllers()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addInteraction(n, r, RelTypes.CONTROLLER);
+                            addRelationship(n, r, RelTypes.CONTROLLER);
                         }
 
                         // Right reactions (controlled)
                         for (String myID : catalysis.getControlledProcesses()) {
                             Node n = this.database.findNode(interactionLabel, "id", myID);
-                            addInteraction(r, n, RelTypes.CONTROLLED);
+                            addRelationship(r, n, RelTypes.CONTROLLED);
                         }
                         break;
                     case REGULATION:
@@ -387,13 +384,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         // Left reactions (controllers)
                         for (String myID : regulation.getControllers()) {
                             Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addInteraction(n, r, RelTypes.CONTROLLER);
+                            addRelationship(n, r, RelTypes.CONTROLLER);
                         }
 
                         // Right reactions (controlled)
                         for (String myID : regulation.getControlledProcesses()) {
                             Node n = this.database.findNode(interactionLabel, "id", myID);
-                            addInteraction(r, n, RelTypes.CONTROLLED);
+                            addRelationship(r, n, RelTypes.CONTROLLED);
                         }
                         break;
                     default:
@@ -476,20 +473,19 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (properties.containsKey("ontologies")) {
             for (ObjectMap myOntology : (List<ObjectMap>) properties.get("ontologies")) {
                 Node ontNode = getOrCreateNode("Ontology", myOntology);
-                addInteraction(mynode, ontNode, RelTypes.CEL_ONTOLOGY);
+                addRelationship(mynode, ontNode, RelTypes.CEL_ONTOLOGY);
             }
         }
         return mynode;
     }
 
-    // TODO: Rename to addRelationship
     /**
      * The function will create an interaction between two nodes if the relation does not exist
      * @param origin Node from which we want to create the interaction
      * @param destination Destination node
      * @param relationType Type of relationship between nodes
      */
-    private void addInteraction(Node origin, Node destination, RelTypes relationType) {
+    private void addRelationship(Node origin, Node destination, RelTypes relationType) {
         if (origin.hasRelationship(relationType, Direction.OUTGOING)) {
             for (Relationship r : origin.getRelationships(relationType, Direction.OUTGOING)) {
                 if (r.getEndNode().equals(destination)) {
@@ -518,7 +514,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         Node xref_node = getOrCreateNode("Xref", myProperties);
 
-        addInteraction(node, xref_node, RelTypes.XREF);
+        addRelationship(node, xref_node, RelTypes.XREF);
     }
 
     /**
@@ -536,31 +532,31 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // TODO: What if both of them have expression for the same tissues, but for different timeseries??
         // Expression data
         for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.TISSUE, Direction.OUTGOING)) {
-            addInteraction(myNewNode, nodeAux, RelTypes.TISSUE);
+            addRelationship(myNewNode, nodeAux, RelTypes.TISSUE);
         }
         // Ontologies
         for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.ONTOLOGY, Direction.OUTGOING)) {
-            addInteraction(myNewNode, nodeAux, RelTypes.ONTOLOGY);
+            addRelationship(myNewNode, nodeAux, RelTypes.ONTOLOGY);
         }
         // Xrefs
         for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.XREF, Direction.OUTGOING)) {
-            addInteraction(myNewNode, nodeAux, RelTypes.XREF);
+            addRelationship(myNewNode, nodeAux, RelTypes.XREF);
         }
         // Reactant outgoing
         for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.REACTANT, Direction.OUTGOING)) {
-            addInteraction(myNewNode, nodeAux, RelTypes.REACTANT);
+            addRelationship(myNewNode, nodeAux, RelTypes.REACTANT);
         }
         // Reactant incoming
         for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.REACTANT, Direction.INCOMING)) {
-            addInteraction(nodeAux, myNewNode, RelTypes.REACTANT);
+            addRelationship(nodeAux, myNewNode, RelTypes.REACTANT);
         }
         // Controller
         for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.CONTROLLER, Direction.OUTGOING)) {
-            addInteraction(myNewNode, nodeAux, RelTypes.CONTROLLER);
+            addRelationship(myNewNode, nodeAux, RelTypes.CONTROLLER);
         }
         // Controlled
         for (Node nodeAux : getUniqueNodes(node1, node2, RelTypes.CONTROLLED, Direction.INCOMING)) {
-            addInteraction(nodeAux, myNewNode, RelTypes.CONTROLLED);
+            addRelationship(nodeAux, myNewNode, RelTypes.CONTROLLED);
         }
         // TODO: This will launch an exception if the nodes still contain relationships
         node1.delete();
