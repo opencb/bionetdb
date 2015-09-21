@@ -715,14 +715,62 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return Integer.parseInt(this.database.execute("START n=relationship(*) RETURN count(n)").columnAs("count(n)").next().toString());
     }
 
+    private ObjectMap getTotalPhysicalEntities() {
+        ObjectMap myResult = new ObjectMap();
+        myResult.put("undefined",Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type:\"" + PhysicalEntity.Type.UNDEFINEDENTITY + "\" }) return count(n)").columnAs("count(n)").next().toString()));
+        myResult.put("protein",Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \"" + PhysicalEntity.Type.PROTEIN + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+        myResult.put("dna",Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \"" + PhysicalEntity.Type.DNA + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+        myResult.put("rna",Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \"" + PhysicalEntity.Type.RNA + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+        myResult.put("complex",Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \"" + PhysicalEntity.Type.COMPLEX + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+        myResult.put("small_molecule",Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \"" + PhysicalEntity.Type.SMALLMOLECULE + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+        int total = 0;
+        for (String key : myResult.keySet()) {
+            total += (int) myResult.get(key);
+        }
+        myResult.put("totalPE", total);
+        return myResult;
+    }
+
+    private int getTotalXrefNodes() {
+        return Integer.parseInt(this.database.execute("MATCH (n:Xref) RETURN count(n)").columnAs("count(n)").next().toString());
+    }
+
+    private int getTotalXrefRelationships () {
+        return Integer.parseInt(this.database.execute("MATCH (n:PhysicalEntity)-[r:XREF]->(m:Xref) RETURN count(r)").columnAs("count(r)").next().toString());
+    }
+
+    private int getTotalOntologyNodes() {
+        return Integer.parseInt(this.database.execute("MATCH (n:Ontology) RETURN count(n)").columnAs("count(n)").next().toString());
+    }
+
+    private int getTotalOntologyRelationships () {
+        return Integer.parseInt(this.database.execute("MATCH (n)-[r:ONTOLOGY|CEL_ONTOLOGY]->(m:Ontology) RETURN count(r)").columnAs("count(r)").next().toString());
+    }
+
+    private int getTotalCelLocationNodes() {
+        return Integer.parseInt(this.database.execute("MATCH (n:CellularLocation) RETURN count(n)").columnAs("count(n)").next().toString());
+    }
+
+    private int getTotalCelLocationRelationships () {
+        return Integer.parseInt(this.database.execute("MATCH (n:PhysicalEntity)-[r:CELLULARLOCATION]->(m:CellularLocation) RETURN count(r)").columnAs("count(r)").next().toString());
+    }
+
     @Override
     public QueryResult getStats(Query query, QueryOptions queryOptions) {
         long startTime = System.currentTimeMillis();
-        List<Integer> myoutput = new ArrayList<>(2);
-        myoutput.add(getTotalNodes());
-        myoutput.add(getTotalRelationships());
+        List<ObjectMap> myList = new ArrayList<>();
+        ObjectMap myoutput = getTotalPhysicalEntities();
+        myoutput.put("totalNodes", getTotalNodes());
+        myoutput.put("totalRelations",getTotalRelationships());
+        myoutput.put("totalXrefNodes", getTotalXrefNodes());
+        myoutput.put("totalXrefRelations", getTotalXrefRelationships());
+        myoutput.put("totalOntologyNodes", getTotalOntologyNodes());
+        myoutput.put("totalOntologyRelations", getTotalOntologyRelationships());
+        myoutput.put("totalCelLocationNodes", getTotalCelLocationNodes());
+        myoutput.put("totalCelLocationRelations", getTotalCelLocationRelationships());
+        myList.add(myoutput);
         int time = (int) (System.currentTimeMillis() - startTime);
-        return new QueryResult<>("stats", time, 2, 2, null, null, myoutput);
+        return new QueryResult<>("stats", time, myList.size(), myList.size(), null, null, myList);
     }
 
     public boolean isOpened() throws IOException {
