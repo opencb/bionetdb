@@ -24,10 +24,11 @@ public interface NetworkDBAdaptor extends AutoCloseable {
         PE_DESCRIPTION ("pe.description", TEXT_ARRAY, ""),
         PE_TYPE ("pe.type", TEXT_ARRAY, ""),
         PE_XREF_ID ("pe.xref.id", TEXT_ARRAY, ""),
+        PE_ATTR_EXPR ("pe.attr.expr", TEXT_ARRAY, ""),  // example: "brain:t2>0.3;brain:t4<=0.3"
+        PE_ONTOLOGY ("pe.ontology", TEXT_ARRAY, ""),  // example: "go:001234,go:002345"
 
         INT_ID ("int.id", TEXT_ARRAY, ""),
-        INT_TYPE ("int.type", TEXT_ARRAY, ""),
-        INT_XREF_ID ("int.xref.id", TEXT_ARRAY, "");
+        INT_TYPE ("int.type", TEXT_ARRAY, "");
 
         NetworkQueryParams(String key, Type type, String description) {
             this.key = key;
@@ -74,6 +75,6 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions);
 
 
-    QueryResult getStats(Query query, QueryOptions queryOptions);
+    QueryResult getSummaryStats(Query query, QueryOptions queryOptions);
 
 }

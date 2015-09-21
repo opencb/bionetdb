@@ -9,10 +9,10 @@ import org.opencb.datastore.core.QueryOptions;
  */
 public class Neo4JQueryParser {
 
-    public String parse(Query query, QueryOptions options) {
+    public static String parse(Query query, QueryOptions options) {
 
         StringBuilder cypherQuery = new StringBuilder();
-
+        query.put("a", null);
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
             cypherQuery.append("MATCH (" + query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) + ") -[:XREF] - (NODE)");
@@ -23,6 +23,11 @@ public class Neo4JQueryParser {
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()).isEmpty()) {
             cypherQuery.append("MATCH (" + query.get(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()) + ") -[:XREF] - (NODE)");
             cypherQuery.append("");
+        }
+
+        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()) != null
+                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()).isEmpty()) {
+            System.out.println("no implemented yet");
         }
 
         return cypherQuery.toString();

@@ -67,7 +67,7 @@ public class Neo4JNetworkDBAdaptorTest {
         networkDBAdaptor.insert(network, null);
         long stopTime = System.currentTimeMillis();
         System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
-        QueryResult myResult = networkDBAdaptor.getStats(null, null);
+        QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
         assertEquals("The number of nodes introduced in the database is not correct", 27893, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
         assertEquals("The number of relationships introduced in the database is not correct", 40384, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
 
@@ -75,7 +75,7 @@ public class Neo4JNetworkDBAdaptorTest {
         networkDBAdaptor.insert(network, null);
         stopTime = System.currentTimeMillis();
         System.out.println("Trying to insert the same data took " + (stopTime - startTime)/1000 + " seconds.");
-        myResult = networkDBAdaptor.getStats(null, null);
+        myResult = networkDBAdaptor.getSummaryStats(null, null);
         assertEquals("The number of nodes introduced in the database is not correct", 27893, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
         assertEquals("The number of relationships introduced in the database is not correct", 40384, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
     }
@@ -103,7 +103,7 @@ public class Neo4JNetworkDBAdaptorTest {
             }
         }
         System.out.println("Expression data has been inserted in the database.");
-        QueryResult myResult = networkDBAdaptor.getStats(null, null);
+        QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
         assertEquals("The number of nodes after inserting the expression data is not correct", 27933, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
         assertEquals("The number of relationships after inserting the expression data is not correct", 40424, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
 
@@ -114,7 +114,7 @@ public class Neo4JNetworkDBAdaptorTest {
             }
         }
         System.out.println("The same expression data has been tried to be inserted in the database.");
-        myResult = networkDBAdaptor.getStats(null, null);
+        myResult = networkDBAdaptor.getSummaryStats(null, null);
         assertEquals("The number of nodes after inserting the expression data is not correct", 27933, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
         assertEquals("The number of relationships after inserting the expression data is not correct", 40424, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
 
@@ -126,7 +126,7 @@ public class Neo4JNetworkDBAdaptorTest {
             }
         }
         System.out.println("The same expression data allowing the annotation of nodes not in the database has been tried to be inserted in the database.");
-        myResult = networkDBAdaptor.getStats(null, null);
+        myResult = networkDBAdaptor.getSummaryStats(null, null);
         assertEquals("The number of nodes after inserting the expression data is not correct", 27940, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
         assertEquals("The number of relationships after inserting the expression data is not correct", 40430, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
 
@@ -149,7 +149,7 @@ public class Neo4JNetworkDBAdaptorTest {
         }
         networkDBAdaptor.addXrefs("CMK1", myList);
         System.out.println("New xrefs added to the database.");
-        QueryResult myResult = networkDBAdaptor.getStats(null, null);
+        QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
         assertEquals("The number of nodes after inserting the expression data is not correct", 27897, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
         assertEquals("The number of relationships after inserting the expression data is not correct", 40416, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
 
@@ -160,13 +160,13 @@ public class Neo4JNetworkDBAdaptorTest {
         }
         networkDBAdaptor.addXrefs("id2", myList);
         System.out.println("New xrefs added to the database.");
-        myResult = networkDBAdaptor.getStats(null, null);
+        myResult = networkDBAdaptor.getSummaryStats(null, null);
         assertEquals("The number of nodes after inserting the expression data is not correct", 27901, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
         assertEquals("The number of relationships after inserting the expression data is not correct", 40448, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
     }
 
     @Test
-    public void testGetStats() throws Exception {
+    public void testGetSummaryStats() throws Exception {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
         Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
         Network network = bioPaxParser.parse(inputPath);
@@ -175,15 +175,16 @@ public class Neo4JNetworkDBAdaptorTest {
         networkDBAdaptor.insert(network, null);
         System.out.println("Data has been inserted in the database.");
 
-        QueryResult myResult = networkDBAdaptor.getStats(null, null);
+        QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
         System.out.println("Querying the database to retrieve the stats took " + (myResult.getDbTime()/1000.0) + " seconds");
         ObjectMap myStats = (ObjectMap) myResult.getResult().get(0);
-        for (String key : myStats.keySet())
+        for (String key : myStats.keySet()) {
             System.out.println(key + ": " + myStats.get(key));
+        }
 
         networkDBAdaptor.close();
         exception.expect(TransactionFailureException.class);
-        networkDBAdaptor.getStats(null, null);
+        networkDBAdaptor.getSummaryStats(null, null);
     }
 
 }

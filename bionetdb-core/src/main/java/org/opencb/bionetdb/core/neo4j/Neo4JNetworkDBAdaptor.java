@@ -12,11 +12,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by imedina on 05/08/15.
@@ -27,15 +23,29 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private GraphDatabaseService database;
     private boolean openedDB = false;
 
+    private enum RelTypes implements RelationshipType {
+        REACTANT,
+        XREF,
+        CONTROLLED,
+        CONTROLLER,
+        TISSUE,
+        TIMESERIES,
+        ONTOLOGY,
+        COMPONENTOFCOMPLEX,
+        CELLULARLOCATION,
+        CEL_ONTOLOGY
+    }
+
     public Neo4JNetworkDBAdaptor(String database) {
         this.dbPath = database;
         this.openedDB = true;
-        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.dbPath)
-                //            .setConfig(GraphDatabaseSettings.node_auto_indexing, "true")
-                //            .setConfig(GraphDatabaseSettings.relationship_auto_indexing, "true")
-                //            .setConfig(GraphDatabaseSettings.node_keys_indexable, "id")
-                .newGraphDatabase();
+        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.dbPath).newGraphDatabase();
 
+        // this must be last line, it needs 'database' to be created
+        createIndexes();
+    }
+
+    private void createIndexes() {
         try (Transaction tx = this.database.beginTx()) {
             Schema schema = this.database.schema();
             schema.indexFor(DynamicLabel.label("PhysicalEntity"))
@@ -63,26 +73,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             schema.indexFor(DynamicLabel.label("Interaction"))
                     .on("name")
                     .create();
-
             tx.success();
         }
     }
 
-    private enum RelTypes implements RelationshipType {
-        REACTANT,
-        XREF,
-        CONTROLLED,
-        CONTROLLER,
-        TISSUE,
-        TIMESERIES,
-        ONTOLOGY,
-        COMPONENTOFCOMPLEX,
-        CELLULARLOCATION,
-        CEL_ONTOLOGY
-    }
-
     /**
      * Insert an entire network into the Neo4J database.
+     *
      * @param network Object containing all the nodes and interactions
      * @param queryOptions Optional params
      */
@@ -94,6 +91,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     /**
      * Method to annotate Xrefs in the database.
+     *
      * @param nodeID ID of the node we want to annotate
      * @param xrefList List containing all the Xref annotations to be added in the database
      */
@@ -102,7 +100,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         try (Transaction tx = this.database.beginTx()) {
             Node xrefNode = getNode("Xref", new ObjectMap("id", nodeID));
             if (xrefNode != null) {
-                //Look for the physical entity to which the xref is associated with
+                // Look for the physical entity to which the xref is associated with
                 for (Relationship relationship : xrefNode.getRelationships(RelTypes.XREF, Direction.INCOMING)) {
                     Node n = relationship.getStartNode();
                     for (Xref x : xrefList) {
@@ -787,29 +785,24 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public QueryResult getStats(Query query, QueryOptions queryOptions) {
+    public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) {
         long startTime = System.currentTimeMillis();
-        List<ObjectMap> myList = new ArrayList<>();
-        ObjectMap myoutput = getTotalPhysicalEntities();
-        myoutput.put("totalNodes", getTotalNodes());
-        myoutput.put("totalRelations", getTotalRelationships());
-        myoutput.put("totalXrefNodes", getTotalXrefNodes());
-        myoutput.put("totalXrefRelations", getTotalXrefRelationships());
-        myoutput.put("totalOntologyNodes", getTotalOntologyNodes());
-        myoutput.put("totalOntologyRelations", getTotalOntologyRelationships());
-        myoutput.put("totalCelLocationNodes", getTotalCelLocationNodes());
-        myoutput.put("totalCelLocationRelations", getTotalCelLocationRelationships());
-        myList.add(myoutput);
+        ObjectMap myOutput = getTotalPhysicalEntities();
+        myOutput.put("totalNodes", getTotalNodes());
+        myOutput.put("totalRelations", getTotalRelationships());
+        myOutput.put("totalXrefNodes", getTotalXrefNodes());
+        myOutput.put("totalXrefRelations", getTotalXrefRelationships());
+        myOutput.put("totalOntologyNodes", getTotalOntologyNodes());
+        myOutput.put("totalOntologyRelations", getTotalOntologyRelationships());
+        myOutput.put("totalCelLocationNodes", getTotalCelLocationNodes());
+        myOutput.put("totalCelLocationRelations", getTotalCelLocationRelationships());
         int time = (int) (System.currentTimeMillis() - startTime);
-        return new QueryResult<>("stats", time, myList.size(), myList.size(), null, null, myList);
+
+        return new QueryResult<>("stats", time, 1, 1, null, null, Arrays.asList(myOutput));
     }
 
-    public boolean isOpened() throws IOException {
-        if (this.openedDB) {
-            return true;
-        } else {
-            throw new IOException("Database is closed.");
-        }
+    public boolean isClosed() {
+        return !this.openedDB;
     }
 
     public void close() {
