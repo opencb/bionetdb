@@ -47,7 +47,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     void insert(Network network, QueryOptions queryOptions) throws NetworkDBException;
 
-    void addXrefs(String nodeID, List<Xref> xref_list);
+    void addXrefs(String nodeID, List<Xref> xref_list) throws NetworkDBException;
 
     /**
      *
