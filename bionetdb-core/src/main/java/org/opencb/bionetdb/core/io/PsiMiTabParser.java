@@ -97,6 +97,10 @@ public class PsiMiTabParser {
 
             }
         }
+
+        // Setting for each PE the interactions where they participate
+        setparticipantOfInteraction(network);
+
         return network;
     }
 
@@ -258,6 +262,9 @@ public class PsiMiTabParser {
 
     private void setPhysicalEntityCommonProperties(Interactor interactor, PhysicalEntity physicalEntity) {
 
+        // id
+        physicalEntity.setId(interactor.getIdentifiers().get(0).getIdentifier());
+
         // xrefs
         List<CrossReference> cRList = new ArrayList<>();
         cRList.addAll(interactor.getXrefs());
@@ -299,9 +306,6 @@ public class PsiMiTabParser {
             physicalEntity.setXref(xref);
         }
 
-        // id
-        // TODO
-
         // name
         // TODO
 
@@ -315,6 +319,8 @@ public class PsiMiTabParser {
             comments.add(comment);
         }
         physicalEntity.getAttributes().put(INTACT_FEAT + "comment", comments);
+
+        // TODO features
 
     }
 
@@ -342,9 +348,23 @@ public class PsiMiTabParser {
 
     private Reaction createReaction(BinaryInteraction binaryInteraction) {
         Reaction reaction = new Reaction();
+        reaction.setReactionType(Reaction.ReactionType.REACTION);
 
         // Common properties
         setInteractionCommonProperties(binaryInteraction, reaction);
+
+        // Stoichiometry
+        if (!binaryInteraction.getInteractorA().getStoichiometry().isEmpty() &&
+                !binaryInteraction.getInteractorB().getStoichiometry().isEmpty()) {
+            Map stoichiometryA = new HashMap<String, Object>();
+            stoichiometryA.put("component", binaryInteraction.getInteractorA().getIdentifiers().get(0).getIdentifier());
+            stoichiometryA.put("coefficient", binaryInteraction.getInteractorA().getStoichiometry());
+            reaction.getStoichiometry().add(stoichiometryA);
+            Map stoichiometryB = new HashMap<String, Object>();
+            stoichiometryB.put("component", binaryInteraction.getInteractorB().getIdentifiers().get(0).getIdentifier());
+            stoichiometryB.put("coefficient", binaryInteraction.getInteractorB().getStoichiometry());
+            reaction.getStoichiometry().add(stoichiometryB);
+        }
 
         return reaction;
     }
@@ -355,6 +375,19 @@ public class PsiMiTabParser {
 
         // Common properties
         setInteractionCommonProperties(binaryInteraction, assembly);
+
+        // Stoichiometry
+        if (!binaryInteraction.getInteractorA().getStoichiometry().isEmpty() &&
+                !binaryInteraction.getInteractorB().getStoichiometry().isEmpty()) {
+            Map stoichiometryA = new HashMap<String, Object>();
+            stoichiometryA.put("component", binaryInteraction.getInteractorA().getIdentifiers().get(0).getIdentifier());
+            stoichiometryA.put("coefficient", binaryInteraction.getInteractorA().getStoichiometry());
+            assembly.getStoichiometry().add(stoichiometryA);
+            Map stoichiometryB = new HashMap<String, Object>();
+            stoichiometryB.put("component", binaryInteraction.getInteractorB().getIdentifiers().get(0).getIdentifier());
+            stoichiometryB.put("coefficient", binaryInteraction.getInteractorB().getStoichiometry());
+            assembly.getStoichiometry().add(stoichiometryB);
+        }
 
         return assembly;
     }
@@ -370,6 +403,15 @@ public class PsiMiTabParser {
     }
 
     private void setInteractionCommonProperties(BinaryInteraction binaryInteraction, Interaction interaction) {
+
+        // id
+        String idA = binaryInteraction.getInteractorA().getIdentifiers().get(0).getIdentifier();
+        String idB = binaryInteraction.getInteractorB().getIdentifiers().get(0).getIdentifier();
+        interaction.setId(idA + idB);
+
+        // participants
+        interaction.getParticipants().add(idA);
+        interaction.getParticipants().add(idB);
 
         // xrefs
         List<CrossReference> cRs = binaryInteraction.getXrefs();
@@ -395,14 +437,6 @@ public class PsiMiTabParser {
                 }
             }
         }
-        List<CrossReference> ids =  binaryInteraction.getInteractionAcs();
-        for (CrossReference id : ids) {
-            interaction.setId(id.getIdentifier());
-            interaction.setName(id.getIdentifier());
-        }
-
-        // id
-        // TODO
 
         // name
         // TODO
@@ -421,28 +455,20 @@ public class PsiMiTabParser {
         List<Annotation> annotations = binaryInteraction.getAnnotations();
         for (Annotation annotation : annotations) {
             String comment = annotation.getText();
-            if (comment != null && (comment.equals("mint") || comment.equals("homomint"))) {
+            if (comment != null && (comment.equals("mint") || comment.equals("homomint") || comment.equals("domino"))) {
                 continue;
             }
             comments.add(comment);
         }
         interaction.getAttributes().put(INTACT_FEAT + "comment", comments);
-
-
     }
+
+    private void setparticipantOfInteraction (Network network) {
+        for (Interaction interaction : network.getInteractions()) {
+            for (String peId : interaction.getParticipants()) {
+                network.getPhysicalEntity(peId).getParticipantOfInteraction().add(interaction.getId());
+            }
+        }
+    }
+
 }
-
-/*
-     37 Feature(s)_interactor_A
-     38 Feature(s)_interactor_B
-     39 Stoichiometry(s)_interactor_A  --> interaction
-     40 Stoichiometry(s)_interactor_B  --> interaction
-*/
-/*
-Interaction
-        protected List<String> participants;
-
-PE
-        protected List<String> participantOfInteraction;
-        protected List<Map<String, Object>> features;
-*/
