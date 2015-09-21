@@ -13,12 +13,14 @@ public class Neo4JQueryParser {
 
         StringBuilder cypherQuery = new StringBuilder();
 
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
+        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null
+                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
             cypherQuery.append("MATCH (" + query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) + ") -[:XREF] - (NODE)");
             cypherQuery.append("");
         }
 
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()) != null && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()).isEmpty()) {
+        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()) != null
+                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()).isEmpty()) {
             cypherQuery.append("MATCH (" + query.get(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()) + ") -[:XREF] - (NODE)");
             cypherQuery.append("");
         }

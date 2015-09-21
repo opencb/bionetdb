@@ -33,7 +33,7 @@ public class Reaction extends Interaction {
         init();
     }
 
-    public Reaction (ReactionType reactionType) {
+    public Reaction(ReactionType reactionType) {
         super("", "", Collections.<String>emptyList(), Type.REACTION);
         this.reactionType = ReactionType.REACTION;
         init();

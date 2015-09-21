@@ -1,7 +1,8 @@
 package org.opencb.bionetdb.core.io;
 
-import org.neo4j.cypher.internal.compiler.v2_0.ast.In;
 import org.opencb.bionetdb.core.models.*;
+import psidev.psi.mi.tab.PsimiTabReader;
+import psidev.psi.mi.tab.model.*;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -12,15 +13,20 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import psidev.psi.mi.tab.PsimiTabReader;
-import psidev.psi.mi.tab.model.*;
-
 /**
  * Created by dapregi on 8/09/15.
  */
 public class PsiMiTabParser {
 
     private static final String INTACT_FEAT = "intact.";
+
+    private static final Pattern REACTION_PATTERN =
+            Pattern.compile("(?m)^(?=.*reaction|.*cleavage|lipid addition"
+                    + "|.*elongation|phosphopantetheinylation)((?!transglutamination reaction).)*$");
+
+    private static final Pattern ASSEMBLY_PATTERN =
+            Pattern.compile("(.*association|direct interaction|"
+                    + "transglutamination reaction|disulfide bond|covalent binding)");
 
     public PsiMiTabParser() {
         init();
@@ -145,6 +151,8 @@ public class PsiMiTabParser {
             case "undefined":
                 physicalEntity = createUndefinedEntity(interactor);
                 break;
+            default:
+                break;
 
         }
         return physicalEntity;
@@ -185,6 +193,8 @@ public class PsiMiTabParser {
                 break;
             case "long non-coding ribonucleic acid":
                 rna.setRnaType(Rna.RnaType.LNCRNA);
+                break;
+            default:
                 break;
         }
 
@@ -310,7 +320,7 @@ public class PsiMiTabParser {
         // TODO
 
         // comments
-        List <String> comments = new ArrayList<>();
+        List<String> comments = new ArrayList<>();
         for (Annotation annotation : interactor.getAnnotations()) {
             String comment = annotation.getText();
             if (comment != null && (comment.equals("mint") || comment.equals("homomint") || comment.equals("domino"))) {
@@ -333,10 +343,10 @@ public class PsiMiTabParser {
             interactionType = crossReference.getText();
         }
 
-        if (Pattern.matches("(?m)^(?=.*reaction|.*cleavage|lipid addition|.*elongation|phosphopantetheinylation)((?!transglutamination reaction).)*$", interactionType)) {
+        if (REACTION_PATTERN.matcher(interactionType).matches()) {
             // http://stackoverflow.com/questions/406230/regular-expression-to-match-line-that-doesnt-contain-a-word
             interaction = createReaction(binaryInteraction);
-        } else if (Pattern.matches("(.*association|direct interaction|transglutamination reaction|disulfide bond|covalent binding)", interactionType)) {
+        } else if (ASSEMBLY_PATTERN.matcher(interactionType).matches()) {
             interaction = createAssembly(binaryInteraction);
         } else if (Pattern.matches("colocalization", interactionType)) {
             interaction = createColocalization(binaryInteraction);
@@ -354,8 +364,8 @@ public class PsiMiTabParser {
         setInteractionCommonProperties(binaryInteraction, reaction);
 
         // Stoichiometry
-        if (!binaryInteraction.getInteractorA().getStoichiometry().isEmpty() &&
-                !binaryInteraction.getInteractorB().getStoichiometry().isEmpty()) {
+        if (!binaryInteraction.getInteractorA().getStoichiometry().isEmpty()
+                && !binaryInteraction.getInteractorB().getStoichiometry().isEmpty()) {
             Map stoichiometryA = new HashMap<String, Object>();
             stoichiometryA.put("component", binaryInteraction.getInteractorA().getIdentifiers().get(0).getIdentifier());
             stoichiometryA.put("coefficient", binaryInteraction.getInteractorA().getStoichiometry());
@@ -377,8 +387,8 @@ public class PsiMiTabParser {
         setInteractionCommonProperties(binaryInteraction, assembly);
 
         // Stoichiometry
-        if (!binaryInteraction.getInteractorA().getStoichiometry().isEmpty() &&
-                !binaryInteraction.getInteractorB().getStoichiometry().isEmpty()) {
+        if (!binaryInteraction.getInteractorA().getStoichiometry().isEmpty()
+                && !binaryInteraction.getInteractorB().getStoichiometry().isEmpty()) {
             Map stoichiometryA = new HashMap<String, Object>();
             stoichiometryA.put("component", binaryInteraction.getInteractorA().getIdentifiers().get(0).getIdentifier());
             stoichiometryA.put("coefficient", binaryInteraction.getInteractorA().getStoichiometry());
@@ -451,7 +461,7 @@ public class PsiMiTabParser {
         }
 
         // comments
-        List <String> comments = new ArrayList<>();
+        List<String> comments = new ArrayList<>();
         List<Annotation> annotations = binaryInteraction.getAnnotations();
         for (Annotation annotation : annotations) {
             String comment = annotation.getText();
@@ -463,7 +473,7 @@ public class PsiMiTabParser {
         interaction.getAttributes().put(INTACT_FEAT + "comment", comments);
     }
 
-    private void setparticipantOfInteraction (Network network) {
+    private void setparticipantOfInteraction(Network network) {
         for (Interaction interaction : network.getInteractions()) {
             for (String peId : interaction.getParticipants()) {
                 network.getPhysicalEntity(peId).getParticipantOfInteraction().add(interaction.getId());

@@ -27,13 +27,14 @@ public class Expression {
 
     @Override
     public String toString() {
-        return "Expression{" +
-                "id='" + id + '\'' +
-                ", expression=" + expression +
-                ", pvalue=" + pvalue +
-                ", odds=" + odds +
-                ", upregulated=" + upregulated +
-                '}';
+        final StringBuilder sb = new StringBuilder("Expression{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", expression=").append(expression);
+        sb.append(", pvalue=").append(pvalue);
+        sb.append(", odds=").append(odds);
+        sb.append(", upregulated=").append(upregulated);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {

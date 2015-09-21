@@ -21,12 +21,12 @@ public class BioNetDBMain {
         }
 
         String parsedCommand = cliOptionsParser.getCommand();
-        if(parsedCommand == null || parsedCommand.isEmpty()) {
-            if(cliOptionsParser.getGeneralOptions().help) {
+        if (parsedCommand == null || parsedCommand.isEmpty()) {
+            if (cliOptionsParser.getGeneralOptions().help) {
                 cliOptionsParser.printUsage();
                 System.exit(0);
             } else {
-                if(cliOptionsParser.getGeneralOptions().version) {
+                if (cliOptionsParser.getGeneralOptions().version) {
                     System.out.println("Version " + VERSION);
                     System.exit(0);
                 } else {
@@ -36,7 +36,7 @@ public class BioNetDBMain {
             }
         } else {
             CommandExecutor commandExecutor = null;
-            if(cliOptionsParser.isHelp()) {
+            if (cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();
                 System.exit(0);
             } else {

@@ -1,7 +1,5 @@
 package org.opencb.bionetdb.core.models;
 
-import org.neo4j.register.Register;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -112,7 +110,7 @@ public class Network {
         }
     }
 
-    public Type getNetworkElementType (String id) {
+    public Type getNetworkElementType(String id) {
         Type elementType = null;
         if (physicalEntitiesIndex.containsKey(id)) {
             elementType = Type.PHYSICALENTITY;

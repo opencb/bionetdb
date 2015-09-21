@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.core.io;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.biopax.paxtools.io.BioPAXIOHandler;
 import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
@@ -102,6 +101,8 @@ public class BioPaxParser {
                 case "Modulation":
                 case "TemplateReactionRegulation":
                     network.setInteraction(createRegulation(bioPAXElement));
+                    break;
+                default:
                     break;
             }
 
@@ -302,9 +303,8 @@ public class BioPaxParser {
     }
 
     private void setPhysicalEntityCommonProperties(PhysicalEntity physicalEntityBP,
-                                      org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity) {
+                                                   org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity) {
         // = SPECIFIC PROPERTIES =
-
         // id
         physicalEntity.setId(physicalEntityBP.getRDFId().split("#")[1]);
 
@@ -320,7 +320,6 @@ public class BioPaxParser {
             xref.setId(name);
             physicalEntity.setXref(xref);
         }
-
 
         // cellularLocation
         CellularLocation cellularLocation = new CellularLocation();
@@ -472,7 +471,7 @@ public class BioPaxParser {
                 // TemplateReaction properties
 
                 // Reactants
-                if(templateReactBP.getTemplate() != null){
+                if (templateReactBP.getTemplate() != null) {
                     reaction.getReactants().add(templateReactBP.getTemplate().getRDFId().split("#")[1]);
                 }
 
@@ -501,6 +500,8 @@ public class BioPaxParser {
                     case "Transport":
                     case "TransportWithBiochemicalReaction":
                         reaction.setReactionType(Reaction.ReactionType.TRANSPORT);
+                        break;
+                    default:
                         break;
                 }
 
@@ -535,6 +536,8 @@ public class BioPaxParser {
                         case "RIGHT_TO_LEFT":
                             reaction.setReactants(rightItems);
                             reaction.setProducts(leftItems);
+                            break;
+                        default:
                             break;
                     }
                 } else {
@@ -582,6 +585,8 @@ public class BioPaxParser {
 
                 // Common Interaction properties
                 setInteractionCommonProperties(molecularInteractionBP, reaction);
+                break;
+            default:
                 break;
         }
         return reaction;
@@ -650,7 +655,7 @@ public class BioPaxParser {
     }
 
     private void setInteractionCommonProperties(Interaction interactionBP,
-                                                     org.opencb.bionetdb.core.models.Interaction interaction) {
+                                                org.opencb.bionetdb.core.models.Interaction interaction) {
         // = SPECIFIC PROPERTIES =
 
         // id

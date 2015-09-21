@@ -34,8 +34,9 @@ public class ExpressionParser {
                 timeSeries = new HashMap<>();
             }
             timeSeries.put(fields[1], metadata.getParent().toString() + "/" + fields[2]);
-            if (!myFiles.containsKey(fields[0]))
+            if (!myFiles.containsKey(fields[0])) {
                 myFiles.put(fields[0], timeSeries);
+            }
         }
     }
 
@@ -81,21 +82,21 @@ public class ExpressionParser {
             }
 
             // It we have the geneID at least and some expression, pvalues, odds or upregulations...
-            if (colId != -1 && (colExpr != -1 ||colOdds != -1 ||colPval != -1 ||colUpreg != -1)) {
+            if (colId != -1 && (colExpr != -1 || colOdds != -1 || colPval != -1 || colUpreg != -1)) {
                 while ((currentLine = br.readLine()) != null) {
-                    String[] line_spl = currentLine.split("\t", -1);
-                    Expression myExpr = new Expression(line_spl[colId]);
+                    String[] lineSpl = currentLine.split("\t", -1);
+                    Expression myExpr = new Expression(lineSpl[colId]);
                     if (colExpr != -1) {
-                        myExpr.setExpression(Double.parseDouble(line_spl[colExpr]));
+                        myExpr.setExpression(Double.parseDouble(lineSpl[colExpr]));
                     }
                     if (colOdds != -1) {
-                        myExpr.setOdds(Double.parseDouble(line_spl[colOdds]));
+                        myExpr.setOdds(Double.parseDouble(lineSpl[colOdds]));
                     }
                     if (colPval != -1) {
-                        myExpr.setPvalue(Double.parseDouble(line_spl[colPval]));
+                        myExpr.setPvalue(Double.parseDouble(lineSpl[colPval]));
                     }
                     if (colUpreg != -1) {
-                        myExpr.setUpregulated(Integer.parseInt(line_spl[colUpreg]));
+                        myExpr.setUpregulated(Integer.parseInt(lineSpl[colUpreg]));
                     }
                     myExpressionList.add(myExpr);
                 }
@@ -107,9 +108,10 @@ public class ExpressionParser {
 
     @Override
     public String toString() {
-        return "ExpressionParser{" +
-                "myFiles=" + myFiles +
-                '}';
+        final StringBuilder sb = new StringBuilder("ExpressionParser{");
+        sb.append("myFiles=").append(myFiles);
+        sb.append('}');
+        return sb.toString();
     }
 
     public Map<String, Map<String, String>> getMyFiles() {

@@ -181,10 +181,10 @@ public class PhysicalEntity {
         // Adding xref unless it exists
         boolean duplicate = false;
         for (Xref currentXref : this.getXrefs()) {
-            if(xref.getSource().equals(currentXref.getSource()) &&
-                    xref.getSourceVersion().equals(currentXref.getSourceVersion()) &&
-                    xref.getId().equals(currentXref.getId()) &&
-                    xref.getIdVersion().equals(currentXref.getIdVersion())) {
+            if (xref.getSource().equals(currentXref.getSource())
+                    && xref.getSourceVersion().equals(currentXref.getSourceVersion())
+                    && xref.getId().equals(currentXref.getId())
+                    && xref.getIdVersion().equals(currentXref.getIdVersion())) {
                 duplicate = true;
                 break;
             }
@@ -206,10 +206,10 @@ public class PhysicalEntity {
         // Adding ontology unless it exists
         boolean duplicate = false;
         for (Ontology currentOntology : this.getOntologies()) {
-            if(ontology.getSource().equals(currentOntology.getSource()) &&
-                    ontology.getSourceVersion().equals(currentOntology.getSourceVersion()) &&
-                    ontology.getId().equals(currentOntology.getId()) &&
-                    ontology.getIdVersion().equals(currentOntology.getIdVersion())) {
+            if (ontology.getSource().equals(currentOntology.getSource())
+                    && ontology.getSourceVersion().equals(currentOntology.getSourceVersion())
+                    && ontology.getId().equals(currentOntology.getId())
+                    && ontology.getIdVersion().equals(currentOntology.getIdVersion())) {
                 duplicate = true;
                 break;
             }
@@ -239,8 +239,8 @@ public class PhysicalEntity {
         // Adding publication unless it exists
         boolean duplicate = false;
         for (Publication currentPublication : this.getPublications()) {
-            if(publication.getSource().equals(currentPublication.getSource()) &&
-                    publication.getId().equals(currentPublication.getId())) {
+            if (publication.getSource().equals(currentPublication.getSource())
+                    && publication.getId().equals(currentPublication.getId())) {
                 duplicate = true;
                 break;
             }

@@ -39,15 +39,23 @@ public interface NetworkDBAdaptor extends AutoCloseable {
         private Type type;
         private String description;
 
-        @Override public String key() {return key;}
-        @Override public String description() {return description;}
-        @Override public Type type() {return type;}
+        @Override public String key() {
+            return key;
+        }
+
+        @Override public String description() {
+            return description;
+        }
+
+        @Override public Type type() {
+            return type;
+        }
     }
 
 
     void insert(Network network, QueryOptions queryOptions) throws NetworkDBException;
 
-    void addXrefs(String nodeID, List<Xref> xref_list) throws NetworkDBException;
+    void addXrefs(String nodeID, List<Xref> xrefList) throws NetworkDBException;
 
     /**
      *

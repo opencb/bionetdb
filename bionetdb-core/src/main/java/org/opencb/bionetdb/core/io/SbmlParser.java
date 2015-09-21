@@ -1,13 +1,15 @@
 package org.opencb.bionetdb.core.io;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.bionetdb.core.models.*;
 import org.sbml.libsbml.*;
 import org.sbml.libsbml.Reaction;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,26 +32,26 @@ public class SbmlParser {
             System.err.println("Error encountered while attempting to load libSBML:");
             System.err.println("Please check the value of your "
                     + (System.getProperty("os.name").startsWith("Mac OS")
-                    ? "DYLD_LIBRARY_PATH" : "LD_LIBRARY_PATH") +
-                    " environment variable and/or your" +
-                    " 'java.library.path' system property (depending on" +
-                    " which one you are using) to make sure it list the" +
-                    " directories needed to find the " +
-                    System.mapLibraryName("sbmlj") + " library file and" +
-                    " libraries it depends upon (e.g., the XML parser).");
+                    ? "DYLD_LIBRARY_PATH" : "LD_LIBRARY_PATH")
+                    + " environment variable and/or your"
+                    + " 'java.library.path' system property (depending on"
+                    + " which one you are using) to make sure it list the"
+                    + " directories needed to find the "
+                    + System.mapLibraryName("sbmlj") + " library file and"
+                    + " libraries it depends upon (e.g., the XML parser).");
             System.exit(1);
         } catch (ClassNotFoundException e) {
-            System.err.println("Error: unable to load the file 'libsbmlj.jar'." +
-                    " It is likely that your -classpath command line " +
-                    " setting or your CLASSPATH environment variable " +
-                    " do not include the file 'libsbmlj.jar'.");
+            System.err.println("Error: unable to load the file 'libsbmlj.jar'."
+                    + " It is likely that your -classpath command line "
+                    + " setting or your CLASSPATH environment variable "
+                    + " do not include the file 'libsbmlj.jar'.");
             e.printStackTrace();
             System.exit(1);
         } catch (SecurityException e) {
             System.err.println("Error encountered while attempting to load libSBML:");
             e.printStackTrace();
-            System.err.println("Could not load the libSBML library files due to a"+
-                    " security exception.\n");
+            System.err.println("Could not load the libSBML library files due to a"
+                    + " security exception.\n");
             System.exit(1);
         }
     }
@@ -114,6 +116,8 @@ public class SbmlParser {
                 break;
             case SMALLMOLECULE:
                 physicalEntity = createSmallMolecule(species);
+                break;
+            default:
                 break;
         }
         return physicalEntity;
@@ -201,7 +205,8 @@ public class SbmlParser {
             XMLNode components = description.getChild("hasPart").getChild("Bag");
             for (int i = 0; i < components.getNumChildren(); i++) {
                 String component = components.getChild(i).getAttributes().getValue("resource");
-                List<String> componentElements = Arrays.asList(component.replace("%3A", ":").replace("kegg.compound", "kegg").split(":"));
+                List<String> componentElements =
+                        Arrays.asList(component.replace("%3A", ":").replace("kegg.compound", "kegg").split(":"));
                 List<String> componentXrefElements =
                         componentElements.subList(componentElements.size() - 2, componentElements.size());
                 complex.getComponents().add(String.join(":", componentXrefElements));
@@ -236,7 +241,8 @@ public class SbmlParser {
         physicalEntity.setName(species.getName());
 
         // cellular location
-        physicalEntity.getCellularLocation().add(getCompartmentInfo(species.getModel().getCompartment(species.getCompartment())));
+        physicalEntity.getCellularLocation()
+                .add(getCompartmentInfo(species.getModel().getCompartment(species.getCompartment())));
 
         // xrefs
         XMLNode description = species.getAnnotation().getChild("RDF").getChild("Description");
@@ -281,8 +287,7 @@ public class SbmlParser {
 
     }
 
-    private CellularLocation getCompartmentInfo (Compartment compartment) {
-
+    private CellularLocation getCompartmentInfo(Compartment compartment) {
         CellularLocation cellularLocation = new CellularLocation();
 
         // Names
@@ -297,7 +302,7 @@ public class SbmlParser {
 
         Ontology ontologies = new Ontology();
         ontologies.setSource(idElements.get(idElements.size() - 2));
-        ontologies.setId(idElements.get(idElements.size()-1));
+        ontologies.setId(idElements.get(idElements.size() - 1));
         cellularLocation.setOntology(ontologies);
 
         return cellularLocation;
@@ -329,8 +334,8 @@ public class SbmlParser {
             if (physicalEntity.getType() == PhysicalEntity.Type.COMPLEX) {
                 Complex complex = (Complex) physicalEntity;
                 for (String component : complex.getComponents()) {
-                    String componentId = component.replace("%3A", ":").split(":")[0].toLowerCase() + ":" +
-                            component.replace("%3A", ":").split(":")[1];
+                    String componentId = component.replace("%3A", ":").split(":")[0].toLowerCase() + ":"
+                            + component.replace("%3A", ":").split(":")[1];
                     if (xrefs.contains(componentId)) {
                         complex.getComponents().set(complex.getComponents().indexOf(component),
                                 ids.get(xrefs.indexOf(componentId)));

@@ -19,8 +19,12 @@ public class TimeSeriesExpression {
 
         private final int upregulated;
 
-        UpRegulatedParams (int upregulated) { this.upregulated = upregulated; }
-        public int upregulated () { return upregulated; }
+        UpRegulatedParams(int upregulated) {
+            this.upregulated = upregulated;
+        }
+        public int upregulated() {
+            return upregulated;
+        }
     }
 
     public String getId() {
@@ -56,9 +60,10 @@ public class TimeSeriesExpression {
         this.expression = expression;
         this.pvalue = pvalue;
         this.odds = odds;
-        if (upregulated == true)
+        if (upregulated) {
             this.upregulated = UpRegulatedParams.UP;
-        else
+        } else {
             this.upregulated = UpRegulatedParams.DOWN;
+        }
     }
 }

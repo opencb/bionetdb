@@ -30,6 +30,10 @@ public class XrefAnnotationParser {
      *
      * First three fields are mandatory: "name", "database" and "id".
      * Unknown info is represented as an empty string.
+     *
+     * @param path Path to anntoation file
+     * @return Parsed annotations
+     * @throws IOException Returns exception if file not exists
      */
     public Map<String, Xref> parseXrefAnnotationFile(Path path) throws IOException {
         // Reading GZip input stream
