@@ -3,6 +3,7 @@ package org.opencb.bionetdb.app.cli;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.bionetdb.core.io.BioPaxParser;
+import org.opencb.bionetdb.core.io.PsiMiTabParser;
 import org.opencb.bionetdb.core.io.SbmlParser;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.commons.utils.FileUtils;
@@ -37,11 +38,12 @@ public class BuildCommandExecutor extends CommandExecutor {
             if (inputPath.getFileName().toString().endsWith("owl") || inputPath.getFileName().toString().endsWith("owl.gz")) {
                 BioPaxParser bioPaxParser = new BioPaxParser("L3");
                 network = bioPaxParser.parse(inputPath);
-            } else {
-                if (inputPath.getFileName().toString().endsWith("sbml") || inputPath.getFileName().toString().endsWith("sbml.gz")) {
+            } else if (inputPath.getFileName().toString().endsWith("sbml") || inputPath.getFileName().toString().endsWith("sbml.gz")) {
                     SbmlParser sbmlParser = new SbmlParser();
                     network = sbmlParser.parse(inputPath);
-                }
+            } else if (inputPath.getFileName().toString().endsWith("txt") || inputPath.getFileName().toString().endsWith("txt.gz")) {
+                    PsiMiTabParser psiMiTabParser = new PsiMiTabParser();
+                    network = psiMiTabParser.parse(inputPath, "Homo sapiens");
             }
 
             if (network != null) {

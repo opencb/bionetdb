@@ -12,7 +12,7 @@ public class Regulation extends Interaction {
     private String controlType;
 
     public Regulation() {
-        super("", "", Collections.<String>emptyList(), Type.REGULATION);
+        super("", "", new ArrayList<>(), Type.REGULATION);
         init();
     }
 

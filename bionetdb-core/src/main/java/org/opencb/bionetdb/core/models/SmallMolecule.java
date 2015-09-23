@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.core.models;
 
-import java.util.Collections;
+import java.util.ArrayList;
+
 import java.util.List;
 
 /**
@@ -9,7 +10,7 @@ import java.util.List;
 public class SmallMolecule extends PhysicalEntity {
 
     public SmallMolecule() {
-        super("", "", Collections.<String>emptyList(), Type.SMALLMOLECULE);
+        super("", "", new ArrayList<>(), Type.SMALLMOLECULE);
         init();
     }
 

@@ -11,7 +11,7 @@ public class Complex extends PhysicalEntity {
     private List<Map<String, Object>> stoichiometry;
 
     public Complex() {
-        super("", "", Collections.<String>emptyList(), Type.COMPLEX);
+        super("", "", new ArrayList<>(), Type.COMPLEX);
         init();
     }
 

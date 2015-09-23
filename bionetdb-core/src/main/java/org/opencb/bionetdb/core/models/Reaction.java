@@ -28,13 +28,13 @@ public class Reaction extends Interaction {
     }
 
     public Reaction() {
-        super("", "", Collections.<String>emptyList(), Type.REACTION);
+        super("", "", new ArrayList<>(), Type.REACTION);
         this.reactionType = ReactionType.REACTION;
         init();
     }
 
     public Reaction(ReactionType reactionType) {
-        super("", "", Collections.<String>emptyList(), Type.REACTION);
+        super("", "", new ArrayList<>(), Type.REACTION);
         this.reactionType = ReactionType.REACTION;
         init();
     }

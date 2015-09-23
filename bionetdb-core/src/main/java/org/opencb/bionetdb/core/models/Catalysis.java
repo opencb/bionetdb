@@ -13,7 +13,7 @@ public class Catalysis extends Interaction {
     private String controlType;
 
     public Catalysis() {
-        super("", "", Collections.<String>emptyList(), Type.CATALYSIS);
+        super("", "", new ArrayList<>(), Type.CATALYSIS);
         init();
     }
 

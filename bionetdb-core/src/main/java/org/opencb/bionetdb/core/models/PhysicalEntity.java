@@ -44,6 +44,10 @@ public class PhysicalEntity {
     }
 
     public PhysicalEntity() {
+        this.id = "";
+        this.name = "";
+        this.description = new ArrayList<>();
+
         // init rest of attributes
         init();
     }
@@ -51,7 +55,7 @@ public class PhysicalEntity {
     public PhysicalEntity(String id, String name, List<String> description, Type type) {
         this.id = id;
         this.name = name;
-        this.description = new ArrayList<>();
+        this.description = description;
         this.type = type;
 
         // init rest of attributes
