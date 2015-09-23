@@ -29,7 +29,7 @@ public class PhysicalEntity {
     protected Display display;
 
     public enum Type {
-        UNDEFINEDENTITY ("undefinedEntity"),
+        UNDEFINED     ("undefined"),
         PROTEIN       ("protein"),
         DNA           ("dna"),
         RNA           ("rna"),

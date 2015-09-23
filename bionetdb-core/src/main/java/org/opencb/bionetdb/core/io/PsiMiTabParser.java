@@ -20,6 +20,7 @@ public class PsiMiTabParser {
 
     private static final String INTACT_FEAT = "intact.";
 
+    // http://stackoverflow.com/questions/406230/regular-expression-to-match-line-that-doesnt-contain-a-word
     private static final Pattern REACTION_PATTERN =
             Pattern.compile("(?m)^(?=.*reaction|.*cleavage|lipid addition"
                     + "|.*elongation|phosphopantetheinylation)((?!transglutamination reaction).)*$");
@@ -104,8 +105,11 @@ public class PsiMiTabParser {
             }
         }
 
+        // Creating undefined products for each interaction
+        createUndefinedProducts(network);
+
         // Setting for each PE the interactions where they participate
-        setparticipantOfInteraction(network);
+        setParticipantOfInteraction(network);
 
         return network;
     }
@@ -261,13 +265,13 @@ public class PsiMiTabParser {
         return smallMolecule;
     }
 
-    private UndefinedEntity createUndefinedEntity(Interactor interactor) {
-        UndefinedEntity undefinedEntity = new UndefinedEntity();
+    private Undefined createUndefinedEntity(Interactor interactor) {
+        Undefined undefined = new Undefined();
 
         // Common properties
-        setPhysicalEntityCommonProperties(interactor, undefinedEntity);
+        setPhysicalEntityCommonProperties(interactor, undefined);
 
-        return undefinedEntity;
+        return undefined;
     }
 
     private void setPhysicalEntityCommonProperties(Interactor interactor, PhysicalEntity physicalEntity) {
@@ -317,7 +321,13 @@ public class PsiMiTabParser {
         }
 
         // name
-        // TODO
+        physicalEntity.setName(physicalEntity.getId()); // default
+            for (Xref xref : physicalEntity.getXrefs()) {
+                if (xref.getSource().equals("psi-mi")) {
+                    physicalEntity.setName(xref.getId());
+                }
+            }
+
 
         // comments
         List<String> comments = new ArrayList<>();
@@ -343,10 +353,7 @@ public class PsiMiTabParser {
             interactionType = crossReference.getText();
         }
 
-        if (REACTION_PATTERN.matcher(interactionType).matches()) {
-            // http://stackoverflow.com/questions/406230/regular-expression-to-match-line-that-doesnt-contain-a-word
-            interaction = createReaction(binaryInteraction);
-        } else if (ASSEMBLY_PATTERN.matcher(interactionType).matches()) {
+        if (ASSEMBLY_PATTERN.matcher(interactionType).matches()) {
             interaction = createAssembly(binaryInteraction);
         } else if (Pattern.matches("colocalization", interactionType)) {
             interaction = createColocalization(binaryInteraction);
@@ -355,13 +362,16 @@ public class PsiMiTabParser {
         return interaction;
     }
 
-
+    @Deprecated
     private Reaction createReaction(BinaryInteraction binaryInteraction) {
         Reaction reaction = new Reaction();
         reaction.setReactionType(Reaction.ReactionType.REACTION);
 
         // Common properties
         setInteractionCommonProperties(binaryInteraction, reaction);
+
+        // name
+        reaction.setName("reaction_" + reaction.getId());
 
         // Stoichiometry
         if (!binaryInteraction.getInteractorA().getStoichiometry().isEmpty()
@@ -386,6 +396,21 @@ public class PsiMiTabParser {
         // Common properties
         setInteractionCommonProperties(binaryInteraction, assembly);
 
+        // name
+        assembly.setName("assembly_" + assembly.getId());
+
+        // reactants
+        String idA = binaryInteraction.getInteractorA().getIdentifiers().get(0).getIdentifier();
+        String idB = binaryInteraction.getInteractorB().getIdentifiers().get(0).getIdentifier();
+        assembly.getReactants().add(idA);
+        assembly.getReactants().add(idB);
+
+        // product
+        String productId = idA + "_" + idB;
+        assembly.getProducts().add(productId);
+        // adding product to participants
+        assembly.getParticipants().add(productId);
+
         // Stoichiometry
         if (!binaryInteraction.getInteractorA().getStoichiometry().isEmpty()
                 && !binaryInteraction.getInteractorB().getStoichiometry().isEmpty()) {
@@ -409,6 +434,9 @@ public class PsiMiTabParser {
         // Common properties
         setInteractionCommonProperties(binaryInteraction, colocalization);
 
+        // name
+        colocalization.setName("colocalization_" + colocalization.getId());
+
         return colocalization;
     }
 
@@ -417,7 +445,7 @@ public class PsiMiTabParser {
         // id
         String idA = binaryInteraction.getInteractorA().getIdentifiers().get(0).getIdentifier();
         String idB = binaryInteraction.getInteractorB().getIdentifiers().get(0).getIdentifier();
-        interaction.setId(idA + idB);
+        interaction.setId("interaction_" + idA + "_" + idB);
 
         // participants
         interaction.getParticipants().add(idA);
@@ -448,9 +476,6 @@ public class PsiMiTabParser {
             }
         }
 
-        // name
-        // TODO
-
         // publications
         List<CrossReference> pubs = binaryInteraction.getPublications();
         for (CrossReference pub : pubs) {
@@ -473,7 +498,21 @@ public class PsiMiTabParser {
         interaction.getAttributes().put(INTACT_FEAT + "comment", comments);
     }
 
-    private void setparticipantOfInteraction(Network network) {
+    private void createUndefinedProducts(Network network) {
+        for (Interaction interaction : network.getInteractions()) {
+            if (interaction.getType() == Interaction.Type.REACTION) {
+                Reaction reaction = (Reaction) interaction;
+                for (String productId : reaction.getProducts()) {
+                    Undefined undefined = new Undefined(productId, productId, Collections.<String>emptyList());
+                    Xref xref = new Xref("BioNetDB", "", productId, "");
+                    undefined.setXref(xref);
+                    network.setPhysicalEntity(undefined);
+                }
+            }
+        }
+    }
+
+    private void setParticipantOfInteraction(Network network) {
         for (Interaction interaction : network.getInteractions()) {
             for (String peId : interaction.getParticipants()) {
                 network.getPhysicalEntity(peId).getParticipantOfInteraction().add(interaction.getId());
