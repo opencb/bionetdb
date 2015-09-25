@@ -11,6 +11,7 @@ import org.opencb.datastore.core.QueryResult;
 
 import java.util.List;
 
+import static org.opencb.datastore.core.QueryParam.Type.INTEGER;
 import static org.opencb.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 /**
@@ -19,15 +20,13 @@ import static org.opencb.datastore.core.QueryParam.Type.TEXT_ARRAY;
 public interface NetworkDBAdaptor extends AutoCloseable {
 
     enum NetworkQueryParams implements QueryParam {
-        PE_ID ("pe.id", TEXT_ARRAY, ""),
-        PE_NAME ("pe.name", TEXT_ARRAY, ""),
+        PE_ID ("xref.id", TEXT_ARRAY, ""),
         PE_DESCRIPTION ("pe.description", TEXT_ARRAY, ""),
         PE_TYPE ("pe.type", TEXT_ARRAY, ""),
-        PE_XREF_ID ("pe.xref.id", TEXT_ARRAY, ""),
         PE_ATTR_EXPR ("pe.attr.expr", TEXT_ARRAY, ""),  // example: "brain:t2>0.3;brain:t4<=0.3"
         PE_ONTOLOGY ("pe.ontology", TEXT_ARRAY, ""),  // example: "go:001234,go:002345"
-
-        INT_ID ("int.id", TEXT_ARRAY, ""),
+        PE_CELLOCATION ("pe.cellularLocation", TEXT_ARRAY, ""), // example: "mitochondria,..."
+        _JUMPS ("_jumps", INTEGER, ""),
         INT_TYPE ("int.type", TEXT_ARRAY, "");
 
         NetworkQueryParams(String key, Type type, String description) {
@@ -70,7 +69,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //TODO: To remove
     //public QueryResult getXrefs(String idNode);
 
-    QueryResult get(Query query, QueryOptions queryOptions);
+    QueryResult get(Query query, QueryOptions queryOptions) throws NetworkDBException;
 
     QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions);
 

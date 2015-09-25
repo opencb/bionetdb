@@ -13,8 +13,10 @@ import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Xref;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import sun.nio.ch.Net;
 
 import java.io.File;
 import java.io.IOException;
@@ -187,4 +189,29 @@ public class Neo4JNetworkDBAdaptorTest {
         networkDBAdaptor.getSummaryStats(null, null);
     }
 
+    @Test
+    public void testGet() throws Exception {
+
+        BioPaxParser bioPaxParser = new BioPaxParser("L3");
+        Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
+        Network network = bioPaxParser.parse(inputPath);
+        System.out.println("The file has been parsed.");
+
+        networkDBAdaptor.insert(network, null);
+        System.out.println("Data has been inserted in the database.");
+
+        // TESTING QUERIES
+        Query myQueryObject = new Query();
+        List<String> myXrefIds = new ArrayList<>();
+        myXrefIds.add("UniProt:P27466");
+        myXrefIds.add("CMK1");
+        myXrefIds.add("P27466");
+        myXrefIds.add("MIH1");
+        myXrefIds.add("CMK2");
+
+        myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), myXrefIds);
+        myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key(), 2);
+        networkDBAdaptor.get(myQueryObject, null);
+        System.out.println("The query took " + networkDBAdaptor.get(myQueryObject, null).getDbTime() + " seconds.");
+    }
 }

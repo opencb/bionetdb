@@ -709,9 +709,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public QueryResult get(Query query, QueryOptions queryOptions) {
-        Result result = this.database.execute(query.get("query").toString());
-        return new QueryResult(result.columnAs(queryOptions.get("columnsAs").toString()).next().toString());
+    public QueryResult get(Query query, QueryOptions queryOptions) throws NetworkDBException {
+        long startTime = System.currentTimeMillis();
+        String myQuery = Neo4JQueryParser.parse(query, queryOptions);
+        long stopTime = System.currentTimeMillis();
+        // TODO: Build new Network with the result
+        int time = (int) (stopTime - startTime)/1000;
+        return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
     }
 
     @Override
