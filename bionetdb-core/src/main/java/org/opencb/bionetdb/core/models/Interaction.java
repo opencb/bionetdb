@@ -36,11 +36,16 @@ public class Interaction {
     }
 
     public Interaction() {
+        this.description = new ArrayList<>();
+        this.id = "";
+        this.name = "";
+
+        // init rest of attributes
         init();
     }
 
     public Interaction(String id, String name, List<String> description, Type type) {
-        this.description = new ArrayList<>();
+        this.description = description;
         this.id = id;
         this.name = name;
         this.type = type;

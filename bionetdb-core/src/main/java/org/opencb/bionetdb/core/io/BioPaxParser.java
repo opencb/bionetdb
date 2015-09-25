@@ -112,15 +112,15 @@ public class BioPaxParser {
     }
 
     private org.opencb.bionetdb.core.models.PhysicalEntity createUndefinedEntity(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.UndefinedEntity undefinedEntity;
-        undefinedEntity = new UndefinedEntity();
+        Undefined undefined;
+        undefined = new Undefined();
 
         PhysicalEntity physicalEntityBP = (PhysicalEntity) bioPAXElement;
 
         // Common properties
-        setPhysicalEntityCommonProperties(physicalEntityBP, undefinedEntity);
+        setPhysicalEntityCommonProperties(physicalEntityBP, undefined);
 
-        return undefinedEntity;
+        return undefined;
     }
 
     private org.opencb.bionetdb.core.models.Dna createDna(BioPAXElement bioPAXElement) {

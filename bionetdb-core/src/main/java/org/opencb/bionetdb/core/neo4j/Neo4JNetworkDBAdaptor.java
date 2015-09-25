@@ -659,8 +659,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             case COMPLEX:
                 p = new Complex();
                 break;
-            case UNDEFINEDENTITY:
-                p = new UndefinedEntity();
+            case UNDEFINED:
+                p = new Undefined();
                 break;
             case PROTEIN:
                 p = new Protein();
@@ -736,7 +736,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private ObjectMap getTotalPhysicalEntities() {
         ObjectMap myResult = new ObjectMap();
         myResult.put("undefined", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type:\""
-                + PhysicalEntity.Type.UNDEFINEDENTITY + "\" }) return count(n)")
+                + PhysicalEntity.Type.UNDEFINED + "\" }) return count(n)")
                 .columnAs("count(n)").next().toString()));
         myResult.put("protein", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
                 + PhysicalEntity.Type.PROTEIN + "\"}) return count(n)").columnAs("count(n)").next().toString()));

@@ -80,7 +80,7 @@ public class SbmlParser {
         }
 
         // Fixing complexes info
-        fixComplexesInfo(network);
+        setComplexesInfo(network);
 
         // Reactions
         for (int i = 0; i < model.getNumReactions(); i++) {
@@ -89,7 +89,7 @@ public class SbmlParser {
         }
 
         // Adding to PhysicalEntities the interactions where they participate
-        fixParticipantOfInteractionInfo(network);
+        setParticipantOfInteractionInfo(network);
 
         return network;
     }
@@ -99,7 +99,7 @@ public class SbmlParser {
         PhysicalEntity physicalEntity = null;
 
         switch (getClassToConvert(species)) {
-            case UNDEFINEDENTITY:
+            case UNDEFINED:
                 physicalEntity = createUndefinedEntity(species);
                 break;
             case DNA:
@@ -126,7 +126,7 @@ public class SbmlParser {
     private PhysicalEntity.Type getClassToConvert(Species species) {
 
         XMLNode description = species.getAnnotation().getChild("RDF").getChild("Description");
-        PhysicalEntity.Type type = PhysicalEntity.Type.UNDEFINEDENTITY;
+        PhysicalEntity.Type type = PhysicalEntity.Type.UNDEFINED;
 
         StringBuilder sb = new StringBuilder();
         if (description.hasChild("is")) {
@@ -156,13 +156,13 @@ public class SbmlParser {
         return type;
     }
 
-    private UndefinedEntity createUndefinedEntity(Species species) {
-        UndefinedEntity undefinedEntity = new UndefinedEntity();
+    private Undefined createUndefinedEntity(Species species) {
+        Undefined undefined = new Undefined();
 
         // Common properties
-        setPhysicalEntityCommonProperties(undefinedEntity, species);
+        setPhysicalEntityCommonProperties(undefined, species);
 
-        return undefinedEntity;
+        return undefined;
     }
 
     private Dna createDna(Species species) {
@@ -315,7 +315,7 @@ public class SbmlParser {
      * This method also populates the "componentOfComplex" attribute of the physical entities
      * which are part of the complex
      */
-    private void fixComplexesInfo(Network network) {
+    private void setComplexesInfo(Network network) {
         List<PhysicalEntity> physicalEntities = network.getPhysicalEntities();
 
         // Creating two related lists for every physical entity: xref and its corresponding id
@@ -343,41 +343,41 @@ public class SbmlParser {
                     } else {
                         // If component xref cannot be transformed into an ID, a new PhysicalEntity is created
                         if (componentId.contains("uniprot") || componentId.contains("interpro") || componentId.contains("pirsf")) {
-                            Protein protein = new Protein(componentId, "", Collections.<String>emptyList());
+                            Protein protein = new Protein(componentId, componentId, Collections.<String>emptyList());
                             protein.getComponentOfComplex().add(complex.getId());
-                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             protein.setXref(xref);
                             newPhysicalEntities.add(protein);
                         } else if (componentId.contains("kegg") || componentId.contains("chebi")) {
-                            SmallMolecule smallMolecule = new SmallMolecule(componentId, "", Collections.<String>emptyList());
+                            SmallMolecule smallMolecule = new SmallMolecule(componentId, componentId, Collections.<String>emptyList());
                             smallMolecule.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             smallMolecule.setXref(xref);
                             newPhysicalEntities.add(smallMolecule);
                         } else if (componentId.contains("ensg")) {
-                            Dna dna = new Dna(componentId, "", Collections.<String>emptyList());
+                            Dna dna = new Dna(componentId, componentId, Collections.<String>emptyList());
                             dna.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             dna.setXref(xref);
                             newPhysicalEntities.add(dna);
                         } else if (componentId.contains("enst")) {
-                            Rna rna = new Rna(componentId, "", Collections.<String>emptyList());
+                            Rna rna = new Rna(componentId, componentId, Collections.<String>emptyList());
                             rna.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             rna.setXref(xref);
                             newPhysicalEntities.add(rna);
                         } else if (componentId.contains("bind")) {
-                            Complex complexx = new Complex(componentId, "", Collections.<String>emptyList());
+                            Complex complexx = new Complex(componentId, componentId, Collections.<String>emptyList());
                             complexx.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             complexx.setXref(xref);
                             newPhysicalEntities.add(complexx);
                         } else {
-                            UndefinedEntity undefinedEntity = new UndefinedEntity(componentId, "", Collections.<String>emptyList());
-                            undefinedEntity.getComponentOfComplex().add(complex.getId());
+                            Undefined undefined = new Undefined(componentId, componentId, Collections.<String>emptyList());
+                            undefined.getComponentOfComplex().add(complex.getId());
                             Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
-                            undefinedEntity.setXref(xref);
-                            newPhysicalEntities.add(undefinedEntity);
+                            undefined.setXref(xref);
+                            newPhysicalEntities.add(undefined);
                         }
                     }
                 }
@@ -392,7 +392,7 @@ public class SbmlParser {
 
     }
 
-    private void fixParticipantOfInteractionInfo(Network network) {
+    private void setParticipantOfInteractionInfo(Network network) {
         for (Interaction interaction : network.getInteractions()) {
             for (String participant : interaction.getParticipants()) {
                 if (network.getNetworkElementType(participant) == Network.Type.PHYSICALENTITY) {
