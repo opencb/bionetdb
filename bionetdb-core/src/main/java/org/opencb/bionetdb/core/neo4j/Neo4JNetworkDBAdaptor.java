@@ -714,7 +714,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String myQuery = Neo4JQueryParser.parse(query, queryOptions);
         long stopTime = System.currentTimeMillis();
         // TODO: Build new Network with the result
-        int time = (int) (stopTime - startTime)/1000;
+        int time = (int) (stopTime - startTime) / 1000;
         return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
     }
 

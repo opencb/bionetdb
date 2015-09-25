@@ -7,7 +7,6 @@ import org.opencb.datastore.core.QueryOptions;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Created by imedina on 03/09/15.
@@ -84,7 +83,7 @@ public class Neo4JQueryParser {
             for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())) {
                 aux.append("\"").append(myID).append("\", ");
             }
-            aux.setLength(aux.length()-2);
+            aux.setLength(aux.length() - 2);
             whereClause.append(" (c.id IN [").append(aux).append("] AND d.id IN [").append(aux).append("]) ");
             myWhereClauses.add(whereClause);
         }
@@ -97,7 +96,7 @@ public class Neo4JQueryParser {
             for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_DESCRIPTION.key())) {
                 aux.append("\"").append(myID).append("\", ");
             }
-            aux.setLength(aux.length()-2);
+            aux.setLength(aux.length() - 2);
             whereClause.append(" (a.description IN [").append(aux).append("] AND b.description IN [").append(aux).append("]) ");
             myWhereClauses.add(whereClause);
         }
@@ -109,7 +108,7 @@ public class Neo4JQueryParser {
             for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key())) {
                 aux.append("\"").append(myID).append("\", ");
             }
-            aux.setLength(aux.length()-2);
+            aux.setLength(aux.length() - 2);
             whereClause.append(" (a.type IN [").append(aux).append("] AND b.type IN [").append(aux).append("]) ");
             myWhereClauses.add(whereClause);
         }
@@ -121,7 +120,7 @@ public class Neo4JQueryParser {
             for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key())) {
                 aux.append("\"").append(myID).append("\", ");
             }
-            aux.setLength(aux.length()-2);
+            aux.setLength(aux.length() - 2);
             whereClause.append(" (e.id IN [").append(aux).append("] AND f.id IN [").append(aux).append("]) ");
             myWhereClauses.add(whereClause);
         }
@@ -133,7 +132,7 @@ public class Neo4JQueryParser {
             for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key())) {
                 aux.append("\"").append(myID).append("\", ");
             }
-            aux.setLength(aux.length()-2);
+            aux.setLength(aux.length() - 2);
             whereClause.append(" (g.id IN [").append(aux).append("] AND h.id IN [").append(aux).append("]) ");
             myWhereClauses.add(whereClause);
         }
@@ -153,6 +152,9 @@ public class Neo4JQueryParser {
         // TODO: At the moment, we are always going to return the main path. However, we should change
         // TODO: this depending on the arguments.
         cypherQuery.append(" RETURN p");
+
+        return cypherQuery.toString();
+    }
 
 /*        cypherQuery.append("MATCH p=(m:Xref)<-[:XREF]-(:PhysicalEntity)-[:REACTANT*1..2]-(:PhysicalEntity)-[:XREF]->(n:Xref) ");
 
@@ -185,7 +187,4 @@ public class Neo4JQueryParser {
             System.out.println("no implemented yet");
         }
         */
-        return cypherQuery.toString();
-    }
-
 }
