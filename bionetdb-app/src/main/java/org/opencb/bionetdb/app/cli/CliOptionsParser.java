@@ -136,15 +136,17 @@ public class CliOptionsParser {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-
-        @Parameter(names = {"--species"}, description = "Name of the species to be downloaded, valid format include 'Homo sapiens' or 'hsapiens'", required = true, arity = 1)
-        public String species = "Homo sapiens";
-
-        @Parameter(names = {"--id"}, description = "By pathway ID", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "By physical entity ID", required = false, arity = 1)
         public String id;
 
-        @Parameter(names = {"--gene"}, description = "", required = false, arity = 1)
-        public String gene;
+        @Parameter(names = {"--node-type"}, description = "By pathway ID", required = false, arity = 1)
+        public String nodeType = "PhysicalEntity";
+
+        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = true, arity = 1)
+        public String database;
+
+        @Parameter(names = {"--betweenness"}, description = "", required = false, arity = 0)
+        public boolean betweenness;
 
         @Parameter(names = {"-o", "--output-file"}, description = "", required = false, arity = 1)
         public String outputFile;

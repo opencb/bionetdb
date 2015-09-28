@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.exceptions.NetworkDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
@@ -20,6 +21,7 @@ import sun.nio.ch.Net;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -178,7 +180,7 @@ public class Neo4JNetworkDBAdaptorTest {
         System.out.println("Data has been inserted in the database.");
 
         QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
-        System.out.println("Querying the database to retrieve the stats took " + (myResult.getDbTime()/1000.0) + " seconds");
+        System.out.println("Querying the database to retrieve the stats took " + (myResult.getDbTime() / 1000.0) + " seconds");
         ObjectMap myStats = (ObjectMap) myResult.getResult().get(0);
         for (String key : myStats.keySet()) {
             System.out.println(key + ": " + myStats.get(key));
@@ -191,14 +193,7 @@ public class Neo4JNetworkDBAdaptorTest {
 
     @Test
     public void testGet() throws Exception {
-
-        BioPaxParser bioPaxParser = new BioPaxParser("L3");
-        Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
-        Network network = bioPaxParser.parse(inputPath);
-        System.out.println("The file has been parsed.");
-
-        networkDBAdaptor.insert(network, null);
-        System.out.println("Data has been inserted in the database.");
+        loadTestData();
 
         // TESTING QUERIES
         Query myQueryObject = new Query();
@@ -213,5 +208,23 @@ public class Neo4JNetworkDBAdaptorTest {
         myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key(), 2);
         networkDBAdaptor.get(myQueryObject, null);
         System.out.println("The query took " + networkDBAdaptor.get(myQueryObject, null).getDbTime() + " seconds.");
+    }
+
+    @Test
+    public void testBetweenness() throws Exception {
+        loadTestData();
+        networkDBAdaptor.betweenness(new Query("id", "CMK1"));
+
+    }
+
+    private void loadTestData() throws URISyntaxException, IOException, NetworkDBException {
+        BioPaxParser bioPaxParser = new BioPaxParser("L3");
+        Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
+        Network network = bioPaxParser.parse(inputPath);
+        System.out.println("The file has been parsed.");
+
+        networkDBAdaptor.insert(network, null);
+        System.out.println("Data has been inserted in the database.");
+
     }
 }

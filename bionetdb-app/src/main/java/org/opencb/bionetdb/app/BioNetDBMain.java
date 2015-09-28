@@ -47,9 +47,9 @@ public class BioNetDBMain {
                     case "load":
                         commandExecutor = new LoadCommandExecutor(cliOptionsParser.getLoadCommandOptions());
                         break;
-//                    case "query":
-//                        commandExecutor = new QueryCommandExecutor(cliOptionsParser.getQueryCommandOptions());
-//                        break;
+                    case "query":
+                        commandExecutor = new QueryCommandExecutor(cliOptionsParser.getQueryCommandOptions());
+                        break;
                     case "annotation":
                         commandExecutor = new AnnotateCommandExecutor(cliOptionsParser.getVariantAnnotationCommandOptions());
                         break;

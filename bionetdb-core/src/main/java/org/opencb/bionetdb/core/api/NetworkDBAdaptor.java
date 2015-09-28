@@ -76,4 +76,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     QueryResult getSummaryStats(Query query, QueryOptions queryOptions);
 
+    QueryResult betweenness(Query query);
+
+    QueryResult clusteringCoefficient(Query query);
+
+
 }

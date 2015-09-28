@@ -37,17 +37,29 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     public Neo4JNetworkDBAdaptor(String database) {
+        this(database, false);
+    }
+
+    public Neo4JNetworkDBAdaptor(String database, boolean createIndex) {
         this.dbPath = database;
         this.openedDB = true;
         this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.dbPath).newGraphDatabase();
 
         // this must be last line, it needs 'database' to be created
-        createIndexes();
+        if (createIndex) {
+            createIndexes();
+        }
     }
 
     private void createIndexes() {
         try (Transaction tx = this.database.beginTx()) {
             Schema schema = this.database.schema();
+
+//            if (schema.getIndexes(...) ! = null) {
+//                tx.success();
+//                return;
+//            }
+
             schema.indexFor(DynamicLabel.label("PhysicalEntity"))
                     .on("id")
                     .create();
@@ -803,6 +815,39 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         int time = (int) (System.currentTimeMillis() - startTime);
 
         return new QueryResult<>("stats", time, 1, 1, null, null, Arrays.asList(myOutput));
+    }
+
+    @Override
+    public QueryResult betweenness(Query query) {
+        String id = query.getString("id");
+
+        String nodeLabel = query.getString("nodeLabel", "PhysicalEntity");
+        nodeLabel = nodeLabel.replace(",", "|");
+
+        String relationshipLabel = query.getString("relationshipLabel", "REACTANT");
+        relationshipLabel = relationshipLabel.replace(",", "|");
+
+        StringBuilder cypherQuery = new StringBuilder();
+        cypherQuery.append("MATCH p = allShortestPaths((source:"
+                + nodeLabel + ")-[r:" + relationshipLabel + "*]->(destination:" + nodeLabel + "))");
+        cypherQuery.append(" WHERE source <> destination AND LENGTH(NODES(p)) > 1");
+        cypherQuery.append(" WITH EXTRACT(n IN NODES(p)| n.name) AS nodes");
+        cypherQuery.append(" RETURN HEAD(nodes) AS source,");
+        cypherQuery.append(" HEAD(TAIL(TAIL(nodes))) AS destination,");
+        cypherQuery.append(" COLLECT(nodes) AS paths");
+
+        Result execute = this.database.execute(cypherQuery.toString());
+        while (execute.hasNext()) {
+            Map<String, Object> next = execute.next();
+            System.out.println(next.toString());
+        }
+
+        return null;
+    }
+
+    @Override
+    public QueryResult clusteringCoefficient(Query query) {
+        return null;
     }
 
     public boolean isClosed() {
