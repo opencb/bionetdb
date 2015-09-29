@@ -217,6 +217,13 @@ public class Neo4JNetworkDBAdaptorTest {
 
     }
 
+    @Test
+    public void testClusteringCoefficient() throws Exception {
+        loadTestData();
+        networkDBAdaptor.clusteringCoefficient(new Query("id", "PEP"));
+
+    }
+
     private void loadTestData() throws URISyntaxException, IOException, NetworkDBException {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
         Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());

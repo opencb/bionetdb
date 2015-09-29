@@ -148,6 +148,9 @@ public class CliOptionsParser {
         @Parameter(names = {"--betweenness"}, description = "", required = false, arity = 0)
         public boolean betweenness;
 
+        @Parameter(names = {"--clusteringCoeff"}, description = "", required = false, arity = 0)
+        public boolean clusteringCoeff;
+
         @Parameter(names = {"-o", "--output-file"}, description = "", required = false, arity = 1)
         public String outputFile;
 
