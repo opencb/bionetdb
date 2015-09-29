@@ -835,12 +835,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         cypherQuery.append(" RETURN HEAD(nodes) AS source,");
         cypherQuery.append(" HEAD(TAIL(TAIL(nodes))) AS destination,");
         cypherQuery.append(" COLLECT(nodes) AS paths");
-
+        /*
         Result execute = this.database.execute(cypherQuery.toString());
         while (execute.hasNext()) {
             Map<String, Object> next = execute.next();
             System.out.println(next.toString());
         }
+        */
 
         return null;
     }
