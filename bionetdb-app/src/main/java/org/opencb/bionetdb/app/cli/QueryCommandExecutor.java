@@ -30,6 +30,13 @@ public class QueryCommandExecutor extends CommandExecutor {
                 networkDBAdaptor.betweenness(query);
             }
 
+            if (queryCommandOptions.clusteringCoeff) {
+                Query query = new Query("id", queryCommandOptions.id);
+                query.put("nodeLabel", queryCommandOptions.nodeType);
+
+                networkDBAdaptor.clusteringCoefficient(query);
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }

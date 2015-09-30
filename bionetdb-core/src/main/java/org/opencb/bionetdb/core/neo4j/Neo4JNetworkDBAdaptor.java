@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.IndexManager;
@@ -12,6 +13,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
+import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -278,7 +280,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     addRelationship(n, ont, RelTypes.ONTOLOGY);
                 }
 
-                    /* Insert the cellular locations */
+                /* Insert the cellular locations */
                 for (CellularLocation c : p.getCellularLocation()) {
                     Node cel = getOrCreateCellularLocationNode(parseCellularLocation(c));
                     addRelationship(n, cel, RelTypes.CELLULARLOCATION);
@@ -835,18 +837,67 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         cypherQuery.append(" RETURN HEAD(nodes) AS source,");
         cypherQuery.append(" HEAD(TAIL(TAIL(nodes))) AS destination,");
         cypherQuery.append(" COLLECT(nodes) AS paths");
-
+        /*
         Result execute = this.database.execute(cypherQuery.toString());
         while (execute.hasNext()) {
             Map<String, Object> next = execute.next();
             System.out.println(next.toString());
         }
+        */
 
         return null;
     }
 
     @Override
     public QueryResult clusteringCoefficient(Query query) {
+        // The clustering coefficient of a node is defined as the probability that two randomly
+        // selected neighbors are connected to each other. With the number of neighbors as n and
+        // the number of mutual connections between the neighbors r the calculation is:
+        // clusteringCoefficient = r/NumberOfPossibleConnectionsBetweenTwoNeighbors. Where:
+        // NumberOfPossibleConnectionsBetweenTwoNeighbors: n!/(2!(n-2)!).
+
+        // TODO multiple ids
+        String id = query.getString("id");
+
+        StringBuilder cypherQuery = new StringBuilder();
+        cypherQuery.append("MATCH (a { name: \"" + id + "\" })--(:Interaction)--(b)");
+        cypherQuery.append(" WITH a, count(DISTINCT b) AS n");
+        cypherQuery.append(" MATCH (a)--(:Interaction)--(:PhysicalEntity)"
+                + "--(:Interaction)-[r]-(:PhysicalEntity)--(:Interaction)--(a)");
+        cypherQuery.append(" MATCH (a)-[:CELLULARLOCATION]-(c:CellularLocation)");
+        cypherQuery.append(" RETURN a.name, c.id, n, count(DISTINCT r) AS r");
+
+        Result execute = this.database.execute(cypherQuery.toString());
+
+        if (execute.hasNext()) {
+            String msg = "#ID\tLOCATION\tCLUSTERING_COEFFICIENT";
+            System.out.println(msg);
+            while (execute.hasNext()) {
+                Map<String, Object> result = execute.next();
+                Integer r = (int) (long) result.get("r");
+                Integer n = (int) (long) result.get("n");
+
+                // Computed value must fit into a double. The largest n for which n! < Double.MAX_VALUE is 170.
+                if (n > 170) {
+                    String msg2 = "\"" + result.get("a.name").toString() + "\"\t"
+                            + "\"" + result.get("c.id").toString() + "\"\t"
+                            + "\"NA\"";
+                    System.out.println(msg2);
+                } else if (n > 1) {
+                    double possibleConnexions = CombinatoricsUtils.factorialDouble(n)
+                            / (CombinatoricsUtils.factorialDouble(2) * (CombinatoricsUtils.factorialDouble(n - 2)));
+                    DecimalFormat df = new DecimalFormat("###.##");
+                    String msg3 = "\"" + result.get("a.name").toString() + "\"\t"
+                            + "\"" + result.get("c.id").toString() + "\"\t"
+                            + "\"" + df.format(r / possibleConnexions) + "\"";
+                    System.out.println(msg3);
+                } else {
+                    System.out.println(0.00);
+                }
+            }
+        } else {
+            System.out.println("Physical Entity not found");
+        }
         return null;
     }
 
