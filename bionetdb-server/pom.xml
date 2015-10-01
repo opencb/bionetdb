@@ -17,6 +17,20 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.opencb.bionetdb</groupId>
+            <artifactId>bionetdb-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.datastore</groupId>
+            <artifactId>datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.sbml.libsbml</groupId>
+            <artifactId>libsbml</artifactId>
+            <systemPath>${basedir}/../bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>
+        </dependency>
+
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
