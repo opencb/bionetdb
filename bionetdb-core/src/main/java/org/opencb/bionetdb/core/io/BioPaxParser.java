@@ -311,23 +311,21 @@ public class BioPaxParser {
         // name
         if (physicalEntityBP.getDisplayName() != null) {
             physicalEntity.setName(physicalEntityBP.getDisplayName());
+            physicalEntity.setXref(new org.opencb.bionetdb.core.models.Xref(REACTOME_FEAT + "biopax",
+                    "", physicalEntityBP.getDisplayName(), ""));
         }
 
         // altNames
         for (String name : physicalEntityBP.getName()) {
-            org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
-            xref.setSource(REACTOME_FEAT + "biopax");
-            xref.setId(name);
-            physicalEntity.setXref(xref);
+            physicalEntity.setXref(new org.opencb.bionetdb.core.models.Xref(REACTOME_FEAT + "biopax", "", name, ""));
         }
 
         // cellularLocation
         CellularLocation cellularLocation = new CellularLocation();
-        CellularLocationVocabulary cellularLocationVocabulary = physicalEntityBP.getCellularLocation();
-        for (String name : cellularLocationVocabulary.getTerm()) {
+        for (String name : physicalEntityBP.getCellularLocation().getTerm()) {
             cellularLocation.setName(name);
         }
-        for (Xref cellLocXref : cellularLocationVocabulary.getXref()) {
+        for (Xref cellLocXref : physicalEntityBP.getCellularLocation().getXref()) {
             Ontology ontology= new Ontology();
             if (cellLocXref.getDb().toLowerCase().equals("gene ontology")) {
                 ontology.setSource("go");
@@ -344,8 +342,7 @@ public class BioPaxParser {
 
         // source
         List<String> sources = new ArrayList<>();
-        Set<Provenance> provenances = physicalEntityBP.getDataSource();
-        for (Provenance provenance : provenances) {
+        for (Provenance provenance : physicalEntityBP.getDataSource()) {
             sources.addAll(provenance.getName());
         }
         physicalEntity.setSource(sources);
@@ -357,52 +354,37 @@ public class BioPaxParser {
         // http://www.biopax.org/m2site/paxtools-4.2.0/apidocs/org/biopax/paxtools/impl/level3/PhysicalEntityImpl.html
 
         // members
-        Set<PhysicalEntity> pes = physicalEntityBP.getMemberPhysicalEntity();
-        for (PhysicalEntity pe : pes) {
+        for (PhysicalEntity pe : physicalEntityBP.getMemberPhysicalEntity()) {
             physicalEntity.getMembers().add(pe.getRDFId().split("#")[1]);
         }
 
         // memberOfSet
-        Set<PhysicalEntity> pesOf = physicalEntityBP.getMemberPhysicalEntityOf();
-        for (PhysicalEntity peOf : pesOf) {
+        for (PhysicalEntity peOf : physicalEntityBP.getMemberPhysicalEntityOf()) {
             physicalEntity.getMemberOfSet().add(peOf.getRDFId().split("#")[1]);
         }
 
         // componentOfComplex
-        Set<Complex> complexes = physicalEntityBP.getComponentOf();
-        for (Complex complex : complexes) {
+        for (Complex complex : physicalEntityBP.getComponentOf()) {
             physicalEntity.getComponentOfComplex().add(complex.getRDFId().split("#")[1]);
         }
 
         // participantOfInteraction
-        Set<Interaction> interactions = physicalEntityBP.getParticipantOf();
-        for (Interaction interaction : interactions) {
+        for (Interaction interaction : physicalEntityBP.getParticipantOf()) {
             physicalEntity.getParticipantOfInteraction().add(interaction.getRDFId().split("#")[1]);
         }
 
+        // xrefs
         Set<Xref> xrefs = physicalEntityBP.getXref();
         for (Xref xref : xrefs) {
             if (xref.getDb() != null) {
                 String source = xref.getDb().toLowerCase();
                 if (source.equals("sbo") || source.equals("go") || source.equals("mi") || source.equals("ec")) {
-                    Ontology ontology = new Ontology();
-                    ontology.setSource(xref.getDb());
-                    ontology.setSourceVersion(xref.getDbVersion());
-                    ontology.setId(xref.getId());
-                    ontology.setIdVersion(xref.getIdVersion());
-                    physicalEntity.setOntology(ontology);
+                    physicalEntity.setOntology(new Ontology(xref.getDb(), xref.getDbVersion(), xref.getId(), xref.getIdVersion()));
                 } else if (source.equals("pubmed")) {
-                    Publication publication = new Publication();
-                    publication.setSource(xref.getDb());
-                    publication.setId(xref.getId());
-                    physicalEntity.setPublication(publication);
+                    physicalEntity.setPublication(new Publication(xref.getDb(), xref.getId()));
                 } else {
-                    org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                    x.setSource(xref.getDb());
-                    x.setSourceVersion(xref.getDbVersion());
-                    x.setId(xref.getId());
-                    x.setIdVersion(xref.getIdVersion());
-                    physicalEntity.setXref(x);
+                    physicalEntity.setXref(new org.opencb.bionetdb.core.models.Xref(xref.getDb(),
+                            xref.getDbVersion(), xref.getId(), xref.getIdVersion()));
                 }
             }
         }
@@ -427,7 +409,6 @@ public class BioPaxParser {
         }
 
         // = NONSPECIFIC PROPERTIES =
-
         // comment
         physicalEntity.getAttributes().put(REACTOME_FEAT + "comment",
                 physicalEntityBP.getComment());
@@ -657,7 +638,6 @@ public class BioPaxParser {
     private void setInteractionCommonProperties(Interaction interactionBP,
                                                 org.opencb.bionetdb.core.models.Interaction interaction) {
         // = SPECIFIC PROPERTIES =
-
         // id
         interaction.setId(interactionBP.getRDFId().split("#")[1]);
 
@@ -673,58 +653,44 @@ public class BioPaxParser {
         // name
         if (interactionBP.getDisplayName() != null) {
             interaction.setName(interactionBP.getDisplayName());
+            interaction.setXref(new org.opencb.bionetdb.core.models.Xref(REACTOME_FEAT + "biopax",
+                    "", interactionBP.getDisplayName(), ""));
         }
 
         // source
         List<String> sources = new ArrayList<>();
-        Set<Provenance> provenances = interactionBP.getDataSource();
-        for (Provenance provenance : provenances) {
+        for (Provenance provenance : interactionBP.getDataSource()) {
             sources.addAll(provenance.getName());
         }
         interaction.setSource(sources);
 
         // participants
-        Set<Entity> entities = interactionBP.getParticipant();
-        for (Entity entity : entities) {
+        for (Entity entity : interactionBP.getParticipant()) {
             interaction.getParticipants().add(entity.getRDFId().split("#")[1]);
         }
 
         // controlledBy
-        Set<Control> controls = interactionBP.getControlledOf();
-        for (Control control : controls) {
+        for (Control control : interactionBP.getControlledOf()) {
             interaction.getControlledBy().add(control.getRDFId().split("#")[1]);
         }
 
         // processOfPathway
-        Set<PathwayStep> pathwaySteps = interactionBP.getStepProcessOf();
-        for (PathwayStep pathwayStep : pathwaySteps) {
+        for (PathwayStep pathwayStep : interactionBP.getStepProcessOf()) {
             interaction.getProcessOfPathway().add(pathwayStep.getPathwayOrderOf().getRDFId().split("#")[1]);
         }
 
         // xref
-        Set<Xref> xrefs = interactionBP.getXref();
-        for (Xref xref : xrefs) {
+        for (Xref xref : interactionBP.getXref()) {
             if (xref.getDb() != null) {
                 String source = xref.getDb().toLowerCase();
                 if (source.equals("sbo") || source.equals("go") || source.equals("mi") || source.equals("ec")) {
-                    Ontology ontology = new Ontology();
-                    ontology.setSource(xref.getDb());
-                    ontology.setSourceVersion(xref.getDbVersion());
-                    ontology.setId(xref.getId());
-                    ontology.setIdVersion(xref.getIdVersion());
-                    interaction.setOntology(ontology);
+                    interaction.setOntology(new Ontology(xref.getDb(), xref.getDbVersion(),
+                            xref.getId(), xref.getIdVersion()));
                 } else if (source.equals("pubmed")) {
-                    Publication publication = new Publication();
-                    publication.setSource(xref.getDb());
-                    publication.setId(xref.getId());
-                    interaction.setPublication(publication);
+                    interaction.setPublication(new Publication(xref.getDb(), xref.getId()));
                 } else {
-                    org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                    x.setSource(xref.getDb());
-                    x.setSourceVersion(xref.getDbVersion());
-                    x.setId(xref.getId());
-                    x.setIdVersion(xref.getIdVersion());
-                    interaction.setXref(x);
+                    interaction.setXref(new org.opencb.bionetdb.core.models.Xref(xref.getDb(),
+                            xref.getDbVersion(), xref.getId(), xref.getIdVersion()));
                 }
             }
         }
@@ -749,7 +715,6 @@ public class BioPaxParser {
         }
 
         // = NONSPECIFIC PROPERTIES =
-
         // availability
         interaction.getAttributes().put(REACTOME_FEAT + "availability",
                 interactionBP.getAvailability());

@@ -364,8 +364,7 @@ public class PsiMiTabParser {
 
     @Deprecated
     private Reaction createReaction(BinaryInteraction binaryInteraction) {
-        Reaction reaction = new Reaction();
-        reaction.setReactionType(Reaction.ReactionType.REACTION);
+        Reaction reaction = new Reaction(Reaction.ReactionType.REACTION);
 
         // Common properties
         setInteractionCommonProperties(binaryInteraction, reaction);
@@ -390,8 +389,7 @@ public class PsiMiTabParser {
     }
 
     private Reaction createAssembly(BinaryInteraction binaryInteraction) {
-        Reaction assembly = new Reaction();
-        assembly.setReactionType(Reaction.ReactionType.ASSEMBLY);
+        Reaction assembly = new Reaction(Reaction.ReactionType.ASSEMBLY);
 
         // Common properties
         setInteractionCommonProperties(binaryInteraction, assembly);

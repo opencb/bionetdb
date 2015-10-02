@@ -856,11 +856,15 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // clusteringCoefficient = r/NumberOfPossibleConnectionsBetweenTwoNeighbors. Where:
         // NumberOfPossibleConnectionsBetweenTwoNeighbors: n!/(2!(n-2)!).
 
-        // TODO multiple ids
-        String id = query.getString("id");
+        long startTime = System.currentTimeMillis();
+
+        String ids = query.getString("id");
+        ids = ids.replace(",", "\",\"");
+        ids = ids.replace("|", "\",\"");
 
         StringBuilder cypherQuery = new StringBuilder();
-        cypherQuery.append("MATCH (a { name: \"" + id + "\" })--(:Interaction)--(b)");
+        cypherQuery.append("UNWIND[\"" + ids + "\"] AS i");
+        cypherQuery.append(" MATCH (x:Xref { id: i })--(a)--(:Interaction)--(b)");
         cypherQuery.append(" WITH a, count(DISTINCT b) AS n");
         cypherQuery.append(" MATCH (a)--(:Interaction)--(:PhysicalEntity)"
                 + "--(:Interaction)-[r]-(:PhysicalEntity)--(:Interaction)--(a)");
@@ -869,36 +873,34 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         Result execute = this.database.execute(cypherQuery.toString());
 
+        StringBuilder sb = new StringBuilder();
         if (execute.hasNext()) {
-            String msg = "#ID\tLOCATION\tCLUSTERING_COEFFICIENT";
-            System.out.println(msg);
+            sb.append("#ID\tLOCATION\tCLUSTERING_COEFFICIENT\n");
             while (execute.hasNext()) {
                 Map<String, Object> result = execute.next();
                 Integer r = (int) (long) result.get("r");
                 Integer n = (int) (long) result.get("n");
 
+                sb.append("\"" + result.get("a.name").toString() + "\"\t"
+                        + "\"" + result.get("c.id").toString() + "\"\t");
+
                 // Computed value must fit into a double. The largest n for which n! < Double.MAX_VALUE is 170.
                 if (n > 170) {
-                    String msg2 = "\"" + result.get("a.name").toString() + "\"\t"
-                            + "\"" + result.get("c.id").toString() + "\"\t"
-                            + "\"NA\"";
-                    System.out.println(msg2);
+                    sb.append("\"NA\"\n");
                 } else if (n > 1) {
                     double possibleConnexions = CombinatoricsUtils.factorialDouble(n)
                             / (CombinatoricsUtils.factorialDouble(2) * (CombinatoricsUtils.factorialDouble(n - 2)));
                     DecimalFormat df = new DecimalFormat("###.##");
-                    String msg3 = "\"" + result.get("a.name").toString() + "\"\t"
-                            + "\"" + result.get("c.id").toString() + "\"\t"
-                            + "\"" + df.format(r / possibleConnexions) + "\"";
-                    System.out.println(msg3);
+                    sb.append("\"" + df.format(r / possibleConnexions) + "\"\n");
                 } else {
-                    System.out.println(0.00);
+                    sb.append("\"0.00\"\n");
                 }
             }
-        } else {
-            System.out.println("Physical Entity not found");
         }
-        return null;
+
+        int time = (int) (System.currentTimeMillis() - startTime);
+
+        return new QueryResult<>("clustCoeff", time, 1, 1, null, null, Arrays.asList(sb.toString()));
     }
 
     public boolean isClosed() {

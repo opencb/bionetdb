@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.PsiMiTabParser;
 import org.opencb.bionetdb.core.io.SbmlParser;
+import org.opencb.bionetdb.core.io.SifParser;
 import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.utils.DotExporter;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.BufferedWriter;
@@ -39,11 +41,14 @@ public class BuildCommandExecutor extends CommandExecutor {
                 BioPaxParser bioPaxParser = new BioPaxParser("L3");
                 network = bioPaxParser.parse(inputPath);
             } else if (inputPath.getFileName().toString().endsWith("sbml") || inputPath.getFileName().toString().endsWith("sbml.gz")) {
-                    SbmlParser sbmlParser = new SbmlParser();
-                    network = sbmlParser.parse(inputPath);
+                SbmlParser sbmlParser = new SbmlParser();
+                network = sbmlParser.parse(inputPath);
+            } else if (inputPath.getFileName().toString().endsWith("sif") || inputPath.getFileName().toString().endsWith("sif.gz")) {
+                SifParser sifParser = new SifParser();
+                network = sifParser.parse(inputPath);
             } else if (inputPath.getFileName().toString().endsWith("txt") || inputPath.getFileName().toString().endsWith("txt.gz")) {
-                    PsiMiTabParser psiMiTabParser = new PsiMiTabParser();
-                    network = psiMiTabParser.parse(inputPath, "Homo sapiens");
+                PsiMiTabParser psiMiTabParser = new PsiMiTabParser();
+                network = psiMiTabParser.parse(inputPath, "Homo sapiens");
             }
 
             if (network != null) {

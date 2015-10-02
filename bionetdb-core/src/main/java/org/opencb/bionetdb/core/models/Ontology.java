@@ -21,7 +21,7 @@ public class Ontology {
     }
 
     public Ontology(String source, String sourceVersion, String id, String idVersion) {
-        this.source = source;
+        this.source = source.toLowerCase();
         this.sourceVersion = sourceVersion;
         this.id = id;
         this.idVersion = idVersion;
@@ -30,6 +30,10 @@ public class Ontology {
     private void init() {
         this.name = "";
         this.description = "";
+    }
+
+    public boolean isEqual(Ontology that) {
+        return this.getId().equals(that.getId()) && this.getSource().equals(that.getSource());
     }
 
     public String getSource() {

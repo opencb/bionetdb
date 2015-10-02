@@ -25,8 +25,12 @@ public class Publication {
     }
 
     public Publication(String source, String id) {
-        this.source = source;
+        this.source = source.toLowerCase();
         this.id = id;
+    }
+
+    public boolean isEqual(Publication that) {
+        return this.getId().equals(that.getId()) && this.getSource().equals(that.getSource());
     }
 
     public String getSource() {
