@@ -84,6 +84,42 @@ public class PhysicalEntity {
 
     }
 
+    public boolean isEqual(PhysicalEntity that) {
+        // sharing common xref
+        boolean xrefShared = false;
+        mainLoop:
+        for (Xref xrefThis : this.getXrefs()) {
+            for (Xref xrefThat : that.getXrefs()) {
+                if (xrefThis.getId().equals(xrefThat.getId())
+                        && xrefThis.getSource().equals(xrefThat.getSource())
+                        && xrefThis.getIdVersion().equals(xrefThat.getIdVersion())
+                        && xrefThis.getSourceVersion().equals(xrefThat.getSourceVersion())) {
+                    xrefShared = true;
+                    break mainLoop;
+                }
+            }
+        }
+        if (!xrefShared) {
+            return false;
+        }
+
+        // sharing common location
+        boolean clShared = false;
+        mainLoop:
+        for (CellularLocation clThis : this.getCellularLocation()) {
+            for (CellularLocation clThat : that.getCellularLocation()) {
+                if (clThis.getName().equals(clThat.getName())) {
+                    clShared = true;
+                    break mainLoop;
+                }
+            }
+        }
+        if (!clShared) {
+            return false;
+        }
+        return true;
+    }
+
     public String getId() {
         return id;
     }
