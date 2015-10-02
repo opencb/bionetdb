@@ -863,8 +863,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         ids = ids.replace("|", "\",\"");
 
         StringBuilder cypherQuery = new StringBuilder();
-        cypherQuery.append("UNWIND[\"" + ids + "\"] AS x");
-        cypherQuery.append(" MATCH (a { name: x })--(:Interaction)--(b)");
+        cypherQuery.append("UNWIND[\"" + ids + "\"] AS i");
+        cypherQuery.append(" MATCH (x:Xref { id: i })--(a)--(:Interaction)--(b)");
         cypherQuery.append(" WITH a, count(DISTINCT b) AS n");
         cypherQuery.append(" MATCH (a)--(:Interaction)--(:PhysicalEntity)"
                 + "--(:Interaction)-[r]-(:PhysicalEntity)--(:Interaction)--(a)");
