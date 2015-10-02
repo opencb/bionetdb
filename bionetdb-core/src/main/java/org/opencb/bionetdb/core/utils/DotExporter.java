@@ -70,7 +70,7 @@ public class DotExporter {
         // Creating and connecting Xrefs
         for (PhysicalEntity physicalEntity : network.getPhysicalEntities()) {
             for (Xref xref : physicalEntity.getXrefs()) {
-                String xrefName = xref.getSource() + ":" + xref.getId();
+                String xrefName = xref.getSource() + "_" + xref.getId();
                 dot.addNode(new Node(xrefName, new HashMap<>()));
                 dot.addEdge(new Edge(xrefName, physicalEntity.getId()));
             }
