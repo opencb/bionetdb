@@ -239,6 +239,7 @@ public class SbmlParser {
 
         // name
         physicalEntity.setName(species.getName());
+        physicalEntity.setXref(new Xref(REACTOME_FEAT + "sbml", "", species.getName(), ""));
 
         // cellular location
         physicalEntity.getCellularLocation()
@@ -345,7 +346,7 @@ public class SbmlParser {
                         if (componentId.contains("uniprot") || componentId.contains("interpro") || componentId.contains("pirsf")) {
                             Protein protein = new Protein(componentId, componentId, Collections.<String>emptyList());
                             protein.getComponentOfComplex().add(complex.getId());
-                                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
+                            Xref xref = new Xref(componentId.split(":")[0], "", componentId.split(":")[1], "");
                             protein.setXref(xref);
                             newPhysicalEntities.add(protein);
                         } else if (componentId.contains("kegg") || componentId.contains("chebi")) {
@@ -410,6 +411,7 @@ public class SbmlParser {
 
         // name
         reaction.setName(reactionSBML.getName());
+        reaction.setXref(new Xref(REACTOME_FEAT + "sbml", "", reactionSBML.getName(), ""));
 
         // xrefs
         XMLNode description = reactionSBML.getAnnotation().getChild("RDF").getChild("Description");

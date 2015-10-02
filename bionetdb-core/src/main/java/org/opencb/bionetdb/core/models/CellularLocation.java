@@ -40,11 +40,8 @@ public class CellularLocation {
     public void setOntology(Ontology ontology) {
         // Adding ontology unless it exists
         boolean duplicate = false;
-        for (Ontology currentOntology : this.getOntologies()) {
-            if (ontology.getSource().equals(currentOntology.getSource())
-                    && ontology.getSourceVersion().equals(currentOntology.getSourceVersion())
-                    && ontology.getId().equals(currentOntology.getId())
-                    && ontology.getIdVersion().equals(currentOntology.getIdVersion())) {
+        for (Ontology thisOntology : this.getOntologies()) {
+            if (thisOntology.isEqual(ontology)) {
                 duplicate = true;
                 break;
             }

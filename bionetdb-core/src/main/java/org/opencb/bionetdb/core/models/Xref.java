@@ -18,10 +18,14 @@ public class Xref {
     }
 
     public Xref(String source, String sourceVersion, String id, String idVersion) {
-        this.source = source;
+        this.source = source.toLowerCase();
         this.sourceVersion = sourceVersion;
         this.id = id;
         this.idVersion = idVersion;
+    }
+
+    public boolean isEqual(Xref that) {
+        return this.getId().equals(that.getId()) && this.getSource().equals(that.getSource());
     }
 
     public String getSource() {
