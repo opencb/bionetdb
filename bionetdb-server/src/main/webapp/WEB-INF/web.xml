@@ -29,11 +29,7 @@
             <param-name>jersey.config.server.provider.packages</param-name>
             <param-value>io.swagger.jaxrs.listing;org.opencb.bionetdb.server.ws;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json</param-value>
         </init-param>
-        <!--;io.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json;-->
-        <!--<init-param>-->
-            <!--<param-name>javax.ws.rs.Application</param-name>-->
-            <!--<param-value>org.opencb.cellbase.server.CellbaseServer</param-value>-->
-        <!--</init-param>-->
+
         <init-param>
             <param-name>CELLBASE_HOME</param-name>
             <param-value>/opt/bionetdb</param-value>
