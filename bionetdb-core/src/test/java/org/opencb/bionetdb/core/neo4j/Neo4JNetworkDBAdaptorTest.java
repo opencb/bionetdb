@@ -1,9 +1,6 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -220,8 +217,20 @@ public class Neo4JNetworkDBAdaptorTest {
     @Test
     public void testClusteringCoefficient() throws Exception {
         loadTestData();
-        networkDBAdaptor.clusteringCoefficient(new Query("id", "PEP"));
 
+        Assert.assertEquals("Different clustering coefficient for \"PEP\": \n",
+                "#ID\tLOCATION\tCLUSTERING_COEFFICIENT\n"
+                        + "\"PEP\"\t\"cytosol\"\t\"0.95\"\n",
+                networkDBAdaptor.clusteringCoefficient(new Query("id", "PEP")).getResult().get(0));
+
+        Assert.assertEquals("Different clustering coefficient for \"PEP,H2O\": \n",
+                "#ID\tLOCATION\tCLUSTERING_COEFFICIENT\n"
+                        + "\"PEP\"\t\"cytosol\"\t\"0.95\"\n"
+                        + "\"H2O\"\t\"mitochondrial matrix\"\t\"0.09\"\n"
+                        + "\"H2O\"\t\"cytosol\"\t\"NA\"\n"
+                        + "\"H2O\"\t\"peroxisomal matrix\"\t\"0.05\"\n"
+                        + "\"H2O\"\t\"endoplasmic reticulum lumen\"\t\"0.08\"\n",
+                networkDBAdaptor.clusteringCoefficient(new Query("id", "PEP,H2O")).getResult().get(0));
     }
 
     private void loadTestData() throws URISyntaxException, IOException, NetworkDBException {
