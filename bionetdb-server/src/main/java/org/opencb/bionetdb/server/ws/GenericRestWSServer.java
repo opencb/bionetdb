@@ -102,7 +102,7 @@ public class GenericRestWSServer {
     static {
         logger = LoggerFactory.getLogger("org.opencb.cellbase.server.ws.GenericRestWSServer");
         logger.info("Static block, creating Neo4JNetworkDBAdaptor");
-        networkDBAdaptor = new Neo4JNetworkDBAdaptor("");
+        networkDBAdaptor = new Neo4JNetworkDBAdaptor("/tmp/bbb");
 
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -142,13 +142,13 @@ public class GenericRestWSServer {
     }
 
     private void checkPathParams(boolean checkSpecies) throws VersionException, DatabaseException {
-        if (version == null) {
-            throw new VersionException("Version not valid: '" + version + "'");
-        }
-
-        if (checkSpecies && database == null) {
-            throw new DatabaseException("Species not valid: '" + database + "'");
-        }
+//        if (version == null) {
+//            throw new VersionException("Version not valid: '" + version + "'");
+//        }
+//
+//        if (checkSpecies && database == null) {
+//            throw new DatabaseException("Species not valid: '" + database + "'");
+//        }
 
         /**
          * Check version parameter, must be: v1, v2, ... If 'latest' then is
