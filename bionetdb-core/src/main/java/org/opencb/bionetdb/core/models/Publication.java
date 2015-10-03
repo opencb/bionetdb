@@ -16,17 +16,26 @@ public class Publication {
     private List<String> authors;
 
     public Publication() {
+        init();
+    }
+
+    public Publication(String source, String id) {
+        init();
+        if (source != null) {
+            this.source = source;
+        }
+        if (id != null) {
+            this.id = id;
+        }
+    }
+
+    private void init() {
         this.source = "";
         this.id = "";
         this.title = "";
         this.journal = "";
         this.year = -1;
         this.authors = new ArrayList<>();
-    }
-
-    public Publication(String source, String id) {
-        this.source = source.toLowerCase();
-        this.id = id;
     }
 
     public boolean isEqual(Publication that) {

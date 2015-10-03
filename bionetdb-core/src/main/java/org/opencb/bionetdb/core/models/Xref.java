@@ -11,17 +11,30 @@ public class Xref {
     private String idVersion;
 
     public Xref() {
+        init();
+    }
+
+    public Xref(String source, String sourceVersion, String id, String idVersion) {
+        init();
+        if (source != null) {
+            this.source = source.toLowerCase();
+        }
+        if (sourceVersion != null) {
+            this.sourceVersion = sourceVersion;
+        }
+        if (id != null) {
+            this.id = id;
+        }
+        if (idVersion != null) {
+            this.idVersion = idVersion;
+        }
+    }
+
+    private void init() {
         this.source = "";
         this.sourceVersion = "";
         this.id = "";
         this.idVersion = "";
-    }
-
-    public Xref(String source, String sourceVersion, String id, String idVersion) {
-        this.source = source.toLowerCase();
-        this.sourceVersion = sourceVersion;
-        this.id = id;
-        this.idVersion = idVersion;
     }
 
     public boolean isEqual(Xref that) {

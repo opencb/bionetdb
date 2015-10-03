@@ -13,21 +13,30 @@ public class Ontology {
     private String description;
 
     public Ontology() {
-        this.source = "";
-        this.sourceVersion = "";
-        this.id = "";
-        this.idVersion = "";
         init();
     }
 
     public Ontology(String source, String sourceVersion, String id, String idVersion) {
-        this.source = source.toLowerCase();
-        this.sourceVersion = sourceVersion;
-        this.id = id;
-        this.idVersion = idVersion;
+        init();
+        if (source != null) {
+            this.source = source.toLowerCase();
+        }
+        if (sourceVersion != null) {
+            this.sourceVersion = sourceVersion.toLowerCase();
+        }
+        if (id != null) {
+            this.id = id.toLowerCase();
+        }
+        if (idVersion != null) {
+            this.idVersion = idVersion.toLowerCase();
+        }
     }
 
     private void init() {
+        this.source = "";
+        this.sourceVersion = "";
+        this.id = "";
+        this.idVersion = "";
         this.name = "";
         this.description = "";
     }
