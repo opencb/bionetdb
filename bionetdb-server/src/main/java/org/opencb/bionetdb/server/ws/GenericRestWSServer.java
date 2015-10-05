@@ -9,6 +9,7 @@ import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
@@ -87,14 +88,14 @@ public class GenericRestWSServer {
      * will check parameters so to avoid extra operations this config can load
      * versions and database
      */
-//    protected static CellBaseConfiguration cellBaseConfiguration;
+    protected static BioNetDBConfiguration cellBaseConfiguration;
 
     /**
      * DBAdaptorFactory creation, this object can be initialize with an
      * HibernateDBAdaptorFactory or an HBaseDBAdaptorFactory. This object is a
      * factory for creating adaptors like GeneDBAdaptor
      */
-    protected  static NetworkDBAdaptor networkDBAdaptor;
+    protected static NetworkDBAdaptor networkDBAdaptor;
 
     private static final int LIMIT_DEFAULT = 1000;
     private static final int LIMIT_MAX = 5000;

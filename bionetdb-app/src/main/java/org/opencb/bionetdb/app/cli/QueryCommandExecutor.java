@@ -21,7 +21,7 @@ public class QueryCommandExecutor extends CommandExecutor {
     public void execute() {
 
         try {
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(queryCommandOptions.database);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(queryCommandOptions.database, configuration);
 
             if (queryCommandOptions.betweenness) {
                 Query query = new Query("id", queryCommandOptions.id);

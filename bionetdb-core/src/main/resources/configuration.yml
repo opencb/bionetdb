@@ -1,12 +1,19 @@
 ---
-defaultDatabase: "testDB"
+defaultDatabase: "test1"
 logLevel: null
 logFile: null
 databases:
-- id: "testDB"
+- id: "test1"
   host: null
   port: 0
   user: null
   password: null
-  path: null
+  path: "/tmp/bionetdb-test1"
+  options: null
+- id: "test2"
+  host: null
+  port: 0
+  user: null
+  password: null
+  path: "/tmp/bionetdb-test2"
   options: null

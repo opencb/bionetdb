@@ -32,7 +32,7 @@ public class LoadCommandExecutor extends CommandExecutor {
             BioPaxParser bioPaxParser = new BioPaxParser("L3");
             Network network = bioPaxParser.parse(inputPath);
 
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(loadCommandOptions.database);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(loadCommandOptions.database, configuration);
 
             networkDBAdaptor.insert(network, null);
 

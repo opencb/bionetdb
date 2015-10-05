@@ -6,6 +6,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.NetworkDBException;
 import org.opencb.bionetdb.core.models.*;
 import org.opencb.datastore.core.ObjectMap;
@@ -21,9 +23,11 @@ import java.util.*;
  */
 public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
-    private String dbPath;
+    private String databasePath;
     private GraphDatabaseService database;
     private boolean openedDB = false;
+
+    private BioNetDBConfiguration configuration;
 
     private enum RelTypes implements RelationshipType {
         REACTANT,
@@ -39,13 +43,25 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     public Neo4JNetworkDBAdaptor(String database) {
-        this(database, false);
+        this(database, null, false);
     }
 
-    public Neo4JNetworkDBAdaptor(String database, boolean createIndex) {
-        this.dbPath = database;
+    public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) {
+        this(database, configuration, false);
+    }
+
+    public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration, boolean createIndex) {
+        DatabaseConfiguration databaseConfiguration;
+        if (database != null && !database.isEmpty()) {
+            databaseConfiguration = configuration.findDatabase(database);
+        } else {
+            databaseConfiguration = configuration.findDatabase();
+        }
+
+        this.databasePath = databaseConfiguration.getPath();
+        this.configuration = configuration;
         this.openedDB = true;
-        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.dbPath).newGraphDatabase();
+        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.databasePath).newGraphDatabase();
 
         // this must be last line, it needs 'database' to be created
         if (createIndex) {

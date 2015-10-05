@@ -17,14 +17,17 @@
 package org.opencb.bionetdb.app.cli;
 
 import org.apache.commons.lang.StringUtils;
+import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +40,7 @@ public abstract class CommandExecutor {
     protected String configFile;
 
     protected String appHome;
-//    protected CellBaseConfiguration configuration;
+    protected BioNetDBConfiguration configuration;
 
     protected Logger logger;
 
@@ -94,21 +97,21 @@ public abstract class CommandExecutor {
      * @throws URISyntaxException
      * @throws IOException
      */
-//    public void loadCellBaseConfiguration() throws URISyntaxException, IOException {
-//        if(this.configFile != null) {
-//            logger.debug("Loading configuration from '{}'", this.configFile);
-//            this.configuration = CellBaseConfiguration.load(new FileInputStream(new File(this.configFile)));
-//        }else {
-//            if(Files.exists(Paths.get(this.appHome+"/configuration.json"))) {
-//                logger.debug("Loading configuration from '{}'", this.appHome+"/configuration.json");
-//                this.configuration = CellBaseConfiguration.load(new FileInputStream(new File(this.appHome+"/configuration.json")));
-//            }else {
-//                logger.debug("Loading configuration from '{}'",
-//                        CellBaseConfiguration.class.getClassLoader().getResourceAsStream("configuration.json").toString());
-//                this.configuration = CellBaseConfiguration.load(CellBaseConfiguration.class.getClassLoader().getResourceAsStream("configuration.json"));
-//            }
-//        }
-//    }
+    public void loadBioNetDBConfiguration() throws URISyntaxException, IOException {
+        if(this.configFile != null) {
+            logger.debug("Loading configuration from '{}'", this.configFile);
+            this.configuration = BioNetDBConfiguration.load(new FileInputStream(new File(this.configFile)));
+        }else {
+            if(Files.exists(Paths.get(this.appHome + "/configuration.yml"))) {
+                logger.debug("Loading configuration from '{}'", this.appHome+"/configuration.yml");
+                this.configuration = BioNetDBConfiguration.load(new FileInputStream(new File(this.appHome+"/configuration.yml")));
+            }else {
+                logger.debug("Loading configuration from '{}'",
+                        BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.json").toString());
+                this.configuration = BioNetDBConfiguration.load(BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+            }
+        }
+    }
 
 
     protected void makeDir(Path folderPath) throws IOException {

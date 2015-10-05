@@ -3,6 +3,9 @@ package org.opencb.bionetdb.app;
 import com.beust.jcommander.ParameterException;
 import org.opencb.bionetdb.app.cli.*;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 /**
  * Created by imedina on 05/08/15.
  */
@@ -62,14 +65,13 @@ public class BioNetDBMain {
             }
 
             if (commandExecutor != null) {
-                commandExecutor.execute();
-//                try {
-//                    commandExecutor.loadCellBaseConfiguration();
-//                    commandExecutor.execute();
-//                } catch (IOException | URISyntaxException e) {
-//                    commandExecutor.getLogger().error("Error reading CellBase configuration: " + e.getMessage());
-//                    System.exit(1);
-//                }
+                try {
+                    commandExecutor.loadBioNetDBConfiguration();
+                    commandExecutor.execute();
+                } catch (IOException | URISyntaxException e) {
+                    commandExecutor.getLogger().error("Error reading CellBase configuration: " + e.getMessage());
+                    System.exit(1);
+                }
             }
         }
     }

@@ -118,7 +118,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "Input directory with the JSON data models to be loaded", required = true, arity = 1)
         public String input;
 
-        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = true, arity = 1)
+        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)
         public String database;
 
         @Parameter(names = {"-l", "--loader"}, description = "Database specific data loader to be used", required = false, arity = 1)
@@ -142,7 +142,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--node-type"}, description = "By pathway ID", required = false, arity = 1)
         public String nodeType = "PhysicalEntity";
 
-        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = true, arity = 1)
+        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)
         public String database;
 
         @Parameter(names = {"--betweenness"}, description = "", required = false, arity = 0)
@@ -170,7 +170,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-o", "--output-file"}, description = "Output file with the annotations", required = false, arity = 1)
         public String output;
 
-        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = true, arity = 1)
+        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)
         public String database;
 
         @Parameter(names = {"-s", "--species"}, description = "Name of the species to be downloaded, valid format include 'Homo sapiens' or 'hsapiens'", required = true, arity = 1)
@@ -199,7 +199,7 @@ public class CliOptionsParser {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--database"}, description = "Path to the database", required = true, arity = 1)
+        @Parameter(names = {"--database"}, description = "Path to the database", required = false, arity = 1)
         public String database;
 
         @Parameter(names = {"--metadata"}, description = "File containing metadata information of the expression data", required = false, arity = 1)
