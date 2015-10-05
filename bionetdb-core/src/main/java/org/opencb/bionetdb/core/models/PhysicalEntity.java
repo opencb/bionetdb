@@ -29,12 +29,12 @@ public class PhysicalEntity {
     protected Display display;
 
     public enum Type {
-        UNDEFINED     ("undefined"),
-        PROTEIN       ("protein"),
-        DNA           ("dna"),
-        RNA           ("rna"),
-        COMPLEX       ("complex"),
-        SMALLMOLECULE ("smallMolecule");
+        UNDEFINED      ("undefined"),
+        PROTEIN        ("protein"),
+        DNA            ("dna"),
+        RNA            ("rna"),
+        COMPLEX        ("complex"),
+        SMALL_MOLECULE ("smallMolecule");
 
         private final String type;
 

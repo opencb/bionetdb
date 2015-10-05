@@ -10,12 +10,12 @@ import java.util.List;
 public class SmallMolecule extends PhysicalEntity {
 
     public SmallMolecule() {
-        super("", "", new ArrayList<>(), Type.SMALLMOLECULE);
+        super("", "", new ArrayList<>(), Type.SMALL_MOLECULE);
         init();
     }
 
     public SmallMolecule(String id, String name, List<String> description) {
-        super(id, name, description, Type.SMALLMOLECULE);
+        super(id, name, description, Type.SMALL_MOLECULE);
         init();
     }
 

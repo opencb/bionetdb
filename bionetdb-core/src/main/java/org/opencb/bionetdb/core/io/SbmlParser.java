@@ -114,7 +114,7 @@ public class SbmlParser {
             case COMPLEX:
                 physicalEntity = createComplex(species);
                 break;
-            case SMALLMOLECULE:
+            case SMALL_MOLECULE:
                 physicalEntity = createSmallMolecule(species);
                 break;
             default:
@@ -139,7 +139,7 @@ public class SbmlParser {
             if (res.contains("uniprot") || res.contains("interpro") || res.contains("pirsf")) {
                 type = PhysicalEntity.Type.PROTEIN;
             } else if (res.contains("kegg") || res.contains("chebi")) {
-                type = PhysicalEntity.Type.SMALLMOLECULE;
+                type = PhysicalEntity.Type.SMALL_MOLECULE;
             } else if (res.contains("ensg")) {
                 type = PhysicalEntity.Type.DNA;
             } else if (res.contains("enst")) {

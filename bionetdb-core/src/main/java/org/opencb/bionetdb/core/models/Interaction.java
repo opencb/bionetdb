@@ -23,9 +23,9 @@ public class Interaction {
     protected Map<String, Object> attributes;
 
     public enum Type {
-        REACTION    ("reaction"),
-        CATALYSIS   ("catalysis"),
-        REGULATION  ("regulation"),
+        REACTION       ("reaction"),
+        CATALYSIS      ("catalysis"),
+        REGULATION     ("regulation"),
         COLOCALIZATION ("colocalization");
 
         private final String type;

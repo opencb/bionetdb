@@ -685,7 +685,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             case RNA:
                 p = new Rna();
                 break;
-            case SMALLMOLECULE:
+            case SMALL_MOLECULE:
                 p = new SmallMolecule();
                 break;
             default:
@@ -761,7 +761,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         myResult.put("complex", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
                 + PhysicalEntity.Type.COMPLEX + "\"}) return count(n)").columnAs("count(n)").next().toString()));
         myResult.put("small_molecule", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
-                + PhysicalEntity.Type.SMALLMOLECULE + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+                + PhysicalEntity.Type.SMALL_MOLECULE + "\"}) return count(n)").columnAs("count(n)").next().toString()));
         int total = 0;
         for (String key : myResult.keySet()) {
             total += (int) myResult.get(key);

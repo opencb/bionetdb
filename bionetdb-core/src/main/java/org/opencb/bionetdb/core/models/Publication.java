@@ -52,7 +52,6 @@ public class Publication {
         }
     }
 
-
     public String getId() {
         return id;
     }
