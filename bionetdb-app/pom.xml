@@ -134,6 +134,7 @@
                                     <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${app.dir}/examples"/>
+                                    <arg value="${project.basedir}/../bionetdb-core/target/classes/configuration.yml"/>
                                     <arg value="${project.basedir}/../bionetdb-server/target/bionetdb.war"/>
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>

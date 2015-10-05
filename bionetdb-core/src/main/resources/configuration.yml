@@ -1,0 +1,12 @@
+---
+defaultDatabase: "testDB"
+logLevel: null
+logFile: null
+databases:
+- id: "testDB"
+  host: null
+  port: 0
+  user: null
+  password: null
+  path: null
+  options: null
