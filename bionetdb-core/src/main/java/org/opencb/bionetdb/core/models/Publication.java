@@ -22,7 +22,7 @@ public class Publication {
     public Publication(String source, String id) {
         init();
         if (source != null) {
-            this.source = source;
+            this.source = source.toLowerCase();
         }
         if (id != null) {
             this.id = id;

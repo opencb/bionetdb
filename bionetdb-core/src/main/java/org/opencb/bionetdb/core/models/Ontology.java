@@ -22,13 +22,13 @@ public class Ontology {
             this.source = source.toLowerCase();
         }
         if (sourceVersion != null) {
-            this.sourceVersion = sourceVersion.toLowerCase();
+            this.sourceVersion = sourceVersion;
         }
         if (id != null) {
-            this.id = id.toLowerCase();
+            this.id = id;
         }
         if (idVersion != null) {
-            this.idVersion = idVersion.toLowerCase();
+            this.idVersion = idVersion;
         }
     }
 
