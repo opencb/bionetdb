@@ -1,7 +1,7 @@
 package org.opencb.bionetdb.core.neo4j;
 
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.exceptions.NetworkDBException;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 
@@ -15,7 +15,7 @@ public class Neo4JQueryParser {
 
     //public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
-    public static String parse(Query query, QueryOptions options) throws NetworkDBException {
+    public static String parse(Query query, QueryOptions options) throws BioNetDBException {
 /*
         final String AND = ";";
         final String OR = ",";
@@ -138,7 +138,7 @@ public class Neo4JQueryParser {
         }
 
         if (myWhereClauses.size() == 0) {
-            throw new NetworkDBException("Incomplete query. A match clause must always be followed by a where clause.");
+            throw new BioNetDBException("Incomplete query. A match clause must always be followed by a where clause.");
         }
 
         cypherQuery.append(" WHERE ");

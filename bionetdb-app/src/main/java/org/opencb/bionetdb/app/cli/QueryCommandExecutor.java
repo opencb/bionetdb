@@ -3,6 +3,7 @@ package org.opencb.bionetdb.app.cli;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.datastore.core.Query;
+import org.opencb.datastore.core.QueryResult;
 
 /**
  * Created by imedina on 28/09/15.
@@ -34,7 +35,8 @@ public class QueryCommandExecutor extends CommandExecutor {
                 Query query = new Query("id", queryCommandOptions.id);
                 query.put("nodeLabel", queryCommandOptions.nodeType);
 
-                networkDBAdaptor.clusteringCoefficient(query);
+                QueryResult queryResult = networkDBAdaptor.clusteringCoefficient(query);
+                System.out.println("queryResult = " + queryResult);
             }
 
         } catch (Exception e) {

@@ -17,7 +17,7 @@ public class AnnotateCommandExecutor extends CommandExecutor {
     public void execute() {
 /*
         try {
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(annotateCommandOptions.database);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(annotateCommandOptions.database, configuration);
 
             // Parse input file...
 

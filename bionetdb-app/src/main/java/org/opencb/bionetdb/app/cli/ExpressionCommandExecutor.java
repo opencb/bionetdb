@@ -1,9 +1,9 @@
 package org.opencb.bionetdb.app.cli;
 
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
-import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.QueryOptions;
@@ -28,13 +28,13 @@ public class ExpressionCommandExecutor extends CommandExecutor {
     }
 
     @Override
-    public void execute() {
+    public void execute() throws BioNetDBException {
         // TODO: Contemplate import of just one expression file, in which case, the metadata file won't be necessary.
         try {
             Path metadata = Paths.get(expressionCommandOptions.metadata);
             FileUtils.checkFile(metadata);
             ExpressionParser expressionParser = new ExpressionParser(metadata);
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(expressionCommandOptions.database);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(expressionCommandOptions.database, configuration);
 
             QueryOptions options = new QueryOptions();
             options.put("addNodes", this.expressionCommandOptions.add);

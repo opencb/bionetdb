@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.api;
 
-import org.opencb.bionetdb.core.exceptions.NetworkDBException;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Xref;
@@ -53,9 +53,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     }
 
 
-    void insert(Network network, QueryOptions queryOptions) throws NetworkDBException;
+    void insert(Network network, QueryOptions queryOptions) throws BioNetDBException;
 
-    void addXrefs(String nodeID, List<Xref> xrefList) throws NetworkDBException;
+    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
 
     /**
      *
@@ -69,7 +69,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //TODO: To remove
     //public QueryResult getXrefs(String idNode);
 
-    QueryResult get(Query query, QueryOptions queryOptions) throws NetworkDBException;
+    QueryResult get(Query query, QueryOptions queryOptions) throws BioNetDBException;
 
     QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions);
 

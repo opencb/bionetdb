@@ -4,7 +4,8 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.exceptions.NetworkDBException;
+import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
@@ -14,7 +15,6 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import sun.nio.ch.Net;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +33,7 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
  */
 public class Neo4JNetworkDBAdaptorTest {
 
-    String database = "/tmp/neodb";
+    String database = "test1";
     NetworkDBAdaptor networkDBAdaptor = null;
 
     @Rule
@@ -43,17 +43,24 @@ public class Neo4JNetworkDBAdaptorTest {
     public void initialize () {
         // Remove existing database
         try {
-            deleteRecursively( new File( database) );
+            deleteRecursively(new File(database));
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
         // Create again the path to the database
         new File(database).mkdirs();
-        networkDBAdaptor = new Neo4JNetworkDBAdaptor(database);
+        try {
+            BioNetDBConfiguration bioNetDBConfiguration = BioNetDBConfiguration.load(getClass().getResourceAsStream("/configuration.yml"));
+            networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration);
+        } catch (BioNetDBException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @After
-    public void close () throws Exception {
+    public void close() throws Exception {
         networkDBAdaptor.close();
     }
 
@@ -233,7 +240,7 @@ public class Neo4JNetworkDBAdaptorTest {
                 networkDBAdaptor.clusteringCoefficient(new Query("id", "PEP,H2O")).getResult().get(0));
     }
 
-    private void loadTestData() throws URISyntaxException, IOException, NetworkDBException {
+    private void loadTestData() throws URISyntaxException, IOException, BioNetDBException {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
         Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
         Network network = bioPaxParser.parse(inputPath);

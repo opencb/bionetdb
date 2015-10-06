@@ -2,6 +2,7 @@ package org.opencb.bionetdb.app;
 
 import com.beust.jcommander.ParameterException;
 import org.opencb.bionetdb.app.cli.*;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -70,6 +71,9 @@ public class BioNetDBMain {
                     commandExecutor.execute();
                 } catch (IOException | URISyntaxException e) {
                     commandExecutor.getLogger().error("Error reading CellBase configuration: " + e.getMessage());
+                    System.exit(1);
+                } catch (BioNetDBException e) {
+                    e.printStackTrace();
                     System.exit(1);
                 }
             }

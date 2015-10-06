@@ -20,7 +20,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
 
-    <display-name>CellBase Server</display-name>
+    <display-name>BioNetDB Server</display-name>
 
     <servlet>
         <servlet-name>BioNetDBServer</servlet-name>
@@ -31,8 +31,8 @@
         </init-param>
 
         <init-param>
-            <param-name>CELLBASE_HOME</param-name>
-            <param-value>/opt/bionetdb</param-value>
+            <param-name>BIONETDB_HOME</param-name>
+            <param-value>~/appl/bionetdb/build</param-value>
         </init-param>
 
         <load-on-startup>1</load-on-startup>

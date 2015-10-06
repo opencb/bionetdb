@@ -18,6 +18,7 @@ package org.opencb.bionetdb.app.cli;
 
 import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,7 @@ public abstract class CommandExecutor {
         }
     }
 
-    public abstract void execute();
+    public abstract void execute() throws BioNetDBException;
 
     public String getLogLevel() {
         return logLevel;

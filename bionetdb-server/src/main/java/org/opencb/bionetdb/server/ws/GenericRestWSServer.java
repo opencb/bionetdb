@@ -10,7 +10,6 @@ import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.datastore.core.ObjectMap;
@@ -23,13 +22,17 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
 
 /**
  * Created by imedina on 01/10/15.
  */
-@Path("/{version}/{species}")
-@Produces("text/plain")
+@Path("/{version}/{database}")
+@Produces("application/json")
 public class GenericRestWSServer {
 
     @DefaultValue("")
@@ -38,7 +41,7 @@ public class GenericRestWSServer {
     protected String version;
 
     @DefaultValue("")
-    @PathParam("species")
+    @PathParam("database")
     @ApiParam(name = "database", value = "Name of the database to query")
     protected String database;
 
@@ -88,7 +91,7 @@ public class GenericRestWSServer {
      * will check parameters so to avoid extra operations this config can load
      * versions and database
      */
-    protected static BioNetDBConfiguration cellBaseConfiguration;
+    protected static BioNetDBConfiguration bioNetDBConfiguration;
 
     /**
      * DBAdaptorFactory creation, this object can be initialize with an
@@ -103,11 +106,31 @@ public class GenericRestWSServer {
     static {
         logger = LoggerFactory.getLogger("org.opencb.cellbase.server.ws.GenericRestWSServer");
         logger.info("Static block, creating Neo4JNetworkDBAdaptor");
-        networkDBAdaptor = new Neo4JNetworkDBAdaptor("/tmp/bbb");
+        try {
+            if (System.getenv("BIONETDB_HOME") != null) {
+                logger.info("Loading configuration from '{}'", System.getenv("cellBaseConfiguration") + "/configuration.yml");
+                bioNetDBConfiguration = BioNetDBConfiguration
+                        .load(new FileInputStream(new File(System.getenv("cellBaseConfiguration") + "/configuration.yml")));
+            } else {
+                logger.info("Loading configuration from '{}'",
+                        BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml").toString());
+                bioNetDBConfiguration = BioNetDBConfiguration
+                        .load(BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+            }
+
+//            networkDBAdaptor = new Neo4JNetworkDBAdaptor("test1", bioNetDBConfiguration);
+//        } catch (BioNetDBException e) {
+//            e.printStackTrace();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         jsonObjectWriter = jsonObjectMapper.writer();
+        logger.info("End of Static block");
     }
 
 
@@ -156,12 +179,12 @@ public class GenericRestWSServer {
          * converted to appropriate version
          */
         if (version.equalsIgnoreCase("latest")) {
-//            version = cellBaseConfiguration.getVersion();
+//            version = bioNetDBConfiguration.getVersion();
             logger.info("Version 'latest' detected, setting version parameter to '{}'", version);
         }
 
-//        if (!cellBaseConfiguration.getVersion().equalsIgnoreCase(this.version)) {
-//            logger.error("Version '{}' does not match configuration '{}'", this.version, cellBaseConfiguration.getVersion());
+//        if (!bioNetDBConfiguration.getVersion().equalsIgnoreCase(this.version)) {
+//            logger.error("Version '{}' does not match configuration '{}'", this.version, bioNetDBConfiguration.getVersion());
 //            throw new VersionException("Version not valid: '" + version + "'");
 //        }
     }

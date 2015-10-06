@@ -8,7 +8,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
-import org.opencb.bionetdb.core.exceptions.NetworkDBException;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.*;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
@@ -42,15 +42,39 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         CEL_ONTOLOGY
     }
 
-    public Neo4JNetworkDBAdaptor(String database) {
-        this(database, null, false);
-    }
-
-    public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) {
+    public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
         this(database, configuration, false);
     }
 
-    public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration, boolean createIndex) {
+    public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration, boolean createIndex) throws BioNetDBException {
+        this.configuration = configuration;
+
+        DatabaseConfiguration databaseConfiguration = getDatabaseConfiguration(database);
+
+        if (databaseConfiguration == null) {
+            throw new BioNetDBException("No database found for database: '" + database + "'");
+        }
+        this.databasePath = databaseConfiguration.getPath();
+        this.openedDB = true;
+        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.databasePath).newGraphDatabase();
+        registerShutdownHook(this.database);
+
+        // this must be last line, it needs 'database' to be created
+        if (createIndex) {
+            createIndexes();
+        }
+    }
+    private static void registerShutdownHook(final GraphDatabaseService database) {
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                database.shutdown();
+            }
+        });
+    }
+
+    private DatabaseConfiguration getDatabaseConfiguration(String database) {
         DatabaseConfiguration databaseConfiguration;
         if (database != null && !database.isEmpty()) {
             databaseConfiguration = configuration.findDatabase(database);
@@ -58,15 +82,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             databaseConfiguration = configuration.findDatabase();
         }
 
-        this.databasePath = databaseConfiguration.getPath();
-        this.configuration = configuration;
-        this.openedDB = true;
-        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.databasePath).newGraphDatabase();
-
-        // this must be last line, it needs 'database' to be created
-        if (createIndex) {
-            createIndexes();
-        }
+        return databaseConfiguration;
     }
 
     private void createIndexes() {
@@ -114,7 +130,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param queryOptions Optional params
      */
     @Override
-    public void insert(Network network, QueryOptions queryOptions) throws NetworkDBException {
+    public void insert(Network network, QueryOptions queryOptions) throws BioNetDBException {
         this.insertPhysicalEntities(network.getPhysicalEntities(), queryOptions);
         this.insertInteractions(network.getInteractions(), queryOptions);
     }
@@ -126,7 +142,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param xrefList List containing all the Xref annotations to be added in the database
      */
     @Override
-    public void addXrefs(String nodeID, List<Xref> xrefList) throws NetworkDBException {
+    public void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException {
         try (Transaction tx = this.database.beginTx()) {
             Node xrefNode = getNode("Xref", new ObjectMap("id", nodeID));
             if (xrefNode != null) {
@@ -138,7 +154,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     }
                 }
             } else {
-                throw new NetworkDBException("The node to be annotated does not exist in the database.");
+                throw new BioNetDBException("The node to be annotated does not exist in the database.");
             }
             tx.success();
         }
@@ -284,7 +300,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param physicalEntityList List containing all the physical entities to be inserted in the database
      * @param queryOptions
      */
-    private void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) throws NetworkDBException {
+    private void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) throws BioNetDBException {
         try (Transaction tx = this.database.beginTx()) {
             // 1. Insert the Physical Entities and the basic nodes they are connected to
             for (PhysicalEntity p : physicalEntityList) {
@@ -321,19 +337,19 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 if (p.getComponentOfComplex().size() > 0) {
                     Node peNode = getNode("PhysicalEntity", new ObjectMap("id", p.getId()));
                     if (peNode == null) {
-                        throw new NetworkDBException("Physical entities are not properly inserted in the database. "
+                        throw new BioNetDBException("Physical entities are not properly inserted in the database. "
                                 + "Cannot find a physical entity that is supposed to exist.");
                     }
                     for (String complexID : p.getComponentOfComplex()) {
                         Node complexNode = getNode("PhysicalEntity", new ObjectMap("id", complexID));
                         if (complexNode == null) {
-                            throw new NetworkDBException("Complex: Physical entities are not properly inserted in "
+                            throw new BioNetDBException("Complex: Physical entities are not properly inserted in "
                                     + "the database. Cannot find a physical entity that is supposed to exist.");
                         }
                         if (complexNode.getProperty("type").equals(PhysicalEntity.Type.COMPLEX.toString())) {
                             addRelationship(peNode, complexNode, RelTypes.COMPONENTOFCOMPLEX);
                         } else {
-                            throw new NetworkDBException("The relationship 'Component of complex' cannot be created "
+                            throw new BioNetDBException("The relationship 'Component of complex' cannot be created "
                                     + "because the destiny node is not of type complex. Check Physical Entity "
                                     + complexID);
                         }
@@ -630,9 +646,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      *
      * @param node
      * @return
-     * @throws NetworkDBException
+     * @throws BioNetDBException
      */
-    private Ontology node2Ontology(Node node) throws NetworkDBException {
+    private Ontology node2Ontology(Node node) throws BioNetDBException {
         Ontology myOntology = new Ontology();
         if (node.hasProperty("source")) {
             myOntology.setSource((String) node.getProperty("source"));
@@ -660,9 +676,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      *
      * @param node
      * @return
-     * @throws NetworkDBException
+     * @throws BioNetDBException
      */
-    private CellularLocation node2CellularLocation(Node node) throws NetworkDBException {
+    private CellularLocation node2CellularLocation(Node node) throws BioNetDBException {
         CellularLocation myCellularLocation = new CellularLocation();
         if (node.hasProperty("id")) {
             myCellularLocation.setName((String) node.getProperty("id"));
@@ -683,7 +699,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param node
      * @return PhysicalEntity object
      */
-    private PhysicalEntity node2PhysicalEntity(Node node) throws NetworkDBException {
+    private PhysicalEntity node2PhysicalEntity(Node node) throws BioNetDBException {
         PhysicalEntity p = null;
         switch ((PhysicalEntity.Type) node.getProperty("type")) {
             case COMPLEX:
@@ -708,7 +724,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 break;
         }
         if (p == null) {
-            throw new NetworkDBException("The node intended to be parsed to a Physical Entity seems not to be a proper"
+            throw new BioNetDBException("The node intended to be parsed to a Physical Entity seems not to be a proper"
                     + "Physical Entity node");
         } else {
             p.setId((String) node.getProperty("id"));
@@ -739,7 +755,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public QueryResult get(Query query, QueryOptions queryOptions) throws NetworkDBException {
+    public QueryResult get(Query query, QueryOptions queryOptions) throws BioNetDBException {
         long startTime = System.currentTimeMillis();
         String myQuery = Neo4JQueryParser.parse(query, queryOptions);
         long stopTime = System.currentTimeMillis();
@@ -887,6 +903,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         cypherQuery.append(" MATCH (a)-[:CELLULARLOCATION]-(c:CellularLocation)");
         cypherQuery.append(" RETURN a.name, c.id, n, count(DISTINCT r) AS r");
 
+        System.out.println(cypherQuery.toString());
         Result execute = this.database.execute(cypherQuery.toString());
 
         StringBuilder sb = new StringBuilder();
