@@ -2,8 +2,8 @@ package org.opencb.bionetdb.app.cli;
 
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryResult;
 
 /**
  * Created by imedina on 28/09/15.

@@ -21,12 +21,12 @@
             <artifactId>biodata-formats</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opencb.datastore</groupId>
-            <artifactId>datastore-core</artifactId>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-lib</artifactId>
+            <artifactId>commons-datastore-core</artifactId>
         </dependency>
 
         <dependency>

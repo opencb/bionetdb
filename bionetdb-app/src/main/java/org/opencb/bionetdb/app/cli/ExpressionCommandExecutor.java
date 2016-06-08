@@ -6,7 +6,7 @@ import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.io.IOException;
 import java.nio.file.Path;

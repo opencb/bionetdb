@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.config;
 
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 /**
  * Created by imedina on 05/10/15.
