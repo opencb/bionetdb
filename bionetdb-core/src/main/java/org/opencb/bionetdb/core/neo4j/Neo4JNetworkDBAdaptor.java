@@ -15,6 +15,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
+import java.io.File;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -56,7 +57,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         this.databasePath = databaseConfiguration.getPath();
         this.openedDB = true;
-        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(this.databasePath).newGraphDatabase();
+        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.databasePath)).newGraphDatabase();
         registerShutdownHook(this.database);
 
         // this must be last line, it needs 'database' to be created
