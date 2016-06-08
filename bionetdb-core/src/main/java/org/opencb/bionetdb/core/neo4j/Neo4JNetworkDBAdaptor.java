@@ -1,6 +1,9 @@
 package org.opencb.bionetdb.core.neo4j;
 
 import org.apache.commons.math3.util.CombinatoricsUtils;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.IndexManager;
@@ -25,8 +28,13 @@ import java.util.*;
 public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private String databasePath;
+
+    @Deprecated
     private GraphDatabaseService database;
     private boolean openedDB = false;
+
+    private Driver driver;
+    private Session session;
 
     private BioNetDBConfiguration configuration;
 
@@ -58,19 +66,27 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         this.databasePath = databaseConfiguration.getPath();
         this.openedDB = true;
         this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.databasePath)).newGraphDatabase();
-        registerShutdownHook(this.database);
+
+        driver = GraphDatabase.driver("");
+        session = driver.session();
+
+
+        registerShutdownHook(this.database, this.driver, this.session);
 
         // this must be last line, it needs 'database' to be created
         if (createIndex) {
             createIndexes();
         }
     }
-    private static void registerShutdownHook(final GraphDatabaseService database) {
+    private static void registerShutdownHook(final GraphDatabaseService database, final Driver driver, final Session session) {
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
                 database.shutdown();
+
+                session.close();
+                driver.close();
             }
         });
     }

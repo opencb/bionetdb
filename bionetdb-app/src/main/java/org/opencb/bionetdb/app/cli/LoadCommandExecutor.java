@@ -1,5 +1,7 @@
 package org.opencb.bionetdb.app.cli;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.models.Network;
@@ -7,6 +9,7 @@ import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -31,6 +34,9 @@ public class LoadCommandExecutor extends CommandExecutor {
             FileUtils.checkFile(inputPath);
             BioPaxParser bioPaxParser = new BioPaxParser("L3");
             Network network = bioPaxParser.parse(inputPath);
+
+//            ObjectReader objectReader = new ObjectMapper().readerFor(Network.class);
+//            Network network = objectReader.readValue(Files.newBufferedReader(inputPath));
 
             NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(loadCommandOptions.database, configuration);
 
