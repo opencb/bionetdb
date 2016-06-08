@@ -95,29 +95,29 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //                return;
 //            }
 
-            schema.indexFor(DynamicLabel.label("PhysicalEntity"))
+            schema.indexFor(Label.label("PhysicalEntity"))
                     .on("id")
                     .create();
-            schema.indexFor(DynamicLabel.label("PhysicalEntity"))
+            schema.indexFor(Label.label("PhysicalEntity"))
                     .on("name")
                     .create();
 
-            schema.indexFor(DynamicLabel.label("Xref"))
+            schema.indexFor(Label.label("Xref"))
                     .on("id")
                     .create();
 
-            schema.indexFor(DynamicLabel.label("Tissue"))
+            schema.indexFor(Label.label("Tissue"))
                     .on("tissue")
                     .create();
 
-            schema.indexFor(DynamicLabel.label("TimeSeries"))
+            schema.indexFor(Label.label("TimeSeries"))
                     .on("timeseries")
                     .create();
 
-            schema.indexFor(DynamicLabel.label("Interaction"))
+            schema.indexFor(Label.label("Interaction"))
                     .on("id")
                     .create();
-            schema.indexFor(DynamicLabel.label("Interaction"))
+            schema.indexFor(Label.label("Interaction"))
                     .on("name")
                     .create();
             tx.success();
@@ -390,8 +390,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         // 2. Insert the interactions
         try (Transaction tx = this.database.beginTx()) {
-            Label interactionLabel = DynamicLabel.label("Interaction");
-            Label pEntityLabel = DynamicLabel.label("PhysicalEntity");
+            Label interactionLabel = Label.label("Interaction");
+            Label pEntityLabel = Label.label("PhysicalEntity");
             Node r;
             for (Interaction i : interactionList) {
                 switch(i.getType()) {
@@ -456,7 +456,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // TODO: At the moment, all the properties I'm inserting are strings.
         // TODO: However, when issue #18 gets resolved, we should change the insertion of properties.
         // Cypher query
-        Node n = this.database.findNode(DynamicLabel.label(label), "id", properties.get("id"));
+        Node n = this.database.findNode(Label.label(label), "id", properties.get("id"));
             /*
             StringBuilder myquery = new StringBuilder();
             myquery.append("MATCH (n:").append(label).append(") WHERE ");
@@ -489,7 +489,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private Node createNode(String label, ObjectMap properties) {
         // TODO: At the moment, all the properties Im inserting are strings.
         // However, when issue #18 gets resolved, we should change the insertion of properties.
-        Label mylabel = DynamicLabel.label(label);
+        Label mylabel = Label.label(label);
         Node mynode = this.database.createNode(mylabel);
         for (String key : properties.keySet()) {
             mynode.setProperty(key, properties.getString(key));
