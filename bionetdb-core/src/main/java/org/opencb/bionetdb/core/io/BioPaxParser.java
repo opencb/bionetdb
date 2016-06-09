@@ -144,8 +144,7 @@ public class BioPaxParser {
             }
 
             // description
-            dna.getDescription().addAll(entityReference.getComment());
-
+            dna.setDescription(new ArrayList<>(entityReference.getComment()));
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -182,7 +181,7 @@ public class BioPaxParser {
             }
 
             // description
-            rna.getDescription().addAll(entityReference.getComment());
+            rna.setDescription(new ArrayList<>(entityReference.getComment()));
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -219,7 +218,7 @@ public class BioPaxParser {
             }
 
             // description
-            protein.getDescription().addAll(entityReference.getComment());
+            protein.setDescription(new ArrayList<>(entityReference.getComment()));
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -257,7 +256,7 @@ public class BioPaxParser {
             }
 
             // description
-            smallMolecule.getDescription().addAll(entityReference.getComment());
+            smallMolecule.setDescription(new ArrayList<>(entityReference.getComment()));
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
@@ -642,12 +641,14 @@ public class BioPaxParser {
         interaction.setId(interactionBP.getRDFId().split("#")[1]);
 
         // description
+        List<String> descs = new ArrayList<>();
         if (interactionBP.getComment() != null) {
             for (String comment : interactionBP.getComment()) {
                 if (!comment.matches("(Authored:|Edited:|Reviewed:).+")) {
-                    interaction.getDescription().add(comment);
+                    descs.add(comment);
                 }
             }
+            interaction.setDescription(descs);
         }
 
         // name

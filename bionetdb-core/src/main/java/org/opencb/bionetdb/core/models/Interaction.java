@@ -86,6 +86,11 @@ public class Interaction {
     }
 
     public void setDescription(List<String> description) {
+        // Replacing double quotes with single quotes
+        for (int index = 0; index < description.size(); index++){
+            String desc = description.get(index).replace("\\\"", "\'").replace("\"", "\'");
+            description.set(index, desc);
+        }
         this.description = description;
     }
 
