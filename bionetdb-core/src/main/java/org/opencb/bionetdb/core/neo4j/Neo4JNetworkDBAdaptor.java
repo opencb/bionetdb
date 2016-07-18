@@ -1,10 +1,9 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.driver.v1.*;
-import org.neo4j.graphdb.*;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -430,7 +429,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         Reaction myreaction = (Reaction) i;
                         for (String myId : myreaction.getReactants()) {
                             StatementResult reactant = getNode(tx, "", new ObjectMap("id", myId));
-                            addRelationship(tx, oriLabel, interactionLabel, reactant.peek().get("ID").toString(), interactionID, RelTypes.REACTANT);
+                            addRelationship(tx, oriLabel, interactionLabel, reactant.peek().get("ID").toString(), interactionID,
+                            RelTypes.REACTANT);
                         }
 
                         for (String myId : myreaction.getProducts()) {
