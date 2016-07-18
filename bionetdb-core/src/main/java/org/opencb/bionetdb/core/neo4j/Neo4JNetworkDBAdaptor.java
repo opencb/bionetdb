@@ -2,9 +2,7 @@ package org.opencb.bionetdb.core.neo4j;
 
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.driver.v1.*;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.graphdb.*;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.driver.v1.types.Node;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -15,7 +13,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 
-import java.io.File;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -28,7 +25,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private String databaseURI;
 
     @Deprecated
-    private GraphDatabaseService database;
+//    private GraphDatabaseService database;
     private boolean openedDB = false;
 
     private Driver driver;
@@ -36,7 +33,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private BioNetDBConfiguration configuration;
 
-    private enum RelTypes implements RelationshipType {
+    //    private enum RelTypes implements RelationshipType {
+    private enum RelTypes {
         REACTANT,
         PRODUCT,
         XREF,
@@ -65,25 +63,24 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         this.databasePath = databaseConfiguration.getPath();
         this.databaseURI = databaseConfiguration.getHost() + ":" + databaseConfiguration.getPort();
         this.openedDB = true;
-        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.databasePath)).newGraphDatabase();
+//        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.databasePath)).newGraphDatabase();
 
         driver = GraphDatabase.driver("bolt://" + this.databaseURI, AuthTokens.basic("neo4j", "neo4j"));
         session = driver.session();
 
-        registerShutdownHook(this.database, this.driver, this.session);
+        registerShutdownHook(this.driver, this.session);
 
         // this must be last line, it needs 'database' to be created
         if (createIndex) {
             createIndexes();
         }
     }
-    private static void registerShutdownHook(final GraphDatabaseService database, final Driver driver, final Session session) {
 
+    private void registerShutdownHook(final Driver driver, final Session session) {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                database.shutdown();
-
+//                database.shutdown();
                 session.close();
                 driver.close();
             }
@@ -102,18 +99,20 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     private void createIndexes() {
-        try (Transaction tx = this.session.beginTransaction()) {
-            tx.run("CREATE INDEX ON :PhysicalEntity(id)");
-            tx.run("CREATE INDEX ON :PhysicalEntity(name)");
+        if (this.session != null) {
+            try (Transaction tx = this.session.beginTransaction()) {
+                tx.run("CREATE INDEX ON :PhysicalEntity(id)");
+                tx.run("CREATE INDEX ON :PhysicalEntity(name)");
 
-            tx.run("CREATE INDEX ON :Interaction(id)");
-            tx.run("CREATE INDEX ON :Interaction(name)");
+                tx.run("CREATE INDEX ON :Interaction(id)");
+                tx.run("CREATE INDEX ON :Interaction(name)");
 
-            tx.run("CREATE INDEX ON :Xref(id)");
-            tx.run("CREATE INDEX ON :Tissue(tissue)");
-            tx.run("CREATE INDEX ON :TimeSeries(timeseries)");
+                tx.run("CREATE INDEX ON :Xref(id)");
+                tx.run("CREATE INDEX ON :Tissue(tissue)");
+                tx.run("CREATE INDEX ON :TimeSeries(timeseries)");
 
-            tx.success();
+                tx.success();
+            }
         }
     }
 
@@ -396,7 +395,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     }
                 }
             }
-          tx.success();
+            tx.success();
         }
     }
 
@@ -620,7 +619,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         // TODO: This will launch an exception if the nodes still contain relationships
         node1.delete();
-*/        node2.delete();
+        node2.delete();
+*/
     }
 
     /**
@@ -631,19 +631,18 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param node1 Node
      * @param node2 Node
      * @param relation Relationship to follow
-     * @param direction Direction of the relationship
      */
-    private Set<Node> getUniqueNodes(Node node1, Node node2, RelTypes relation, Direction direction) {
+    private Set<Node> getUniqueNodes(Node node1, Node node2, RelTypes relation) {
         Set<Node> myUniqueNodes = new HashSet<>();
         // TODO: Be sure that this set only stores non-repeated nodes
-        for (Relationship relationShip : node1.getRelationships(relation, direction)) {
-            myUniqueNodes.add(relationShip.getOtherNode(node1));
-            relationShip.delete();
-        }
-        for (Relationship relationShip : node2.getRelationships(relation, direction)) {
-            myUniqueNodes.add(relationShip.getOtherNode(node2));
-            relationShip.delete();
-        }
+//        for (Relationship relationShip : node1.getRelationships(relation, direction)) {
+//            myUniqueNodes.add(relationShip.getOtherNode(node1));
+//            relationShip.delete();
+//        }
+//        for (Relationship relationShip : node2.getRelationships(relation, direction)) {
+//            myUniqueNodes.add(relationShip.getOtherNode(node2));
+//            relationShip.delete();
+//        }
         return myUniqueNodes;
     }
 
@@ -656,109 +655,98 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      */
     private Ontology node2Ontology(Node node) throws BioNetDBException {
         Ontology myOntology = new Ontology();
-        if (node.hasProperty("source")) {
-            myOntology.setSource((String) node.getProperty("source"));
-        }
-        if (node.hasProperty("sourceVersion")) {
-            myOntology.setSource((String) node.getProperty("sourceVersion"));
-        }
-        if (node.hasProperty("id")) {
-            myOntology.setSource((String) node.getProperty("id"));
-        }
-        if (node.hasProperty("idVersion")) {
-            myOntology.setSource((String) node.getProperty("idVersion"));
-        }
-        if (node.hasProperty("name")) {
-            myOntology.setSource((String) node.getProperty("name"));
-        }
-        if (node.hasProperty("description")) {
-            myOntology.setSource((String) node.getProperty("description"));
-        }
+//        if (node.hasProperty("source")) {
+//            myOntology.setSource((String) node.getProperty("source"));
+//        }
+//        if (node.hasProperty("sourceVersion")) {
+//            myOntology.setSource((String) node.getProperty("sourceVersion"));
+//        }
+//        if (node.hasProperty("id")) {
+//            myOntology.setSource((String) node.getProperty("id"));
+//        }
+//        if (node.hasProperty("idVersion")) {
+//            myOntology.setSource((String) node.getProperty("idVersion"));
+//        }
+//        if (node.hasProperty("name")) {
+//            myOntology.setSource((String) node.getProperty("name"));
+//        }
+//        if (node.hasProperty("description")) {
+//            myOntology.setSource((String) node.getProperty("description"));
+//        }
         return myOntology;
     }
 
-    /**
-     * Returns Parses the Node node into a cellular location bean.
-     *
-     * @param node
-     * @return
-     * @throws BioNetDBException
-     */
-    private CellularLocation node2CellularLocation(Node node) throws BioNetDBException {
-        CellularLocation myCellularLocation = new CellularLocation();
-        if (node.hasProperty("id")) {
-            myCellularLocation.setName((String) node.getProperty("id"));
-        }
-        if (node.hasRelationship(RelTypes.CEL_ONTOLOGY, Direction.OUTGOING)) {
-            List<Ontology> myOntologies = new ArrayList<>();
-            for (Relationship myRelationship : node.getRelationships(RelTypes.CEL_ONTOLOGY, Direction.OUTGOING)) {
-                myOntologies.add(node2Ontology(myRelationship.getEndNode()));
-            }
-            myCellularLocation.setOntologies(myOntologies);
-        }
-        return myCellularLocation;
-    }
 
-    /**
-     * This method will parse the node information into a Physical Entity object.
-     *
-     * @param node
-     * @return PhysicalEntity object
-     */
-    private PhysicalEntity node2PhysicalEntity(Node node) throws BioNetDBException {
-        PhysicalEntity p = null;
-        switch ((PhysicalEntity.Type) node.getProperty("type")) {
-            case COMPLEX:
-                p = new Complex();
-                break;
-            case UNDEFINED:
-                p = new Undefined();
-                break;
-            case PROTEIN:
-                p = new Protein();
-                break;
-            case DNA:
-                p = new Dna();
-                break;
-            case RNA:
-                p = new Rna();
-                break;
-            case SMALL_MOLECULE:
-                p = new SmallMolecule();
-                break;
-            default:
-                break;
-        }
-        if (p == null) {
-            throw new BioNetDBException("The node intended to be parsed to a Physical Entity seems not to be a proper"
-                    + "Physical Entity node");
-        } else {
-            p.setId((String) node.getProperty("id"));
-            p.setName((String) node.getProperty("name"));
-            p.setDescription((List<String>) node.getProperty("description"));
-            p.setSource((List<String>) node.getProperty("source"));
+//    private CellularLocation node2CellularLocation(Node node) throws BioNetDBException {
+//        CellularLocation myCellularLocation = new CellularLocation();
+//        if (node.hasProperty("id")) {
+//            myCellularLocation.setName((String) node.getProperty("id"));
+//        }
+//        if (node.hasRelationship(RelTypes.CEL_ONTOLOGY, Direction.OUTGOING)) {
+//            List<Ontology> myOntologies = new ArrayList<>();
+//            for (Relationship myRelationship : node.getRelationships(RelTypes.CEL_ONTOLOGY, Direction.OUTGOING)) {
+//                myOntologies.add(node2Ontology(myRelationship.getEndNode()));
+//            }
+//            myCellularLocation.setOntologies(myOntologies);
+//        }
+//        return myCellularLocation;
+//    }
 
-            if (node.hasRelationship(RelTypes.ONTOLOGY)) {
-                List<Ontology> ontologyList = new ArrayList<>();
-                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.ONTOLOGY)) {
-                    Node ontologyNode = relationship.getEndNode();
-                    ontologyList.add(node2Ontology(ontologyNode));
-                }
-                p.setOntologies(ontologyList);
-            }
 
-            if (node.hasRelationship(RelTypes.CELLULARLOCATION)) {
-                List<CellularLocation> cellularLocationList = new ArrayList<>();
-                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.CELLULARLOCATION)) {
-                    Node cellularLocationNode = relationship.getEndNode();
-                    cellularLocationList.add(node2CellularLocation(cellularLocationNode));
-                }
-                p.setCellularLocation(cellularLocationList);
-            }
-        }
-
-        return p;
-    }
+//    private PhysicalEntity node2PhysicalEntity(Node node) throws BioNetDBException {
+//        PhysicalEntity p = null;
+//        switch ((PhysicalEntity.Type) node.getProperty("type")) {
+//            case COMPLEX:
+//                p = new Complex();
+//                break;
+//            case UNDEFINED:
+//                p = new Undefined();
+//                break;
+//            case PROTEIN:
+//                p = new Protein();
+//                break;
+//            case DNA:
+//                p = new Dna();
+//                break;
+//            case RNA:
+//                p = new Rna();
+//                break;
+//            case SMALL_MOLECULE:
+//                p = new SmallMolecule();
+//                break;
+//            default:
+//                break;
+//        }
+//        if (p == null) {
+//            throw new BioNetDBException("The node intended to be parsed to a Physical Entity seems not to be a proper"
+//                    + "Physical Entity node");
+//        } else {
+//            p.setId((String) node.getProperty("id"));
+//            p.setName((String) node.getProperty("name"));
+//            p.setDescription((List<String>) node.getProperty("description"));
+//            p.setSource((List<String>) node.getProperty("source"));
+//
+//            if (node.hasRelationship(RelTypes.ONTOLOGY)) {
+//                List<Ontology> ontologyList = new ArrayList<>();
+//                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.ONTOLOGY)) {
+//                    Node ontologyNode = relationship.getEndNode();
+//                    ontologyList.add(node2Ontology(ontologyNode));
+//                }
+//                p.setOntologies(ontologyList);
+//            }
+//
+//            if (node.hasRelationship(RelTypes.CELLULARLOCATION)) {
+//                List<CellularLocation> cellularLocationList = new ArrayList<>();
+//                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.CELLULARLOCATION)) {
+//                    Node cellularLocationNode = relationship.getEndNode();
+//                    cellularLocationList.add(node2CellularLocation(cellularLocationNode));
+//                }
+//                p.setCellularLocation(cellularLocationList);
+//            }
+//        }
+//
+//        return p;
+//    }
 
     @Override
     public QueryResult get(Query query, QueryOptions queryOptions) throws BioNetDBException {
@@ -785,19 +773,31 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private ObjectMap getTotalPhysicalEntities() {
         ObjectMap myResult = new ObjectMap();
-        myResult.put("undefined", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type:\""
-                + PhysicalEntity.Type.UNDEFINED + "\" }) return count(n)")
-                .columnAs("count(n)").next().toString()));
-        myResult.put("protein", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
-                + PhysicalEntity.Type.PROTEIN + "\"}) return count(n)").columnAs("count(n)").next().toString()));
-        myResult.put("dna", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
-                + PhysicalEntity.Type.DNA + "\"}) return count(n)").columnAs("count(n)").next().toString()));
-        myResult.put("rna", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
-                + PhysicalEntity.Type.RNA + "\"}) return count(n)").columnAs("count(n)").next().toString()));
-        myResult.put("complex", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
-                + PhysicalEntity.Type.COMPLEX + "\"}) return count(n)").columnAs("count(n)").next().toString()));
-        myResult.put("small_molecule", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
-                + PhysicalEntity.Type.SMALL_MOLECULE + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+        myResult.put("undefined", this.session.run(("match (n:PhysicalEntity {type:\""
+                + PhysicalEntity.Type.UNDEFINED + "\" }) return count(n) AS count")).peek().get("count").asInt());
+        myResult.put("protein", this.session.run(("match (n:PhysicalEntity {type: \""
+                + PhysicalEntity.Type.PROTEIN + "\"}) return count(n) AS count")).peek().get("count").asInt());
+        myResult.put("dna", this.session.run(("match (n:PhysicalEntity {type: \""
+                + PhysicalEntity.Type.DNA + "\"}) return count(n) AS count")).peek().get("count").asInt());
+        myResult.put("rna", this.session.run(("match (n:PhysicalEntity {type: \""
+                + PhysicalEntity.Type.RNA + "\"}) return count(n) AS count")).peek().get("count").asInt());
+        myResult.put("complex", this.session.run(("match (n:PhysicalEntity {type: \""
+                + PhysicalEntity.Type.COMPLEX + "\"}) return count(n) AS count")).peek().get("count").asInt());
+        myResult.put("small_molecule", this.session.run(("match (n:PhysicalEntity {type: \""
+                + PhysicalEntity.Type.SMALL_MOLECULE + "\"}) return count(n) AS count")).peek().get("count").asInt());
+//       myResult.put("undefined", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type:\""
+//                + PhysicalEntity.Type.UNDEFINED + "\" }) return count(n)")
+//                .columnAs("count(n)").next().toString()));
+//        myResult.put("protein", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
+//                + PhysicalEntity.Type.PROTEIN + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+//        myResult.put("dna", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
+//                + PhysicalEntity.Type.DNA + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+//        myResult.put("rna", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
+//                + PhysicalEntity.Type.RNA + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+//        myResult.put("complex", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
+//                + PhysicalEntity.Type.COMPLEX + "\"}) return count(n)").columnAs("count(n)").next().toString()));
+//        myResult.put("small_molecule", Integer.parseInt(this.database.execute("match (n:PhysicalEntity {type: \""
+//                + PhysicalEntity.Type.SMALL_MOLECULE + "\"}) return count(n)").columnAs("count(n)").next().toString()));
         int total = 0;
         for (String key : myResult.keySet()) {
             total += (int) myResult.get(key);
@@ -807,35 +807,42 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     private int getTotalXrefNodes() {
-        return Integer.parseInt(this.database.execute("MATCH (n:Xref) RETURN count(n)")
-                .columnAs("count(n)").next().toString());
+        return this.session.run("MATCH (n:Xref) RETURN count(n) AS count").peek().get("count").asInt();
+//        return Integer.parseInt(this.database.execute("MATCH (n:Xref) RETURN count(n)")
+//                .columnAs("count(n)").next().toString());
     }
 
     private int getTotalXrefRelationships() {
-        return Integer.parseInt(this.database.execute("MATCH (n:PhysicalEntity)-[r:XREF]->(m:Xref) RETURN count(r)")
-                .columnAs("count(r)").next().toString());
+        return this.session.run("MATCH (n:PhysicalEntity)-[r:XREF]->(m:Xref) RETURN count(r) AS count").peek().get("count").asInt();
+//        return Integer.parseInt(this.database.execute("MATCH (n:PhysicalEntity)-[r:XREF]->(m:Xref) RETURN count(r)")
+//                .columnAs("count(r)").next().toString());
     }
 
     private int getTotalOntologyNodes() {
-        return Integer.parseInt(this.database.execute("MATCH (n:Ontology) RETURN count(n)")
-                .columnAs("count(n)").next().toString());
+        return this.session.run("MATCH (n:Ontology) RETURN count(n) AS count").peek().get("count").asInt();
+//        return Integer.parseInt(this.database.execute("MATCH (n:Ontology) RETURN count(n)")
+//                .columnAs("count(n)").next().toString());
     }
 
     private int getTotalOntologyRelationships() {
-        return Integer.parseInt(this.database.execute(
-                "MATCH (n)-[r:ONTOLOGY|CEL_ONTOLOGY]->(m:Ontology) RETURN count(r)")
-                .columnAs("count(r)").next().toString());
+        return this.session.run("MATCH (n)-[r:ONTOLOGY|CEL_ONTOLOGY]->(m:Ontology) RETURN count(r) AS count").peek().get("count").asInt();
+//        return Integer.parseInt(this.database.execute(
+//                "MATCH (n)-[r:ONTOLOGY|CEL_ONTOLOGY]->(m:Ontology) RETURN count(r)")
+//                .columnAs("count(r)").next().toString());
     }
 
     private int getTotalCelLocationNodes() {
-        return Integer.parseInt(this.database.execute("MATCH (n:CellularLocation) RETURN count(n)")
-                .columnAs("count(n)").next().toString());
+        return this.session.run("MATCH (n:CellularLocation) RETURN count(n) AS count").peek().get("count").asInt();
+//        return Integer.parseInt(this.database.execute("MATCH (n:CellularLocation) RETURN count(n)")
+//                .columnAs("count(n)").next().toString());
     }
 
     private int getTotalCelLocationRelationships() {
-        return Integer.parseInt(this.database.execute(
-                "MATCH (n:PhysicalEntity)-[r:CELLULARLOCATION]->(m:CellularLocation) RETURN count(r)")
-                .columnAs("count(r)").next().toString());
+        return this.session.run("MATCH (n:PhysicalEntity)-[r:CELLULARLOCATION]->(m:CellularLocation) RETURN count(r) AS count")
+                .peek().get("count").asInt();
+//        return Integer.parseInt(this.database.execute(
+//                "MATCH (n:PhysicalEntity)-[r:CELLULARLOCATION]->(m:CellularLocation) RETURN count(r)")
+//                .columnAs("count(r)").next().toString());
     }
 
     @Override
@@ -908,15 +915,17 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         cypherQuery.append(" RETURN a.name, c.id, n, count(DISTINCT r) AS r");
 
         System.out.println(cypherQuery.toString());
-        Result execute = this.database.execute(cypherQuery.toString());
+//        Result execute = this.database.execute(cypherQuery.toString());
+        StatementResult execute = this.session.run(cypherQuery.toString());
 
         StringBuilder sb = new StringBuilder();
         if (execute.hasNext()) {
             sb.append("#ID\tLOCATION\tCLUSTERING_COEFFICIENT\n");
             while (execute.hasNext()) {
-                Map<String, Object> result = execute.next();
-                Integer r = (int) (long) result.get("r");
-                Integer n = (int) (long) result.get("n");
+//                Map<String, Object> result = execute.next();
+                Record result = execute.next();
+                Integer r = (int) result.get("r").asLong();
+                Integer n = (int) result.get("n").asLong();
 
                 sb.append("\"" + result.get("a.name").toString() + "\"\t"
                         + "\"" + result.get("c.id").toString() + "\"\t");
@@ -941,11 +950,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     public boolean isClosed() {
-        return !this.openedDB;
+//        return !this.openedDB;
+        return !this.session.isOpen();
     }
 
     public void close() {
-        this.database.shutdown();
+//        this.database.shutdown();
+        this.session.close();
+        this.driver.close();
     }
 
 }
