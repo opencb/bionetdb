@@ -51,10 +51,8 @@ public class Neo4JNetworkDBAdaptorTest {
         new File(database).mkdirs();
         try {
             BioNetDBConfiguration bioNetDBConfiguration = BioNetDBConfiguration.load(getClass().getResourceAsStream("/configuration.yml"));
-            networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration);
-        } catch (BioNetDBException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+            networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration, true);
+        } catch (BioNetDBException | IOException e) {
             e.printStackTrace();
         }
     }

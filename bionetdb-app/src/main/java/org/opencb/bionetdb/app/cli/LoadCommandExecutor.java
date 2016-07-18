@@ -38,7 +38,7 @@ public class LoadCommandExecutor extends CommandExecutor {
 //            ObjectReader objectReader = new ObjectMapper().readerFor(Network.class);
 //            Network network = objectReader.readValue(Files.newBufferedReader(inputPath));
 
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(loadCommandOptions.database, configuration);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(loadCommandOptions.database, configuration, true);
 
             networkDBAdaptor.insert(network, null);
 

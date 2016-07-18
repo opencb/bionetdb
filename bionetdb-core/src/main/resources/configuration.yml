@@ -4,11 +4,11 @@ logLevel: null
 logFile: null
 databases:
 - id: "test1"
-  host: null
-  port: 0
+  host: "localhost"
+  port: "7687"
   user: null
   password: null
-  path: "/tmp/bionetdb-test1"
+  path: ""
   options: null
 - id: "test2"
   host: null
