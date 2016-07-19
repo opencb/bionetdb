@@ -21,11 +21,8 @@ import java.util.*;
  */
 public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
-    private String databasePath;
     private String databaseURI;
 
-    @Deprecated
-//    private GraphDatabaseService database;
     private boolean openedDB = false;
 
     private Driver driver;
@@ -60,10 +57,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (databaseConfiguration == null) {
             throw new BioNetDBException("No database found for database: '" + database + "'");
         }
-        this.databasePath = databaseConfiguration.getPath();
         this.databaseURI = databaseConfiguration.getHost() + ":" + databaseConfiguration.getPort();
         this.openedDB = true;
-//        this.database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.databasePath)).newGraphDatabase();
 
         driver = GraphDatabase.driver("bolt://" + this.databaseURI, AuthTokens.basic("neo4j", "neo4j"));
         session = driver.session();
@@ -80,7 +75,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-//                database.shutdown();
                 session.close();
                 driver.close();
             }

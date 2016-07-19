@@ -14,6 +14,7 @@ public class DatabaseConfiguration {
     private String user;
     private String password;
 
+    @Deprecated
     private String path;
 
     /**
