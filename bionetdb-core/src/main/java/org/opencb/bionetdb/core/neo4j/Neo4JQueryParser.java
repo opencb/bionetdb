@@ -21,6 +21,10 @@ public class Neo4JQueryParser {
         final String OR = ",";
         final String IS = ":";
 */
+        if (query == null) {
+            query = new Query();
+        }
+
         StringBuilder cypherQuery = new StringBuilder();
 
         /*
@@ -137,15 +141,17 @@ public class Neo4JQueryParser {
             myWhereClauses.add(whereClause);
         }
 
-        if (myWhereClauses.size() == 0) {
-            throw new BioNetDBException("Incomplete query. A match clause must always be followed by a where clause.");
-        }
+//        if (myWhereClauses.size() == 0) {
+//            throw new BioNetDBException("Incomplete query. A match clause must always be followed by a where clause.");
+//        }
 
-        cypherQuery.append(" WHERE ");
-        for (StringBuilder whereClause : myWhereClauses) {
-            cypherQuery.append(whereClause).append("AND");
+        if (myWhereClauses.size() > 0) {
+            cypherQuery.append(" WHERE ");
+            for (StringBuilder whereClause : myWhereClauses) {
+                cypherQuery.append(whereClause).append("AND");
+            }
+            cypherQuery.setLength(cypherQuery.length() - 3);
         }
-        cypherQuery.setLength(cypherQuery.length() - 3);
 
 
         // Return clause

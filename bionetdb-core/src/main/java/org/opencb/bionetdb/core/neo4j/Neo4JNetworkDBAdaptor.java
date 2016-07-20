@@ -718,8 +718,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public QueryResult get(Query query, QueryOptions queryOptions) throws BioNetDBException {
         long startTime = System.currentTimeMillis();
         String myQuery = Neo4JQueryParser.parse(query, queryOptions);
+        System.out.println("Query: " + myQuery);
         long stopTime = System.currentTimeMillis();
         // TODO: Build new Network with the result
+        StatementResult run = session.run(myQuery);
+        while (run.hasNext()) {
+            System.out.println(run.next().asMap());
+        }
         int time = (int) (stopTime - startTime) / 1000;
         return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
     }

@@ -166,6 +166,17 @@ public class CliOptionsParser {
         @Parameter(names = {"-o", "--output-file"}, description = "", required = false, arity = 1)
         public String outputFile;
 
+        @Parameter(names = {"--host"}, description = "...", required = false, arity = 1)
+        public String host = "localhost";
+
+        @Parameter(names = {"--port"}, description = "...", required = false, arity = 1)
+        public int port = 7687;
+
+        @Parameter(names = {"-u", "--user"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)
+        public String user;
+
+        @Parameter(names = {"-p", "--password"}, description = "Data model type to be loaded, i.e. genome, gene, ...", password = true, arity = 1)
+        public String password;
     }
 
 
