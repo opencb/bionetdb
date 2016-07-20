@@ -246,6 +246,23 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>default-config</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <opencga.war.name>opencga-${bionetdb.version}</opencga.war.name>
+
+                <BIONETDB.DATABASE>scerevisiae</BIONETDB.DATABASE>
+                <BIONETDB.CATALOG.DB.HOST>localhost</BIONETDB.CATALOG.DB.HOST>
+                <BIONETDB.CATALOG.DB.PORT>7687</BIONETDB.CATALOG.DB.PORT>
+                <BIONETDB.CATALOG.DB.USER></BIONETDB.CATALOG.DB.USER>
+                <BIONETDB.CATALOG.DB.PASSWORD></BIONETDB.CATALOG.DB.PASSWORD>
+            </properties>
+        </profile>
+    </profiles>
     <distributionManagement>
         <repository>
             <id>ossrh</id>

@@ -121,6 +121,18 @@ public class CliOptionsParser {
         @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)
         public String database;
 
+        @Parameter(names = {"--host"}, description = "...", required = false, arity = 1)
+        public String host = "localhost";
+
+        @Parameter(names = {"--port"}, description = "...", required = false, arity = 1)
+        public int port = 7687;
+
+        @Parameter(names = {"-u", "--user"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)
+        public String user;
+
+        @Parameter(names = {"-p", "--password"}, description = "Data model type to be loaded, i.e. genome, gene, ...", password = true, arity = 1)
+        public String password;
+
         @Parameter(names = {"-l", "--loader"}, description = "Database specific data loader to be used", required = false, arity = 1)
         public String loader = "org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor";
 

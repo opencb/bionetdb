@@ -3,11 +3,11 @@ defaultDatabase: "scerevisiae"
 logLevel: null
 logFile: null
 databases:
-- id: "scerevisiae"
-  host: "localhost"
-  port: "7687"
-  user: "neo4j"
-  password: "neo4j"
+- id: "${BIONETDB.DATABASE}"
+  host: "${BIONETDB.CATALOG.DB.HOST}"
+  port: "${BIONETDB.CATALOG.DB.PORT}"
+  user: "${BIONETDB.CATALOG.DB.USER}"
+  password: "${BIONETDB.CATALOG.DB.PASSWORD}"
   options: null
 - id: "hsapiens"
   host: "localhost"
