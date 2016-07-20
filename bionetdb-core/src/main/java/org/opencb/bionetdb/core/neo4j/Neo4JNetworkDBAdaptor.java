@@ -123,22 +123,25 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      */
     @Override
     public void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException {
-/*        try (Transaction tx = this.session.beginTransaction()) {
-            Node xrefNode = getNode("Xref", new ObjectMap("id", nodeID));
-            if (xrefNode != null) {
+        try (Transaction tx = this.session.beginTransaction()) {
+            StatementResult xrefNode = getNode(tx, "Xref", new ObjectMap("id", nodeID));
+            if (xrefNode.hasNext()) {
                 // Look for the physical entity to which the xref is associated with
-                for (Relationship relationship : xrefNode.getRelationships(RelTypes.XREF, Direction.INCOMING)) {
-                    Node n = relationship.getStartNode();
-                    for (Xref x : xrefList) {
-                        addXrefNode(n, x);
-                    }
+                StatementResult pE = tx.run("MATCH (n:PhysicalEntity)-[" + RelTypes.XREF
+                        + "]->(x:Xref) WHERE ID(x) = "
+                        + xrefNode.peek().get("ID").toString()
+                        + " RETURN ID(n) AS ID, LABELS(n) AS LABELS");
+                for (Xref x : xrefList) {
+                    StatementResult myxref = getOrCreateNode(tx, "Xref", parseXref(x));
+                    addRelationship(tx, concatenateLabels(pE.peek().get("LABELS")), "Xref",
+                            pE.peek().get("ID").toString(), myxref.peek().get("ID").toString(), RelTypes.XREF);
                 }
             } else {
                 throw new BioNetDBException("The node to be annotated does not exist in the database.");
             }
             tx.success();
         }
-*/    }
+    }
 
     @Override
     public void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options) {
@@ -425,73 +428,44 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                                     interactionID, product.peek().get("ID").toString(), RelTypes.PRODUCT);
                         }
                         break;
-                    }
-
-                }
-            tx.success();
-            }
-
-/*
-
-            Label interactionLabel = Label.label("Interaction");
-            Label pEntityLabel = Label.label("PhysicalEntity");
-            Node r;
-            for (Interaction i : interactionList) {
-                switch(i.getType()) {
-                    case REACTION:
-                        // Left & right
-                        Reaction myreaction = (Reaction) i;
-                        r = this.database.findNode(interactionLabel, "id", i.getId());
-
-                        for (String myID : myreaction.getReactants()) {
-                            Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addRelationship(n, r, RelTypes.REACTANT);
-                        }
-
-                        for (String myID : myreaction.getProducts()) {
-                            Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addRelationship(r, n, RelTypes.REACTANT);
-                        }
-                        break;
                     case CATALYSIS:
-                        Catalysis catalysis = (Catalysis) i;
-                        r = this.database.findNode(interactionLabel, "id", i.getId());
-
-                        // Left reactions (controllers)
-                        for (String myID : catalysis.getControllers()) {
-                            Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addRelationship(n, r, RelTypes.CONTROLLER);
+                        Catalysis mycatalysis = (Catalysis) i;
+                        for (String myId : mycatalysis.getControllers()) {
+                            StatementResult reactant = getNode(tx, "PhysicalEntity", new ObjectMap("id", myId));
+                            addRelationship(tx, concatenateLabels(reactant.peek().get("LABELS")),
+                                    interactionLabel, reactant.peek().get("ID").toString(),
+                                    interactionID, RelTypes.CONTROLLER);
                         }
 
-                        // Right reactions (controlled)
-                        for (String myID : catalysis.getControlledProcesses()) {
-                            Node n = this.database.findNode(interactionLabel, "id", myID);
-                            addRelationship(r, n, RelTypes.CONTROLLED);
+                        for (String myId : mycatalysis.getControlledProcesses()) {
+                            StatementResult product = getNode(tx, "Interaction", new ObjectMap("id", myId));
+                            addRelationship(tx, interactionLabel, concatenateLabels(product.peek().get("LABELS")),
+                                    interactionID, product.peek().get("ID").toString(), RelTypes.CONTROLLED);
                         }
                         break;
                     case REGULATION:
-                        Regulation regulation = (Regulation) i;
-                        r = this.database.findNode(interactionLabel, "id", i.getId());
-
-                        // Left reactions (controllers)
-                        for (String myID : regulation.getControllers()) {
-                            Node n = this.database.findNode(pEntityLabel, "id", myID);
-                            addRelationship(n, r, RelTypes.CONTROLLER);
+                        Regulation myregulation = (Regulation) i;
+                        for (String myId : myregulation.getControllers()) {
+                            StatementResult reactant = getNode(tx, "PhysicalEntity", new ObjectMap("id", myId));
+                            addRelationship(tx, concatenateLabels(reactant.peek().get("LABELS")),
+                                    interactionLabel, reactant.peek().get("ID").toString(),
+                                    interactionID, RelTypes.CONTROLLER);
                         }
 
-                        // Right reactions (controlled)
-                        for (String myID : regulation.getControlledProcesses()) {
-                            Node n = this.database.findNode(interactionLabel, "id", myID);
-                            addRelationship(r, n, RelTypes.CONTROLLED);
+                        for (String myId : myregulation.getControlledProcesses()) {
+                            StatementResult product = getNode(tx, "Interaction", new ObjectMap("id", myId));
+                            addRelationship(tx, interactionLabel, concatenateLabels(product.peek().get("LABELS")),
+                                    interactionID, product.peek().get("ID").toString(), RelTypes.CONTROLLED);
                         }
                         break;
                     default:
                         break;
+                    }
+
                 }
-            }
             tx.success();
         }
-*/    }
+    }
 
     private StatementResult getNode(Transaction tx, String label, ObjectMap properties) {
         // Gathering properties of the node to create a cypher string with them
@@ -512,7 +486,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         String propsJoined = "{" + String.join(",", props) + "}";
         // Creating the desired node
-        return tx.run("CREATE (n:" + label + " " + propsJoined + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS ");
+        return tx.run("CREATE (n:" + label + " " + propsJoined + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS");
     }
 
     /**
@@ -529,7 +503,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         String propsJoined = "{" + String.join(",", props) + "}";
         // Getting the desired node or creating it if it does not exists
-        return tx.run("MERGE (n:" + label + " " + propsJoined + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS ");
+        return tx.run("MERGE (n:" + label + " " + propsJoined + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS");
     }
 
     /**
