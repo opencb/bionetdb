@@ -1,19 +1,17 @@
 ---
-defaultDatabase: "test1"
+defaultDatabase: "scerevisiae"
 logLevel: null
 logFile: null
 databases:
-- id: "test1"
-  host: localhost
-  port: 7687
-  user: null
-  password: null
-  path: "/tmp/bionetdb-test1"
+- id: "scerevisiae"
+  host: "localhost"
+  port: "7687"
+  user: "neo4j"
+  password: "neo4j"
   options: null
-- id: "test2"
-  host: null
-  port: 0
-  user: null
-  password: null
-  path: "/tmp/bionetdb-test2"
+- id: "hsapiens"
+  host: "localhost"
+  port: "7688"
+  user: "neo4j"
+  password: "neo4j"
   options: null
