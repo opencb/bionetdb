@@ -175,7 +175,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-u", "--user"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)
         public String user;
 
-        @Parameter(names = {"-p", "--password"}, description = "Data model type to be loaded, i.e. genome, gene, ...", password = true, arity = 1)
+        @Parameter(names = {"-p", "--password"}, description = "Password", password = true, arity = 1)
         public String password;
     }
 

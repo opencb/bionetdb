@@ -192,7 +192,7 @@ public class Neo4JNetworkDBAdaptorTest {
     }
 
     @Test
-    public void testGet() throws Exception {
+    public void testGetNodes() throws Exception {
         loadTestData();
 
         // TESTING QUERIES
@@ -206,8 +206,8 @@ public class Neo4JNetworkDBAdaptorTest {
 
         myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), myXrefIds);
         myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key(), 2);
-        networkDBAdaptor.get(myQueryObject, null);
-        System.out.println("The query took " + networkDBAdaptor.get(myQueryObject, null).getDbTime() + " seconds.");
+        networkDBAdaptor.getNodes(myQueryObject, null);
+        System.out.println("The query took " + networkDBAdaptor.getNodes(myQueryObject, null).getDbTime() + " seconds.");
     }
 
     @Test

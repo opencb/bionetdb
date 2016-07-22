@@ -34,7 +34,7 @@ public class Neo4JQueryParser {
         g, h -> CellularLocation
          */
 
-        cypherQuery.append("MATCH p=(a:PhysicalEntity)-");
+//        cypherQuery.append("MATCH p=(a:PhysicalEntity)-");
         // First we construct the Match
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()).isEmpty()) {
@@ -57,12 +57,11 @@ public class Neo4JQueryParser {
                 cypherQuery.append("[*..").append(query.getInt(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key())).append("]");
             }
         }
-        cypherQuery.append("-(b:PhysicalEntity)");
-
+//        cypherQuery.append("-(b:PhysicalEntity)");
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
-            // I have Xref ID's to filter by, so we need to add them to the match beforehand
-            cypherQuery.append(", (a)-[:XREF]->(c:Xref), (b)-[:XREF]->(d:Xref)");
+            cypherQuery.append("MATCH (n:PhysicalEntity)-[:XREF]->(b:Xref {id: \"")
+                    .append(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())).append("\"}) RETURN (n)");
         }
 
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()) != null
@@ -80,17 +79,17 @@ public class Neo4JQueryParser {
 
         // Begins the WHERE clause
         List<StringBuilder> myWhereClauses = new ArrayList<>();
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
-            StringBuilder whereClause = new StringBuilder();
-            StringBuilder aux = new StringBuilder();
-            for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())) {
-                aux.append("\"").append(myID).append("\", ");
-            }
-            aux.setLength(aux.length() - 2);
-            whereClause.append(" (c.id IN [").append(aux).append("] AND d.id IN [").append(aux).append("]) ");
-            myWhereClauses.add(whereClause);
-        }
+//        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null
+//                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
+//            StringBuilder whereClause = new StringBuilder();
+//            StringBuilder aux = new StringBuilder();
+//            for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())) {
+//                aux.append("\"").append(myID).append("\", ");
+//            }
+//            aux.setLength(aux.length() - 2);
+//            whereClause.append(" (c.id IN [").append(aux).append("] AND d.id IN [").append(aux).append("]) ");
+//            myWhereClauses.add(whereClause);
+//        }
 
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_DESCRIPTION.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_DESCRIPTION.key()).isEmpty()) {
@@ -157,7 +156,7 @@ public class Neo4JQueryParser {
         // Return clause
         // TODO: At the moment, we are always going to return the main path. However, we should change
         // TODO: this depending on the arguments.
-        cypherQuery.append(" RETURN p");
+//        cypherQuery.append(" RETURN p");
 
         return cypherQuery.toString();
     }

@@ -37,7 +37,7 @@ public class QueryCommandExecutor extends CommandExecutor {
 
             NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(queryCommandOptions.database, configuration);
 
-            networkDBAdaptor.get(null, null);
+//            networkDBAdaptor.get(null, null);
             if (queryCommandOptions.betweenness) {
                 Query query = new Query("id", queryCommandOptions.id);
 //                query.put("nodeLabel", queryCommandOptions.nodeType);
@@ -52,6 +52,11 @@ public class QueryCommandExecutor extends CommandExecutor {
 
                 QueryResult queryResult = networkDBAdaptor.clusteringCoefficient(query);
                 System.out.println("queryResult = " + queryResult);
+            }
+
+            if (queryCommandOptions.id != null && !queryCommandOptions.id.isEmpty()) {
+                Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), queryCommandOptions.id);
+                networkDBAdaptor.getNodes(query, null);
             }
 
         } catch (Exception e) {

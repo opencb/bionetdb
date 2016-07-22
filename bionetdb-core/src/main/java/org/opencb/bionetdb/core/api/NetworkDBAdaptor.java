@@ -69,7 +69,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //TODO: To remove
     //public QueryResult getXrefs(String idNode);
 
-    QueryResult get(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
 
     QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions);
 
