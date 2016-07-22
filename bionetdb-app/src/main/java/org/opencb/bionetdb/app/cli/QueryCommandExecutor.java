@@ -41,7 +41,7 @@ public class QueryCommandExecutor extends CommandExecutor {
             if (queryCommandOptions.betweenness) {
                 Query query = new Query("id", queryCommandOptions.id);
 //                query.put("nodeLabel", queryCommandOptions.nodeType);
-                query.put(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key(), queryCommandOptions.nodeType);
+                query.put(NetworkDBAdaptor.NetworkQueryParams.TYPE.key(), queryCommandOptions.nodeType);
 
                 networkDBAdaptor.betweenness(query);
             }
@@ -54,10 +54,21 @@ public class QueryCommandExecutor extends CommandExecutor {
                 System.out.println("queryResult = " + queryResult);
             }
 
+            Query query = new Query();
             if (queryCommandOptions.id != null && !queryCommandOptions.id.isEmpty()) {
-                Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), queryCommandOptions.id);
-                networkDBAdaptor.getNodes(query, null);
+//                Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), queryCommandOptions.id);
+                query.put(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), queryCommandOptions.id);
+
             }
+
+            if (org.apache.commons.lang3.StringUtils.isNotEmpty(queryCommandOptions.nodeType)) {
+                query.put(NetworkDBAdaptor.NetworkQueryParams.TYPE.key(), queryCommandOptions.nodeType);
+            }
+
+            if (org.apache.commons.lang3.StringUtils.isNotEmpty(queryCommandOptions.cellularLocation)) {
+                query.put(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key(), queryCommandOptions.cellularLocation);
+            }
+            networkDBAdaptor.getNodes(query, null);
 
         } catch (Exception e) {
             e.printStackTrace();

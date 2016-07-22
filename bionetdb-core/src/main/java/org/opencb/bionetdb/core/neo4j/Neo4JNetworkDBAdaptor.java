@@ -717,7 +717,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException {
         long startTime = System.currentTimeMillis();
-        String myQuery = Neo4JQueryParser.parse(query, queryOptions);
+        String nodeName = "n";
+        String myQuery = "MATCH " + Neo4JQueryParser.parse(nodeName, query, queryOptions) + " RETURN " + nodeName;
         System.out.println("Query: " + myQuery);
         long stopTime = System.currentTimeMillis();
         // TODO: Build new Network with the result

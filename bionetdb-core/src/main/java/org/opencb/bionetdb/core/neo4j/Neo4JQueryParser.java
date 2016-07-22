@@ -17,11 +17,37 @@ public class Neo4JQueryParser {
     //public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
     public static String parse2(Query n, Object obj, Query m, QueryOptions options) throws BioNetDBException {
+
+        // query --n id:CHK1;cl:nucleoplasm --m id:P40343;cl:cytosol [--neighbourhood 4] [--relationship XREF]
+
+
         String nFilter = parse("n", n, options);
         String mFilter = parse("m", m, options);
 
+// add ()--()
 
-
+//        // First we construct the Match
+//        if (query.get(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()) != null
+//                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()).isEmpty()) {
+//            StringBuilder relationsCypher = new StringBuilder().append(":");
+//            for (String interaction : (List<String>) query.get(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key())) {
+//                // TODO: Probably, in this point, I would have to check the proper Interaction name given the id...
+//                relationsCypher.append(interaction).append("|");
+//            }
+//            relationsCypher.setLength(relationsCypher.length() - 1);
+//
+//            if (query.get(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()) != null
+//                    && !query.getString(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()).isEmpty()) {
+//                relationsCypher.append("*..").append(query.getInt(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()));
+//            }
+//
+//            cypherQuery.append("[").append(relationsCypher).append("]");
+//        } else {
+//            if (query.get(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()) != null
+//                    && !query.getString(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()).isEmpty()) {
+//                cypherQuery.append("[*..").append(query.getInt(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key())).append("]");
+//            }
+//        }
         return null;
     }
 
@@ -29,204 +55,46 @@ public class Neo4JQueryParser {
         return parse("n", query, options);
     }
 
-    public static String parse(String n, Query query, QueryOptions options) throws BioNetDBException {
-/*
-        final String AND = ";";
-        final String OR = ",";
-        final String IS = ":";
-*/
+    public static String parse(String nodeName, Query query, QueryOptions options) throws BioNetDBException {
         if (query == null) {
             query = new Query();
         }
 
         StringBuilder cypherQuery = new StringBuilder();
 
-        /*
-        a, b -> Physical Entities
-        c, d -> Xrefs
-        e, f -> Ontology
-        g, h -> CellularLocation
-         */
-
-//        cypherQuery.append("MATCH p=(a:PhysicalEntity)-");
-
-
-        // We set default TYPE to PhysicalEntity
-        if (StringUtils.isEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key()))) {
-            query.put(NetworkDBAdaptor.NetworkQueryParams.TYPE.key(), "PhysicalEntity");
+        String node = "(" + nodeName;
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key()))) {
+            node += ":" + query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key().replace(',', '|')).toUpperCase();
         }
+        node += ")";
 
-        // We init the Cypher query
-//        switch (query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key())) {
-//            case "protein":
-//                cypherQuery.append("MATCH (a:PROTEIN)");
-//                break;
-//        }
-        cypherQuery.append("(a:" + query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key()) + " {:})");
-        if (query.size() >= 2) {
-            // if exists another filter we need to add '-' to the query
-            cypherQuery.append("-");
-        }
-
-
-        // First we construct the Match
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()).isEmpty()) {
-            StringBuilder relationsCypher = new StringBuilder().append(":");
-            for (String interaction : (List<String>) query.get(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key())) {
-                // TODO: Probably, in this point, I would have to check the proper Interaction name given the id...
-                relationsCypher.append(interaction).append("|");
-            }
-            relationsCypher.setLength(relationsCypher.length() - 1);
-
-            if (query.get(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()) != null
-                    && !query.getString(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()).isEmpty()) {
-                relationsCypher.append("*..").append(query.getInt(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()));
-            }
-
-            cypherQuery.append("[").append(relationsCypher).append("]");
-        } else {
-            if (query.get(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()) != null
-                    && !query.getString(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()).isEmpty()) {
-                cypherQuery.append("[*..").append(query.getInt(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key())).append("]");
-            }
-        }
-
-
-//        cypherQuery.append("-(b:PhysicalEntity)");
+        List<String> myMatchList = new ArrayList<>();
+        List<String> myWhereClauses = new ArrayList<>();
         if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()))) {
-            cypherQuery.append("(a)-[:XREF]->(b:Xref {id: \"")
-                    .append(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())).append("\"})");
+            myMatchList.add(node + "-[:XREF]->(" + nodeName + "x:Xref)");
+            myWhereClauses.add(nodeName + "x.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())
+                    .replace(",", "\", \"") + "\"]");
         }
 
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()).isEmpty()) {
-            // I have Ontology attributes to filter by, so we need to add them to the match beforehand
-            cypherQuery.append("(a)-[:ONTOLOGY]->(e:Ontology), (b)-[:ONTOLOGY]->(f:Ontology)");
+            myMatchList.add(node + "-[:ONTOLOGY]->(" + nodeName + "o:Ontology)");
+            myWhereClauses.add(nodeName + "o.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key())
+                    .replace(",", "\", \"") + "\"]");
         }
 
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()).isEmpty()) {
-            // I have Location attributes to filter by, so we need to add them to the match beforehand
-            cypherQuery.append("(a)-[:CELLULARLOCATION]->(g:CellularLocation), (b)-[:CELLULARLOCATION]->(h:CellularLocation)");
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()))) {
+            myMatchList.add(node + "-[:CELLULARLOCATION]->(" + nodeName + "c:CellularLocation)");
+            myWhereClauses.add(nodeName + "c.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key())
+                    .replace(",", "\", \"") + "\"]");
         }
+        cypherQuery.append(StringUtils.join(myMatchList, ','));
 
-
-
-
-        // Begins the WHERE clause
-        List<StringBuilder> myWhereClauses = new ArrayList<>();
-//        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null
-//                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
-//            StringBuilder whereClause = new StringBuilder();
-//            StringBuilder aux = new StringBuilder();
-//            for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())) {
-//                aux.append("\"").append(myID).append("\", ");
-//            }
-//            aux.setLength(aux.length() - 2);
-//            whereClause.append(" (c.id IN [").append(aux).append("] AND d.id IN [").append(aux).append("]) ");
-//            myWhereClauses.add(whereClause);
-//        }
-
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_DESCRIPTION.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_DESCRIPTION.key()).isEmpty()) {
-            // TODO: The description field would be better if we implement a like comparison...
-            StringBuilder whereClause = new StringBuilder();
-            StringBuilder aux = new StringBuilder();
-            for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_DESCRIPTION.key())) {
-                aux.append("\"").append(myID).append("\", ");
-            }
-            aux.setLength(aux.length() - 2);
-            whereClause.append(" (a.description IN [").append(aux).append("] AND b.description IN [").append(aux).append("]) ");
-            myWhereClauses.add(whereClause);
-        }
-
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()).isEmpty()) {
-            StringBuilder whereClause = new StringBuilder();
-            StringBuilder aux = new StringBuilder();
-            for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key())) {
-                aux.append("\"").append(myID).append("\", ");
-            }
-            aux.setLength(aux.length() - 2);
-            whereClause.append(" (a.type IN [").append(aux).append("] AND b.type IN [").append(aux).append("]) ");
-            myWhereClauses.add(whereClause);
-        }
-
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()).isEmpty()) {
-            StringBuilder whereClause = new StringBuilder();
-            StringBuilder aux = new StringBuilder();
-            for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key())) {
-                aux.append("\"").append(myID).append("\", ");
-            }
-            aux.setLength(aux.length() - 2);
-            whereClause.append(" (e.id IN [").append(aux).append("] AND f.id IN [").append(aux).append("]) ");
-            myWhereClauses.add(whereClause);
-        }
-
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()).isEmpty()) {
-            StringBuilder whereClause = new StringBuilder();
-            StringBuilder aux = new StringBuilder();
-            for (String myID : query.getAsStringList(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key())) {
-                aux.append("\"").append(myID).append("\", ");
-            }
-            aux.setLength(aux.length() - 2);
-            whereClause.append(" (g.id IN [").append(aux).append("] AND h.id IN [").append(aux).append("]) ");
-            myWhereClauses.add(whereClause);
-        }
-
-//        if (myWhereClauses.size() == 0) {
-//            throw new BioNetDBException("Incomplete query. A match clause must always be followed by a where clause.");
-//        }
 
         if (myWhereClauses.size() > 0) {
             cypherQuery.append(" WHERE ");
-            for (StringBuilder whereClause : myWhereClauses) {
-                cypherQuery.append(whereClause).append("AND");
-            }
-            cypherQuery.setLength(cypherQuery.length() - 3);
+            cypherQuery.append(StringUtils.join(myWhereClauses, " AND "));
         }
-
-
-        // Return clause
-        // TODO: At the moment, we are always going to return the main path. However, we should change
-        // TODO: this depending on the arguments.
-//        cypherQuery.append(" RETURN p");
-
         return cypherQuery.toString();
     }
-
-/*        cypherQuery.append("MATCH p=(m:Xref)<-[:XREF]-(:PhysicalEntity)-[:REACTANT*1..2]-(:PhysicalEntity)-[:XREF]->(n:Xref) ");
-
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
-            StringBuilder idBuilder = new StringBuilder("[");
-            for (String myID : (List<String>) query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())) {
-                idBuilder.append("\"" + myID + "\", ");
-            }
-            idBuilder.setLength(idBuilder.length() - 2);
-            idBuilder.append("]");
-            cypherQuery.append("WHERE m.id IN " + idBuilder + " AND n.id IN " + idBuilder + " ");
-        }
-
-        cypherQuery.append("RETURN p;");
-        */
-
-
-
-
-        /*
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()).isEmpty()) {
-            cypherQuery.append("MATCH (" + query.get(NetworkDBAdaptor.NetworkQueryParams.PE_TYPE.key()) + ") -[:XREF] - (NODE)");
-            cypherQuery.append("");
-        }
-
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()).isEmpty()) {
-            System.out.println("no implemented yet");
-        }
-        */
 }

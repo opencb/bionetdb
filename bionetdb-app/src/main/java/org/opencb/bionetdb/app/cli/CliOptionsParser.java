@@ -151,8 +151,23 @@ public class CliOptionsParser {
         @Parameter(names = {"--id"}, description = "By physical entity ID", required = false, arity = 1)
         public String id;
 
-        @Parameter(names = {"--node-type"}, description = "By pathway ID", required = false, arity = 1)
-        public String nodeType = "PhysicalEntity";
+        @Parameter(names = {"--type"}, description = "PhysicalEntity, Interaction, Xref...", required = false, arity = 1)
+        public String nodeType;
+
+        @Parameter(names = {"--cellular-location"}, description = "cellular location", required = false, arity = 1)
+        public String cellularLocation;
+
+        @Parameter(names = {"--n"}, description = "Main node", required = false, arity = 1)
+        public String n;
+
+        @Parameter(names = {"--m"}, description = "Related node", required = false, arity = 1)
+        public String m;
+
+        @Parameter(names = {"--neighbours"}, description = "Number of Jumps", required = false, arity = 1)
+        public int neighbours = 1;
+
+        @Parameter(names = {"--relationship"}, description = "Relationship", required = false, arity = 1)
+        public String relationship;
 
         @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)
         public String database;
