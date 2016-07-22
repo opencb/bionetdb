@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.datastore.core.Query;
@@ -15,7 +16,20 @@ public class Neo4JQueryParser {
 
     //public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
+    public static String parse2(Query n, Object obj, Query m, QueryOptions options) throws BioNetDBException {
+        String nFilter = parse("n", n, options);
+        String mFilter = parse("m", m, options);
+
+
+
+        return null;
+    }
+
     public static String parse(Query query, QueryOptions options) throws BioNetDBException {
+        return parse("n", query, options);
+    }
+
+    public static String parse(String n, Query query, QueryOptions options) throws BioNetDBException {
 /*
         final String AND = ";";
         final String OR = ",";
@@ -35,6 +49,26 @@ public class Neo4JQueryParser {
          */
 
 //        cypherQuery.append("MATCH p=(a:PhysicalEntity)-");
+
+
+        // We set default TYPE to PhysicalEntity
+        if (StringUtils.isEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key()))) {
+            query.put(NetworkDBAdaptor.NetworkQueryParams.TYPE.key(), "PhysicalEntity");
+        }
+
+        // We init the Cypher query
+//        switch (query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key())) {
+//            case "protein":
+//                cypherQuery.append("MATCH (a:PROTEIN)");
+//                break;
+//        }
+        cypherQuery.append("(a:" + query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key()) + " {:})");
+        if (query.size() >= 2) {
+            // if exists another filter we need to add '-' to the query
+            cypherQuery.append("-");
+        }
+
+
         // First we construct the Match
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()).isEmpty()) {
@@ -57,24 +91,27 @@ public class Neo4JQueryParser {
                 cypherQuery.append("[*..").append(query.getInt(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key())).append("]");
             }
         }
+
+
 //        cypherQuery.append("-(b:PhysicalEntity)");
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()).isEmpty()) {
-            cypherQuery.append("MATCH (n:PhysicalEntity)-[:XREF]->(b:Xref {id: \"")
-                    .append(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())).append("\"}) RETURN (n)");
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()))) {
+            cypherQuery.append("(a)-[:XREF]->(b:Xref {id: \"")
+                    .append(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())).append("\"})");
         }
 
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()).isEmpty()) {
             // I have Ontology attributes to filter by, so we need to add them to the match beforehand
-            cypherQuery.append(", (a)-[:ONTOLOGY]->(e:Ontology), (b)-[:ONTOLOGY]->(f:Ontology)");
+            cypherQuery.append("(a)-[:ONTOLOGY]->(e:Ontology), (b)-[:ONTOLOGY]->(f:Ontology)");
         }
 
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()).isEmpty()) {
             // I have Location attributes to filter by, so we need to add them to the match beforehand
-            cypherQuery.append(", (a)-[:CELLULARLOCATION]->(g:CellularLocation), (b)-[:CELLULARLOCATION]->(h:CellularLocation)");
+            cypherQuery.append("(a)-[:CELLULARLOCATION]->(g:CellularLocation), (b)-[:CELLULARLOCATION]->(h:CellularLocation)");
         }
+
+
 
 
         // Begins the WHERE clause

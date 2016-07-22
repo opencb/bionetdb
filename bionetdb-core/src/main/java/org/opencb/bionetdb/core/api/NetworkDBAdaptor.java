@@ -20,7 +20,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 public interface NetworkDBAdaptor extends AutoCloseable {
 
     enum NetworkQueryParams implements QueryParam {
-        PE_ID ("xref.id", TEXT_ARRAY, ""),
+        TYPE ("type", TEXT_ARRAY, ""),   // This is PhysicalEntity, Interaction, Xrefs, ...
+        PE_ID ("pe.id", TEXT_ARRAY, ""),
         PE_DESCRIPTION ("pe.description", TEXT_ARRAY, ""),
         PE_TYPE ("pe.type", TEXT_ARRAY, ""),
         PE_ATTR_EXPR ("pe.attr.expr", TEXT_ARRAY, ""),  // example: "brain:t2>0.3;brain:t4<=0.3"
