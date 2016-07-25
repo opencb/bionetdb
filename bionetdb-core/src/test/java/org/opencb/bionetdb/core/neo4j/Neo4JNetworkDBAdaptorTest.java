@@ -67,6 +67,7 @@ public class Neo4JNetworkDBAdaptorTest {
         Network network = bioPaxParser.parse(inputPath);
         System.out.println("The file has been parsed.");
 
+        System.out.println("Inserting data...");
         long startTime = System.currentTimeMillis();
         networkDBAdaptor.insert(network, null);
         long stopTime = System.currentTimeMillis();
@@ -75,6 +76,7 @@ public class Neo4JNetworkDBAdaptorTest {
         assertEquals("The number of nodes introduced in the database is not correct", 28963, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
         assertEquals("The number of relationships introduced in the database is not correct", 84278, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
 
+        System.out.println("Inserting the same data...");
         startTime = System.currentTimeMillis();
         networkDBAdaptor.insert(network, null);
         stopTime = System.currentTimeMillis();

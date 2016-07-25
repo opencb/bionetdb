@@ -71,20 +71,20 @@ public class Neo4JQueryParser {
         List<String> myMatchList = new ArrayList<>();
         List<String> myWhereClauses = new ArrayList<>();
         if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()))) {
-            myMatchList.add(node + "-[:XREF]->(" + nodeName + "x:Xref)");
+            myMatchList.add(node + "-[:XREF]->(" + nodeName + "x:XREF)");
             myWhereClauses.add(nodeName + "x.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())
                     .replace(",", "\", \"") + "\"]");
         }
 
         if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()) != null
                 && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()).isEmpty()) {
-            myMatchList.add(node + "-[:ONTOLOGY]->(" + nodeName + "o:Ontology)");
+            myMatchList.add(node + "-[:ONTOLOGY]->(" + nodeName + "o:ONTOLOGY)");
             myWhereClauses.add(nodeName + "o.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key())
                     .replace(",", "\", \"") + "\"]");
         }
 
         if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()))) {
-            myMatchList.add(node + "-[:CELLULARLOCATION]->(" + nodeName + "c:CellularLocation)");
+            myMatchList.add(node + "-[:CELLULAR_LOCATION]->(" + nodeName + "c:CELLULAR_LOCATION)");
             myWhereClauses.add(nodeName + "c.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key())
                     .replace(",", "\", \"") + "\"]");
         }

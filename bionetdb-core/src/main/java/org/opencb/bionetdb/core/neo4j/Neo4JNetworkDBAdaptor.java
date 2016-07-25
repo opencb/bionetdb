@@ -25,6 +25,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private Session session;
 
     private BioNetDBConfiguration configuration;
+    
+    private enum NodeTypes {
+        PHYSICAL_ENTITY,
+        INTERACTION,
+        XREF,
+        CELLULAR_LOCATION,
+        ONTOLOGY
+    }
 
     private enum RelTypes {
         REACTANT,
@@ -36,8 +44,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         TIMESERIES,
         ONTOLOGY,
         COMPONENTOFCOMPLEX,
-        CELLULARLOCATION,
-        CEL_ONTOLOGY
+        CELLULAR_LOCATION,
+        CELLOC_ONTOLOGY
     }
 
     public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
@@ -88,13 +96,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private void createIndexes() {
         if (this.session != null) {
             try (Transaction tx = this.session.beginTransaction()) {
-                tx.run("CREATE INDEX ON :PhysicalEntity(id)");
-                tx.run("CREATE INDEX ON :PhysicalEntity(name)");
+                tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(id)");
+                tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(name)");
 
-                tx.run("CREATE INDEX ON :Interaction(id)");
-                tx.run("CREATE INDEX ON :Interaction(name)");
+                tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(id)");
+                tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(name)");
 
-                tx.run("CREATE INDEX ON :Xref(id)");
+                tx.run("CREATE INDEX ON :" + NodeTypes.XREF + "(id)");
                 tx.run("CREATE INDEX ON :Tissue(tissue)");
                 tx.run("CREATE INDEX ON :TimeSeries(timeseries)");
 
@@ -124,16 +132,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException {
         try (Transaction tx = this.session.beginTransaction()) {
-            StatementResult xrefNode = getNode(tx, "Xref", new ObjectMap("id", nodeID));
+            StatementResult xrefNode = getNode(tx, NodeTypes.XREF.toString(), new ObjectMap("id", nodeID));
             if (xrefNode.hasNext()) {
                 // Look for the physical entity to which the xref is associated with
-                StatementResult pE = tx.run("MATCH (n:PhysicalEntity)-[" + RelTypes.XREF
-                        + "]->(x:Xref) WHERE ID(x) = "
+                StatementResult pE = tx.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY+ ")-[" + RelTypes.XREF
+                        + "]->(x:" + NodeTypes.XREF + ") WHERE ID(x) = "
                         + xrefNode.peek().get("ID").toString()
                         + " RETURN ID(n) AS ID, LABELS(n) AS LABELS");
                 for (Xref x : xrefList) {
-                    StatementResult myxref = getOrCreateNode(tx, "Xref", parseXref(x));
-                    addRelationship(tx, concatenateLabels(pE.peek().get("LABELS")), "Xref",
+                    StatementResult myxref = getOrCreateNode(tx, NodeTypes.XREF.toString(), parseXref(x));
+                    addRelationship(tx, concatenateLabels(pE.peek().get("LABELS")), NodeTypes.XREF.toString(),
                             pE.peek().get("ID").toString(), myxref.peek().get("ID").toString(), RelTypes.XREF);
                 }
             } else {
@@ -155,7 +163,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 // If the node does not already exist, it does not make sense inserting expression data.
                 if (xrefNode == null && addNodes) {
                     // Create basic node with info
-                    Node origin = createNode("PhysicalEntity", myProperty);
+                    Node origin = createNode(NodeTypes.PHYSICAL_ENTITY., myProperty);
                     addXrefNode(origin, new Xref(null, null, exprElem.getId(), null));
                     xrefNode = getNode("Xref", myProperty);
                 }
@@ -265,7 +273,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @return ObjectMap object containing the values present in myCellularLocation
      */
     private ObjectMap parseCellularLocation(CellularLocation myCellularLocation) {
-        ObjectMap myOutput = new ObjectMap("id", myCellularLocation.getName());
+        ObjectMap myOutput = new ObjectMap("name", myCellularLocation.getName());
         List<Ontology> myOntologies = myCellularLocation.getOntologies();
         List<ObjectMap> allOntologies = new ArrayList<>();
         if (myOntologies.size() > 0) {
@@ -328,28 +336,28 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         try (Transaction tx = this.session.beginTransaction()) {
             // 1. Insert the Physical Entities and the basic nodes they are connected to
             for (PhysicalEntity p : physicalEntityList) {
-                String peLabel = "PhysicalEntity:" + p.getType();
+                String peLabel = NodeTypes.PHYSICAL_ENTITY + ":" + p.getType();
                 StatementResult n = getOrCreateNode(tx, peLabel, parsePhysicalEntity(p));
                 String pEID = n.peek().get("ID").toString();
 
                 // 1.1. Insert the ontologies
                 for (Ontology o : p.getOntologies()) {
-                    StatementResult ont = getOrCreateNode(tx, "Ontology", parseOntology(o));
-                    addRelationship(tx, peLabel, "Ontology", pEID,
+                    StatementResult ont = getOrCreateNode(tx, NodeTypes.ONTOLOGY.toString(), parseOntology(o));
+                    addRelationship(tx, peLabel, NodeTypes.ONTOLOGY.toString(), pEID,
                             ont.peek().get("ID").toString(), RelTypes.ONTOLOGY);
                 }
 
                 // 1.2. Insert the cellular locations
                 for (CellularLocation c : p.getCellularLocation()) {
                     StatementResult cellLoc = getOrCreateCellularLocationNode(tx, parseCellularLocation(c));
-                    addRelationship(tx, peLabel, "CellularLocation", pEID,
-                            cellLoc.peek().get("ID").toString(), RelTypes.CELLULARLOCATION);
+                    addRelationship(tx, peLabel, NodeTypes.CELLULAR_LOCATION.toString(), pEID,
+                            cellLoc.peek().get("ID").toString(), RelTypes.CELLULAR_LOCATION);
                 }
 
                 // 1.3. Insert the Xrefs
                 for (Xref xref : p.getXrefs()) {
-                    StatementResult xr = getOrCreateNode(tx, "Xref", parseXref(xref));
-                    addRelationship(tx, peLabel, "Xref", pEID,
+                    StatementResult xr = getOrCreateNode(tx, NodeTypes.XREF.toString(), parseXref(xref));
+                    addRelationship(tx, peLabel, NodeTypes.XREF.toString(), pEID,
                             xr.peek().get("ID").toString(), RelTypes.XREF);
                 }
             }
@@ -359,20 +367,21 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             // 2. Insert the existing relationships between Physical Entities
             for (PhysicalEntity p : physicalEntityList) {
                 if (p.getComponentOfComplex().size() > 0) {
-                    StatementResult peNode = getNode(tx, "PhysicalEntity", parsePhysicalEntity(p));
+                    StatementResult peNode = getNode(tx, NodeTypes.PHYSICAL_ENTITY.toString(), parsePhysicalEntity(p));
                     if (peNode == null) {
-                        throw new BioNetDBException("PhysicalEntity \"" + p.getId()
+                        throw new BioNetDBException("PHYSICAL_ENTITY \"" + p.getId()
                                 + "\" is not properly inserted in the database.");
                     }
                     for (String complexID : p.getComponentOfComplex()) {
-                        StatementResult complexNode = getNode(tx, "PhysicalEntity", new ObjectMap("id", complexID));
+                        StatementResult complexNode = getNode(tx, NodeTypes.PHYSICAL_ENTITY.toString(),
+                                new ObjectMap("id", complexID));
                         if (complexNode == null) {
-                            throw new BioNetDBException("PhysicalEntity:Complex \"" + complexID
+                            throw new BioNetDBException("PHYSICAL_ENTITY:COMPLEX \"" + complexID
                                     + "\": is not properly inserted");
                         }
-                        if (complexNode.peek().get("LABELS").get(1).toString().equals("\"COMPLEX\"")) {
-                            String peLabel = "PhysicalEntity:" + p.getType();
-                            addRelationship(tx, peLabel, "PhysicalEntity:COMPLEX",
+                        if (complexNode.peek().get("LABELS").toString().contains(PhysicalEntity.Type.COMPLEX.toString())) {
+                            String peLabel = NodeTypes.PHYSICAL_ENTITY + ":" + p.getType();
+                            addRelationship(tx, peLabel, NodeTypes.PHYSICAL_ENTITY + ":" + PhysicalEntity.Type.COMPLEX,
                                     peNode.peek().get("ID").toString(), complexNode.peek().get("ID").toString(),
                                     RelTypes.COMPONENTOFCOMPLEX);
                         } else {
@@ -399,8 +408,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // 1. Insert all interactions as nodes
         try (Transaction tx = this.session.beginTransaction()) {
             for (Interaction i : interactionList) {
-                String interactionLabel = "Interaction:" + i.getType();
-                StatementResult interaction = getOrCreateNode(tx, interactionLabel, parseInteraction(i));
+                String interactionLabel = NodeTypes.INTERACTION + ":" + i.getType();
+                getOrCreateNode(tx, interactionLabel, parseInteraction(i));
             }
             tx.success();
         }
@@ -408,7 +417,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // 2. Insert the interactions
         try (Transaction tx = this.session.beginTransaction()) {
             for (Interaction i : interactionList) {
-                String interactionLabel = "Interaction:" + i.getType();
+                String interactionLabel = NodeTypes.INTERACTION + ":" + i.getType();
                 StatementResult interaction = getNode(tx, interactionLabel, new ObjectMap("id", i.getId()));
                 String interactionID = interaction.peek().get("ID").toString();
 
@@ -416,14 +425,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     case REACTION:
                         Reaction myreaction = (Reaction) i;
                         for (String myId : myreaction.getReactants()) {
-                            StatementResult reactant = getNode(tx, "PhysicalEntity", new ObjectMap("id", myId));
+                            StatementResult reactant = getNode(tx, NodeTypes.PHYSICAL_ENTITY.toString(),
+                                    new ObjectMap("id", myId));
                             addRelationship(tx, concatenateLabels(reactant.peek().get("LABELS")),
                                     interactionLabel, reactant.peek().get("ID").toString(),
                                     interactionID, RelTypes.REACTANT);
                         }
 
                         for (String myId : myreaction.getProducts()) {
-                            StatementResult product = getNode(tx, "PhysicalEntity", new ObjectMap("id", myId));
+                            StatementResult product = getNode(tx, NodeTypes.PHYSICAL_ENTITY.toString(),
+                                    new ObjectMap("id", myId));
                             addRelationship(tx, interactionLabel, concatenateLabels(product.peek().get("LABELS")),
                                     interactionID, product.peek().get("ID").toString(), RelTypes.PRODUCT);
                         }
@@ -431,14 +442,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     case CATALYSIS:
                         Catalysis mycatalysis = (Catalysis) i;
                         for (String myId : mycatalysis.getControllers()) {
-                            StatementResult reactant = getNode(tx, "PhysicalEntity", new ObjectMap("id", myId));
+                            StatementResult reactant = getNode(tx, NodeTypes.PHYSICAL_ENTITY.toString(),
+                                    new ObjectMap("id", myId));
                             addRelationship(tx, concatenateLabels(reactant.peek().get("LABELS")),
                                     interactionLabel, reactant.peek().get("ID").toString(),
                                     interactionID, RelTypes.CONTROLLER);
                         }
 
                         for (String myId : mycatalysis.getControlledProcesses()) {
-                            StatementResult product = getNode(tx, "Interaction", new ObjectMap("id", myId));
+                            StatementResult product = getNode(tx, NodeTypes.INTERACTION.toString(),
+                                    new ObjectMap("id", myId));
                             addRelationship(tx, interactionLabel, concatenateLabels(product.peek().get("LABELS")),
                                     interactionID, product.peek().get("ID").toString(), RelTypes.CONTROLLED);
                         }
@@ -446,14 +459,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     case REGULATION:
                         Regulation myregulation = (Regulation) i;
                         for (String myId : myregulation.getControllers()) {
-                            StatementResult reactant = getNode(tx, "PhysicalEntity", new ObjectMap("id", myId));
+                            StatementResult reactant = getNode(tx, NodeTypes.PHYSICAL_ENTITY.toString(),
+                                    new ObjectMap("id", myId));
                             addRelationship(tx, concatenateLabels(reactant.peek().get("LABELS")),
                                     interactionLabel, reactant.peek().get("ID").toString(),
                                     interactionID, RelTypes.CONTROLLER);
                         }
 
                         for (String myId : myregulation.getControlledProcesses()) {
-                            StatementResult product = getNode(tx, "Interaction", new ObjectMap("id", myId));
+                            StatementResult product = getNode(tx, NodeTypes.INTERACTION.toString(),
+                                    new ObjectMap("id", myId));
                             addRelationship(tx, interactionLabel, concatenateLabels(product.peek().get("LABELS")),
                                     interactionID, product.peek().get("ID").toString(), RelTypes.CONTROLLED);
                         }
@@ -514,13 +529,15 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @return Node that has been created.
      */
     private StatementResult getOrCreateCellularLocationNode(Transaction tx, ObjectMap properties) {
-        StatementResult cellLoc = getOrCreateNode(tx, "CellularLocation", new ObjectMap("id", properties.get("id")));
+        StatementResult cellLoc = getOrCreateNode(tx, NodeTypes.CELLULAR_LOCATION.toString(),
+                new ObjectMap("name", properties.get("name")));
         // gets or creates ontology node
         if (properties.containsKey("ontologies")) {
             for (ObjectMap myOntology : (List<ObjectMap>) properties.get("ontologies")) {
-                StatementResult ont = getOrCreateNode(tx, "Ontology", myOntology);
-                addRelationship(tx, "CellularLocation", "Ontology", cellLoc.peek().get("ID").toString(),
-                        ont.peek().get("ID").toString(), RelTypes.CEL_ONTOLOGY);
+                StatementResult ont = getOrCreateNode(tx, NodeTypes.ONTOLOGY.toString(), myOntology);
+                addRelationship(tx, NodeTypes.CELLULAR_LOCATION.toString(), NodeTypes.ONTOLOGY.toString(),
+                        cellLoc.peek().get("ID").toString(), ont.peek().get("ID").toString(),
+                        RelTypes.CELLOC_ONTOLOGY);
             }
         }
         return cellLoc;
@@ -648,9 +665,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //        if (node.hasProperty("id")) {
 //            myCellularLocation.setName((String) node.getProperty("id"));
 //        }
-//        if (node.hasRelationship(RelTypes.CEL_ONTOLOGY, Direction.OUTGOING)) {
+//        if (node.hasRelationship(RelTypes.CELLOC_ONTOLOGY, Direction.OUTGOING)) {
 //            List<Ontology> myOntologies = new ArrayList<>();
-//            for (Relationship myRelationship : node.getRelationships(RelTypes.CEL_ONTOLOGY, Direction.OUTGOING)) {
+//            for (Relationship myRelationship : node.getRelationships(RelTypes.CELLOC_ONTOLOGY, Direction.OUTGOING)) {
 //                myOntologies.add(node2Ontology(myRelationship.getEndNode()));
 //            }
 //            myCellularLocation.setOntologies(myOntologies);
@@ -701,9 +718,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //                p.setOntologies(ontologyList);
 //            }
 //
-//            if (node.hasRelationship(RelTypes.CELLULARLOCATION)) {
+//            if (node.hasRelationship(RelTypes.CELLULAR_LOCATION)) {
 //                List<CellularLocation> cellularLocationList = new ArrayList<>();
-//                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.CELLULARLOCATION)) {
+//                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.CELLULAR_LOCATION)) {
 //                    Node cellularLocationNode = relationship.getEndNode();
 //                    cellularLocationList.add(node2CellularLocation(cellularLocationNode));
 //                }
@@ -745,17 +762,17 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private ObjectMap getTotalPhysicalEntities() {
         ObjectMap myResult = new ObjectMap();
-        myResult.put("undefined", this.session.run(("MATCH (n:PhysicalEntity:"
+        myResult.put("undefined", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.UNDEFINED + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("protein", this.session.run(("MATCH (n:PhysicalEntity:"
+        myResult.put("protein", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.PROTEIN + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("dna", this.session.run(("MATCH (n:PhysicalEntity:"
+        myResult.put("dna", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.DNA + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("rna", this.session.run(("MATCH (n:PhysicalEntity:"
+        myResult.put("rna", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.RNA + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("complex", this.session.run(("MATCH (n:PhysicalEntity:"
+        myResult.put("complex", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.COMPLEX + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("small_molecule", this.session.run(("MATCH (n:PhysicalEntity:"
+        myResult.put("small_molecule", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.SMALL_MOLECULE + ") RETURN count(n) AS count")).peek().get("count").asInt());
         int total = 0;
         for (String key : myResult.keySet()) {
@@ -766,28 +783,35 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     private int getTotalXrefNodes() {
-        return this.session.run("MATCH (n:Xref) RETURN count(n) AS count").peek().get("count").asInt();
+        return this.session.run("MATCH (n:" + NodeTypes.XREF + ") RETURN count(n) AS count")
+                .peek().get("count").asInt();
     }
 
     private int getTotalXrefRelationships() {
-        return this.session.run("MATCH (n:PhysicalEntity)-[r:XREF]->(m:Xref) RETURN count(r) AS count").peek().get("count").asInt();
+        return this.session.run("MATCH (n:"
+                + NodeTypes.PHYSICAL_ENTITY + ")-[r:" + RelTypes.XREF + "]->(m:"
+                + NodeTypes.XREF + ") RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     private int getTotalOntologyNodes() {
-        return this.session.run("MATCH (n:Ontology) RETURN count(n) AS count").peek().get("count").asInt();
+        return this.session.run("MATCH (n:" + NodeTypes.ONTOLOGY + ") RETURN count(n) AS count")
+                .peek().get("count").asInt();
     }
 
     private int getTotalOntologyRelationships() {
-        return this.session.run("MATCH (n)-[r:ONTOLOGY|CEL_ONTOLOGY]->(m:Ontology) RETURN count(r) AS count").peek().get("count").asInt();
+        return this.session.run("MATCH (n)-[r:" + RelTypes.ONTOLOGY + "|" + RelTypes.CELLOC_ONTOLOGY +
+                "]->(m:" + NodeTypes.ONTOLOGY + ") RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     private int getTotalCelLocationNodes() {
-        return this.session.run("MATCH (n:CellularLocation) RETURN count(n) AS count").peek().get("count").asInt();
+        return this.session.run("MATCH (n:" + NodeTypes.CELLULAR_LOCATION + ") RETURN count(n) AS count")
+                .peek().get("count").asInt();
     }
 
     private int getTotalCelLocationRelationships() {
-        return this.session.run("MATCH (n:PhysicalEntity)-[r:CELLULARLOCATION]->(m:CellularLocation) RETURN count(r) AS count")
-                .peek().get("count").asInt();
+        return this.session.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY
+                + ")-[r:" + RelTypes.CELLULAR_LOCATION + "]->(m:" + NodeTypes.CELLULAR_LOCATION +
+                ") RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     @Override
@@ -811,7 +835,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public QueryResult betweenness(Query query) {
         String id = query.getString("id");
 
-        String nodeLabel = query.getString("nodeLabel", "PhysicalEntity");
+        String nodeLabel = query.getString("nodeLabel", NodeTypes.PHYSICAL_ENTITY.toString());
         nodeLabel = nodeLabel.replace(",", "|");
 
         String relationshipLabel = query.getString("relationshipLabel", "REACTANT");
@@ -856,7 +880,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         cypherQuery.append(" WITH a, count(DISTINCT b) AS n");
         cypherQuery.append(" MATCH (a)--(:Interaction)--(:PhysicalEntity)"
                 + "--(:Interaction)-[r]-(:PhysicalEntity)--(:Interaction)--(a)");
-        cypherQuery.append(" MATCH (a)-[:CELLULARLOCATION]-(c:CellularLocation)");
+        cypherQuery.append(" MATCH (a)-[:CELLULAR_LOCATION]-(c:CellularLocation)");
         cypherQuery.append(" RETURN a.name, c.id, n, count(DISTINCT r) AS r");
 
         System.out.println(cypherQuery.toString());

@@ -67,13 +67,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
      */
     void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options);
 
-    //TODO: To remove
-    //public QueryResult getXrefs(String idNode);
-
     QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
 
     QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions);
-
 
     QueryResult getSummaryStats(Query query, QueryOptions queryOptions);
 
