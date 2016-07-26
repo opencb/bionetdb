@@ -24,6 +24,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
         PE_ID ("pe.id", TEXT_ARRAY, ""),
         PE_DESCRIPTION ("pe.description", TEXT_ARRAY, ""),
 //        PE_TYPE ("pe.type", TEXT_ARRAY, ""),
+        REL_TYPE("rel.type", TEXT_ARRAY, ""),
         PE_ATTR_EXPR ("pe.attr.expr", TEXT_ARRAY, ""),  // example: "brain:t2>0.3;brain:t4<=0.3"
         PE_ONTOLOGY ("pe.ontology", TEXT_ARRAY, ""),  // example: "go:001234,go:002345"
         PE_CELLOCATION ("pe.cellularLocation", TEXT_ARRAY, ""), // example: "nucleoplasm,..."
@@ -68,6 +69,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options);
 
     QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
+
+    QueryResult getNodes(Query queryN, Query queryM, QueryOptions queryOptions) throws BioNetDBException;
 
     QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions);
 

@@ -163,8 +163,8 @@ public class CliOptionsParser {
         @Parameter(names = {"--m"}, description = "Related node", required = false, arity = 1)
         public String m;
 
-        @Parameter(names = {"--neighbours"}, description = "Number of Jumps", required = false, arity = 1)
-        public int neighbours = 1;
+        @Parameter(names = {"--jumps"}, description = "Number of Jumps", required = false, arity = 1)
+        public int jumps = 1;
 
         @Parameter(names = {"--relationship"}, description = "Relationship", required = false, arity = 1)
         public String relationship;

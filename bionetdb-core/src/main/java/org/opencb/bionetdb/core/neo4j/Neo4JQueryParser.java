@@ -18,7 +18,8 @@ public class Neo4JQueryParser {
 
     public static String parse2(Query n, Object obj, Query m, QueryOptions options) throws BioNetDBException {
 
-        // query --n id:CHK1;cl:nucleoplasm --m id:P40343;cl:cytosol [--neighbourhood 4] [--relationship XREF]
+        // query --n id:CHK1;cl:nucleoplasm --m id:P40343;cl:cytosol [--neighbours 4] [--relationship XREF]
+        // --n id:XXX,cl:XXX,on:XXX
 
 
         String nFilter = parse("n", n, options);

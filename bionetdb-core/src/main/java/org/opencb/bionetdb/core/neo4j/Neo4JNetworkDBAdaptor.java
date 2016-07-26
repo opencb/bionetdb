@@ -25,7 +25,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private Session session;
 
     private BioNetDBConfiguration configuration;
-    
+
     private enum NodeTypes {
         PHYSICAL_ENTITY,
         INTERACTION,
@@ -114,7 +114,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     /**
      * Insert an entire network into the Neo4J database.
      *
-     * @param network Object containing all the nodes and interactions
+     * @param network      Object containing all the nodes and interactions
      * @param queryOptions Optional params
      */
     @Override
@@ -126,7 +126,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     /**
      * Method to annotate Xrefs in the database.
      *
-     * @param nodeID ID of the node we want to annotate
+     * @param nodeID   ID of the node we want to annotate
      * @param xrefList List containing all the Xref annotations to be added in the database
      */
     @Override
@@ -135,7 +135,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             StatementResult xrefNode = getNode(tx, NodeTypes.XREF.toString(), new ObjectMap("id", nodeID));
             if (xrefNode.hasNext()) {
                 // Look for the physical entity to which the xref is associated with
-                StatementResult pE = tx.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY+ ")-[" + RelTypes.XREF
+                StatementResult pE = tx.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ")-[" + RelTypes.XREF
                         + "]->(x:" + NodeTypes.XREF + ") WHERE ID(x) = "
                         + xrefNode.peek().get("ID").toString()
                         + " RETURN ID(n) AS ID, LABELS(n) AS LABELS");
@@ -221,7 +221,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
             tx.success();
         }
-*/    }
+*/
+    }
 
 
     private ObjectMap parsePhysicalEntity(PhysicalEntity myPhysicalEntity) {
@@ -330,7 +331,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * Insert physical entities into the Neo4J database.
      *
      * @param physicalEntityList List containing all the physical entities to be inserted in the database
-     * @param queryOptions Additional params for the query
+     * @param queryOptions       Additional params for the query
      */
     private void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) throws BioNetDBException {
         try (Transaction tx = this.session.beginTransaction()) {
@@ -401,7 +402,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * Insert all the interactions into the Neo4J database.
      *
      * @param interactionList List containing all the interactions to be inserted in the database
-     * @param queryOptions Additional params for the query
+     * @param queryOptions    Additional params for the query
      */
     private void insertInteractions(List<Interaction> interactionList, QueryOptions queryOptions) {
 
@@ -475,9 +476,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         break;
                     default:
                         break;
-                    }
-
                 }
+
+            }
             tx.success();
         }
     }
@@ -505,8 +506,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     /**
-     * @param tx Transaction
-     * @param label: Label of the node
+     * @param tx          Transaction
+     * @param label:      Label of the node
      * @param properties: Map containing all the properties to be added. Key "id" must be among all the possible keys.
      * @return Node that has been created.
      */
@@ -524,7 +525,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     /**
      * Checks if the cellular location given in properties is already in database. If not, it creates it and
      * returns the node.
-     * @param tx Transaction
+     *
+     * @param tx          Transaction
      * @param properties: Map containing all the properties to be added. Key "id" must be among all the possible keys.
      * @return Node that has been created.
      */
@@ -546,10 +548,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     /**
      * The function will create an interaction between two nodes if the relation does not exist.
      *
-     * @param tx Transaction
-     * @param originID Node ID from which we want to create the interaction
+     * @param tx            Transaction
+     * @param originID      Node ID from which we want to create the interaction
      * @param destinationID Destination node ID
-     * @param relationType Type of relationship between nodes
+     * @param relationType  Type of relationship between nodes
      */
     private void addRelationship(Transaction tx, String labelOri, String labelDest, String originID,
                                  String destinationID, RelTypes relationType) {
@@ -611,8 +613,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * given the same relationship and direction and return the set comprised by the two of them.
      * All the relationships from node1 and node2 to the set returned by the method will be removed from the database.
      *
-     * @param node1 Node
-     * @param node2 Node
+     * @param node1    Node
+     * @param node2    Node
      * @param relation Relationship to follow
      */
     private Set<Node> getUniqueNodes(Node node1, Node node2, RelTypes relation) {
@@ -748,6 +750,37 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
+    public QueryResult getNodes(Query queryN, Query queryM, QueryOptions queryOptions) throws BioNetDBException {
+        long startTime = System.currentTimeMillis();
+        String nQuery = Neo4JQueryParser.parse("n", queryN, queryOptions);
+        String mQuery = Neo4JQueryParser.parse("m", queryM, queryOptions);
+
+//        MATCH (n)-[:XREF]->(nx:XREF) , (m)-[:XREF]->(mx:XREF) , (n)-[:REACTANT|:PRODUCT*..2]-(m)
+//          WHERE nx.id IN ["P40343"] AND mx.id IN ["5732871"] RETURN n
+
+        StringBuilder relQuery = new StringBuilder(", (n)-[");
+        if (queryOptions.containsKey(NetworkQueryParams.REL_TYPE.key())) {
+            relQuery.append(":" + queryOptions.getString(NetworkQueryParams.REL_TYPE.key()).replace(",", "|:"));
+        }
+        if (queryOptions.containsKey(NetworkQueryParams._JUMPS.key())) {
+            relQuery.append("*.." + queryOptions.getInt(NetworkQueryParams._JUMPS.key()));
+        }
+        relQuery.append("]-(m) ");
+
+        String myQuery = "MATCH " + nQuery.split("WHERE")[0] + ", " + mQuery.split("WHERE")[0] + relQuery + "WHERE"
+                + nQuery.split("WHERE")[1] + " AND" + mQuery.split("WHERE")[1] + " RETURN n";
+
+        System.out.println("myQuery: " + myQuery);
+        long stopTime = System.currentTimeMillis();
+        StatementResult run = session.run(myQuery);
+        while (run.hasNext()) {
+            System.out.println(run.next().asMap());
+        }
+        int time = (int) (stopTime - startTime) / 1000;
+        return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
+    }
+
+    @Override
     public QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions) {
         return null;
     }
@@ -799,8 +832,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     private int getTotalOntologyRelationships() {
-        return this.session.run("MATCH (n)-[r:" + RelTypes.ONTOLOGY + "|" + RelTypes.CELLOC_ONTOLOGY +
-                "]->(m:" + NodeTypes.ONTOLOGY + ") RETURN count(r) AS count").peek().get("count").asInt();
+        return this.session.run("MATCH (n)-[r:" + RelTypes.ONTOLOGY + "|" + RelTypes.CELLOC_ONTOLOGY
+                + "]->(m:" + NodeTypes.ONTOLOGY + ") RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     private int getTotalCelLocationNodes() {
@@ -810,8 +843,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private int getTotalCelLocationRelationships() {
         return this.session.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY
-                + ")-[r:" + RelTypes.CELLULAR_LOCATION + "]->(m:" + NodeTypes.CELLULAR_LOCATION +
-                ") RETURN count(r) AS count").peek().get("count").asInt();
+                + ")-[r:" + RelTypes.CELLULAR_LOCATION + "]->(m:" + NodeTypes.CELLULAR_LOCATION
+                + ") RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     @Override
