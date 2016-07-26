@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.app.cli;
 
-import org.apache.avro.generic.GenericData;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -9,7 +8,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,18 +29,14 @@ public class QueryCommandExecutor extends CommandExecutor {
 
         try {
             if (queryCommandOptions.database == null || queryCommandOptions.database.isEmpty()) {
-                queryCommandOptions.database = "unknown";
-
-                DatabaseConfiguration databaseConfiguration = new DatabaseConfiguration(queryCommandOptions.database, null);
-                databaseConfiguration.setHost(queryCommandOptions.host);
-                databaseConfiguration.setPort(queryCommandOptions.port);
-                databaseConfiguration.setUser(queryCommandOptions.user);
-                databaseConfiguration.setPassword(queryCommandOptions.password);
-
-                configuration.getDatabases().add(databaseConfiguration);
+                if (queryCommandOptions.database == null || queryCommandOptions.database.isEmpty()) {
+                    DatabaseConfiguration databaseConfiguration = createDatabaseConfigurationFromCLI("unknown", queryCommandOptions.host,
+                            queryCommandOptions.port, queryCommandOptions.user, queryCommandOptions.password);
+                    configuration.getDatabases().add(databaseConfiguration);
+                }
             }
 
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(queryCommandOptions.database, configuration);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor("unknown", configuration);
 
 //            networkDBAdaptor.get(null, null);
             if (queryCommandOptions.betweenness) {
@@ -50,7 +44,9 @@ public class QueryCommandExecutor extends CommandExecutor {
 //                query.put("nodeLabel", queryCommandOptions.nodeType);
                 query.put(NetworkDBAdaptor.NetworkQueryParams.TYPE.key(), queryCommandOptions.nodeType);
 
-                networkDBAdaptor.betweenness(query);
+                QueryResult betweenness = networkDBAdaptor.betweenness(query);
+                System.out.println("betweenness = " + betweenness);
+                return;
             }
 
             if (queryCommandOptions.clusteringCoeff) {

@@ -33,18 +33,12 @@ public class LoadCommandExecutor extends CommandExecutor {
             Network network = bioPaxParser.parse(inputPath);
 
             if (loadCommandOptions.database == null || loadCommandOptions.database.isEmpty()) {
-                loadCommandOptions.database = "unknown";
-
-                DatabaseConfiguration databaseConfiguration = new DatabaseConfiguration(loadCommandOptions.database, null);
-                databaseConfiguration.setHost(loadCommandOptions.host);
-                databaseConfiguration.setPort(loadCommandOptions.port);
-                databaseConfiguration.setUser(loadCommandOptions.user);
-                databaseConfiguration.setPassword(loadCommandOptions.password);
-
+                DatabaseConfiguration databaseConfiguration = createDatabaseConfigurationFromCLI("unknown", loadCommandOptions.host,
+                        loadCommandOptions.port, loadCommandOptions.user, loadCommandOptions.password);
                 configuration.getDatabases().add(databaseConfiguration);
             }
 
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(loadCommandOptions.database, configuration, true);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor("unknown", configuration, true);
             networkDBAdaptor.insert(network, null);
 
         } catch (Exception e) {

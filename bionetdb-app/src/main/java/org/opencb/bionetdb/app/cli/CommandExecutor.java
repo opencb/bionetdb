@@ -18,6 +18,7 @@ package org.opencb.bionetdb.app.cli;
 
 import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,13 +115,25 @@ public abstract class CommandExecutor {
         }
     }
 
+    protected DatabaseConfiguration createDatabaseConfigurationFromCLI(String id, String host, int port, String user, String password) {
+        DatabaseConfiguration databaseConfiguration = new DatabaseConfiguration(id, null);
+        databaseConfiguration.setHost(host);
+        databaseConfiguration.setPort(port);
+        databaseConfiguration.setUser(user);
+        databaseConfiguration.setPassword(password);
 
+        return databaseConfiguration;
+    }
+
+
+    @Deprecated
     protected void makeDir(Path folderPath) throws IOException {
         if(!Files.exists(folderPath)) {
             Files.createDirectories(folderPath);
         }
     }
 
+    @Deprecated
     protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath) throws IOException, InterruptedException {
         ProcessBuilder builder = getProcessBuilder(workingDirectory, binPath, args, logFilePath);
 
@@ -138,6 +151,7 @@ public abstract class CommandExecutor {
         return executedWithoutErrors;
     }
 
+    @Deprecated
     private ProcessBuilder getProcessBuilder(File workingDirectory, String binPath, List<String> args, String logFilePath) {
         List<String> commandArgs = new ArrayList<>();
         commandArgs.add(binPath);
