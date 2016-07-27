@@ -25,37 +25,37 @@ public class Neo4JQueryParser {
             query = new Query();
         }
 
-        StringBuilder cypherQuery = new StringBuilder();
-
-        StringBuilder node = new StringBuilder("(" + nodeName);
-        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key()))) {
-            node.append(":").append(query.getString(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key()
-                    .replace(',', '|')).toUpperCase());
-        }
-        node.append(")");
-
         List<String> myMatchList = new ArrayList<>();
         List<String> myWhereClauses = new ArrayList<>();
+        StringBuilder cypherQuery = new StringBuilder();
+
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key()))) {
+            myMatchList.add("(" + nodeName + ":" + query.getString(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key()
+                    .replace(',', '|')).toUpperCase() + ")");
+        }
+//        else {
+//            myMatchList.add("(" + nodeName + ")");
+//        }
+
         if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key()))) {
-            myMatchList.add(node + "-[:XREF]->(" + nodeName + "x:XREF)");
+            myMatchList.add("(" + nodeName + ")-[:XREF]->(" + nodeName + "x:XREF)");
             myWhereClauses.add(nodeName + "x.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key())
                     .replace(",", "\", \"") + "\"]");
         }
 
-        if (query.get(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()) != null
-                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()).isEmpty()) {
-            myMatchList.add(node + "-[:ONTOLOGY]->(" + nodeName + "o:ONTOLOGY)");
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key()))) {
+            myMatchList.add("(" + nodeName + ")-[:ONTOLOGY]->(" + nodeName + "o:ONTOLOGY)");
             myWhereClauses.add(nodeName + "o.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_ONTOLOGY.key())
                     .replace(",", "\", \"") + "\"]");
         }
 
         if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key()))) {
-            myMatchList.add(node + "-[:CELLULAR_LOCATION]->(" + nodeName + "c:CELLULAR_LOCATION)");
-            myWhereClauses.add(nodeName + "c.id IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key())
+            myMatchList.add("(" + nodeName + ")-[:CELLULAR_LOCATION]->(" + nodeName + "c:CELLULAR_LOCATION)");
+            myWhereClauses.add(nodeName + "c.name IN [\"" + query.getString(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key())
                     .replace(",", "\", \"") + "\"]");
         }
-        cypherQuery.append(StringUtils.join(myMatchList, ','));
 
+        cypherQuery.append(StringUtils.join(myMatchList, ','));
 
         if (myWhereClauses.size() > 0) {
             cypherQuery.append(" WHERE ");

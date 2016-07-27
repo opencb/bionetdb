@@ -26,7 +26,6 @@ public class QueryCommandExecutor extends CommandExecutor {
 
     @Override
     public void execute() {
-
         try {
             if (queryCommandOptions.database == null || queryCommandOptions.database.isEmpty()) {
                 if (queryCommandOptions.database == null || queryCommandOptions.database.isEmpty()) {
@@ -54,26 +53,25 @@ public class QueryCommandExecutor extends CommandExecutor {
 
                 QueryResult queryResult = networkDBAdaptor.clusteringCoefficient(query);
                 System.out.println("queryResult = " + queryResult);
+                return;
             }
 
-            Query query = new Query();
+            // CLI query example:
+            // query --id P40343 --cellular-location cytosol --m "id=5732871;cl=Golgi membrane" --jumps 2
+            Query query1 = new Query();
             if (StringUtils.isNotEmpty(queryCommandOptions.id)) {
-//                Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), queryCommandOptions.id);
-                query.put(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), queryCommandOptions.id);
-
+                query1.put(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), queryCommandOptions.id);
             }
 
             if (StringUtils.isNotEmpty(queryCommandOptions.nodeType)) {
-                query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), queryCommandOptions.nodeType);
+                query1.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), queryCommandOptions.nodeType);
             }
 
             if (StringUtils.isNotEmpty(queryCommandOptions.cellularLocation)) {
-                query.put(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key(), queryCommandOptions.cellularLocation);
+                query1.put(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key(), queryCommandOptions.cellularLocation);
             }
-//            networkDBAdaptor.getNodes(query, null);
 
-            if (StringUtils.isNotEmpty(queryCommandOptions.n) && StringUtils.isNotEmpty(queryCommandOptions.m)) {
-                Query query1 = buildNodeQuery(queryCommandOptions.n);
+            if (StringUtils.isNotEmpty(queryCommandOptions.m)) {
                 Query query2 = buildNodeQuery(queryCommandOptions.m);
                 QueryOptions queryOptions = new QueryOptions();
                 if (queryCommandOptions.jumps != 0) {
@@ -85,7 +83,9 @@ public class QueryCommandExecutor extends CommandExecutor {
                     queryOptions.put(NetworkDBAdaptor.NetworkQueryParams.REL_TYPE.key(), queryCommandOptions.relationship);
                 }
                 networkDBAdaptor.getNodes(query1, query2, queryOptions);
+                return;
             }
+            networkDBAdaptor.getNodes(query1, null);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -96,12 +96,15 @@ public class QueryCommandExecutor extends CommandExecutor {
 
     private Query buildNodeQuery(String node) {
         Query query = new Query();
-        List<String> properties = Arrays.asList(node.split(","));
+        List<String> properties = Arrays.asList(node.split(";"));
         for (String item: properties) {
-            String[] items = item.split(":");
+            String[] items = item.split("=");
             switch(items[0]) {
                 case "id":
                     query.put(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), items[1]);
+                    break;
+                case "ty":
+                    query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), items[1]);
                     break;
                 case "cl":
                     query.put(NetworkDBAdaptor.NetworkQueryParams.PE_CELLOCATION.key(), items[1]);

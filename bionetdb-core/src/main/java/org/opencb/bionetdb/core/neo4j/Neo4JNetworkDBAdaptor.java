@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.driver.v1.*;
 import org.neo4j.driver.v1.types.Node;
@@ -15,6 +16,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by imedina on 05/08/15.
@@ -755,10 +758,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String nQuery = Neo4JQueryParser.parse("n", queryN, queryOptions);
         String mQuery = Neo4JQueryParser.parse("m", queryM, queryOptions);
 
-//        MATCH (n)-[:XREF]->(nx:XREF) , (m)-[:XREF]->(mx:XREF) , (n)-[:REACTANT|:PRODUCT*..2]-(m)
-//          WHERE nx.id IN ["P40343"] AND mx.id IN ["5732871"] RETURN n
+        // MATCH (n)-[:XREF]->(nx:XREF) , (m)-[:XREF]->(mx:XREF) , (n)-[:REACTANT|:PRODUCT*..2]-(m)
+        //  WHERE nx.id IN ["P40343"] AND mx.id IN ["5732871"] RETURN n
 
-        StringBuilder relQuery = new StringBuilder(", (n)-[");
+        // Creating relationship between nodes n and m
+        StringBuilder relQuery = new StringBuilder("(n)-[");
         if (queryOptions.containsKey(NetworkQueryParams.REL_TYPE.key())) {
             relQuery.append(":").append(queryOptions.getString(NetworkQueryParams.REL_TYPE.key())
                     .replace(",", "|:"));
@@ -768,12 +772,40 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         relQuery.append("]-(m) ");
 
-        String myQuery = "MATCH " + nQuery.split("WHERE")[0] + ", " + mQuery.split("WHERE")[0] + relQuery + "WHERE"
-                + nQuery.split("WHERE")[1] + " AND" + mQuery.split("WHERE")[1] + " RETURN n";
+        StringBuilder myQuery = new StringBuilder();
 
-        System.out.println("myQuery: " + myQuery);
+        // Creating the MATCH part in cypher query
+        List<String> myMatch = new ArrayList<>();
+        myMatch.add(nQuery.split("WHERE")[0]);
+        myMatch.add(mQuery.split("WHERE")[0]);
+        myMatch.add(relQuery.toString());
+        myMatch.removeAll(Arrays.asList("", null));
+        myQuery.append("MATCH ").append(StringUtils.join(myMatch, " , "));
+
+        // Creating the WHERE part in cypher query
+        List<String> myWhere = new ArrayList<>();
+        if (nQuery.contains("WHERE")) {
+            myWhere.add(nQuery.split("WHERE")[1]);
+        }
+        if (mQuery.contains("WHERE")) {
+            myWhere.add(mQuery.split("WHERE")[1]);
+        }
+        if (myWhere.size() > 0) {
+            myQuery.append(" WHERE ").append(StringUtils.join(myWhere, " AND "));
+        }
+
+        // Getting the nodes that should be returned
+        StringBuilder ret = new StringBuilder(" RETURN n");
+        Pattern pattern = Pattern.compile("\\((m.?):[A-Z_]+\\)");
+        Matcher m = pattern.matcher(mQuery.split("WHERE")[0]);
+        while (m.find()) {
+            ret.append(",").append(m.group(1));
+        }
+        myQuery.append(ret.toString());
+
+        System.out.println("myQuery: " + myQuery.toString());
         long stopTime = System.currentTimeMillis();
-        StatementResult run = session.run(myQuery);
+        StatementResult run = session.run(myQuery.toString());
         while (run.hasNext()) {
             System.out.println(run.next().asMap());
         }
