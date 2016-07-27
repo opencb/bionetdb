@@ -20,16 +20,14 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 public interface NetworkDBAdaptor extends AutoCloseable {
 
     enum NetworkQueryParams implements QueryParam {
-        TYPE ("type", TEXT_ARRAY, ""),   // This is PhysicalEntity, Interaction, Xrefs, ...
+        NODE_TYPE("node.type", TEXT_ARRAY, ""),   // This is PHYSICAL_ENTITY, INTERACTION, XREF, ...
         PE_ID ("pe.id", TEXT_ARRAY, ""),
         PE_DESCRIPTION ("pe.description", TEXT_ARRAY, ""),
-//        PE_TYPE ("pe.type", TEXT_ARRAY, ""),
         REL_TYPE("rel.type", TEXT_ARRAY, ""),
         PE_ATTR_EXPR ("pe.attr.expr", TEXT_ARRAY, ""),  // example: "brain:t2>0.3;brain:t4<=0.3"
-        PE_ONTOLOGY ("pe.ontology", TEXT_ARRAY, ""),  // example: "go:001234,go:002345"
+        PE_ONTOLOGY ("pe.ontology", TEXT_ARRAY, ""),  // example: "go:001234, go:002345"
         PE_CELLOCATION ("pe.cellularLocation", TEXT_ARRAY, ""), // example: "nucleoplasm,..."
-        _JUMPS ("_jumps", INTEGER, ""),
-        INT_TYPE ("int.type", TEXT_ARRAY, "");
+        JUMPS("jumps", INTEGER, "");
 
         NetworkQueryParams(String key, Type type, String description) {
             this.key = key;
@@ -71,8 +69,6 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
 
     QueryResult getNodes(Query queryN, Query queryM, QueryOptions queryOptions) throws BioNetDBException;
-
-    QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions);
 
     QueryResult getSummaryStats(Query query, QueryOptions queryOptions);
 

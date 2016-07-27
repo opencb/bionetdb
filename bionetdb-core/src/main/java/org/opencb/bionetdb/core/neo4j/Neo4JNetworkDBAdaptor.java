@@ -760,10 +760,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         StringBuilder relQuery = new StringBuilder(", (n)-[");
         if (queryOptions.containsKey(NetworkQueryParams.REL_TYPE.key())) {
-            relQuery.append(":" + queryOptions.getString(NetworkQueryParams.REL_TYPE.key()).replace(",", "|:"));
+            relQuery.append(":").append(queryOptions.getString(NetworkQueryParams.REL_TYPE.key())
+                    .replace(",", "|:"));
         }
-        if (queryOptions.containsKey(NetworkQueryParams._JUMPS.key())) {
-            relQuery.append("*.." + queryOptions.getInt(NetworkQueryParams._JUMPS.key()));
+        if (queryOptions.containsKey(NetworkQueryParams.JUMPS.key())) {
+            relQuery.append("*..").append(queryOptions.getInt(NetworkQueryParams.JUMPS.key()));
         }
         relQuery.append("]-(m) ");
 
@@ -778,11 +779,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         int time = (int) (stopTime - startTime) / 1000;
         return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
-    }
-
-    @Override
-    public QueryResult getPhysicalEntities(Query query, QueryOptions queryOptions) {
-        return null;
     }
 
     private int getTotalNodes() {

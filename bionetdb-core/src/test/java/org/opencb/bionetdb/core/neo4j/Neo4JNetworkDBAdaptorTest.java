@@ -207,7 +207,7 @@ public class Neo4JNetworkDBAdaptorTest {
         myXrefIds.add("CMK2");
 
         myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), myXrefIds);
-        myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key(), 2);
+        myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams.JUMPS.key(), 2);
         networkDBAdaptor.getNodes(myQueryObject, null);
         System.out.println("The query took " + networkDBAdaptor.getNodes(myQueryObject, null).getDbTime() + " seconds.");
     }

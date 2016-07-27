@@ -38,11 +38,10 @@ public class QueryCommandExecutor extends CommandExecutor {
 
             NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor("unknown", configuration);
 
-//            networkDBAdaptor.get(null, null);
             if (queryCommandOptions.betweenness) {
                 Query query = new Query("id", queryCommandOptions.id);
 //                query.put("nodeLabel", queryCommandOptions.nodeType);
-                query.put(NetworkDBAdaptor.NetworkQueryParams.TYPE.key(), queryCommandOptions.nodeType);
+                query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), queryCommandOptions.nodeType);
 
                 QueryResult betweenness = networkDBAdaptor.betweenness(query);
                 System.out.println("betweenness = " + betweenness);
@@ -65,7 +64,7 @@ public class QueryCommandExecutor extends CommandExecutor {
             }
 
             if (StringUtils.isNotEmpty(queryCommandOptions.nodeType)) {
-                query.put(NetworkDBAdaptor.NetworkQueryParams.TYPE.key(), queryCommandOptions.nodeType);
+                query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), queryCommandOptions.nodeType);
             }
 
             if (StringUtils.isNotEmpty(queryCommandOptions.cellularLocation)) {
@@ -78,9 +77,9 @@ public class QueryCommandExecutor extends CommandExecutor {
                 Query query2 = buildNodeQuery(queryCommandOptions.m);
                 QueryOptions queryOptions = new QueryOptions();
                 if (queryCommandOptions.jumps != 0) {
-                    queryOptions.put(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key(), queryCommandOptions.jumps);
+                    queryOptions.put(NetworkDBAdaptor.NetworkQueryParams.JUMPS.key(), queryCommandOptions.jumps);
                 } else {
-                    queryOptions.put(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key(), 1);
+                    queryOptions.put(NetworkDBAdaptor.NetworkQueryParams.JUMPS.key(), 1);
                 }
                 if (StringUtils.isNotEmpty(queryCommandOptions.relationship)) {
                     queryOptions.put(NetworkDBAdaptor.NetworkQueryParams.REL_TYPE.key(), queryCommandOptions.relationship);

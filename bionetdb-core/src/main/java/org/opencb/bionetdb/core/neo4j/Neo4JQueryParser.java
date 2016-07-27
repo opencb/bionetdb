@@ -16,42 +16,6 @@ public class Neo4JQueryParser {
 
     //public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
-    public static String parse2(Query n, Object obj, Query m, QueryOptions options) throws BioNetDBException {
-
-        // query --n id=CHK1;cl=nucleoplasm --m id=P40343;cl=cytosol [--neighbours 4] [--relationship XREF]
-        // --n id:XXX,cl:XXX,on:XXX
-
-
-        String nFilter = parse("n", n, options);
-        String mFilter = parse("m", m, options);
-
-// add ()--()
-
-//        // First we construct the Match
-//        if (query.get(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()) != null
-//                && !query.getString(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key()).isEmpty()) {
-//            StringBuilder relationsCypher = new StringBuilder().append(":");
-//            for (String interaction : (List<String>) query.get(NetworkDBAdaptor.NetworkQueryParams.INT_TYPE.key())) {
-//                // TODO: Probably, in this point, I would have to check the proper Interaction name given the id...
-//                relationsCypher.append(interaction).append("|");
-//            }
-//            relationsCypher.setLength(relationsCypher.length() - 1);
-//
-//            if (query.get(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()) != null
-//                    && !query.getString(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()).isEmpty()) {
-//                relationsCypher.append("*..").append(query.getInt(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()));
-//            }
-//
-//            cypherQuery.append("[").append(relationsCypher).append("]");
-//        } else {
-//            if (query.get(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()) != null
-//                    && !query.getString(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key()).isEmpty()) {
-//                cypherQuery.append("[*..").append(query.getInt(NetworkDBAdaptor.NetworkQueryParams._JUMPS.key())).append("]");
-//            }
-//        }
-        return null;
-    }
-
     public static String parse(Query query, QueryOptions options) throws BioNetDBException {
         return parse("n", query, options);
     }
@@ -63,11 +27,12 @@ public class Neo4JQueryParser {
 
         StringBuilder cypherQuery = new StringBuilder();
 
-        String node = "(" + nodeName;
-        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key()))) {
-            node += ":" + query.getString(NetworkDBAdaptor.NetworkQueryParams.TYPE.key().replace(',', '|')).toUpperCase();
+        StringBuilder node = new StringBuilder("(" + nodeName);
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key()))) {
+            node.append(":").append(query.getString(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key()
+                    .replace(',', '|')).toUpperCase());
         }
-        node += ")";
+        node.append(")");
 
         List<String> myMatchList = new ArrayList<>();
         List<String> myWhereClauses = new ArrayList<>();
