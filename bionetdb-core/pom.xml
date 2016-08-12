@@ -28,6 +28,11 @@
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.cellbase</groupId>
+            <artifactId>cellbase-client</artifactId>
+            <version>${cellbase.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.neo4j.driver</groupId>

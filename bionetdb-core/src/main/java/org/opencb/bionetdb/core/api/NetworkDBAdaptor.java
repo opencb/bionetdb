@@ -76,5 +76,6 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     QueryResult clusteringCoefficient(Query query);
 
+    QueryResult getAnnotations(Query query, String annotateField);
 
 }

@@ -4,16 +4,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.driver.v1.*;
 import org.neo4j.driver.v1.types.Node;
+import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.*;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.commons.datastore.core.*;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -28,6 +29,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private Session session;
 
     private BioNetDBConfiguration configuration;
+    private CellBaseClient cellBaseClient;
 
     private enum NodeTypes {
         PHYSICAL_ENTITY,
@@ -804,6 +806,56 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         myQuery.append(ret.toString());
 
         System.out.println("myQuery: " + myQuery.toString());
+        long stopTime = System.currentTimeMillis();
+        StatementResult run = session.run(myQuery.toString());
+        while (run.hasNext()) {
+            System.out.println(run.next().asMap());
+        }
+        int time = (int) (stopTime - startTime) / 1000;
+        return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
+    }
+
+    @Override
+    public QueryResult getAnnotations(Query query, String annotateField) {
+        QueryOptions queryOptions = new QueryOptions("include", annotateField);
+        long startTime = System.currentTimeMillis();
+        StringBuilder myQuery = new StringBuilder();
+        List<String> idList = new ArrayList<>();
+        try {
+            // MATCH (x:PHYSICAL_ENTITY) WHERE x.name IN ["x"] MATCH (y:PHYSICAL_ENTITY) WHERE y.name IN ["y"] WITH x,y
+            // MERGE (c:PHYSICAL_ENTITY {name:"c"}) MERGE (x)-[r:XREF]->(c) MERGE (b:PHYSICAL_ENTITY {name:"b"}) MERGE (y)-[r1:XREF]->(b) RETURN x,y
+            idList = Arrays.asList(query.getString("id").split(","));
+            for (String anIdList : idList) {
+                myQuery.append("MATCH ").append(Neo4JQueryParser.parse(anIdList, query, queryOptions)).append(" ");
+            }
+            myQuery.append("WITH ").append(StringUtils.join(idList, ","));
+        } catch (BioNetDBException e) {
+            e.printStackTrace();
+        }
+
+        StringBuilder mergeQuery = new StringBuilder(" ");
+        try {
+            QueryResponse<Gene> queryResponse = cellBaseClient.getGeneClient().get(Collections.singletonList(query.getString("id")), queryOptions);
+          //  MERGE (c:PHYSICAL_ENTITY {name:"c"}) MERGE (x)-[r:XREF]->(c) MERGE (b:PHYSICAL_ENTITY {name:"b"}) MERGE (y)-[r1:XREF]->(b)
+            for (int i = 0; i < queryResponse.getResponse().size(); i++) {
+                // Iterate over the results and add node per result
+                for (int j = 0; j < queryResponse.getResponse().get(i).getResult().get(0).getTranscripts().size(); j++) {
+                    for (int k = 0; k < queryResponse.getResponse().get(i).getResult().get(0).getTranscripts().get(j).getXrefs().size(); k++) {
+                        // Take care of the label of node
+                        mergeQuery.append("MERGE (n").append(i).append(j).append(k).append(":").append("XREF").append("{");
+                        // properties to add on the node goes here
+                        mergeQuery.append("}) ").append("MERGE (").append(idList.get(i)).append(")-[r").append(i).append(":")
+                                .append(annotateField.toUpperCase()).append("]->(n").append(i).append(j).append(k).append(") ");
+
+                    }
+                }
+            }
+            myQuery.append(mergeQuery).append("RETURN ").append(StringUtils.join(idList, ","));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Query: " + myQuery);
         long stopTime = System.currentTimeMillis();
         StatementResult run = session.run(myQuery.toString());
         while (run.hasNext()) {
