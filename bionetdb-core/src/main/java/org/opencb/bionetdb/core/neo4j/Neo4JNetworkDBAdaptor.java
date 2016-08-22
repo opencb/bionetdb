@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private Driver driver;
-    private Session session;
+//    private Session session;
 
     private BioNetDBConfiguration configuration;
     private CellBaseClient cellBaseClient;
@@ -68,20 +68,29 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String password = databaseConfiguration.getPassword();
 
         driver = GraphDatabase.driver("bolt://" + databaseURI, AuthTokens.basic(user, password));
-        session = driver.session();
+//        session = driver.session();
 
-        registerShutdownHook(this.driver, this.session);
+//        registerShutdownHook(this.driver, this.session);
+        registerShutdownHook(this.driver);
 
         if (createIndex) {
             createIndexes();
         }
     }
 
-    private void registerShutdownHook(final Driver driver, final Session session) {
+//    private void registerShutdownHook(final Driver driver, final Session session) {
+//        Runtime.getRuntime().addShutdownHook(new Thread() {
+//            @Override
+//            public void run() {
+//                session.close();
+//                driver.close();
+//            }
+//        });
+//    }
+    private void registerShutdownHook(final Driver driver) {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                session.close();
                 driver.close();
             }
         });
@@ -98,8 +107,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     private void createIndexes() {
-        if (this.session != null) {
-            try (Transaction tx = this.session.beginTransaction()) {
+        Session session = this.driver.session();
+        if (session != null) {
+            try (Transaction tx = session.beginTransaction()) {
                 tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(id)");
                 tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(name)");
 
@@ -112,6 +122,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
                 tx.success();
             }
+            session.close();
         }
     }
 
@@ -135,7 +146,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      */
     @Override
     public void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException {
-        try (Transaction tx = this.session.beginTransaction()) {
+        Session session = this.driver.session();
+        try (Transaction tx = session.beginTransaction()) {
             StatementResult xrefNode = getNode(tx, NodeTypes.XREF.toString(), new ObjectMap("id", nodeID));
             if (xrefNode.hasNext()) {
                 // Look for the physical entity to which the xref is associated with
@@ -153,6 +165,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
             tx.success();
         }
+        session.close();
     }
 
     @Override
@@ -338,7 +351,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param queryOptions       Additional params for the query
      */
     private void insertPhysicalEntities(List<PhysicalEntity> physicalEntityList, QueryOptions queryOptions) throws BioNetDBException {
-        try (Transaction tx = this.session.beginTransaction()) {
+        Session session = this.driver.session();
+
+        try (Transaction tx = session.beginTransaction()) {
             // 1. Insert the Physical Entities and the basic nodes they are connected to
             for (PhysicalEntity p : physicalEntityList) {
                 String peLabel = NodeTypes.PHYSICAL_ENTITY + ":" + p.getType();
@@ -368,7 +383,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
             tx.success();
         }
-        try (Transaction tx = this.session.beginTransaction()) {
+
+        try (Transaction tx = session.beginTransaction()) {
             // 2. Insert the existing relationships between Physical Entities
             for (PhysicalEntity p : physicalEntityList) {
                 if (p.getComponentOfComplex().size() > 0) {
@@ -400,6 +416,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
             tx.success();
         }
+        session.close();
     }
 
     /**
@@ -409,9 +426,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param queryOptions    Additional params for the query
      */
     private void insertInteractions(List<Interaction> interactionList, QueryOptions queryOptions) {
+        Session session = this.driver.session();
 
         // 1. Insert all interactions as nodes
-        try (Transaction tx = this.session.beginTransaction()) {
+        try (Transaction tx = session.beginTransaction()) {
             for (Interaction i : interactionList) {
                 String interactionLabel = NodeTypes.INTERACTION + ":" + i.getType();
                 getOrCreateNode(tx, interactionLabel, parseInteraction(i));
@@ -420,7 +438,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
 
         // 2. Insert the interactions
-        try (Transaction tx = this.session.beginTransaction()) {
+        try (Transaction tx = session.beginTransaction()) {
             for (Interaction i : interactionList) {
                 String interactionLabel = NodeTypes.INTERACTION + ":" + i.getType();
                 StatementResult interaction = getNode(tx, interactionLabel, new ObjectMap("id", i.getId()));
@@ -485,6 +503,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
             tx.success();
         }
+        session.close();
     }
 
     private StatementResult getNode(Transaction tx, String label, ObjectMap properties) {
@@ -739,6 +758,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     @Override
     public QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        Session session = this.driver.session();
+
         long startTime = System.currentTimeMillis();
         String nodeName = "n";
         String myQuery = "MATCH " + Neo4JQueryParser.parse(nodeName, query, queryOptions) + " RETURN " + nodeName;
@@ -750,11 +771,15 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             System.out.println(run.next().asMap());
         }
         int time = (int) (stopTime - startTime) / 1000;
+
+        session.close();
         return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
     }
 
     @Override
     public QueryResult getNodes(Query queryN, Query queryM, QueryOptions queryOptions) throws BioNetDBException {
+        Session session = this.driver.session();
+
         long startTime = System.currentTimeMillis();
         String nQuery = Neo4JQueryParser.parse("n", queryN, queryOptions);
         String mQuery = Neo4JQueryParser.parse("m", queryM, queryOptions);
@@ -811,11 +836,15 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             System.out.println(run.next().asMap());
         }
         int time = (int) (stopTime - startTime) / 1000;
+
+        session.close();
         return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
     }
 
     @Override
     public QueryResult getAnnotations(Query query, String annotateField) {
+        Session session = this.driver.session();
+
         QueryOptions queryOptions = new QueryOptions("include", annotateField);
         long startTime = System.currentTimeMillis();
         StringBuilder myQuery = new StringBuilder();
@@ -864,69 +893,115 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             System.out.println(run.next().asMap());
         }
         int time = (int) (stopTime - startTime) / 1000;
+
+        session.close();
         return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
     }
 
     private int getTotalNodes() {
-        return this.session.run("MATCH (n) RETURN count(n) AS count").peek().get("count").asInt();
+        Session session = this.driver.session();
+        int count = session.run("MATCH (n) RETURN count(n) AS count").peek().get("count").asInt();
+        session.close();
+        return count;
+//        return this.session.run("MATCH (n) RETURN count(n) AS count").peek().get("count").asInt();
     }
 
     private int getTotalRelationships() {
-        return this.session.run("MATCH ()-[r]-() RETURN count(r) AS count").peek().get("count").asInt();
+        Session session = this.driver.session();
+        int count = session.run("MATCH ()-[r]-() RETURN count(r) AS count").peek().get("count").asInt();
+        session.close();
+        return count;
+//        return this.session.run("MATCH ()-[r]-() RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     private ObjectMap getTotalPhysicalEntities() {
+        Session session = this.driver.session();
+
         ObjectMap myResult = new ObjectMap();
-        myResult.put("undefined", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
+        myResult.put("undefined", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.UNDEFINED + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("protein", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
+        myResult.put("protein", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.PROTEIN + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("dna", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
+        myResult.put("dna", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.DNA + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("rna", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
+        myResult.put("rna", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.RNA + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("complex", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
+        myResult.put("complex", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.COMPLEX + ") RETURN count(n) AS count")).peek().get("count").asInt());
-        myResult.put("small_molecule", this.session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
+        myResult.put("small_molecule", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.SMALL_MOLECULE + ") RETURN count(n) AS count")).peek().get("count").asInt());
         int total = 0;
         for (String key : myResult.keySet()) {
             total += (int) myResult.get(key);
         }
         myResult.put("totalPE", total);
+
+        session.close();
         return myResult;
     }
 
     private int getTotalXrefNodes() {
-        return this.session.run("MATCH (n:" + NodeTypes.XREF + ") RETURN count(n) AS count")
+        Session session = this.driver.session();
+        int count = session.run("MATCH (n:" + NodeTypes.XREF + ") RETURN count(n) AS count")
                 .peek().get("count").asInt();
+        session.close();
+        return count;
+//        return this.session.run("MATCH (n:" + NodeTypes.XREF + ") RETURN count(n) AS count")
+//                .peek().get("count").asInt();
     }
 
     private int getTotalXrefRelationships() {
-        return this.session.run("MATCH (n:"
+        Session session = this.driver.session();
+        int count = session.run("MATCH (n:"
                 + NodeTypes.PHYSICAL_ENTITY + ")-[r:" + RelTypes.XREF + "]->(m:"
                 + NodeTypes.XREF + ") RETURN count(r) AS count").peek().get("count").asInt();
+        session.close();
+        return count;
+//        return this.session.run("MATCH (n:"
+//                + NodeTypes.PHYSICAL_ENTITY + ")-[r:" + RelTypes.XREF + "]->(m:"
+//                + NodeTypes.XREF + ") RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     private int getTotalOntologyNodes() {
-        return this.session.run("MATCH (n:" + NodeTypes.ONTOLOGY + ") RETURN count(n) AS count")
+        Session session = this.driver.session();
+        int count = session.run("MATCH (n:" + NodeTypes.ONTOLOGY + ") RETURN count(n) AS count")
                 .peek().get("count").asInt();
+        session.close();
+        return count;
+//        return this.session.run("MATCH (n:" + NodeTypes.ONTOLOGY + ") RETURN count(n) AS count")
+//                .peek().get("count").asInt();
     }
 
     private int getTotalOntologyRelationships() {
-        return this.session.run("MATCH (n)-[r:" + RelTypes.ONTOLOGY + "|" + RelTypes.CELLOC_ONTOLOGY
+        Session session = this.driver.session();
+        int count = session.run("MATCH (n)-[r:" + RelTypes.ONTOLOGY + "|" + RelTypes.CELLOC_ONTOLOGY
                 + "]->(m:" + NodeTypes.ONTOLOGY + ") RETURN count(r) AS count").peek().get("count").asInt();
+        session.close();
+        return count;
+//        return this.session.run("MATCH (n)-[r:" + RelTypes.ONTOLOGY + "|" + RelTypes.CELLOC_ONTOLOGY
+//                + "]->(m:" + NodeTypes.ONTOLOGY + ") RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     private int getTotalCelLocationNodes() {
-        return this.session.run("MATCH (n:" + NodeTypes.CELLULAR_LOCATION + ") RETURN count(n) AS count")
+        Session session = this.driver.session();
+        int count = session.run("MATCH (n:" + NodeTypes.CELLULAR_LOCATION + ") RETURN count(n) AS count")
                 .peek().get("count").asInt();
+        session.close();
+        return count;
+//        return this.session.run("MATCH (n:" + NodeTypes.CELLULAR_LOCATION + ") RETURN count(n) AS count")
+//                .peek().get("count").asInt();
     }
 
     private int getTotalCelLocationRelationships() {
-        return this.session.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY
+        Session session = this.driver.session();
+        int count = session.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY
                 + ")-[r:" + RelTypes.CELLULAR_LOCATION + "]->(m:" + NodeTypes.CELLULAR_LOCATION
                 + ") RETURN count(r) AS count").peek().get("count").asInt();
+        session.close();
+        return count;
+//        return this.session.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY
+//                + ")-[r:" + RelTypes.CELLULAR_LOCATION + "]->(m:" + NodeTypes.CELLULAR_LOCATION
+//                + ") RETURN count(r) AS count").peek().get("count").asInt();
     }
 
     @Override
@@ -983,6 +1058,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // clusteringCoefficient = r/NumberOfPossibleConnectionsBetweenTwoNeighbors. Where:
         // NumberOfPossibleConnectionsBetweenTwoNeighbors: n!/(2!(n-2)!).
 
+        Session session = this.driver.session();
         long startTime = System.currentTimeMillis();
 
         String ids = query.getString("id");
@@ -999,7 +1075,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         cypherQuery.append(" RETURN a.name, c.id, n, count(DISTINCT r) AS r");
 
         System.out.println(cypherQuery.toString());
-        StatementResult execute = this.session.run(cypherQuery.toString());
+        StatementResult execute = session.run(cypherQuery.toString());
 
         StringBuilder sb = new StringBuilder();
         if (execute.hasNext()) {
@@ -1028,15 +1104,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         int time = (int) (System.currentTimeMillis() - startTime);
 
+        session.close();
         return new QueryResult<>("clustCoeff", time, 1, 1, null, null, Arrays.asList(sb.toString()));
     }
 
-    public boolean isClosed() {
-        return !this.session.isOpen();
-    }
+//    public boolean isClosed() {
+//        return !this.session.isOpen();
+//    }
 
     public void close() {
-        this.session.close();
+//        this.session.close();
         this.driver.close();
     }
 
