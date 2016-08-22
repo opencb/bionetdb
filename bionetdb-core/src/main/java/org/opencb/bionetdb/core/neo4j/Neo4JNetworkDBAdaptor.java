@@ -5,7 +5,6 @@ import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.driver.v1.*;
 import org.neo4j.driver.v1.types.Node;
 import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -823,7 +822,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         List<String> idList = new ArrayList<>();
         try {
             // MATCH (x:PHYSICAL_ENTITY) WHERE x.name IN ["x"] MATCH (y:PHYSICAL_ENTITY) WHERE y.name IN ["y"] WITH x,y
-            // MERGE (c:PHYSICAL_ENTITY {name:"c"}) MERGE (x)-[r:XREF]->(c) MERGE (b:PHYSICAL_ENTITY {name:"b"}) MERGE (y)-[r1:XREF]->(b) RETURN x,y
+            // MERGE (c:PHYSICAL_ENTITY {name:"c"}) MERGE (x)-[r:XREF]->(c)
+            // MERGE (b:PHYSICAL_ENTITY {name:"b"}) MERGE (y)-[r1:XREF]->(b) RETURN x,y
             idList = Arrays.asList(query.getString("id").split(","));
             for (String anIdList : idList) {
                 myQuery.append("MATCH ").append(Neo4JQueryParser.parse(anIdList, query, queryOptions)).append(" ");
@@ -835,12 +835,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         StringBuilder mergeQuery = new StringBuilder(" ");
         try {
-            QueryResponse<Gene> queryResponse = cellBaseClient.getGeneClient().get(Collections.singletonList(query.getString("id")), queryOptions);
+            QueryResponse<Gene> queryResponse =
+                    cellBaseClient.getGeneClient().get(Collections.singletonList(query.getString("id")), queryOptions);
           //  MERGE (c:PHYSICAL_ENTITY {name:"c"}) MERGE (x)-[r:XREF]->(c) MERGE (b:PHYSICAL_ENTITY {name:"b"}) MERGE (y)-[r1:XREF]->(b)
             for (int i = 0; i < queryResponse.getResponse().size(); i++) {
                 // Iterate over the results and add node per result
                 for (int j = 0; j < queryResponse.getResponse().get(i).getResult().get(0).getTranscripts().size(); j++) {
-                    for (int k = 0; k < queryResponse.getResponse().get(i).getResult().get(0).getTranscripts().get(j).getXrefs().size(); k++) {
+                    for (int k = 0; k < queryResponse.getResponse().get(i).getResult().get(0)
+                            .getTranscripts().get(j).getXrefs().size(); k++) {
                         // Take care of the label of node
                         mergeQuery.append("MERGE (n").append(i).append(j).append(k).append(":").append("XREF").append("{");
                         // properties to add on the node goes here
