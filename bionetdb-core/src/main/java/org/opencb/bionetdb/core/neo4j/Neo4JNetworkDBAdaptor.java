@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private Driver driver;
-//    private Session session;
 
     private BioNetDBConfiguration configuration;
     private CellBaseClient cellBaseClient;

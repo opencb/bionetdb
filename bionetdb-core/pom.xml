@@ -37,7 +37,7 @@
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>1.0.4</version>
+            <version>1.0.5</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -47,11 +47,11 @@
             <groupId>org.biopax.paxtools</groupId>
             <artifactId>paxtools-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.sbml.libsbml</groupId>
-            <artifactId>libsbml</artifactId>
-            <systemPath>${basedir}/../bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.sbml.libsbml</groupId>-->
+            <!--<artifactId>libsbml</artifactId>-->
+            <!--<systemPath>${basedir}/../bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>psidev.psi.mi</groupId>
             <artifactId>psimitab</artifactId>

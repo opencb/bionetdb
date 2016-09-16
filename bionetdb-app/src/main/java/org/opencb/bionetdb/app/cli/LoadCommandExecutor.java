@@ -29,16 +29,29 @@ public class LoadCommandExecutor extends CommandExecutor {
         try {
             Path inputPath = Paths.get(loadCommandOptions.input);
             FileUtils.checkFile(inputPath);
+
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            ObjectReader objectReader = objectMapper.readerFor(Network.class);
+//            Network network = objectReader.readValue(inputPath.toFile());
+
+
+            // From biopax
             BioPaxParser bioPaxParser = new BioPaxParser("L3");
             Network network = bioPaxParser.parse(inputPath);
 
-            if (loadCommandOptions.database == null || loadCommandOptions.database.isEmpty()) {
-                DatabaseConfiguration databaseConfiguration = createDatabaseConfigurationFromCLI("unknown", loadCommandOptions.host,
-                        loadCommandOptions.port, loadCommandOptions.user, loadCommandOptions.password);
-                configuration.getDatabases().add(databaseConfiguration);
+            String database = loadCommandOptions.database;;
+            if (database == null || database.isEmpty()) {
+                if (configuration.getDatabases() != null && configuration.getDatabases().size() > 0) {
+                    database = configuration.getDatabases().get(0).getId();
+                } else {
+                    database = "unknown";
+                    DatabaseConfiguration databaseConfiguration = createDatabaseConfigurationFromCLI("unknown",
+                            loadCommandOptions.host, loadCommandOptions.port, loadCommandOptions.user, loadCommandOptions.password);
+                    configuration.getDatabases().add(databaseConfiguration);
+                }
             }
 
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor("unknown", configuration, true);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, configuration, true);
             networkDBAdaptor.insert(network, null);
 
         } catch (Exception e) {

@@ -104,13 +104,13 @@
                 <artifactId>paxtools-core</artifactId>
                 <version>4.3.1</version>
             </dependency>
-            <dependency>
-                <groupId>org.sbml.libsbml</groupId>
-                <artifactId>libsbml</artifactId>
-                <version>5.11.4</version>
-                <scope>system</scope>
-                <systemPath>${basedir}/bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>
-            </dependency>
+            <!--<dependency>-->
+                <!--<groupId>org.sbml.libsbml</groupId>-->
+                <!--<artifactId>libsbml</artifactId>-->
+                <!--<version>5.11.4</version>-->
+                <!--<scope>system</scope>-->
+                <!--<systemPath>${basedir}/bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>-->
+            <!--</dependency>-->
             <dependency>
                 <groupId>psidev.psi.mi</groupId>
                 <artifactId>psimitab</artifactId>
@@ -259,8 +259,8 @@
                 <BIONETDB.DATABASE>scerevisiae</BIONETDB.DATABASE>
                 <BIONETDB.CATALOG.DB.HOST>localhost</BIONETDB.CATALOG.DB.HOST>
                 <BIONETDB.CATALOG.DB.PORT>7687</BIONETDB.CATALOG.DB.PORT>
-                <BIONETDB.CATALOG.DB.USER></BIONETDB.CATALOG.DB.USER>
-                <BIONETDB.CATALOG.DB.PASSWORD></BIONETDB.CATALOG.DB.PASSWORD>
+                <BIONETDB.CATALOG.DB.USER>neo4j</BIONETDB.CATALOG.DB.USER>
+                <BIONETDB.CATALOG.DB.PASSWORD>rnapol</BIONETDB.CATALOG.DB.PASSWORD>
             </properties>
         </profile>
     </profiles>

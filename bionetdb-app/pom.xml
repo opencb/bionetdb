@@ -36,11 +36,11 @@
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-lib</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.sbml.libsbml</groupId>
-            <artifactId>libsbml</artifactId>
-            <systemPath>${basedir}/app/ext-libs/libsbmlj.jar</systemPath>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.sbml.libsbml</groupId>-->
+            <!--<artifactId>libsbml</artifactId>-->
+            <!--<systemPath>${basedir}/app/ext-libs/libsbmlj.jar</systemPath>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>com.beust</groupId>
@@ -136,14 +136,14 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Copying ext-libs to ${build.dir}/libs</echo>
-                                <exec executable="cp">
-                                    <arg value="${app.dir}/ext-libs/libsbml.so.5.11.4"/>
-                                    <arg value="${app.dir}/ext-libs/libsbml-static.a"/>
-                                    <arg value="${app.dir}/ext-libs/libsbmlj.jar"/>
-                                    <arg value="${app.dir}/ext-libs/libsbmlj.so"/>
-                                    <arg value="${build.dir}/libs/"/>
-                                </exec>
+                                <!--<echo>Copying ext-libs to ${build.dir}/libs</echo>-->
+                                <!--<exec executable="cp">-->
+                                    <!--<arg value="${app.dir}/ext-libs/libsbml.so.5.11.4"/>-->
+                                    <!--<arg value="${app.dir}/ext-libs/libsbml-static.a"/>-->
+                                    <!--<arg value="${app.dir}/ext-libs/libsbmlj.jar"/>-->
+                                    <!--<arg value="${app.dir}/ext-libs/libsbmlj.so"/>-->
+                                    <!--<arg value="${build.dir}/libs/"/>-->
+                                <!--</exec>-->
                             </target>
                         </configuration>
                         <goals>
