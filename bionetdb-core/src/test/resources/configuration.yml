@@ -7,11 +7,11 @@ databases:
   host: "localhost"
   port: "7687"
   user: "neo4j"
-  password: "neo4j"
+  password: "neo4j;"
   options: null
 - id: "hsapiens"
   host: "localhost"
   port: "7688"
   user: "neo4j"
-  password: "neo4j"
+  password: "neo4j;"
   options: null
