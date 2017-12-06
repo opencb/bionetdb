@@ -5,6 +5,10 @@ import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.driver.v1.*;
 import org.neo4j.driver.v1.types.Node;
 import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -12,6 +16,7 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.*;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -34,7 +39,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         INTERACTION,
         XREF,
         CELLULAR_LOCATION,
-        ONTOLOGY
+        ONTOLOGY,
+        POPULATION_FREQUENCY,
+        SEQUENCE_ONTOLOGY,
+        CONSEQUENCE_TYPE,
+        BIOTYPE;
     }
 
     private enum RelTypes {
@@ -48,7 +57,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         ONTOLOGY,
         COMPONENTOFCOMPLEX,
         CELLULAR_LOCATION,
-        CELLOC_ONTOLOGY
+        CELLOC_ONTOLOGY,
+        POPULATION_FREQUENCY,
+        SEQUENCE_ONTOLOGY,
+        CONSEQUENCE_TYPE,
+        BIOTYPE,
+        PROTEIN,
+        TRANSCRIPT,
+        IN_GENE;
     }
 
     public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
@@ -77,7 +93,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-//    private void registerShutdownHook(final Driver driver, final Session session) {
+    //    private void registerShutdownHook(final Driver driver, final Session session) {
 //        Runtime.getRuntime().addShutdownHook(new Thread() {
 //            @Override
 //            public void run() {
@@ -161,6 +177,45 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 }
             } else {
                 throw new BioNetDBException("The node to be annotated does not exist in the database.");
+            }
+            tx.success();
+        }
+        session.close();
+    }
+
+    public void addVariants(List<Variant> variants) {
+        List<Gene> genes;
+        //List<Protein> proteins = getProteins(variant);
+
+        Session session = this.driver.session();
+        try (Transaction tx = session.beginTransaction()) {
+            for (Variant variant: variants) {
+                // Get genes and proteins for this variant
+                genes = getGenes(variant);
+
+                // Create the variant node
+                StatementResult variantNode = getOrCreateNode(tx, PhysicalEntity.Type.VARIANT.toString(), parseVariant(variant));
+
+                // Create population frequency nodes
+                if (variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
+                    for (PopulationFrequency popFreq: variant.getAnnotation().getPopulationFrequencies()) {
+                        StatementResult popFreqNode = getOrCreateNode(tx, NodeTypes.POPULATION_FREQUENCY.toString(),
+                                parsePopulationFrequency(popFreq));
+                        addRelationship(tx, PhysicalEntity.Type.VARIANT.toString(), NodeTypes.POPULATION_FREQUENCY.toString(),
+                                variantNode.peek().get("ID").toString(), popFreqNode.peek().get("ID").toString(),
+                                RelTypes.POPULATION_FREQUENCY);
+                    }
+                }
+
+                // Create consequence type nodes
+                if (variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                    for (ConsequenceType cs: variant.getAnnotation().getConsequenceTypes()) {
+                        StatementResult csNode = getOrCreateConsequenceTypeNode(tx, parseConsequenceType(cs));
+                        addRelationship(tx, PhysicalEntity.Type.VARIANT.toString(), NodeTypes.CONSEQUENCE_TYPE.toString(),
+                                variantNode.peek().get("ID").toString(), csNode.peek().get("ID").toString(),
+                                RelTypes.CONSEQUENCE_TYPE);
+                    }
+                }
             }
             tx.success();
         }
@@ -567,6 +622,59 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return cellLoc;
     }
 
+    private StatementResult getOrCreateConsequenceTypeNode(Transaction tx, ObjectMap properties) {
+
+        // gets the sequence ontology properties
+        List<ObjectMap> soProperties = null;
+        if (properties.containsKey("so")) {
+            soProperties = (List<ObjectMap>) properties.get("so");
+            properties.remove("so");
+        }
+
+        // gets the biotype property
+        String biotype = null;
+        if (properties.containsKey("biotype")) {
+            biotype = (String) properties.get("biotype");
+            properties.remove("biotype");
+        }
+
+        // gets the genes property
+        List<String> genes = null;
+        if (properties.containsKey("genes")) {
+            genes= (List<String>) properties.get("genes");
+            properties.remove("genes");
+        }
+
+        StatementResult csNode = getOrCreateNode(tx, NodeTypes.CONSEQUENCE_TYPE.toString(), properties);
+        if (soProperties != null) {
+            for (ObjectMap so: soProperties) {
+                StatementResult soNode = getOrCreateNode(tx, NodeTypes.SEQUENCE_ONTOLOGY.toString(), so);
+                addRelationship(tx, NodeTypes.CONSEQUENCE_TYPE.toString(), NodeTypes.SEQUENCE_ONTOLOGY.toString(),
+                        csNode.peek().get("ID").toString(), soNode.peek().get("ID").toString(),
+                        RelTypes.SEQUENCE_ONTOLOGY);
+            }
+        }
+        if (biotype != null) {
+                StatementResult biotypeNode = getOrCreateNode(tx, NodeTypes.BIOTYPE.toString(), new ObjectMap("name", biotype));
+                addRelationship(tx, NodeTypes.CONSEQUENCE_TYPE.toString(), NodeTypes.BIOTYPE.toString(),
+                        csNode.peek().get("ID").toString(), biotypeNode.peek().get("ID").toString(),
+                        RelTypes.BIOTYPE);
+        }
+        if  (ListUtils.isNotEmpty(genes)) {
+            StatementResult geneNode = getOrCreateNode(tx, PhysicalEntity.Type.GENE.toString(), new ObjectMap());
+            addRelationship(tx, NodeTypes.CONSEQUENCE_TYPE.toString(), PhysicalEntity.Type.GENE.toString(),
+                    csNode.peek().get("ID").toString(), geneNode.peek().get("ID").toString(),
+                    RelTypes.IN_GENE);
+            for (String gene: genes) {
+                StatementResult xrefNode = getOrCreateNode(tx, NodeTypes.XREF.toString(), new ObjectMap("name", gene));
+                addRelationship(tx, NodeTypes.XREF.toString(), PhysicalEntity.Type.GENE.toString(),
+                        xrefNode.peek().get("ID").toString(), geneNode.peek().get("ID").toString(),
+                        RelTypes.XREF);
+            }
+        }
+        return csNode;
+    }
+
     /**
      * The function will create an interaction between two nodes if the relation does not exist.
      *
@@ -865,7 +973,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         try {
             QueryResponse<Gene> queryResponse =
                     cellBaseClient.getGeneClient().get(Collections.singletonList(query.getString("id")), queryOptions);
-          //  MERGE (c:PHYSICAL_ENTITY {name:"c"}) MERGE (x)-[r:XREF]->(c) MERGE (b:PHYSICAL_ENTITY {name:"b"}) MERGE (y)-[r1:XREF]->(b)
+            //  MERGE (c:PHYSICAL_ENTITY {name:"c"}) MERGE (x)-[r:XREF]->(c) MERGE (b:PHYSICAL_ENTITY {name:"b"}) MERGE (y)-[r1:XREF]->(b)
             for (int i = 0; i < queryResponse.getResponse().size(); i++) {
                 // Iterate over the results and add node per result
                 for (int j = 0; j < queryResponse.getResponse().get(i).getResult().get(0).getTranscripts().size(); j++) {
@@ -921,6 +1029,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 + PhysicalEntity.Type.UNDEFINED + ") RETURN count(n) AS count")).peek().get("count").asInt());
         myResult.put("protein", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.PROTEIN + ") RETURN count(n) AS count")).peek().get("count").asInt());
+        myResult.put("gene", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
+                + PhysicalEntity.Type.GENE + ") RETURN count(n) AS count")).peek().get("count").asInt());
+        myResult.put("variant", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
+                + PhysicalEntity.Type.VARIANT + ") RETURN count(n) AS count")).peek().get("count").asInt());
         myResult.put("dna", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
                 + PhysicalEntity.Type.DNA + ") RETURN count(n) AS count")).peek().get("count").asInt());
         myResult.put("rna", session.run(("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY + ":"
@@ -1116,4 +1228,161 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         this.driver.close();
     }
 
+    private List<Gene> getGenes(Variant variant) {
+        Set<Gene> genes  = new HashSet<>();
+        if (variant != null && variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+            for (ConsequenceType cs: variant.getAnnotation().getConsequenceTypes()) {
+                if (cs.getGeneName() != null) {
+                    Gene gene = new Gene();
+                    gene.setName(cs.getGeneName());
+                    // TODO: annotate gene using cellbase?
+                    genes.add(gene);
+                }
+            }
+        }
+
+        List<Gene> out = new ArrayList<>();
+        Iterator<Gene> iterator = genes.iterator();
+        while (iterator.hasNext()) {
+            out.add(iterator.next());
+        }
+        return out;
+        //return new ArrayList<>(Arrays.asList((Gene[]) genes.toArray()));
+    }
+
+    private List<String> getProteinNames(Variant variant) {
+        Set<String> proteinNames  = new HashSet<>();
+        if (variant != null && variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+            for (ConsequenceType cs: variant.getAnnotation().getConsequenceTypes()) {
+                if (cs.getProteinVariantAnnotation() != null) {
+                    if (cs.getProteinVariantAnnotation().getUniprotName() != null) {
+                        proteinNames.add(cs.getProteinVariantAnnotation().getUniprotName());
+                    }
+                    if (cs.getProteinVariantAnnotation().getUniprotAccession() != null) {
+                        proteinNames.add(cs.getProteinVariantAnnotation().getUniprotAccession());
+                    }
+                }
+            }
+        }
+        return Arrays.asList((String[]) proteinNames.toArray());
+    }
+
+    private StatementResult getOrCreateVariantNode(Transaction tx, ObjectMap properties) {
+        StatementResult cellLoc = getOrCreateNode(tx, PhysicalEntity.Type.VARIANT.toString(),
+                new ObjectMap("name", properties.get("name")));
+        // gets or creates ontology node
+        if (properties.containsKey("ontologies")) {
+            for (ObjectMap myOntology : (List<ObjectMap>) properties.get("ontologies")) {
+                StatementResult ont = getOrCreateNode(tx, NodeTypes.ONTOLOGY.toString(), myOntology);
+                addRelationship(tx, NodeTypes.CELLULAR_LOCATION.toString(), NodeTypes.ONTOLOGY.toString(),
+                        cellLoc.peek().get("ID").toString(), ont.peek().get("ID").toString(),
+                        RelTypes.CELLOC_ONTOLOGY);
+            }
+        }
+        return cellLoc;
+    }
+
+    private ObjectMap parseVariant(Variant variant) {
+        ObjectMap myProperties = new ObjectMap();
+        if (variant.getId() != null) {
+            myProperties.put("id", variant.getId());
+        }
+        if (variant.getStart() != null) {
+            myProperties.put("start", variant.getStart());
+        }
+        if (variant.getEnd() != null) {
+            myProperties.put("end", variant.getEnd());
+        }
+        if (variant.getStrand() != null) {
+            myProperties.put("strand", variant.getStrand());
+        }
+        if (variant.getChromosome() != null) {
+            myProperties.put("chromosome", variant.getChromosome());
+        }
+        return myProperties;
+    }
+
+    private ObjectMap parseGene(Gene gene) {
+        ObjectMap myProperties = new ObjectMap();
+        if (gene.getId() != null) {
+            myProperties.put("id", gene.getId());
+        }
+        if (gene.getName() != null) {
+            myProperties.put("name", gene.getName());
+        }
+        if (gene.getDescription() != null) {
+            myProperties.put("description", gene.getDescription());
+        }
+        return myProperties;
+    }
+
+    private ObjectMap parsePopulationFrequency(PopulationFrequency popFreq) {
+        ObjectMap myProperties = new ObjectMap();
+        if (popFreq.getPopulation() != null) {
+            myProperties.put("population", popFreq.getPopulation());
+        }
+        if (popFreq.getAltAlleleFreq() != null) {
+            myProperties.put("altAlleleFreq", popFreq.getAltAlleleFreq());
+        }
+        if (popFreq.getRefAlleleFreq() != null) {
+            myProperties.put("refAlleleFreq", popFreq.getRefAlleleFreq());
+        }
+        return myProperties;
+    }
+
+    private ObjectMap parseSequenceOntology(SequenceOntologyTerm so) {
+        ObjectMap myProperties = new ObjectMap();
+        if (so.getAccession() != null) {
+            myProperties.put("accession", so.getAccession());
+        }
+        if (so.getName() != null) {
+            myProperties.put("name", so.getName());
+        }
+        return myProperties;
+    }
+
+    private ObjectMap parseConsequenceType(ConsequenceType cs) {
+        ObjectMap myProperties = new ObjectMap();
+        if (cs.getEnsemblTranscriptId() != null) {
+            myProperties.put("name", cs.getEnsemblTranscriptId());
+        }
+        if (cs.getBiotype() != null) {
+            myProperties.put("biotype", cs.getBiotype());
+        }
+        if (cs.getCdnaPosition() != null) {
+            myProperties.put("cdnaPosition", cs.getCdnaPosition());
+        }
+        if (cs.getCdsPosition() != null) {
+            myProperties.put("cdsPosition", cs.getCdsPosition());
+        }
+        if (cs.getCodon() != null) {
+            myProperties.put("codon", cs.getCodon());
+        }
+        if (cs.getStrand() != null) {
+            myProperties.put("strand", cs.getStrand());
+        }
+
+        if (ListUtils.isNotEmpty(cs.getSequenceOntologyTerms())) {
+            List<ObjectMap> soProperties = new ArrayList<>();
+            for (SequenceOntologyTerm so: cs.getSequenceOntologyTerms()) {
+                ObjectMap map = new ObjectMap();
+                map.put("accession", so.getAccession());
+                map.put("name", so.getName());
+                soProperties.add(map);
+            }
+            myProperties.put("so", soProperties);
+        }
+
+        List<String> genes = new ArrayList();
+        if (cs.getEnsemblGeneId() != null) {
+            genes.add(cs.getEnsemblGeneId());
+        }
+        if (cs.getGeneName() != null) {
+            genes.add(cs.getGeneName());
+        }
+        if (ListUtils.isNotEmpty(genes)) {
+            myProperties.put("genes", genes);
+        }
+        return myProperties;
+    }
 }

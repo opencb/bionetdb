@@ -31,6 +31,9 @@ public class PhysicalEntity {
     public enum Type {
         UNDEFINED      ("undefined"),
         PROTEIN        ("protein"),
+        GENE           ("gene"),
+        TRANSCRIPT     ("transcript"),
+        VARIANT        ("variant"),
         DNA            ("dna"),
         RNA            ("rna"),
         COMPLEX        ("complex"),

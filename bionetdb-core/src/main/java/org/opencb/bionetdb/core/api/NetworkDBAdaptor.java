@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.api;
 
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
@@ -56,6 +57,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     void insert(Network network, QueryOptions queryOptions) throws BioNetDBException;
 
     void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
+
+    void addVariants(List<Variant> variants) throws BioNetDBException;
 
     /**
      *

@@ -1,9 +1,15 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import org.junit.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.ExpressionParser;
@@ -21,6 +27,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +56,13 @@ public class Neo4JNetworkDBAdaptorTest {
         new File(database).mkdirs();
         try {
             BioNetDBConfiguration bioNetDBConfiguration = BioNetDBConfiguration.load(getClass().getResourceAsStream("/configuration.yml"));
+//            bioNetDBConfiguration.getDatabases().get(0).setUser("neo4j");
+//            bioNetDBConfiguration.getDatabases().get(0).setPassword("neo4j;");
+//            bioNetDBConfiguration.getDatabases().get(0).setHost("http://localhost");
+//            bioNetDBConfiguration.getDatabases().get(0).setPort(7474);
+            for (DatabaseConfiguration dbConfig: bioNetDBConfiguration.getDatabases()) {
+                System.out.println(dbConfig);
+            }
             networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration, true);
         } catch (BioNetDBException | IOException e) {
             e.printStackTrace();
@@ -251,5 +265,52 @@ public class Neo4JNetworkDBAdaptorTest {
         networkDBAdaptor.insert(network, null);
         System.out.println("Data has been inserted in the database.");
 
+    }
+
+    @Test
+    public void testAddVariants() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonInString = "{'name' : 'mkyong'}";
+
+        //List<Variant> variants = mapper.readValue(new File("/home/jtarraga/data150/neo4j/test.json"),
+        //        mapper.getTypeFactory().constructCollectionType(List.class, Variant.class));
+
+        Variant variant = mapper.readValue(new File("/home/jtarraga/data150/neo4j/test.json"), Variant.class);
+        System.out.println(variant.toJson());
+        networkDBAdaptor.addVariants(Collections.singletonList(variant));
+
+//        for (Variant variant: variants) {
+//            System.out.println(variant.toStringSimple());
+//        }
+
+//        BioPaxParser bioPaxParser = new BioPaxParser("L3");
+//        Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
+//        Network network = bioPaxParser.parse(inputPath);
+//        System.out.println("The file has been parsed.");
+//
+//        networkDBAdaptor.insert(network, null);
+//        System.out.println("Data has been inserted in the database.");
+
+//        System.out.println("Starting test of annotation of xref elements...");
+//        List<Xref> myList = new ArrayList<>();
+//        for (int i = 0; i < 4; i++) {
+//            myList.add(new Xref("db" + i, "dbVersion" + i, "id" + i, "idVersion" + i));
+//        }
+//        networkDBAdaptor.addXrefs("CMK1", myList);
+//        System.out.println("New xrefs added to the database.");
+//        QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
+//        assertEquals("The number of nodes after inserting the expression data is not correct", 27897, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
+//        assertEquals("The number of relationships after inserting the expression data is not correct", 40416, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
+//
+//        System.out.println("Creating new xrefs containing one that was already inserted...");
+//        myList.clear();
+//        for (int i = 3; i < 8; i++) {
+//            myList.add(new Xref("db" + i, "dbVersion" + i, "id" + i, "idVersion" + i));
+//        }
+//        networkDBAdaptor.addXrefs("id2", myList);
+//        System.out.println("New xrefs added to the database.");
+//        myResult = networkDBAdaptor.getSummaryStats(null, null);
+//        assertEquals("The number of nodes after inserting the expression data is not correct", 27901, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
+//        assertEquals("The number of relationships after inserting the expression data is not correct", 40448, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
     }
 }
