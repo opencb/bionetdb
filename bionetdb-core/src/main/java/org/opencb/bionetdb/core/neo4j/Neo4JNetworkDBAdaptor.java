@@ -190,9 +190,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Session session = this.driver.session();
         try (Transaction tx = session.beginTransaction()) {
             for (Variant variant: variants) {
-                // Get genes and proteins for this variant
-                genes = getGenes(variant);
-
                 // Create the variant node
                 StatementResult variantNode = getOrCreateNode(tx, PhysicalEntity.Type.VARIANT.toString(), parseVariant(variant));
 
@@ -592,7 +589,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // Gathering properties of the node to create a cypher string with them
         List<String> props = new ArrayList<>();
         for (String key : properties.keySet()) {
-            props.add(key + ":\"" + properties.getString(key) + "\"");
+            //props.add(key + ":\"" + properties.getString(key) + "\"");
+            props.add(key + ":\"" + properties.getString(key)
+                    .replace("\"", ",")
+                    .replace("\\", "|") + "\"");
         }
         String propsJoined = "{" + String.join(",", props) + "}";
         // Getting the desired node or creating it if it does not exists
@@ -641,7 +641,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // gets the genes property
         List<String> genes = null;
         if (properties.containsKey("genes")) {
-            genes= (List<String>) properties.get("genes");
+            genes = (List<String>) properties.get("genes");
             properties.remove("genes");
         }
 
@@ -661,7 +661,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         RelTypes.BIOTYPE);
         }
         if  (ListUtils.isNotEmpty(genes)) {
-            StatementResult geneNode = getOrCreateNode(tx, PhysicalEntity.Type.GENE.toString(), new ObjectMap());
+            StatementResult geneNode = getOrCreateNode(tx, PhysicalEntity.Type.GENE.toString(),
+                    new ObjectMap("name", genes.get(0)));
             addRelationship(tx, NodeTypes.CONSEQUENCE_TYPE.toString(), PhysicalEntity.Type.GENE.toString(),
                     csNode.peek().get("ID").toString(), geneNode.peek().get("ID").toString(),
                     RelTypes.IN_GENE);
@@ -1267,21 +1268,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return Arrays.asList((String[]) proteinNames.toArray());
     }
 
-    private StatementResult getOrCreateVariantNode(Transaction tx, ObjectMap properties) {
-        StatementResult cellLoc = getOrCreateNode(tx, PhysicalEntity.Type.VARIANT.toString(),
-                new ObjectMap("name", properties.get("name")));
-        // gets or creates ontology node
-        if (properties.containsKey("ontologies")) {
-            for (ObjectMap myOntology : (List<ObjectMap>) properties.get("ontologies")) {
-                StatementResult ont = getOrCreateNode(tx, NodeTypes.ONTOLOGY.toString(), myOntology);
-                addRelationship(tx, NodeTypes.CELLULAR_LOCATION.toString(), NodeTypes.ONTOLOGY.toString(),
-                        cellLoc.peek().get("ID").toString(), ont.peek().get("ID").toString(),
-                        RelTypes.CELLOC_ONTOLOGY);
-            }
-        }
-        return cellLoc;
-    }
-
     private ObjectMap parseVariant(Variant variant) {
         ObjectMap myProperties = new ObjectMap();
         if (variant.getId() != null) {
@@ -1298,6 +1284,24 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         if (variant.getChromosome() != null) {
             myProperties.put("chromosome", variant.getChromosome());
+        }
+        if (variant.getType() != null) {
+            myProperties.put("type", variant.getType().name());
+        }
+        if (variant.getAlternate() != null) {
+            myProperties.put("alternate", variant.getAlternate());
+        }
+        if (variant.getReference() != null) {
+            myProperties.put("reference", variant.getReference());
+        }
+        if (variant.getLengthReference() != null) {
+            myProperties.put("referenceLength", variant.getLengthReference());
+        }
+        if (variant.getLengthAlternate() != null) {
+            myProperties.put("alternateLength", variant.getLengthAlternate());
+        }
+        if (variant.getLength() != null) {
+            myProperties.put("length", variant.getLength());
         }
         return myProperties;
     }

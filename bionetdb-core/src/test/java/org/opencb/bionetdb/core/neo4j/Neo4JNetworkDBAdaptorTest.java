@@ -272,45 +272,26 @@ public class Neo4JNetworkDBAdaptorTest {
         ObjectMapper mapper = new ObjectMapper();
         String jsonInString = "{'name' : 'mkyong'}";
 
-        //List<Variant> variants = mapper.readValue(new File("/home/jtarraga/data150/neo4j/test.json"),
-        //        mapper.getTypeFactory().constructCollectionType(List.class, Variant.class));
 
-        Variant variant = mapper.readValue(new File("/home/jtarraga/data150/neo4j/test.json"), Variant.class);
+        String filename = "/home/jtarraga/data150/neo4j/test.json";
+        Variant variant = mapper.readValue(new File(filename), Variant.class);
         System.out.println(variant.toJson());
         networkDBAdaptor.addVariants(Collections.singletonList(variant));
+    }
 
-//        for (Variant variant: variants) {
-//            System.out.println(variant.toStringSimple());
-//        }
+    @Test
+    public void testInsertMetabolismHsapiens() throws Exception {
+        BioPaxParser bioPaxParser = new BioPaxParser("L3");
+        //Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
+        Path inputPath = Paths.get("/home/jtarraga/data150/neo4j/hsapiens.metabolism.biopax3");
+        Network network = bioPaxParser.parse(inputPath);
+        System.out.println("The file has been parsed.");
 
-//        BioPaxParser bioPaxParser = new BioPaxParser("L3");
-//        Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
-//        Network network = bioPaxParser.parse(inputPath);
-//        System.out.println("The file has been parsed.");
-//
-//        networkDBAdaptor.insert(network, null);
-//        System.out.println("Data has been inserted in the database.");
-
-//        System.out.println("Starting test of annotation of xref elements...");
-//        List<Xref> myList = new ArrayList<>();
-//        for (int i = 0; i < 4; i++) {
-//            myList.add(new Xref("db" + i, "dbVersion" + i, "id" + i, "idVersion" + i));
-//        }
-//        networkDBAdaptor.addXrefs("CMK1", myList);
-//        System.out.println("New xrefs added to the database.");
-//        QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
-//        assertEquals("The number of nodes after inserting the expression data is not correct", 27897, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
-//        assertEquals("The number of relationships after inserting the expression data is not correct", 40416, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
-//
-//        System.out.println("Creating new xrefs containing one that was already inserted...");
-//        myList.clear();
-//        for (int i = 3; i < 8; i++) {
-//            myList.add(new Xref("db" + i, "dbVersion" + i, "id" + i, "idVersion" + i));
-//        }
-//        networkDBAdaptor.addXrefs("id2", myList);
-//        System.out.println("New xrefs added to the database.");
-//        myResult = networkDBAdaptor.getSummaryStats(null, null);
-//        assertEquals("The number of nodes after inserting the expression data is not correct", 27901, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalNodes"));
-//        assertEquals("The number of relationships after inserting the expression data is not correct", 40448, (int) ((ObjectMap) myResult.getResult().get(0)).get("totalRelations"));
+        System.out.println("Inserting data...");
+        long startTime = System.currentTimeMillis();
+        networkDBAdaptor.insert(network, null);
+        long stopTime = System.currentTimeMillis();
+        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
+        QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
     }
 }
