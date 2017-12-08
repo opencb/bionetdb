@@ -270,16 +270,16 @@ public class Neo4JNetworkDBAdaptorTest {
     @Test
     public void testAddVariants() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
-        String jsonInString = "{'name' : 'mkyong'}";
-
-
-        String filename = "/home/jtarraga/data150/neo4j/test.json";
-        Variant variant = mapper.readValue(new File(filename), Variant.class);
-        System.out.println(variant.toJson());
-        networkDBAdaptor.addVariants(Collections.singletonList(variant));
+        Path inputPath = Paths.get(getClass().getResource("/bionetdb_variants.json").toURI());
+        List<Variant> variants = mapper.readValue(inputPath.toFile(),
+                mapper.getTypeFactory().constructCollectionType(List.class, Variant.class));
+        for (Variant variant: variants) {
+            System.out.println(variant.toJson());
+            networkDBAdaptor.addVariants(Collections.singletonList(variant));
+        }
     }
 
-    @Test
+    //@Test
     public void testInsertMetabolismHsapiens() throws Exception {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
         //Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
