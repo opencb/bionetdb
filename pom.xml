@@ -6,7 +6,7 @@
 
     <groupId>org.opencb.bionetdb</groupId>
     <artifactId>bionetdb</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>BioNetDB project</name>
@@ -20,12 +20,12 @@
     </modules>
 
     <properties>
-        <bionetdb.version>0.2.0</bionetdb.version>
+        <bionetdb.version>0.2.0-SNAPSHOT</bionetdb.version>
         <java.version>1.8</java.version>
         <java-common-libs.version>3.7.0-SNAPSHOT</java-common-libs.version>
         <biodata.version>1.4.0-SNAPSHOT</biodata.version>
         <cellbase.version>4.5.0-rc</cellbase.version>
-        <jackson.version>2.6.4</jackson.version>
+        <jackson.version>2.8.10</jackson.version>
         <jersey.version>2.23</jersey.version>
         <build.dir>build</build.dir>
     </properties>
@@ -55,9 +55,9 @@
             <email>dperezgil89@gmail.com</email>
         </developer>
         <developer>
-            <id>pfurio</id>
-            <name>Pedro</name>
-            <email>pedrofurio@gmail.com</email>
+            <id>jtarraga</id>
+            <name>Joaquin</name>
+            <email>joaquintarraga@gmail.com</email>
         </developer>
     </developers>
 
@@ -163,7 +163,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.2</version>
+                <version>3.6.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -174,62 +174,8 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.4</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.10.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <additionalparam>-Xdoclint:none</additionalparam>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.6</version>
-                <executions>
-                    <execution>
-                        <id>sign-artifacts</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.5</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.16</version>
+                <version>2.17</version>
                 <executions>
                     <execution>
                         <id>validate</id>
@@ -254,16 +200,80 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <opencga.war.name>opencga-${bionetdb.version}</opencga.war.name>
-
                 <BIONETDB.DATABASE>scerevisiae</BIONETDB.DATABASE>
                 <BIONETDB.CATALOG.DB.HOST>localhost</BIONETDB.CATALOG.DB.HOST>
                 <BIONETDB.CATALOG.DB.PORT>7687</BIONETDB.CATALOG.DB.PORT>
                 <BIONETDB.CATALOG.DB.USER>neo4j</BIONETDB.CATALOG.DB.USER>
-                <BIONETDB.CATALOG.DB.PASSWORD>rnapol</BIONETDB.CATALOG.DB.PASSWORD>
+                <BIONETDB.CATALOG.DB.PASSWORD></BIONETDB.CATALOG.DB.PASSWORD>
             </properties>
         </profile>
+
+        <profile>
+            <id>deploy</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.4</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.5</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
+
     <distributionManagement>
         <repository>
             <id>ossrh</id>
@@ -280,14 +290,6 @@
             <id>intact.nexus</id>
             <name>IntAct Nexus</name>
             <url>http://www.ebi.ac.uk/intact/maven/nexus/content/groups/public</url>
-        </repository>
-        <repository>
-            <id>biopax.releases</id>
-            <name>BioPax repository</name>
-            <url>http://biopax.sourceforge.net/m2repo/releases/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
         </repository>
     </repositories>
 
