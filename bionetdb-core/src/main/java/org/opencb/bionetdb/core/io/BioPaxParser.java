@@ -63,7 +63,6 @@ public class BioPaxParser {
         Set<BioPAXElement> bioPAXElements = model.getObjects();
 
         for (BioPAXElement bioPAXElement : bioPAXElements) {
-
             switch (bioPAXElement.getModelInterface().getSimpleName()) {
                 // Physical Entities
                 case "PhysicalEntity":
@@ -105,7 +104,6 @@ public class BioPaxParser {
                 default:
                     break;
             }
-
         }
         inputStream.close();
         return network;
