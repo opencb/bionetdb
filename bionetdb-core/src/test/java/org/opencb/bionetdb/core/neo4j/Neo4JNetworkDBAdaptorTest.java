@@ -279,11 +279,12 @@ public class Neo4JNetworkDBAdaptorTest {
         }
     }
 
-    //@Test
+    @Test
     public void testInsertMetabolismHsapiens() throws Exception {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
         //Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
-        Path inputPath = Paths.get("/home/jtarraga/data150/neo4j/hsapiens.metabolism.biopax3");
+        //Path inputPath = Paths.get("/home/jtarraga/data150/neo4j/hsapiens.metabolism.biopax3");
+        Path inputPath = Paths.get("/home/jtarraga/data150/neo4j/hsapiens.meiosis.biopax3");
         Network network = bioPaxParser.parse(inputPath);
         System.out.println("The file has been parsed.");
 

@@ -1,12 +1,15 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.driver.v1.*;
 import org.neo4j.driver.v1.types.Node;
 import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -37,6 +40,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private enum NodeTypes {
         PHYSICAL_ENTITY,
         INTERACTION,
+        STUDY,
+        FILE,
+        SAMPLE,
+        GENOTYPE,
         XREF,
         CELLULAR_LOCATION,
         ONTOLOGY,
@@ -49,6 +56,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private enum RelTypes {
         REACTANT,
         PRODUCT,
+        STUDY,
+        FILE,
+        SAMPLE,
+        GENOTYPE,
         XREF,
         CONTROLLED,
         CONTROLLER,
@@ -192,6 +203,48 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             for (Variant variant: variants) {
                 // Create the variant node
                 StatementResult variantNode = getOrCreateNode(tx, PhysicalEntity.Type.VARIANT.toString(), parseVariant(variant));
+
+                // Create study nodes
+                if (variant.getStudies() != null && ListUtils.isNotEmpty(variant.getStudies())) {
+                    for (StudyEntry studyEntry: variant.getStudies()) {
+                        StatementResult studyNode = getOrCreateNode(tx, NodeTypes.STUDY.toString(), parseStudyEntry(studyEntry));
+                        addRelationship(tx, PhysicalEntity.Type.VARIANT.toString(), NodeTypes.STUDY.toString(),
+                                variantNode.peek().get("ID").toString(), studyNode.peek().get("ID").toString(),
+                                RelTypes.STUDY);
+
+                        if (studyEntry.getSamplesData() != null && ListUtils.isNotEmpty(studyEntry.getSamplesData())) {
+                            int numSamples = studyEntry.getSamplesData().size();
+                            for (int i = 0; i < numSamples; i++) {
+                                // TODO: get sample name
+                                StatementResult sampleNode = getOrCreateNode(tx, NodeTypes.SAMPLE.toString(),
+                                        new ObjectMap("id", "Sample#0" + i));
+                                addRelationship(tx, NodeTypes.STUDY.toString(), NodeTypes.SAMPLE.toString(),
+                                        studyNode.peek().get("ID").toString(), sampleNode.peek().get("ID").toString(),
+                                        RelTypes.SAMPLE);
+                                StatementResult gtNode = createNode(tx, NodeTypes.GENOTYPE.toString(),
+                                        new ObjectMap("id", studyEntry.getSampleData(i).get(0)));
+                                addRelationship(tx, NodeTypes.SAMPLE.toString(), NodeTypes.GENOTYPE.toString(),
+                                        sampleNode.peek().get("ID").toString(), gtNode.peek().get("ID").toString(),
+                                        RelTypes.GENOTYPE);
+                                addRelationship(tx, PhysicalEntity.Type.VARIANT.toString(), NodeTypes.GENOTYPE.toString(),
+                                        variantNode.peek().get("ID").toString(), gtNode.peek().get("ID").toString(),
+                                        RelTypes.GENOTYPE);
+                            }
+                        }
+
+                        if (studyEntry.getFiles() != null && ListUtils.isNotEmpty(studyEntry.getFiles())) {
+                            for (FileEntry fileEntry: studyEntry.getFiles()) {
+                                StatementResult fileNode = getOrCreateNode(tx, NodeTypes.FILE.toString(), parseFileEntry(fileEntry));
+                                addRelationship(tx, NodeTypes.STUDY.toString(), NodeTypes.FILE.toString(),
+                                        studyNode.peek().get("ID").toString(), fileNode.peek().get("ID").toString(),
+                                        RelTypes.FILE);
+                                addRelationship(tx, PhysicalEntity.Type.VARIANT.toString(), NodeTypes.FILE.toString(),
+                                        variantNode.peek().get("ID").toString(), fileNode.peek().get("ID").toString(),
+                                        RelTypes.FILE);
+                            }
+                        }
+                    }
+                }
 
                 // Create population frequency nodes
                 if (variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
@@ -686,9 +739,18 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      */
     private void addRelationship(Transaction tx, String labelOri, String labelDest, String originID,
                                  String destinationID, RelTypes relationType) {
+        addRelationship(tx, labelOri, labelDest, originID, destinationID, relationType, true);
+//        tx.run("MATCH (o:" + labelOri + ") WHERE ID(o) = " + originID
+//                + " MATCH (d:" + labelDest + ") WHERE ID(d) = " + destinationID
+//                + " MERGE (o)-[:" + relationType + "]->(d)");
+    }
+
+    private void addRelationship(Transaction tx, String labelOri, String labelDest, String originID,
+                                 String destinationID, RelTypes relationType, boolean directed) {
+        String sep = (directed ? ">" : "");
         tx.run("MATCH (o:" + labelOri + ") WHERE ID(o) = " + originID
                 + " MATCH (d:" + labelDest + ") WHERE ID(d) = " + destinationID
-                + " MERGE (o)-[:" + relationType + "]->(d)");
+                + " MERGE (o)-[:" + relationType + "]-" + sep + "(d)");
     }
 
     /**
@@ -1302,6 +1364,30 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         if (variant.getLength() != null) {
             myProperties.put("length", variant.getLength());
+        }
+        return myProperties;
+    }
+
+    private ObjectMap parseStudyEntry(StudyEntry studyEntry) {
+        ObjectMap myProperties = new ObjectMap();
+        if (studyEntry.getStudyId() != null) {
+            myProperties.put("id", studyEntry.getStudyId());
+        }
+        return myProperties;
+    }
+
+    private ObjectMap parseFileEntry(FileEntry fileEntry) {
+        ObjectMap myProperties = new ObjectMap();
+        if (fileEntry.getFileId() != null) {
+            myProperties.put("id", fileEntry.getFileId());
+        }
+        if (fileEntry.getCall() != null) {
+            myProperties.put("call", fileEntry.getCall());
+        }
+        if (fileEntry.getAttributes() != null && MapUtils.isNotEmpty(fileEntry.getAttributes())) {
+            for (String key: fileEntry.getAttributes().keySet()) {
+                myProperties.put(key, fileEntry.getAttributes().get(key));
+            }
         }
         return myProperties;
     }
