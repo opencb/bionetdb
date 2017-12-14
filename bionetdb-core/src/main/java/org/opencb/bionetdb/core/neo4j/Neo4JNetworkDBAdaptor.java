@@ -139,14 +139,26 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (session != null) {
             try (Transaction tx = session.beginTransaction()) {
                 tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(id)");
-                tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(name)");
+   //             tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(name)");
+
+                tx.run("CREATE INDEX ON :" + PhysicalEntity.Type.PROTEIN + "(id)");
+
+                tx.run("CREATE INDEX ON :" + NodeTypes.CELLULAR_LOCATION + "(name)");
 
                 tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(id)");
-                tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(name)");
+ //               tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(name)");
 
                 tx.run("CREATE INDEX ON :" + NodeTypes.XREF + "(id)");
-                tx.run("CREATE INDEX ON :Tissue(tissue)");
-                tx.run("CREATE INDEX ON :TimeSeries(timeseries)");
+//                tx.run("CREATE INDEX ON :" + NodeTypes.XREF + "(source)");
+//
+               tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(id)");
+//                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(source)");
+//                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(name)");
+
+//                tx.run("CREATE INDEX ON :Tissue(tissue)");
+//                tx.run("CREATE INDEX ON :TimeSeries(timeseries)");
+
+                tx.run("CREATE INDEX ON :" + PhysicalEntity.Type.UNDEFINED + "(id)");
 
                 tx.success();
             }
@@ -354,18 +366,22 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private ObjectMap parsePhysicalEntity(PhysicalEntity myPhysicalEntity) {
         ObjectMap myOutput = new ObjectMap("id", myPhysicalEntity.getId());
-        if (myPhysicalEntity.getName() != null) {
+        if (StringUtils.isNotBlank(myPhysicalEntity.getName())) {
             myOutput.put("name", myPhysicalEntity.getName());
         }
+/*
         if (myPhysicalEntity.getDescription() != null) {
             myOutput.put("description", myPhysicalEntity.getDescription());
         }
+        */
         if (myPhysicalEntity.getType() != null) {
-            myOutput.put("type", myPhysicalEntity.getType());
+            myOutput.put("type", myPhysicalEntity.getType().name());
         }
+        /*
         if (myPhysicalEntity.getSource().size() > 0) {
             myOutput.put("source", myPhysicalEntity.getSource());
         }
+        */
         return myOutput;
     }
 
@@ -649,6 +665,27 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      */
     private StatementResult getOrCreateNode(Transaction tx, String label, ObjectMap properties) {
         // Gathering properties of the node to create a cypher string with them
+        StringBuilder props = new StringBuilder("");
+        if (MapUtils.isNotEmpty(properties)) {
+            props.append("{");
+            boolean first = true;
+            for (String key : properties.keySet()) {
+                if (!first) {
+                    props.append(",");
+                }
+                props.append(key).append(":$").append(key);
+                first = false;
+            }
+            props.append("}");
+        }
+
+        // Getting the desired node or creating it if it does not exists
+       return tx.run("MERGE (n:" + label + " " + props + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS",
+                properties);
+    }
+
+    private StatementResult getOrCreateNode00(Transaction tx, String label, ObjectMap properties) {
+        // Gathering properties of the node to create a cypher string with them
         List<String> props = new ArrayList<>();
         for (String key : properties.keySet()) {
             //props.add(key + ":\"" + properties.getString(key) + "\"");
@@ -657,6 +694,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     .replace("\\", "|") + "\"");
         }
         String propsJoined = "{" + String.join(",", props) + "}";
+
         // Getting the desired node or creating it if it does not exists
         return tx.run("MERGE (n:" + label + " " + propsJoined + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS");
     }

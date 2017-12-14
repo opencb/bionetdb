@@ -56,10 +56,6 @@ public class Neo4JNetworkDBAdaptorTest {
         new File(database).mkdirs();
         try {
             BioNetDBConfiguration bioNetDBConfiguration = BioNetDBConfiguration.load(getClass().getResourceAsStream("/configuration.yml"));
-//            bioNetDBConfiguration.getDatabases().get(0).setUser("neo4j");
-//            bioNetDBConfiguration.getDatabases().get(0).setPassword("neo4j;");
-//            bioNetDBConfiguration.getDatabases().get(0).setHost("http://localhost");
-//            bioNetDBConfiguration.getDatabases().get(0).setPort(7474);
             for (DatabaseConfiguration dbConfig: bioNetDBConfiguration.getDatabases()) {
                 System.out.println(dbConfig);
             }
