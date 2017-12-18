@@ -1517,4 +1517,22 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         return myProperties;
     }
+
+    public StatementResult getProteinXrefs() {
+        Session session = this.driver.session();
+        StatementResult statementResult = session.run("MATCH (n:"
+                + PhysicalEntity.Type.PROTEIN + ")-[r:" + RelTypes.XREF + "]->(m:"
+                + NodeTypes.XREF + ") RETURN n.id, n.name, collect(m.id) as xrefs");
+        session.close();
+        return statementResult;
+    }
+
+    public StatementResult getXrefs(String nodeLabel) {
+        Session session = this.driver.session();
+        StatementResult statementResult = session.run("MATCH (n:"
+                + nodeLabel + ")-[r:" + RelTypes.XREF + "]->(m:"
+                + NodeTypes.XREF + ") RETURN n.id, n.name, collect(m.id) as xref_ids, collect(m.source) as xref_sources");
+        session.close();
+        return statementResult;
+    }
 }

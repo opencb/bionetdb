@@ -6,6 +6,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.StatementResult;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -15,6 +17,7 @@ import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.models.PhysicalEntity;
 import org.opencb.bionetdb.core.models.Xref;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -290,5 +293,21 @@ public class Neo4JNetworkDBAdaptorTest {
         long stopTime = System.currentTimeMillis();
         System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
         QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
+    }
+
+
+    @Test
+    public void testGetProteinXrefs() throws Exception {
+        StatementResult proteinXrefs = ((Neo4JNetworkDBAdaptor) networkDBAdaptor).getXrefs(PhysicalEntity.Type.PROTEIN.name());
+        int i = 0;
+        while (proteinXrefs.hasNext()) {
+            Record next = proteinXrefs.next();
+            System.out.println((++i) + ":\t" + next.get(0) + "\t" + next.get(1));
+            assert(next.get(2).asList().size() == next.get(3).asList().size());
+            int size = next.get(2).asList().size();
+            for (int j = 0; j < size; j++) {
+                System.out.println("\t" + next.get(2).asList().get(j) + " ---- " + next.get(3).asList().get(j));
+            }
+        }
     }
 }
