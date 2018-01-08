@@ -5,10 +5,8 @@ import java.util.*;
 /**
  * Created by imedina on 10/08/15.
  */
-public class Interaction {
+public class Interaction extends Node {
 
-    protected String id;
-    protected String name;
     protected List<String> description;
     protected List<String> source;
     protected List<String> participants;
@@ -63,22 +61,6 @@ public class Interaction {
         this.xrefs = new ArrayList<>();
         this.ontologies = new ArrayList<>();
         this.publications = new ArrayList<>();
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public List<String> getDescription() {

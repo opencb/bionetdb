@@ -5,10 +5,8 @@ import java.util.*;
 /**
  * Created by imedina on 10/08/15.
  */
-public class PhysicalEntity {
+public class PhysicalEntity extends Node {
 
-    protected String id;
-    protected String name;
     protected List<String> description;
     protected List<CellularLocation> cellularLocation;
     protected List<String> source;
@@ -121,22 +119,6 @@ public class PhysicalEntity {
             return false;
         }
         return true;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public List<String> getDescription() {
