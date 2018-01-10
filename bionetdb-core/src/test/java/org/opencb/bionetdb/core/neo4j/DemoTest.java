@@ -9,6 +9,7 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.models.Network;
 
 import java.io.IOException;
 
@@ -52,6 +53,8 @@ public class DemoTest {
 
     @Test
     public void createExperimentalNetwork() {
+        Network network = new Network();
+
         System.out.println("Creating experimental Network: reactome from biopax file");
 
     }

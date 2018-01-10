@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * Created by imedina on 10/08/15.
  */
-public class Interaction extends Node {
+public class Interaction extends Relationship {
 
     protected List<String> description;
     protected List<String> source;
@@ -16,22 +16,20 @@ public class Interaction extends Node {
     protected List<Ontology> ontologies;
     protected List<Publication> publications;
 
-    protected Type type;
-
     protected Map<String, Object> attributes;
 
-    public enum Type {
-        REACTION       ("reaction"),
-        CATALYSIS      ("catalysis"),
-        REGULATION     ("regulation"),
-        COLOCALIZATION ("colocalization");
-
-        private final String type;
-
-        Type(String type) {
-            this.type = type;
-        }
-    }
+//    public enum Type {
+//        REACTION       ("reaction"),
+//        CATALYSIS      ("catalysis"),
+//        REGULATION     ("regulation"),
+//        COLOCALIZATION ("colocalization");
+//
+//        private final String type;
+//
+//        Type(String type) {
+//            this.type = type;
+//        }
+//    }
 
     public Interaction() {
         this.description = new ArrayList<>();
@@ -114,14 +112,6 @@ public class Interaction extends Node {
 
     public void setControlledBy(List<String> controlledOf) {
         this.controlledBy = controlledOf;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public void setType(Type type) {
-        this.type = type;
     }
 
     public List<Xref> getXrefs() {

@@ -19,17 +19,17 @@ public class DotExporterTest {
         Network network = new Network();
 
         // Creating PEs
-        List<PhysicalEntity> physicalEntitiesList = new ArrayList<>();
+        List<Node> physicalEntitiesList = new ArrayList<>();
         physicalEntitiesList.add(new Protein("A", "A", new ArrayList<>()));
         physicalEntitiesList.add(new Protein("B", "B", new ArrayList<>()));
         physicalEntitiesList.add(new Protein("C", "C", new ArrayList<>()));
         physicalEntitiesList.add(new Protein("D", "D", new ArrayList<>()));
         physicalEntitiesList.add(new Protein("E", "E", new ArrayList<>()));
         physicalEntitiesList.add(new Protein("F", "F", new ArrayList<>()));
-        network.setPhysicalEntities(physicalEntitiesList);
+        network.setNodes(physicalEntitiesList);
 
         // Creating Interactions
-        List<Interaction> interactionsList = new ArrayList<>();
+        List<Relationship> interactionsList = new ArrayList<>();
         Reaction reaction1 = new Reaction("ABCD", "ABCD", new ArrayList<>(), Reaction.ReactionType.REACTION);
         Catalysis catalysis1 = new Catalysis("EABCD", "EABCD", new ArrayList<>());
         Regulation regulation1 = new Regulation("DEABCD", "DEABCD", new ArrayList<>());
@@ -54,7 +54,7 @@ public class DotExporterTest {
         interactionsList.add(regulation1);
         interactionsList.add(reaction2);
 
-        network.setInteractions(interactionsList);
+        network.setRelationships(interactionsList);
 
         assertEquals("Dot file: ",
                 "digraph \"network\" {\n" +

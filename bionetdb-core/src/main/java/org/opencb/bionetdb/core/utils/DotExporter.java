@@ -3,9 +3,6 @@ package org.opencb.bionetdb.core.utils;
 import org.opencb.biodata.formats.graph.dot.Dot;
 import org.opencb.biodata.formats.graph.dot.Edge;
 import org.opencb.biodata.formats.graph.dot.Node;
-import org.opencb.bionetdb.core.models.Interaction;
-import org.opencb.bionetdb.core.models.Network;
-import org.opencb.bionetdb.core.models.PhysicalEntity;
 import org.opencb.bionetdb.core.models.*;
 
 import java.util.HashMap;
@@ -19,21 +16,21 @@ public class DotExporter {
 
         Dot dot = new Dot("network", true);
 
-        // Creating PhysicalEntities
-        for (PhysicalEntity physicalEntity : network.getPhysicalEntities()) {
-            dot.addNode(new Node(physicalEntity.getId(), new HashMap<>()));
+        // Creating Nodes
+        for (org.opencb.bionetdb.core.models.Node node: network.getNodes()) {
+            dot.addNode(new Node(node.getId(), new HashMap<>()));
         }
 
-        // Creating Interactions
-        for (Interaction interaction : network.getInteractions()) {
-            dot.addNode(new Node(interaction.getId(), new HashMap<>()));
+        // Creating Relationships
+        for (Relationship relationship: network.getRelationships()) {
+            dot.addNode(new Node(relationship.getId(), new HashMap<>()));
         }
 
-        // Connecting PhysicalEntities and Interactions
-        for (Interaction interaction : network.getInteractions()) {
-            switch(interaction.getType()) {
+        // Connecting Nodes and Relationships
+        for (Relationship relationship: network.getRelationships()) {
+            switch(relationship.getType()) {
                 case REACTION:
-                    Reaction reaction = (Reaction) interaction;
+                    Reaction reaction = (Reaction) relationship;
                     for (String product : reaction.getProducts()) {
                         dot.addEdge(new Edge(reaction.getId(), product));
                     }
@@ -42,7 +39,7 @@ public class DotExporter {
                     }
                     break;
                 case CATALYSIS:
-                    Catalysis catalysis = (Catalysis) interaction;
+                    Catalysis catalysis = (Catalysis) relationship;
                     for (String controller : catalysis.getControllers()) {
                         dot.addEdge(new Edge(controller, catalysis.getId()));
                     }
@@ -51,7 +48,7 @@ public class DotExporter {
                     }
                     break;
                 case REGULATION:
-                    Regulation regulation = (Regulation) interaction;
+                    Regulation regulation = (Regulation) relationship;
                     for (String controller : regulation.getControllers()) {
                         dot.addEdge(new Edge(controller, regulation.getId()));
                     }
@@ -68,24 +65,30 @@ public class DotExporter {
         }
 
         // Creating and connecting Xrefs
-        for (PhysicalEntity physicalEntity : network.getPhysicalEntities()) {
-            for (Xref xref : physicalEntity.getXrefs()) {
-                String xrefName = xref.getSource() + "_" + xref.getId();
-                dot.addNode(new Node(xrefName, new HashMap<>()));
-                dot.addEdge(new Edge(xrefName, physicalEntity.getId()));
+        for (org.opencb.bionetdb.core.models.Node node: network.getNodes()) {
+            if (org.opencb.bionetdb.core.models.Node.isPhysicalEntity(node)) {
+                PhysicalEntity physicalEntity = (PhysicalEntity) node;
+                for (Xref xref: physicalEntity.getXrefs()) {
+                    String xrefName = xref.getSource() + "_" + xref.getId();
+                    dot.addNode(new Node(xrefName, new HashMap<>()));
+                    dot.addEdge(new Edge(xrefName, physicalEntity.getId()));
+                }
             }
         }
 
         // Creating and connecting CellularLocations
-        for (PhysicalEntity physicalEntity : network.getPhysicalEntities()) {
-            for (CellularLocation cellularLocation : physicalEntity.getCellularLocation()) {
-                dot.addNode(new Node(cellularLocation.getName(), new HashMap<>()));
-                dot.addEdge(new Edge(cellularLocation.getName(), physicalEntity.getId()));
+        for (org.opencb.bionetdb.core.models.Node node: network.getNodes()) {
+            if (org.opencb.bionetdb.core.models.Node.isPhysicalEntity(node)) {
+                PhysicalEntity physicalEntity = (PhysicalEntity) node;
+                for (CellularLocation cellularLocation : physicalEntity.getCellularLocation()) {
+                    dot.addNode(new Node(cellularLocation.getName(), new HashMap<>()));
+                    dot.addEdge(new Edge(cellularLocation.getName(), physicalEntity.getId()));
 
-                for (Ontology ontology : cellularLocation.getOntologies()) {
-                    String ontologyName = ontology.getSource() + ":" + ontology.getId();
-                    dot.addNode(new Node(ontologyName, new HashMap<>()));
-                    dot.addEdge(new Edge(ontologyName, cellularLocation.getName()));
+                    for (Ontology ontology : cellularLocation.getOntologies()) {
+                        String ontologyName = ontology.getSource() + ":" + ontology.getId();
+                        dot.addNode(new Node(ontologyName, new HashMap<>()));
+                        dot.addEdge(new Edge(ontologyName, cellularLocation.getName()));
+                    }
                 }
             }
         }

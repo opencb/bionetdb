@@ -302,6 +302,16 @@ public class Neo4JNetworkDBAdaptorTest {
         int i = 0;
         while (proteinXrefs.hasNext()) {
             Record next = proteinXrefs.next();
+            Map<String, Object> map = next.asMap();
+            for (String key: map.keySet()) {
+                if (map.get(key) instanceof List) {
+                    System.out.println(">>>> List");
+                }
+                System.out.println(key + " -> " + map.get(key));
+            }
+            System.exit(-1);
+
+
             System.out.println((++i) + ":\t" + next.get(0) + "\t" + next.get(1));
             assert(next.get(2).asList().size() == next.get(3).asList().size());
             int size = next.get(2).asList().size();

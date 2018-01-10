@@ -19,30 +19,28 @@ public class PhysicalEntity extends Node {
     protected List<Ontology> ontologies;
     protected List<Publication> publications;
 
-    protected Type type;
-
     protected Map<String, Object> attributes;
 
     // TODO think about this!
     protected Display display;
 
-    public enum Type {
-        UNDEFINED      ("undefined"),
-        PROTEIN        ("protein"),
-        GENE           ("gene"),
-        TRANSCRIPT     ("transcript"),
-        VARIANT        ("variant"),
-        DNA            ("dna"),
-        RNA            ("rna"),
-        COMPLEX        ("complex"),
-        SMALL_MOLECULE ("smallMolecule");
-
-        private final String type;
-
-        Type(String type) {
-            this.type = type;
-        }
-    }
+//    public enum Type {
+//        UNDEFINED      ("undefined"),
+//        PROTEIN        ("protein"),
+//        GENE           ("gene"),
+//        TRANSCRIPT     ("transcript"),
+//        VARIANT        ("variant"),
+//        DNA            ("dna"),
+//        RNA            ("rna"),
+//        COMPLEX        ("complex"),
+//        SMALL_MOLECULE ("smallMolecule");
+//
+//        private final String type;
+//
+//        Type(String type) {
+//            this.type = type;
+//        }
+//    }
 
     public PhysicalEntity() {
         this.id = "";

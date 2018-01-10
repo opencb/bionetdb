@@ -2,6 +2,8 @@ package org.opencb.bionetdb.core.io;
 
 import org.junit.Test;
 import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.models.Node;
+import org.opencb.bionetdb.core.models.Relationship;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,7 +21,24 @@ public class BioPaxParserTest {
         Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
         Network network = bioPaxParser.parse(inputPath);
 
-        assertEquals("Different number of physical entities: ", 5057, network.getPhysicalEntities().size());
-        assertEquals("Different number of interactions: ", 1971, network.getInteractions().size());
+        int numPhysicalEntities = 0;
+        for (Node node: network.getNodes()) {
+            if (Node.isPhysicalEntity(node)) {
+                numPhysicalEntities++;
+            } else {
+                System.out.println(node.getType());
+            }
+        }
+        System.out.println("Number of nodes: " + network.getNodes().size());
+        assertEquals("Different number of physical entities: ", 5057, numPhysicalEntities);
+
+        int numInteractions = 0;
+        for (Relationship relationship: network.getRelationships()) {
+            if (Relationship.isInteraction(relationship)) {
+                numInteractions++;
+            }
+        }
+        System.out.println("Number of relationships: " + network.getRelationships().size());
+        assertEquals("Different number of interactions: ", 1971, numInteractions);
     }
 }

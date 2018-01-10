@@ -14,18 +14,18 @@ public class Network {
     private String name;
     private String description;
 
-    private List<PhysicalEntity> physicalEntities;
-    private Map<String, Integer> physicalEntitiesIndex;
-    private List<Interaction> interactions;
-    private Map<String, Integer> interactionsIndex;
+    private List<Node> nodes;
+    private Map<String, Integer> nodesIndex;
+    private List<Relationship> relationships;
+    private Map<String, Integer> relationshipsIndex;
 
     protected Map<String, Object> attributes;
 
     protected Type type;
 
     public enum Type {
-        PHYSICALENTITY ("physicalEntity"),
-        INTERACTION    ("interaction");
+        NODE ("node"),
+        RELATIONSHIP ("relationship");
 
         private final String type;
 
@@ -53,69 +53,69 @@ public class Network {
     }
 
     private void init() {
-        physicalEntities = new ArrayList<>();
-        interactions = new ArrayList<>();
+        nodes = new ArrayList<>();
+        relationships = new ArrayList<>();
 
-        physicalEntitiesIndex = new HashMap<>();
-        interactionsIndex =new HashMap<>();
+        nodesIndex = new HashMap<>();
+        relationshipsIndex =new HashMap<>();
 
         attributes = new HashMap<>();
     }
 
-    public PhysicalEntity getPhysicalEntity(String id) {
-        return physicalEntities.get(physicalEntitiesIndex.get(id));
+    public Node getNode(String id) {
+        return nodes.get(nodesIndex.get(id));
     }
 
-    public void setPhysicalEntity(PhysicalEntity physicalEntity) {
-        if (physicalEntity != null) {
-            if (!physicalEntitiesIndex.containsKey(physicalEntity.getId())) {
-                physicalEntities.add(physicalEntity);
-                physicalEntitiesIndex.put(physicalEntity.getId(), physicalEntities.indexOf(physicalEntity));
+    public void setNode(Node node) {
+        if (node != null) {
+            if (!nodesIndex.containsKey(node.getId())) {
+                nodes.add(node);
+                nodesIndex.put(node.getId(), nodes.indexOf(node));
             }
         }
     }
 
-    public Interaction getInteraction(String id) {
-        return interactions.get(interactionsIndex.get(id));
+    public Relationship getRelationship(String id) {
+        return relationships.get(relationshipsIndex.get(id));
     }
 
-    public void setInteraction(Interaction interaction) {
-        if (interaction != null) {
-            if (!interactionsIndex.containsKey(interaction.getId())) {
-                interactions.add(interaction);
-                interactionsIndex.put(interaction.getId(), interactions.indexOf(interaction));
+    public void setRelationship(Relationship relationship) {
+        if (relationship != null) {
+            if (!relationshipsIndex.containsKey(relationship.getId())) {
+                relationships.add(relationship);
+                relationshipsIndex.put(relationship.getId(), relationships.indexOf(relationship));
             }
         }
     }
 
-    public List<PhysicalEntity> getPhysicalEntities() {
-        return physicalEntities;
+    public List<Node> getNodes() {
+        return nodes;
     }
 
-    public void setPhysicalEntities(List<PhysicalEntity> physicalEntities) {
-        this.physicalEntities = physicalEntities;
-        for (PhysicalEntity physicalEntity : physicalEntities) {
-            physicalEntitiesIndex.put(physicalEntity.getId(), this.physicalEntities.indexOf(physicalEntity));
+    public void setNodes(List<Node> nodes) {
+        this.nodes = nodes;
+        for (Node node: nodes) {
+            nodesIndex.put(node.getId(), this.nodes.indexOf(node));
         }
     }
 
-    public List<Interaction> getInteractions() {
-        return interactions;
+    public List<Relationship> getRelationships() {
+        return relationships;
     }
 
-    public void setInteractions(List<Interaction> interactions) {
-        this.interactions = interactions;
-        for (Interaction interaction : interactions) {
-            interactionsIndex.put(interaction.getId(), this.interactions.indexOf(interaction));
+    public void setRelationships(List<Relationship> relationships) {
+        this.relationships = relationships;
+        for (Relationship relationship: relationships) {
+            relationshipsIndex.put(relationship.getId(), this.relationships.indexOf(relationship));
         }
     }
 
     public Type getNetworkElementType(String id) {
         Type elementType = null;
-        if (physicalEntitiesIndex.containsKey(id)) {
-            elementType = Type.PHYSICALENTITY;
-        } else if (interactionsIndex.containsKey(id)) {
-            elementType = Type.INTERACTION;
+        if (nodesIndex.containsKey(id)) {
+            elementType = Type.NODE;
+        } else if (relationshipsIndex.containsKey(id)) {
+            elementType = Type.RELATIONSHIP;
         }
         return elementType;
     }

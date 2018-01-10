@@ -1,21 +1,16 @@
 package org.opencb.bionetdb.core.models;
 
-public class Node {
+public class Relationship {
     protected String id;
     protected String name;
 
     protected Type type;
 
     public enum Type {
-        UNDEFINED      ("undefined"),
-        PROTEIN        ("protein"),
-        GENE           ("gene"),
-        TRANSCRIPT     ("transcript"),
-        VARIANT        ("variant"),
-        DNA            ("dna"),
-        RNA            ("rna"),
-        COMPLEX        ("complex"),
-        SMALL_MOLECULE ("smallMolecule");
+        REACTION       ("reaction"),
+        CATALYSIS      ("catalysis"),
+        REGULATION     ("regulation"),
+        COLOCALIZATION ("colocalization");
 
         private final String type;
 
@@ -24,17 +19,12 @@ public class Node {
         }
     }
 
-    public static boolean isPhysicalEntity(Node node) {
-        switch (node.type) {
-            case UNDEFINED:
-            case PROTEIN:
-            case GENE:
-            case TRANSCRIPT:
-            case VARIANT:
-            case DNA:
-            case RNA:
-            case COMPLEX:
-            case SMALL_MOLECULE:
+    public static boolean isInteraction(Relationship r) {
+        switch (r.type) {
+            case REACTION:
+            case CATALYSIS:
+            case REGULATION:
+            case COLOCALIZATION:
                 return true;
             default:
                 return false;

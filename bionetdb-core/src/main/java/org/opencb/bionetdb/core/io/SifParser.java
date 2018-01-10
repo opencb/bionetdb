@@ -55,10 +55,10 @@ public class SifParser {
             assembly.getProducts().add(product.getId());
 
             // Add to network
-            network.setPhysicalEntity(pe1);
-            network.setPhysicalEntity(pe2);
-            network.setPhysicalEntity(product);
-            network.setInteraction(assembly);
+            network.setNode(pe1);
+            network.setNode(pe2);
+            network.setNode(product);
+            network.setRelationship(assembly);
 
             line = br.readLine();
         }

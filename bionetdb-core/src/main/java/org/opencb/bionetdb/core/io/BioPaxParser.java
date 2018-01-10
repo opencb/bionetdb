@@ -66,22 +66,22 @@ public class BioPaxParser {
             switch (bioPAXElement.getModelInterface().getSimpleName()) {
                 // Physical Entities
                 case "PhysicalEntity":
-                    network.setPhysicalEntity(createUndefinedEntity(bioPAXElement));
+                    network.setNode(createUndefinedEntity(bioPAXElement));
                     break;
                 case "Dna":
-                    network.setPhysicalEntity(createDna(bioPAXElement));
+                    network.setNode(createDna(bioPAXElement));
                     break;
                 case "Rna":
-                    network.setPhysicalEntity(createRna(bioPAXElement));
+                    network.setNode(createRna(bioPAXElement));
                     break;
                 case "Protein":
-                    network.setPhysicalEntity(createProtein(bioPAXElement));
+                    network.setNode(createProtein(bioPAXElement));
                     break;
                 case "Complex":
-                    network.setPhysicalEntity(createComplex(bioPAXElement));
+                    network.setNode(createComplex(bioPAXElement));
                     break;
                 case "SmallMolecule":
-                    network.setPhysicalEntity(createSmallMolecule(bioPAXElement));
+                    network.setNode(createSmallMolecule(bioPAXElement));
                     break;
 
                 // Interactions
@@ -92,14 +92,14 @@ public class BioPaxParser {
                 case "MolecularInteraction":
                 case "Transport":
                 case "TransportWithBiochemicalReaction":
-                    network.setInteraction(createReaction(bioPAXElement));
+                    network.setRelationship(createReaction(bioPAXElement));
                     break;
                 case "Catalysis":
-                    network.setInteraction(createCatalysis(bioPAXElement));
+                    network.setRelationship(createCatalysis(bioPAXElement));
                     break;
                 case "Modulation":
                 case "TemplateReactionRegulation":
-                    network.setInteraction(createRegulation(bioPAXElement));
+                    network.setRelationship(createRegulation(bioPAXElement));
                     break;
                 default:
                     break;
@@ -725,6 +725,5 @@ public class BioPaxParser {
         // interactionType
         interaction.getAttributes().put(REACTOME_FEAT + "interactionType",
                 interactionBP.getInteractionType());
-
     }
 }
