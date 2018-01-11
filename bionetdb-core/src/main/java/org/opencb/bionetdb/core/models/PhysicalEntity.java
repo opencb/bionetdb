@@ -1,6 +1,10 @@
 package org.opencb.bionetdb.core.models;
 
-import java.util.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 10/08/15.
@@ -18,8 +22,6 @@ public class PhysicalEntity extends Node {
     protected List<Xref> xrefs;
     protected List<Ontology> ontologies;
     protected List<Publication> publications;
-
-    protected Map<String, Object> attributes;
 
     // TODO think about this!
     protected Display display;
@@ -62,7 +64,7 @@ public class PhysicalEntity extends Node {
     }
 
     private void init() {
-        this.attributes = new HashMap<>();
+        this.attributes = new ObjectMap();
         this.cellularLocation = new ArrayList<>();
         this.source = new ArrayList<>();
         this.members = new ArrayList<>();
@@ -146,14 +148,6 @@ public class PhysicalEntity extends Node {
 
     public void setSource(List<String> source) {
         this.source = source;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
     }
 
     public List<String> getMembers() {

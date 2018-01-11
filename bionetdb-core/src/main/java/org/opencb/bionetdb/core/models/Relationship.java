@@ -1,16 +1,47 @@
 package org.opencb.bionetdb.core.models;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+
 public class Relationship {
     protected String id;
     protected String name;
 
+    protected String originId;
+    protected String destId;
+
+    protected String originType;
+    protected String destType;
+
     protected Type type;
 
+    protected ObjectMap attributes;
+
+    public Relationship(String id, String originId, String originType, String destId, String destType, Type type) {
+        this.id = id;
+        this.originId = originId;
+        this.originType = originType;
+        this.destId = destId;
+        this.destType = destType;
+        this.type = type;
+
+        this.attributes = new ObjectMap();
+    }
+
     public enum Type {
-        REACTION       ("reaction"),
-        CATALYSIS      ("catalysis"),
-        REGULATION     ("regulation"),
-        COLOCALIZATION ("colocalization");
+        REACTION            ("reaction"),
+        CATALYSIS           ("catalysis"),
+        REGULATION          ("regulation"),
+        COLOCALIZATION      ("colocalization"),
+        CONSEQUENCE_TYPE    ("CONSEQUENCE_TYPE"),
+        TRANSCRIPT          ("TRANSCRIPT"),
+        SO                  ("SO"),
+        GENE                ("GENE"),
+        XREF                ("XREF"),
+        POPULATION_FREQUENCY("POPULATION_FREQUENCY"),
+        CONSERVATION        ("CONSERVATION"),
+        FUNCTIONAL_SCORE    ("FUNCTIONAL_SCORE"),
+        PROTEIN_VARIANT_ANNOTATION("PROTEIN_VARIANT_ANNOTATION"),
+        SUBST_SCORE("SUBST_SCORE");
 
         private final String type;
 
@@ -29,6 +60,10 @@ public class Relationship {
             default:
                 return false;
         }
+    }
+
+    public Relationship() {
+        attributes = new ObjectMap();
     }
 
     public String getId() {
@@ -53,5 +88,55 @@ public class Relationship {
 
     public void setType(Type type) {
         this.type = type;
+    }
+
+    public ObjectMap getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(ObjectMap attributes) {
+        this.attributes = attributes;
+    }
+
+    public void addAttribute(String key, Object value) {
+        if (key != null && value != null) {
+            attributes.put(key, value);
+        }
+    }
+
+    public String getOriginId() {
+        return originId;
+    }
+
+    public Relationship setOriginId(String originId) {
+        this.originId = originId;
+        return this;
+    }
+
+    public String getDestId() {
+        return destId;
+    }
+
+    public Relationship setDestId(String destId) {
+        this.destId = destId;
+        return this;
+    }
+
+    public String getOriginType() {
+        return originType;
+    }
+
+    public Relationship setOriginType(String originType) {
+        this.originType = originType;
+        return this;
+    }
+
+    public String getDestType() {
+        return destType;
+    }
+
+    public Relationship setDestType(String destType) {
+        this.destType = destType;
+        return this;
     }
 }

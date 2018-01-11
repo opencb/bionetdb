@@ -1,6 +1,9 @@
 package org.opencb.bionetdb.core.models;
 
-import java.util.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by imedina on 10/08/15.
@@ -15,8 +18,6 @@ public class Interaction extends Relationship {
     protected List<Xref> xrefs;
     protected List<Ontology> ontologies;
     protected List<Publication> publications;
-
-    protected Map<String, Object> attributes;
 
 //    public enum Type {
 //        REACTION       ("reaction"),
@@ -51,7 +52,7 @@ public class Interaction extends Relationship {
     }
 
     private void init() {
-        this.attributes = new HashMap<>();
+        this.attributes = new ObjectMap();
         this.source = new ArrayList<>();
         this.participants = new ArrayList<>();
         this.processOfPathway = new ArrayList<>();
@@ -72,14 +73,6 @@ public class Interaction extends Relationship {
             description.set(index, desc);
         }
         this.description = description;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
     }
 
     public List<String> getSource() {

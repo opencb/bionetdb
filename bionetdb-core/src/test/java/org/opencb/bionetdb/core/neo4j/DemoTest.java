@@ -1,20 +1,28 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.models.Node;
+import org.opencb.bionetdb.core.models.Relationship;
+import org.opencb.commons.utils.ListUtils;
 
+import java.io.File;
 import java.io.IOException;
 
 public class DemoTest {
-    String database = "demo";
+    //    String database = "demo";
+    String database = "scerevisiae";
     NetworkDBAdaptor networkDBAdaptor = null;
 
     @Rule
@@ -52,10 +60,233 @@ public class DemoTest {
     }
 
     @Test
-    public void createExperimentalNetwork() {
+    public void createExperimentalNetwork() throws IOException, BioNetDBException {
+        ObjectMapper mapper = new ObjectMapper();
+        Variant variant = mapper.readValue(new File("~/neo4j/test2.json"), Variant.class);
+        Network network = parseVariant(variant);
+        //System.out.println(variant.toJson());
+
+        System.out.println("Inserting data...");
+        long startTime = System.currentTimeMillis();
+        networkDBAdaptor.insert(network, null);
+        long stopTime = System.currentTimeMillis();
+        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
+
+//        List<Variant> variants = mapper.readValue(new File("/home/jtarraga/data150/neo4j/test.json"),
+//                new TypeReference<List<Variant>>(){});
+//
+//        for (Variant variant: variants) {
+//            System.out.println(variant.getId());
+//        }
+//        VariantAnnotation va = new VariantAnnotation();
+//        ConsequenceType consequenceType = va.getConsequenceTypes().get(0);
+//        consequenceType.getProteinVariantAnnotation().
+//
+//
+//                System.out.println("Creating experimental Network: reactome from biopax file");
+
+    }
+
+    public Network parseVariant(Variant variant) {
+        int countID = 0;
         Network network = new Network();
+        if (variant != null) {
+            // main node
+            Node main = new Node(variant.getId(), variant.toString(), Node.Type.VARIANT);
+            main.addAttribute("chromosome", variant.getChromosome());
+            main.addAttribute("start", variant.getStart());
+            main.addAttribute("end", variant.getEnd());
+            main.addAttribute("reference", variant.getReference());
+            main.addAttribute("alternate", variant.getAlternate());
+            main.addAttribute("strand", variant.getStrand());
+            main.addAttribute("vtype", variant.getType().toString());
+            network.setNode(main);
 
-        System.out.println("Creating experimental Network: reactome from biopax file");
+            if (variant.getAnnotation() != null) {
+                if (ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                    // consequence type nodes
+                    for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
+                        if (ct.getBiotype() == null) {
+                            continue;
+                        }
+                        Node ctNode = new Node("ConsequenceType" + (countID++), null, Node.Type.CONSEQUENCE_TYPE);
+                        ctNode.addAttribute("biotype", ct.getBiotype());
+                        if (ListUtils.isNotEmpty(ct.getTranscriptAnnotationFlags())) {
+                            ctNode.addAttribute("transcriptAnnotationFlags", String.join(",", ct.getTranscriptAnnotationFlags()));
+                        }
+                        network.setNode(ctNode);
 
+                        // Relationship: variant - consequence type
+                        Relationship vCtRel = new Relationship(main.getId() + ctNode.getId(), main.getId(), main.getType().toString(),
+                                ctNode.getId(), ctNode.getType().toString(), Relationship.Type.CONSEQUENCE_TYPE);
+                        network.setRelationship(vCtRel);
+
+                        // Transcript nodes
+                        if (ct.getEnsemblTranscriptId() != null) {
+                            Node transcriptNode = new Node(ct.getEnsemblTranscriptId(), null, Node.Type.TRANSCRIPT);
+                            network.setNode(transcriptNode);
+
+//                            // Xref nodes: itself, Ensembl Gene ID, gene name
+//                            Node xrefTranscriptNode = new Node();
+//                            xrefTranscriptNode.setId(ct.getEnsemblTranscriptId() + (++countID));
+//                            xrefTranscriptNode.setType(Node.Type.XREF);
+//                            ObjectMap xrefTranscriptAttrs = new ObjectMap();
+//                            xrefTranscriptAttrs.put("id", xrefTranscriptNode.getId());
+//                            xrefTranscriptNode.setAttributes(xrefTranscriptAttrs);
+//                            network.setNode(xrefTranscriptNode);
+//
+//                            // Relationship: transcript - xref transcript
+//                            Relationship tXTRel = new Relationship();
+//                            tXTRel.setId(transcriptNode.getId() + xrefTranscriptNode.getId());
+//                            tXTRel.setOriginId(transcriptNode.getId());
+//                            tXTRel.setOriginType(transcriptNode.getType().toString());
+//                            tXTRel.setDestId(xrefTranscriptNode.getId());
+//                            tXTRel.setDestType(xrefTranscriptNode.getType().toString());
+//                            tXTRel.setType(Relationship.Type.XREF);
+//                            network.setRelationship(tXTRel);
+
+                            // Xref ensembl gene node
+                            Node xrefEGeneNode = new Node(ct.getEnsemblGeneId(), null, Node.Type.XREF);
+                            //xrefEGeneNode.setSubtypes(Collections.singletonList(Node.Type.GENE));
+                            network.setNode(xrefEGeneNode);
+
+                            // Relationship: transcript - xref ensembl gene
+                            Relationship tXEgRel = new Relationship(transcriptNode.getId() + xrefEGeneNode.getId(),
+                                    transcriptNode.getId(), transcriptNode.getType().toString(), xrefEGeneNode.getId(),
+                                    xrefEGeneNode.getType().toString(), Relationship.Type.XREF);
+                            network.setRelationship(tXEgRel);
+
+                            // Xref gene node
+                            Node xrefGeneNode = new Node(ct.getGeneName(), null, Node.Type.XREF);
+                            network.setNode(xrefGeneNode);
+
+                            // Relationship: transcript - xref gene
+                            Relationship tXGRel = new Relationship(transcriptNode.getId() + xrefGeneNode.getId(), transcriptNode.getId(),
+                                    transcriptNode.getType().toString(), xrefGeneNode.getId(), xrefGeneNode.getType().toString(),
+                                    Relationship.Type.XREF);
+                            network.setRelationship(tXGRel);
+
+                            // Relationship: consequence type - transcript
+                            Relationship ctTRel = new Relationship(ctNode.getId() + transcriptNode.getId(), ctNode.getId(),
+                                    ctNode.getType().toString(), transcriptNode.getId(), transcriptNode.getType().toString(),
+                                    Relationship.Type.TRANSCRIPT);
+                            network.setRelationship(ctTRel);
+                        } else {
+                            System.out.println("Transcript is NULL !!!");
+                        }
+
+                        // Protein variant annotation
+                        if (ct.getProteinVariantAnnotation() != null) {
+                            ProteinVariantAnnotation protVA = ct.getProteinVariantAnnotation();
+                            // Create node
+                            Node protVANode = new Node("ProteinVarAnnotation" + countID++, protVA.getUniprotName(),
+                                    Node.Type.PROTEIN_VARIANT_ANNOTATION);
+                            protVANode.addAttribute("uniprotAccession", protVA.getUniprotAccession());
+                            protVANode.addAttribute("uniprotName", protVA.getUniprotName());
+                            protVANode.addAttribute("functionalDescription", protVA.getFunctionalDescription());
+                            protVANode.addAttribute("reference", protVA.getReference());
+                            protVANode.addAttribute("alternate", protVA.getAlternate());
+                            network.setNode(protVANode);
+
+                            // And create relationship consequence type -> protein variation annotation
+                            Relationship ctTRel = new Relationship(ctNode.getId() + protVANode.getId(), ctNode.getId(),
+                                    ctNode.getType().toString(), protVANode.getId(), protVANode.getType().toString(),
+                                    Relationship.Type.PROTEIN_VARIANT_ANNOTATION);
+                            network.setRelationship(ctTRel);
+
+
+                            // Check for substitution scores...
+                            if (ListUtils.isNotEmpty(protVA.getSubstitutionScores())) {
+                                for (Score score: protVA.getSubstitutionScores()) {
+                                    // ... and create node for each substitution score
+                                    Node substNode = new Node("SubstitutionScore" + (countID++), null, Node.Type.SUBST_SCORE);
+                                    substNode.addAttribute("score", score.getScore());
+                                    substNode.addAttribute("source", score.getSource());
+                                    substNode.addAttribute("description", score.getDescription());
+                                    network.setNode(substNode);
+
+                                    // Relationship: variant - conservation
+                                    Relationship protVASubstRel = new Relationship(protVANode.getId() + substNode.getId(), protVANode.getId(),
+                                            protVANode.getType().toString(), substNode.getId(), substNode.getType().toString(),
+                                            Relationship.Type.SUBST_SCORE);
+                                    network.setRelationship(protVASubstRel);
+                                    // ... and its relationship
+                                }
+                            }
+
+
+
+                        }
+
+                        // Sequence Ontology terms
+                        if (ListUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
+                            // Sequence Ontology term nodes
+                            for (SequenceOntologyTerm sot: ct.getSequenceOntologyTerms()) {
+                                Node soNode = new Node(sot.getAccession(), sot.getName(), Node.Type.SO);
+                                soNode.addAttribute("accession", sot.getAccession());
+                                network.setNode(soNode);
+
+                                // Relationship: consequence type - so
+                                Relationship ctSoRel = new Relationship(ctNode.getId() + soNode.getId(), ctNode.getId(),
+                                        ctNode.getType().toString(), soNode.getId(), soNode.getType().toString(), Relationship.Type.SO);
+                                network.setRelationship(ctSoRel);
+                            }
+                        }
+                    }
+                }
+
+                if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
+                    for (PopulationFrequency popFreq: variant.getAnnotation().getPopulationFrequencies()) {
+                        Node popFreqNode = new Node("PopulationFrequency" + (countID++), null, Node.Type.POPULATION_FREQUENCY);
+                        popFreqNode.addAttribute("study", popFreq.getStudy());
+                        popFreqNode.addAttribute("population", popFreq.getPopulation());
+                        popFreqNode.addAttribute("refAlleleFreq", popFreq.getRefAlleleFreq());
+                        popFreqNode.addAttribute("altAlleleFreq", popFreq.getAltAlleleFreq());
+                        network.setNode(popFreqNode);
+
+                        // Relationship: variant - population frequency
+                        Relationship vPfRel = new Relationship(main.getId() + popFreqNode.getId(), main.getId(), main.getType().toString(),
+                                popFreqNode.getId(), popFreqNode.getType().toString(), Relationship.Type.POPULATION_FREQUENCY);
+                        network.setRelationship(vPfRel);
+
+                    }
+                }
+
+                // Conservation
+                if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
+                    for (Score score: variant.getAnnotation().getConservation()) {
+                        Node conservNode = new Node("Conservation" + (countID++), null, Node.Type.CONSERVATION);
+                        conservNode.addAttribute("score", score.getScore());
+                        conservNode.addAttribute("source", score.getSource());
+                        conservNode.addAttribute("description", score.getDescription());
+                        network.setNode(conservNode);
+
+                        // Relationship: variant - conservation
+                        Relationship vConservRel = new Relationship(main.getId() + conservNode.getId(), main.getId(),
+                                main.getType().toString(), conservNode.getId(), conservNode.getType().toString(),
+                                Relationship.Type.CONSERVATION);
+                        network.setRelationship(vConservRel);
+                    }
+                }
+            }
+
+            // Functional score
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
+                for (Score score: variant.getAnnotation().getFunctionalScore()) {
+                    Node funcNode = new Node("FunctionalScore" + (countID++), null, Node.Type.FUNCTIONAL_SCORE);
+                    funcNode.addAttribute("score", score.getScore());
+                    funcNode.addAttribute("source", score.getSource());
+                    network.setNode(funcNode);
+
+                    // Relationship: variant - conservation
+                    Relationship vFuncRel = new Relationship(main.getId() + funcNode.getId(), main.getId(),
+                            main.getType().toString(), funcNode.getId(), funcNode.getType().toString(),
+                            Relationship.Type.FUNCTIONAL_SCORE);
+                    network.setRelationship(vFuncRel);
+
+                }
+            }
+        }
+        return network;
     }
 }

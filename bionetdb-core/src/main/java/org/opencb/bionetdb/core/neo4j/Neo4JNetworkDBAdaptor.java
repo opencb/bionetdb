@@ -72,11 +72,17 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         CELLULAR_LOCATION,
         CELLOC_ONTOLOGY,
         POPULATION_FREQUENCY,
+        CONSERVATION,
+        FUNCTIONAL_SCORE,
+        PROTEIN_VARIANT_ANNOTATION,
+        SUBST_SCORE,
         SEQUENCE_ONTOLOGY,
         CONSEQUENCE_TYPE,
         BIOTYPE,
         PROTEIN,
         TRANSCRIPT,
+        SO,
+        GENE,
         IN_GENE;
     }
 
@@ -508,6 +514,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         addRelationship(tx, peLabel, NodeTypes.XREF.toString(), pEID,
                                 xr.peek().get("ID").asInt(), RelTypes.XREF);
                     }
+                } else {
+                    StringBuilder labels = new StringBuilder(node.getType().toString());
+//                    for (org.opencb.bionetdb.core.models.Node.Type subtype: node.getSubtypes()) {
+//                        labels.append(":").append(subtype.toString());
+//                    }
+                    getOrCreateNode(tx, labels.toString(), (ObjectMap) node.getAttributes());
                 }
                 return 1;
             });
@@ -570,6 +582,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     Interaction i = (Interaction) r;
                     String interactionLabel = NodeTypes.INTERACTION + ":" + i.getType();
                     getOrCreateNode(tx, interactionLabel, parseInteraction(i));
+                } else {
+                    StatementResult orig = getNode(tx, r.getOriginType(), new ObjectMap("id", r.getOriginId()));
+                    StatementResult dest = getNode(tx, r.getDestType(), new ObjectMap("id", r.getDestId()));
+                    addRelationship(tx, r.getOriginType(), r.getDestType(),
+                            orig.peek().get("ID").asInt(), dest.peek().get("ID").asInt(),
+                            RelTypes.valueOf(r.getType().toString()));
+
                 }
                 return 1;
             });
@@ -798,10 +817,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private void addRelationship(Transaction tx, String labelOri, String labelDest, int originID,
                                  int destinationID, RelTypes relationType) {
         StringBuilder statementTemplate = new StringBuilder();
-        statementTemplate.append("MATCH (o:").append(labelOri).append(") WHERE ID(o) = $originID")
+        statementTemplate.append("MATCH (o:").append(labelOri).append(") WHERE ID(o) = $originId")
                 .append(" MATCH (d:").append(labelDest).append(") WHERE ID(d) = $destinationID")
                 .append(" MERGE (o)-[:").append(relationType).append("]->(d)");
-        tx.run(statementTemplate.toString(), parameters("originID", originID, "destinationID", destinationID));
+        tx.run(statementTemplate.toString(), parameters("originId", originID, "destinationID", destinationID));
     }
 
     //"CREATE (a:Person {name: $name})", parameters( "name", name ) );
