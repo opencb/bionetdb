@@ -6,20 +6,30 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.Network;
-import org.opencb.bionetdb.core.models.Node;
-import org.opencb.bionetdb.core.models.Protein;
-import org.opencb.bionetdb.core.models.Relationship;
+import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.models.Xref;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.client.rest.ProteinClient;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class DemoTest {
     //    String database = "demo";
@@ -63,7 +73,7 @@ public class DemoTest {
     @Test
     public void createExperimentalNetwork() throws IOException, BioNetDBException {
         ObjectMapper mapper = new ObjectMapper();
-        Variant variant = mapper.readValue(new File("/home/jtarraga/data150/neo4j/test2.json"), Variant.class);
+        Variant variant = mapper.readValue(new File("~/data150/neo4j/test2.json"), Variant.class);
         Network network = parseVariant(variant);
         //System.out.println(variant.toJson());
 
@@ -72,24 +82,48 @@ public class DemoTest {
         networkDBAdaptor.insert(network, null);
         long stopTime = System.currentTimeMillis();
         System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
+    }
 
-//        List<Variant> variants = mapper.readValue(new File("/home/jtarraga/data150/neo4j/test.json"),
-//                new TypeReference<List<Variant>>(){});
-//
-//        for (Variant variant: variants) {
-//            System.out.println(variant.getId());
-//        }
-//        VariantAnnotation va = new VariantAnnotation();
-//        ConsequenceType consequenceType = va.getConsequenceTypes().get(0);
-//        consequenceType.getProteinVariantAnnotation().
-//
-//
-//                System.out.println("Creating experimental Network: reactome from biopax file");
+    @Test
+    public void annotateProteins() throws BioNetDBException, IOException {
+        Query query = new Query();
+
+        // First, get all proteins
+        query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), "PROTEIN");
+        QueryResult<Node> nodes = networkDBAdaptor.getNodes(query, null);
+        for (Node node: nodes.getResult()) {
+            System.out.println(node.toString());
+        }
+
+        // Get proteins annotations from Cellbase...
+        // ... create the Cellbase protein client
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setVersion("v4");
+        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", clientConfiguration);
+        ProteinClient proteinClient = cellBaseClient.getProteinClient();
+
+        // ... prepare list of protein id/names
+        List<String> proteinIds = new ArrayList<>();
+        for (Node node: nodes.getResult()) {
+            if (node.getName() != null) {
+                proteinIds.add(node.getName());
+            }
+        }
+
+        // ... finally, call Cellbase service
+        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, new QueryOptions(QueryOptions.EXCLUDE, "reference,organism," +
+                "comment,evidence,sequence"));
+        for (Entry entry: entryQueryResponse.getResponse().get(0).getResult()) {
+            System.out.println(entry.toString());
+        }
+
+        // Add annotations to the network
 
     }
 
     public Network parseVariant(Variant variant) {
-        int countID = 0;
+        int countId = 0;
         Network network = new Network();
         if (variant != null) {
             // main node
@@ -110,7 +144,7 @@ public class DemoTest {
                         if (ct.getBiotype() == null) {
                             continue;
                         }
-                        Node ctNode = new Node("ConsequenceType" + (countID++), null, Node.Type.CONSEQUENCE_TYPE);
+                        Node ctNode = new Node("ConsequenceType_" + (countId++), null, Node.Type.CONSEQUENCE_TYPE);
                         ctNode.addAttribute("biotype", ct.getBiotype());
                         if (ListUtils.isNotEmpty(ct.getTranscriptAnnotationFlags())) {
                             ctNode.addAttribute("transcriptAnnotationFlags", String.join(",", ct.getTranscriptAnnotationFlags()));
@@ -129,6 +163,20 @@ public class DemoTest {
                         if (ct.getEnsemblTranscriptId() != null) {
                             Node transcriptNode = new Node(ct.getEnsemblTranscriptId(), null, Node.Type.TRANSCRIPT);
                             network.setNode(transcriptNode);
+
+                            // Ensembl gene node
+                            if (ct.getEnsemblGeneId() != null && ct.getGeneName() != null) {
+                                Node eGeneNode = new Node("Gene_" + (countId++), ct.getGeneName(), Node.Type.GENE);
+                                eGeneNode.addAttribute("ensemblGeneId", ct.getEnsemblGeneId());
+                                //xrefEGeneNode.setSubtypes(Collections.singletonList(Node.Type.GENE));
+                                network.setNode(eGeneNode);
+
+                                // Relationship: transcript - ensembl gene
+                                Relationship tEgRel = new Relationship(transcriptNode.getId() + eGeneNode.getId(),
+                                        transcriptNode.getId(), transcriptNode.getType().toString(), eGeneNode.getId(),
+                                        eGeneNode.getType().toString(), Relationship.Type.GENE);
+                                network.setRelationship(tEgRel);
+                            }
 
                             // Xref ensembl gene node
                             Node xrefEGeneNode = new Node(ct.getEnsemblGeneId(), null, Node.Type.XREF);
@@ -164,7 +212,7 @@ public class DemoTest {
                         if (ct.getProteinVariantAnnotation() != null) {
                             ProteinVariantAnnotation protVA = ct.getProteinVariantAnnotation();
                             // Create node
-                            Node protVANode = new Node("ProteinVarAnnotation" + countID++, protVA.getUniprotName(),
+                            Node protVANode = new Node("ProteinVarAnnotation_" + countId++, protVA.getUniprotName(),
                                     Node.Type.PROTEIN_VARIANT_ANNOTATION);
                             protVANode.addAttribute("uniprotAccession", protVA.getUniprotAccession());
                             protVANode.addAttribute("uniprotName", protVA.getUniprotName());
@@ -188,8 +236,8 @@ public class DemoTest {
                                 for (ProteinFeature protFeat: protVA.getFeatures()) {
                                     // ... and create node for each protein feature
                                     Node protFeatNode = new Node();
-                                    protFeatNode.setId(protFeat.getId() == null ? "ProteinFeature" + (countID++)
-                                                    : protFeat.getId());
+                                    protFeatNode.setId(protFeat.getId() == null ? "ProteinFeature_" + (countId++)
+                                            : protFeat.getId());
                                     protFeatNode.setType(Node.Type.PROTEIN_FEATURE);
                                     protFeatNode.addAttribute("ftype", protFeat.getType());
                                     protFeatNode.addAttribute("description", protFeat.getDescription());
@@ -210,12 +258,8 @@ public class DemoTest {
                             if (protVA.getUniprotAccession() != null) {
                                 // ... and create node for the protein
                                 Protein protein = new Protein();
-//                                protein.se
-//
-//                                "SubstitutionScore" + (countID++), null, Node.Type.SUBST_SCORE);
-//                                substNode.addAttribute("score", score.getScore());
-//                                substNode.addAttribute("source", score.getSource());
-//                                substNode.addAttribute("description", score.getDescription());
+                                protein.setName(protVA.getUniprotAccession());
+                                protein.setXref(new Xref("uniprot", "", protVA.getUniprotAccession(), ""));
                                 network.setNode(protein);
 
                                 // ... and its relationship
@@ -225,12 +269,11 @@ public class DemoTest {
                                 network.setRelationship(protVARel);
                             }
 
-
                             // Check for substitution scores...
                             if (ListUtils.isNotEmpty(protVA.getSubstitutionScores())) {
                                 for (Score score: protVA.getSubstitutionScores()) {
                                     // ... and create node for each substitution score
-                                    Node substNode = new Node("SubstitutionScore" + (countID++), null, Node.Type.SUBST_SCORE);
+                                    Node substNode = new Node("SubstitutionScore_" + (countId++), null, Node.Type.SUBST_SCORE);
                                     substNode.addAttribute("score", score.getScore());
                                     substNode.addAttribute("source", score.getSource());
                                     substNode.addAttribute("description", score.getDescription());
@@ -265,7 +308,7 @@ public class DemoTest {
 
                 if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
                     for (PopulationFrequency popFreq: variant.getAnnotation().getPopulationFrequencies()) {
-                        Node popFreqNode = new Node("PopulationFrequency" + (countID++), null, Node.Type.POPULATION_FREQUENCY);
+                        Node popFreqNode = new Node("PopulationFrequency_" + (countId++), null, Node.Type.POPULATION_FREQUENCY);
                         popFreqNode.addAttribute("study", popFreq.getStudy());
                         popFreqNode.addAttribute("population", popFreq.getPopulation());
                         popFreqNode.addAttribute("refAlleleFreq", popFreq.getRefAlleleFreq());
@@ -283,7 +326,7 @@ public class DemoTest {
                 // Conservation
                 if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
                     for (Score score: variant.getAnnotation().getConservation()) {
-                        Node conservNode = new Node("Conservation" + (countID++), null, Node.Type.CONSERVATION);
+                        Node conservNode = new Node("Conservation_" + (countId++), null, Node.Type.CONSERVATION);
                         conservNode.addAttribute("score", score.getScore());
                         conservNode.addAttribute("source", score.getSource());
                         conservNode.addAttribute("description", score.getDescription());
@@ -301,7 +344,7 @@ public class DemoTest {
             // Trait association
             if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
                 for (EvidenceEntry evidence: variant.getAnnotation().getTraitAssociation()) {
-                    Node evNode = new Node("TraitAssociation" + (countID++), null, Node.Type.TRAIT_ASSOCIATION);
+                    Node evNode = new Node("TraitAssociation_" + (countId++), null, Node.Type.TRAIT_ASSOCIATION);
                     if (evidence.getSource() != null && evidence.getSource().getName() != null) {
                         evNode.addAttribute("source", evidence.getSource().getName());
                     }
@@ -344,7 +387,7 @@ public class DemoTest {
             // Functional score
             if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
                 for (Score score: variant.getAnnotation().getFunctionalScore()) {
-                    Node funcNode = new Node("FunctionalScore" + (countID++), null, Node.Type.FUNCTIONAL_SCORE);
+                    Node funcNode = new Node("FunctionalScore_" + (countId++), null, Node.Type.FUNCTIONAL_SCORE);
                     funcNode.addAttribute("score", score.getScore());
                     funcNode.addAttribute("source", score.getSource());
                     network.setNode(funcNode);

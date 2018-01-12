@@ -213,11 +213,12 @@ public class Neo4JNetworkDBAdaptorTest {
         // TESTING QUERIES
         Query myQueryObject = new Query();
         List<String> myXrefIds = new ArrayList<>();
-        myXrefIds.add("UniProt:P27466");
-        myXrefIds.add("CMK1");
-        myXrefIds.add("P27466");
-        myXrefIds.add("MIH1");
-        myXrefIds.add("CMK2");
+//        myXrefIds.add("UniProt:P27466");
+//        myXrefIds.add("CMK1");
+//        myXrefIds.add("P27466");
+//        myXrefIds.add("MIH1");
+//        myXrefIds.add("CMK2");
+        myXrefIds.add("P02649");
 
         myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams.PE_ID.key(), myXrefIds);
         myQueryObject.put(NetworkDBAdaptor.NetworkQueryParams.JUMPS.key(), 2);
@@ -281,9 +282,9 @@ public class Neo4JNetworkDBAdaptorTest {
     @Test
     public void testInsertMetabolismHsapiens() throws Exception {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
-        Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
+        //Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
         //Path inputPath = Paths.get("~/data150/neo4j/hsapiens.metabolism.biopax3");
-        //Path inputPath = Paths.get("~/data150/neo4j/hsapiens.meiosis.biopax3");
+        Path inputPath = Paths.get("~/data150/neo4j/hsapiens.meiosis.biopax3");
         Network network = bioPaxParser.parse(inputPath);
         System.out.println("The file has been parsed.");
 

@@ -490,7 +490,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // 1. Insert the Physical Entities and the basic nodes they are connected to
         for (org.opencb.bionetdb.core.models.Node node: nodeList) {
             session.writeTransaction(tx -> {
-                if (org.opencb.bionetdb.core.models.Node.isPhysicalEntity(node)) {
+                if (org.opencb.bionetdb.core.models.Node.isPhysicalEntity(node)
+                        && node.getType() != org.opencb.bionetdb.core.models.Node.Type.GENE) {
                     PhysicalEntity p = (PhysicalEntity) node;
                     String peLabel = NodeTypes.PHYSICAL_ENTITY + ":" + p.getType();
                     StatementResult n = getOrCreateNode(tx, peLabel, parsePhysicalEntity(p));
@@ -529,7 +530,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         for (org.opencb.bionetdb.core.models.Node node: nodeList) {
             session.writeTransaction(tx -> {
-                if (org.opencb.bionetdb.core.models.Node.isPhysicalEntity(node)) {
+                if (org.opencb.bionetdb.core.models.Node.isPhysicalEntity(node)
+                        && node.getType() != org.opencb.bionetdb.core.models.Node.Type.GENE) {
                     PhysicalEntity p = (PhysicalEntity) node;
                     // 2. Insert the existing relationships between Physical Entities
                     if (p.getComponentOfComplex().size() > 0) {
@@ -1009,15 +1011,26 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String myQuery = "MATCH " + Neo4JQueryParser.parse(nodeName, query, queryOptions) + " RETURN " + nodeName;
         System.out.println("Query: " + myQuery);
         long stopTime = System.currentTimeMillis();
-        // TODO: Build new Network with the result
         StatementResult run = session.run(myQuery);
+        List<org.opencb.bionetdb.core.models.Node> nodes = new ArrayList<>();
         while (run.hasNext()) {
-            System.out.println(run.next().asMap());
+            Map<String, Object> map = run.next().asMap();
+            for (String key: map.keySet()) {
+                Node neoNode = (Node) map.get(key);
+                org.opencb.bionetdb.core.models.Node node = new org.opencb.bionetdb.core.models.Node();
+                node.setId(neoNode.get("id").asString());
+                node.setName(neoNode.get("name").asString());
+                node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(neoNode.labels().iterator().next()));
+                for (String k: neoNode.keys()) {
+                    node.addAttribute(k, neoNode.get(k));
+                }
+                nodes.add(node);
+            }
         }
         int time = (int) (stopTime - startTime) / 1000;
 
         session.close();
-        return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(new Network()));
+        return new QueryResult("get", time, 0, 0, null, null, nodes);
     }
 
     @Override

@@ -13,6 +13,7 @@ public class Node {
 
     public enum Type {
         UNDEFINED           ("UNDEFINED"),
+        PHYSICAL_ENTITY     ("PHYSICAL_ENTITY"),
         PROTEIN             ("PROTEIN"),
         GENE                ("GENE"),
         TRANSCRIPT          ("TRANSCRIPT"),
@@ -43,6 +44,7 @@ public class Node {
     public static boolean isPhysicalEntity(Node node) {
         switch (node.type) {
             case UNDEFINED:
+            case PHYSICAL_ENTITY:
             case PROTEIN:
             case GENE:
             case DNA:
@@ -65,6 +67,17 @@ public class Node {
 
         setId(id);
         setName(name);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Node{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
