@@ -28,13 +28,16 @@ public class Node {
         CONSERVATION        ("CONSERVATION"),
         FUNCTIONAL_SCORE    ("FUNCTIONAL_SCORE"),
         PROTEIN_VARIANT_ANNOTATION("PROTEIN_VARIANT_ANNOTATION"),
-        SUBST_SCORE("SUBST_SCORE");
+        SUBST_SCORE("SUBST_SCORE"),
+        PROTEIN_FEATURE("PROTEIN_FEATURE"),
+        TRAIT_ASSOCIATION("TRAIT_ASSOCIATION");
 
         private final String type;
 
         Type(String type) {
             this.type = type;
         }
+
     }
 
     public static boolean isPhysicalEntity(Node node) {
