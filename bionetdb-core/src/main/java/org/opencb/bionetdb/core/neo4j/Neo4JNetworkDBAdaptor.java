@@ -74,7 +74,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         POPULATION_FREQUENCY,
         CONSERVATION,
         FUNCTIONAL_SCORE,
-        PROTEIN_VARIANT_ANNOTATION,
+        ANNOTATION,
         TRAIT_ASSOCIATION,
         SUBST_SCORE,
         SEQUENCE_ONTOLOGY,
@@ -517,6 +517,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         addRelationship(tx, peLabel, NodeTypes.XREF.toString(), pEID,
                                 xr.peek().get("ID").asInt(), RelTypes.XREF);
                     }
+                } else if (node.getType() == org.opencb.bionetdb.core.models.Node.Type.XREF) {
+                    getOrCreateNode(tx, NodeTypes.XREF.toString(), parseXref((Xref) node));
                 } else {
                     StringBuilder labels = new StringBuilder(node.getType().toString());
 //                    for (org.opencb.bionetdb.core.models.Node.Type subtype: node.getSubtypes()) {
@@ -1020,7 +1022,23 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 org.opencb.bionetdb.core.models.Node node = new org.opencb.bionetdb.core.models.Node();
                 node.setId(neoNode.get("id").asString());
                 node.setName(neoNode.get("name").asString());
-                node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(neoNode.labels().iterator().next()));
+                Iterator<String> iterator = neoNode.labels().iterator();
+                // TODO: improve type manangement
+                String firstType = null;
+                String secondType = null;
+                while (iterator.hasNext()) {
+                    if (firstType == null) {
+                        firstType = iterator.next();
+                    } else if (secondType == null) {
+                        secondType = iterator.next();
+                        break;
+                    }
+                }
+                if (secondType != null) {
+                    node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(secondType));
+                } else if (firstType != null) {
+                    node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(firstType));
+                }
                 for (String k: neoNode.keys()) {
                     node.addAttribute(k, neoNode.get(k));
                 }
