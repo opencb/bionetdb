@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import java.util.List;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER;
+import static org.opencb.commons.datastore.core.QueryParam.Type.STRING;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 /**
@@ -28,7 +29,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
         PE_ATTR_EXPR ("pe.attr.expr", TEXT_ARRAY, ""),  // example: "brain:t2>0.3;brain:t4<=0.3"
         PE_ONTOLOGY ("pe.ontology", TEXT_ARRAY, ""),  // example: "go:001234, go:002345"
         PE_CELLOCATION ("pe.cellularLocation", TEXT_ARRAY, ""), // example: "nucleoplasm,..."
-        JUMPS("jumps", INTEGER, "");
+        JUMPS("jumps", INTEGER, ""),
+        SCRIPT ("script",  STRING, "");
 
         NetworkQueryParams(String key, Type type, String description) {
             this.key = key;

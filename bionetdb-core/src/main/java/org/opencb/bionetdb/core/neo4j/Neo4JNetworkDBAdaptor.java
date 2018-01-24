@@ -1009,8 +1009,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Session session = this.driver.session();
 
         long startTime = System.currentTimeMillis();
-        String nodeName = "n";
-        String myQuery = "MATCH " + Neo4JQueryParser.parse(nodeName, query, queryOptions) + " RETURN " + nodeName;
+        //TODO: improve
+        String myQuery;
+        if (query.containsKey(NetworkQueryParams.SCRIPT.key())) {
+            myQuery = query.getString(NetworkQueryParams.SCRIPT.key());
+        } else {
+            String nodeName = "n";
+            myQuery = "MATCH " + Neo4JQueryParser.parse(nodeName, query, queryOptions) + " RETURN " + nodeName;
+        }
         System.out.println("Query: " + myQuery);
         long stopTime = System.currentTimeMillis();
         StatementResult run = session.run(myQuery);
