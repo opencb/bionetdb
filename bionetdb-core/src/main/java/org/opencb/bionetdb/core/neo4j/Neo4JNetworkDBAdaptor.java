@@ -85,7 +85,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         TRANSCRIPT,
         SO,
         GENE,
-        IN_GENE;
+        IN_GENE,
+        DISEASE,
+        DRUG,
+        EXPRESSION;
     }
 
     public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
@@ -682,6 +685,26 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return tx.run("MATCH (n:" + label + " " + propsJoined + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS");
     }
 
+    private StatementResult updateNode(Transaction tx, String label, ObjectMap properties, ObjectMap newProperties) {
+        // Gathering properties of the node to create a cypher string with them
+        List<String> props = new ArrayList<>();
+        for (String key: properties.keySet()) {
+            props.add(key + ":\"" + properties.getString(key) + "\"");
+        }
+        String propsJoined = "{" + String.join(",", props) + "}";
+
+        props.clear();
+        for (String key: newProperties.keySet()) {
+            props.add("n." + key + "=\"" + newProperties.getString(key) + "\"");
+        }
+        String setJoined = "SET " + String.join(",", props);
+
+        // Getting the desired node
+        String cypher = "MATCH (n:" + label + " " + propsJoined + ") " + setJoined + " RETURN ID(n) AS ID, LABELS(n) AS LABELS";
+        //cypher = cypher.replace("\"\"", "\"");
+        return tx.run(cypher);
+    }
+
     private StatementResult createNode(Transaction tx, String label, ObjectMap properties) {
         // Gathering properties of the node to create a cypher string with them
         List<String> props = new ArrayList<>();
@@ -701,11 +724,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      */
     private StatementResult getOrCreateNode(Transaction tx, String label, ObjectMap properties) {
         // Gathering properties of the node to create a cypher string with them
+        ObjectMap update = null;
         StringBuilder props = new StringBuilder("");
         if (MapUtils.isNotEmpty(properties)) {
             props.append("{");
             boolean first = true;
             for (String key : properties.keySet()) {
+                if (key.equals("_update")) {
+                    update = (ObjectMap) properties.get(key);
+                    continue;
+                }
                 if (!first) {
                     props.append(",");
                 }
@@ -715,9 +743,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             props.append("}");
         }
 
-        // Getting the desired node or creating it if it does not exists
-        return tx.run("MERGE (n:" + label + " " + props + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS",
-                properties);
+        if (update != null) {
+            properties.remove("_update");
+            return updateNode(tx, label, properties, update);
+        } else {
+            // Getting the desired node or creating it if it does not exists
+            return tx.run("MERGE (n:" + label + " " + props + ") RETURN ID(n) AS ID, LABELS(n) AS LABELS",
+                    properties);
+        }
     }
 
     private StatementResult getOrCreateNode00(Transaction tx, String label, ObjectMap properties) {
@@ -1046,7 +1079,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(firstType));
                 }
                 for (String k: neoNode.keys()) {
-                    node.addAttribute(k, neoNode.get(k));
+                    node.addAttribute(k, neoNode.get(k).asString());
                 }
                 nodes.add(node);
             }
@@ -1287,6 +1320,59 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //        return this.session.run("MATCH (n:" + NodeTypes.PHYSICAL_ENTITY
 //                + ")-[r:" + RelTypes.CELLULAR_LOCATION + "]->(m:" + NodeTypes.CELLULAR_LOCATION
 //                + ") RETURN count(r) AS count").peek().get("count").asInt();
+    }
+
+    @Override
+    public QueryResult getNetwork(Query query, QueryOptions queryOptions) throws BioNetDBException {
+//        Session session = this.driver.session();
+//
+//        long startTime = System.currentTimeMillis();
+//        //TODO: improve
+//        String myQuery;
+//        if (query.containsKey(NetworkQueryParams.SCRIPT.key())) {
+//            myQuery = query.getString(NetworkQueryParams.SCRIPT.key());
+//        } else {
+//            throw new BioNetDBException("");
+//        }
+//        System.out.println("Query: " + myQuery);
+//        long stopTime = System.currentTimeMillis();
+//        StatementResult run = session.run(myQuery);
+//        List<org.opencb.bionetdb.core.models.Node> nodes = new ArrayList<>();
+//        while (run.hasNext()) {
+//            Map<String, Object> map = run.next().asMap();
+//            for (String key: map.keySet()) {
+//                Node neoNode = (Node) map.get(key);
+//                org.opencb.bionetdb.core.models.Node node = new org.opencb.bionetdb.core.models.Node();
+//                node.setId(neoNode.get("id").asString());
+//                node.setName(neoNode.get("name").asString());
+//                Iterator<String> iterator = neoNode.labels().iterator();
+//                // TODO: improve type manangement
+//                String firstType = null;
+//                String secondType = null;
+//                while (iterator.hasNext()) {
+//                    if (firstType == null) {
+//                        firstType = iterator.next();
+//                    } else if (secondType == null) {
+//                        secondType = iterator.next();
+//                        break;
+//                    }
+//                }
+//                if (secondType != null) {
+//                    node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(secondType));
+//                } else if (firstType != null) {
+//                    node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(firstType));
+//                }
+//                for (String k: neoNode.keys()) {
+//                    node.addAttribute(k, neoNode.get(k).asString());
+//                }
+//                nodes.add(node);
+//            }
+//        }
+//        int time = (int) (stopTime - startTime) / 1000;
+//
+//        session.close();
+//        return new QueryResult("get", time, 0, 0, null, null, nodes);
+        return null;
     }
 
     @Override

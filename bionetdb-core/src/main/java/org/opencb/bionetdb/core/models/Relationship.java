@@ -44,7 +44,10 @@ public class Relationship {
         PROTEIN("PROTEIN"),
         PROTEIN_FEATURE("PROTEIN_FEATURE"),
         TRAIT_ASSOCIATION("TRAIT_ASSOCIATION"),
-        ANNOTATION("ANNOTATION");
+        ANNOTATION("ANNOTATION"),
+        DISEASE("DISEASE"),
+        DRUG("DRUG"),
+        EXPRESSION("EXPRESSION");
 
         private final String type;
 

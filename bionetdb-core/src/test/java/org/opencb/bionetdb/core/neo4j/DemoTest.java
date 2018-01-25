@@ -1,14 +1,16 @@
 package org.opencb.bionetdb.core.neo4j;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.avro.generic.GenericData;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -16,16 +18,16 @@ import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
-import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.models.Node;
+import org.opencb.bionetdb.core.models.Relationship;
 import org.opencb.bionetdb.core.models.Xref;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 
 import java.io.File;
@@ -37,6 +39,7 @@ public class DemoTest {
     //    String database = "demo";
     String database = "scerevisiae";
     NetworkDBAdaptor networkDBAdaptor = null;
+    CellBaseClient cellBaseClient = null;
 
     //String reactomeBiopaxFilename = "/home/jtarraga/data150/neo4j/vesicle.mediated.transport.biopax3";
 //    String reactomeBiopaxFilename = "/home/jtarraga/data150/neo4j/pathway.biopax";
@@ -66,6 +69,11 @@ public class DemoTest {
         } catch (BioNetDBException | IOException e) {
             e.printStackTrace();
         }
+
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setVersion("v4");
+        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+        cellBaseClient = new CellBaseClient("hsapiens", clientConfiguration);
     }
 
     @After
@@ -118,13 +126,13 @@ public class DemoTest {
         Network network = parseVariant(variant);
         //System.out.println(variant.toJson());
 
-        // Link experimental network to physical network
+        // ...link experimental network to physical network
         if (network.getAttributes().containsKey("_uniprot")) {
             Map<String, List<Node>> uniprotMap = (Map<String, List<Node>>) network.getAttributes().get("_uniprot");
             for (String key: uniprotMap.keySet()) {
                 Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.SCRIPT.key(),
                         "match (p:PROTEIN)-[xr:XREF]->(x:XREF) where x.source = \"uniprot\" and "
-                        + " x.id = \"" + key + "\" return p");
+                                + " x.id = \"" + key + "\" return p");
                 QueryResult<Node> nodes = networkDBAdaptor.getNodes(query, QueryOptions.empty());
 //                System.out.println("uniprot: " + key + ", value list size = " + uniprotMap.get(key).size());
                 for (Node protVANode: uniprotMap.get(key)) {
@@ -150,21 +158,91 @@ public class DemoTest {
     }
 
     @Test
-    public void completeNetwork() {
+    public void completeNetwork() throws BioNetDBException, IOException {
+        // Get transcripts for each gene in the network. Transcript are gotten by Cellbase.
+        // The gene and transcript are related and added to the network.
+
+        // In addition, if the transcript is related to a protein, it is searched in the network
+        // and then the relationship transcript - protein is added to the network.
+
+        Network network = new Network();
+        GeneClient geneClient = cellBaseClient.getGeneClient();
+
         // Complete network, i.e.: search genes and check if all its transcripts are there, otherwise
         // add the remaining transcripts to the network
+        Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.SCRIPT.key(), "match (g:GENE) return g");
+        QueryResult<Node> nodes = networkDBAdaptor.getNodes(query, QueryOptions.empty());
+        List<String> geneIds = new ArrayList<>();
+        for (Node geneNode: nodes.getResult()) {
+            System.out.println("\t" + geneNode.toString());
 
+            // ...call Cellbase service
+            QueryResponse<Transcript> entryQueryResponse = geneClient.getTranscript(geneNode.getId().split(":")[1],
+                    new QueryOptions(QueryOptions.EXCLUDE, "exons,cDnaSequence"));
+            //(geneIds, new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,"
+//                    + "transcripts.cDnaSequence"));
+            for (Transcript transcript: entryQueryResponse.getResponse().get(0).getResult()) {
+                // ...create transcript node for the network
+                Node transcriptNode = new Node("Ensembl:" + transcript.getId(), null, Node.Type.TRANSCRIPT);
+                network.setNode(transcriptNode);
+
+                // ...and add relationship transcript to gene
+                Relationship tEgRel = new Relationship(transcriptNode.getId() + geneNode.getId(),
+                        transcriptNode.getId(), transcriptNode.getType().toString(), geneNode.getId(),
+                        geneNode.getType().toString(), Relationship.Type.GENE);
+                network.setRelationship(tEgRel);
+
+                for (org.opencb.biodata.models.core.Xref xref: transcript.getXrefs()) {
+
+                    // ...add xrefs nodes and relationships to transcript
+                    Xref xrefNode = new Xref(xref.getDbName(), "", xref.getId(), "");
+                    network.setNode(xrefNode);
+
+                    Relationship tXEgRel = new Relationship(transcriptNode.getId() + xrefNode.getId(),
+                            transcriptNode.getId(), transcriptNode.getType().toString(), xrefNode.getId(),
+                            xrefNode.getType().toString(), Relationship.Type.XREF);
+                    network.setRelationship(tXEgRel);
+
+                    // check to link to protein
+                    if (xref.getDbName().equals("uniprotkb_acc")) {
+                        System.out.println(xref.getDbName() + ", " + xref.getDbDisplayName() + ", " + xref.getId());
+
+                        query = new Query(NetworkDBAdaptor.NetworkQueryParams.SCRIPT.key(),
+                                "match (p:PROTEIN)-[xr:XREF]->(x:XREF) where x.source = \"uniprot\" and "
+                                        + " x.id = \"" + xref.getId() + "\" return p");
+                        nodes = networkDBAdaptor.getNodes(query, QueryOptions.empty());
+                        for (Node proteinNode: nodes.getResult()) {
+//                        System.out.println("\t" + protein.toString());
+
+                            // ... and its relationship: transcript - protein
+                            Relationship transcriptProtRel = new Relationship(transcriptNode.getId() + proteinNode.getId(),
+                                    transcriptNode.getId(), transcriptNode.getType().toString(), proteinNode.getId(),
+                                    proteinNode.getType().toString(), Relationship.Type.PROTEIN);
+                            network.setRelationship(transcriptProtRel);
+                        }
+                    }
+                }
+                //System.out.println(transcript.toString());
+            }
+        }
+
+        // ...and insert into the network
+        System.out.println("Inserting data...");
+        long startTime = System.currentTimeMillis();
+        networkDBAdaptor.insert(network, null);
+        long stopTime = System.currentTimeMillis();
+        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
     }
 
     @Test
-    public void annotateNetwork() {
+    public void annotateNetwork() throws IOException, BioNetDBException {
         // Annotate network, it implies to annotate variants, genes and proteins
 
         // ...annotate variants
         // TODO, annotateVariants();
 
         // ...annotate genes
-        // TODO, annotateGenes();
+        annotateGenes();
 
         // ...and annotate proteins
         // TODO, annotateProteins();
@@ -177,12 +255,119 @@ public class DemoTest {
 
     @Test
     public void annotateGenes() throws BioNetDBException, IOException {
+        Network network = new Network();
+        GeneClient geneClient = cellBaseClient.getGeneClient();
+
         // First, get all genes
         Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), "GENE");
         QueryResult<Node> nodes = networkDBAdaptor.getNodes(query, null);
         for (Node node: nodes.getResult()) {
             System.out.println(node.toString());
         }
+
+        // ... prepare list of gene id/names required to call CellBase
+        List<String> geneIds = new ArrayList<>();
+        Map<String, Node> geneMap = new HashMap<>();
+        for (Node node: nodes.getResult()) {
+            String geneId = node.getId().split(":")[1];
+            geneIds.add(geneId);
+            geneMap.put(geneId, node);
+        }
+
+        // ... finally, call Cellbase service
+        QueryResponse<Gene> geneQueryResponse = geneClient.get(geneIds, new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,"
+                + "transcripts.cDnaSequence"));
+        for (QueryResult<Gene> queryResult: geneQueryResponse.getResponse()) {
+            Gene gene = queryResult.getResult().get(0);
+//            System.out.println(gene.toString());
+
+            // ...complete gene
+            Node geneNode = geneMap.get(gene.getId());
+            ObjectMap update = new ObjectMap();
+            update.put("chromosome", gene.getChromosome());
+            update.put("start", gene.getStart());
+            update.put("end", gene.getEnd());
+            update.put("strand", gene.getStrand());
+            update.put("biotype", gene.getBiotype());
+            update.put("status", gene.getStatus());
+            geneNode.addAttribute("_update", update);
+            network.setNode(geneNode);
+
+            if (gene.getAnnotation() != null) {
+                // first, create network node...
+                Node geneAnnotNode = new Node("Annotation:Ensembl:" + gene.getId(), null, Node.Type.GENE_ANNOTATION);
+                network.setNode(geneAnnotNode);
+
+                // ... and its relationship: gene - gene annotation
+                Relationship geneAnnotRel = new Relationship(geneNode.getId() + geneAnnotNode.getId(),
+                        geneNode.getId(), geneNode.getType().toString(), geneAnnotNode.getId(),
+                        geneAnnotNode.getType().toString(), Relationship.Type.ANNOTATION);
+                network.setRelationship(geneAnnotRel);
+
+                Random rnd = new Random(System.currentTimeMillis());
+                for (Expression expression: gene.getAnnotation().getExpression()) {
+                    // first, create network node...
+                    String exprId = "Expression_" + expression.getFactorValue() + "_" + expression.getExperimentId()
+                            + "_" + expression.getPvalue() + rnd.nextInt();
+                    Node exprNode = new Node(exprId, null, Node.Type.EXPRESION);
+                    exprNode.addAttribute("geneName", expression.getGeneName());
+                    exprNode.addAttribute("transcriptId", expression.getTranscriptId());
+                    exprNode.addAttribute("experimentalFactor", expression.getExperimentalFactor());
+                    exprNode.addAttribute("factorValue", expression.getFactorValue());
+                    exprNode.addAttribute("experimentId", expression.getExperimentId());
+                    exprNode.addAttribute("technologyPlatform", expression.getTechnologyPlatform());
+                    exprNode.addAttribute("expression", expression.getExpression().name());
+                    exprNode.addAttribute("pvalue", expression.getPvalue());
+                    network.setNode(exprNode);
+
+                    // ... and its relationship: gene - ge3ne annotation
+                    Relationship annotExprRel = new Relationship(geneAnnotNode.getId() + exprNode.getId(),
+                            geneAnnotNode.getId(), geneAnnotNode.getType().toString(), exprNode.getId(),
+                            exprNode.getType().toString(), Relationship.Type.EXPRESSION);
+                    network.setRelationship(annotExprRel);
+                }
+
+                for (GeneTraitAssociation geneTraitAssociation: gene.getAnnotation().getDiseases()) {
+                    // first, create network node...
+                    Node traitNode = new Node(geneTraitAssociation.getId(), geneTraitAssociation.getName(), Node.Type.DISEASE);
+                    traitNode.addAttribute("hpo", geneTraitAssociation.getHpo());
+                    traitNode.addAttribute("score", geneTraitAssociation.getScore());
+                    traitNode.addAttribute("source", geneTraitAssociation.getSource());
+                    traitNode.addAttribute("numberOfPubmeds", geneTraitAssociation.getNumberOfPubmeds());
+                    traitNode.addAttribute("types", StringUtils.join(geneTraitAssociation.getAssociationTypes(), ","));
+                    traitNode.addAttribute("sources", StringUtils.join(geneTraitAssociation.getSources(), ","));
+                    network.setNode(traitNode);
+
+                    // ... and its relationship: gene - ge3ne annotation
+                    Relationship annotTraitRel = new Relationship(geneAnnotNode.getId() + traitNode.getId(),
+                            geneAnnotNode.getId(), geneAnnotNode.getType().toString(), traitNode.getId(),
+                            traitNode.getType().toString(), Relationship.Type.DISEASE);
+                    network.setRelationship(annotTraitRel);
+                }
+
+                for (GeneDrugInteraction geneDrugInteraction: gene.getAnnotation().getDrugs()) {
+                    // first, create network node...
+                    Node drugNode = new Node(geneDrugInteraction.getDrugName(), null, Node.Type.DRUG);
+                    drugNode.addAttribute("geneName", geneDrugInteraction.getGeneName());
+                    drugNode.addAttribute("studyType", geneDrugInteraction.getStudyType());
+                    drugNode.addAttribute("source", geneDrugInteraction.getSource());
+                    network.setNode(drugNode);
+
+                    // ... and its relationship: gene - ge3ne annotation
+                    Relationship annotDrugRel = new Relationship(geneAnnotNode.getId() + drugNode.getId(),
+                            geneAnnotNode.getId(), geneAnnotNode.getType().toString(), drugNode.getId(),
+                            drugNode.getType().toString(), Relationship.Type.DRUG);
+                    network.setRelationship(annotDrugRel);
+                }
+            }
+        }
+
+        // ...and insert into the network
+        System.out.println("Inserting data...");
+        long startTime = System.currentTimeMillis();
+        networkDBAdaptor.insert(network, null);
+        long stopTime = System.currentTimeMillis();
+        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
     }
 
     @Test
@@ -190,34 +375,31 @@ public class DemoTest {
         Query query = new Query();
 
         // First, get all proteins
-        query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), "PROTEIN");
-        QueryResult<Node> nodes = networkDBAdaptor.getNodes(query, null);
-        for (Node node: nodes.getResult()) {
-            System.out.println(node.toString());
-        }
-
-        // Get proteins annotations from Cellbase...
-        // ... create the Cellbase protein client
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", clientConfiguration);
-        ProteinClient proteinClient = cellBaseClient.getProteinClient();
-
-        // ... prepare list of protein id/names
-        List<String> proteinIds = new ArrayList<>();
-        for (Node node: nodes.getResult()) {
-            if (node.getName() != null) {
-                proteinIds.add(node.getName());
-            }
-        }
-
-        // ... finally, call Cellbase service
-        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, new QueryOptions(QueryOptions.EXCLUDE, "reference,organism," +
-                "comment,evidence,sequence"));
-        for (Entry entry: entryQueryResponse.getResponse().get(0).getResult()) {
-                    System.out.println(entry.toString());
-        }
+        String cypher = "MATCH path=(p:PROTEIN)-[xr:XREF]->(x:XREF) WHERE x.source = \"uniprot\" return path";
+        query.put(NetworkDBAdaptor.NetworkQueryParams.SCRIPT.key(), cypher);
+        QueryResult<Network> network = networkDBAdaptor.getNetwork(query, null);
+//        for (Node node: nodes.getResult()) {
+//            System.out.println(node.toString());
+//        }
+//
+//        // Get proteins annotations from Cellbase...
+//        // ... create the Cellbase protein client
+//        ProteinClient proteinClient = cellBaseClient.getProteinClient();
+//
+//        // ... prepare list of protein id/names
+//        List<String> proteinIds = new ArrayList<>();
+//        for (Node node: nodes.getResult()) {
+//            if (node.getName() != null) {
+//                proteinIds.add(node.getName());
+//            }
+//        }
+//
+//        // ... finally, call Cellbase service
+//        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, new QueryOptions(QueryOptions.EXCLUDE, "reference,organism," +
+//                "comment,evidence,sequence"));
+//        for (Entry entry: entryQueryResponse.getResponse().get(0).getResult()) {
+//            System.out.println(entry.toString());
+//        }
 
         // Add annotations to the network
 
@@ -340,8 +522,13 @@ public class DemoTest {
                         if (ct.getProteinVariantAnnotation() != null) {
                             ProteinVariantAnnotation protVA = ct.getProteinVariantAnnotation();
                             // Create node
-                            Node protVANode = new Node("ProteinAnnotation_" + countId++, protVA.getUniprotName(),
-                                    Node.Type.PROTEIN_ANNOTATION);
+                            String protVANodeId;
+                            if (protVA.getUniprotAccession() != null) {
+                                protVANodeId = "ProteinAnnotation_uniprot:" + protVA.getUniprotAccession();
+                            } else {
+                                protVANodeId = "ProteinAnnotation_" + countId++;
+                            }
+                            Node protVANode = new Node(protVANodeId, protVA.getUniprotName(), Node.Type.PROTEIN_ANNOTATION);
                             protVANode.addAttribute("uniprotAccession", protVA.getUniprotAccession());
                             protVANode.addAttribute("uniprotName", protVA.getUniprotName());
                             protVANode.addAttribute("uniprotVariantId", protVA.getUniprotVariantId());
