@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.models;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 public class Relationship {
+    protected int uid;
     protected String id;
     protected String name;
 
@@ -70,6 +71,14 @@ public class Relationship {
 
     public Relationship() {
         attributes = new ObjectMap();
+    }
+
+    public int getUid() {
+        return uid;
+    }
+
+    public void setUid(int uid) {
+        this.uid = uid;
     }
 
     public String getId() {

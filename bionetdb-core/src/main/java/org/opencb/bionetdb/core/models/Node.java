@@ -3,6 +3,8 @@ package org.opencb.bionetdb.core.models;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 public class Node {
+
+    protected int uid;
     protected String id;
     protected String name;
     protected ObjectMap attributes;
@@ -84,6 +86,14 @@ public class Node {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public int getUid() {
+        return uid;
+    }
+
+    public void setUid(int uid) {
+        this.uid = uid;
     }
 
     public String getId() {
