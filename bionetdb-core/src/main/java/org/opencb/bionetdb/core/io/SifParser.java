@@ -32,33 +32,48 @@ public class SifParser {
             inputStream = Files.newInputStream(path);
         }
 
+        int uid = 0;
+
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
         String line = br.readLine();
         while (line != null) {
             List<String> splitLine = Arrays.asList(line.split("\t"));
 
-            // Create PhysicalEntity and Interaction with basic info
-            PhysicalEntity pe1 = createPhysicalEntity("pe" + splitLine.get(0));
-            PhysicalEntity pe2 = createPhysicalEntity("pe" + splitLine.get(2));
-            PhysicalEntity product = createPhysicalEntity(pe1.getId() + "_" + pe2.getId());
-            Reaction assembly = createAssembly("re_" + pe1.getId() + "_" + pe2.getId());
+            // create nodes
+            Node pe1 = new Node((uid++), splitLine.get(0), null, Node.Type.PHYSICAL_ENTITY);
+            Node pe2 = new Node((uid++), splitLine.get(2), null, Node.Type.PHYSICAL_ENTITY);
 
-            // Set participants
-            pe1.getParticipantOfInteraction().add(assembly.getId());
-            pe2.getParticipantOfInteraction().add(assembly.getId());
-            product.getParticipantOfInteraction().add(assembly.getId());
-            assembly.getParticipants().add(pe1.getId());
-            assembly.getParticipants().add(pe2.getId());
-            assembly.getParticipants().add(product.getId());
-            assembly.getReactants().add(pe1.getId());
-            assembly.getReactants().add(pe2.getId());
-            assembly.getProducts().add(product.getId());
+            // create relationship
+            Relationship relationship = new Relationship((uid++), splitLine.get(1), null, pe1.getUid(), pe2.getUid(),
+                    Relationship.Type.INTERACTION);
 
             // Add to network
-            network.setNode(pe1);
-            network.setNode(pe2);
-            network.setNode(product);
-            network.setRelationship(assembly);
+            network.addNode(pe1);
+            network.addNode(pe2);
+            network.addRelationship(relationship);
+
+//            // Create PhysicalEntity and Interaction with basic info
+//            PhysicalEntity pe1 = createPhysicalEntity("pe" + splitLine.get(0));
+//            PhysicalEntity pe2 = createPhysicalEntity("pe" + splitLine.get(2));
+//            PhysicalEntity product = createPhysicalEntity(pe1.getId() + "_" + pe2.getId());
+//            Reaction assembly = createAssembly("re_" + pe1.getId() + "_" + pe2.getId());
+//
+//            // Set participants
+//            pe1.getParticipantOfInteraction().add(assembly.getId());
+//            pe2.getParticipantOfInteraction().add(assembly.getId());
+//            product.getParticipantOfInteraction().add(assembly.getId());
+//            assembly.getParticipants().add(pe1.getId());
+//            assembly.getParticipants().add(pe2.getId());
+//            assembly.getParticipants().add(product.getId());
+//            assembly.getReactants().add(pe1.getId());
+//            assembly.getReactants().add(pe2.getId());
+//            assembly.getProducts().add(product.getId());
+//
+//            // Add to network
+//            network.setNode(pe1);
+//            network.setNode(pe2);
+//            network.setNode(product);
+//            network.setRelationship(assembly);
 
             line = br.readLine();
         }

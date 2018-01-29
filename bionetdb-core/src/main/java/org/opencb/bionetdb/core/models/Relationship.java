@@ -1,29 +1,37 @@
 package org.opencb.bionetdb.core.models;
 
+import com.sun.org.apache.regexp.internal.RE;
 import org.opencb.commons.datastore.core.ObjectMap;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Relationship {
     protected int uid;
+
     protected String id;
     protected String name;
+    protected int originUid;
+    protected int destUid;
 
-    protected String originId;
-    protected String destId;
-
-    protected String originType;
-    protected String destType;
+//    protected String originType;
+//    protected String destType;
 
     protected Type type;
+    protected List<String> labels;
 
     protected ObjectMap attributes;
 
-    public Relationship(String id, String originId, String originType, String destId, String destType, Type type) {
+    public Relationship(int uid, String id, String name, int originUid, int destUid, Type type) {
+        this.uid = uid;
+
         this.id = id;
-        this.originId = originId;
-        this.originType = originType;
-        this.destId = destId;
-        this.destType = destType;
+        this.name = name;
+        this.originUid = originUid;
+        this.destUid = destUid;
+
         this.type = type;
+        this.labels = new ArrayList<>();
 
         this.attributes = new ObjectMap();
     }
@@ -48,7 +56,8 @@ public class Relationship {
         ANNOTATION("ANNOTATION"),
         DISEASE("DISEASE"),
         DRUG("DRUG"),
-        EXPRESSION("EXPRESSION");
+        EXPRESSION("EXPRESSION"),
+        INTERACTION("INTERACTION");
 
         private final String type;
 
@@ -70,6 +79,7 @@ public class Relationship {
     }
 
     public Relationship() {
+        labels = new ArrayList<>();
         attributes = new ObjectMap();
     }
 
@@ -77,81 +87,81 @@ public class Relationship {
         return uid;
     }
 
-    public void setUid(int uid) {
+    public Relationship setUid(int uid) {
         this.uid = uid;
+        return this;
     }
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public Relationship setId(String id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Relationship setName(String name) {
         this.name = name;
+        return this;
+    }
+
+    public int getOriginUid() {
+        return originUid;
+    }
+
+    public Relationship setOriginUid(int originUid) {
+        this.originUid = originUid;
+        return this;
+    }
+
+    public int getDestUid() {
+        return destUid;
+    }
+
+    public Relationship setDestUid(int destUid) {
+        this.destUid = destUid;
+        return this;
     }
 
     public Type getType() {
         return type;
     }
 
-    public void setType(Type type) {
+    public Relationship setType(Type type) {
         this.type = type;
+        return this;
+    }
+
+    public List<String> getLabels() {
+        return this.labels;
+    }
+
+    public Relationship setLabels(List<String> labels) {
+        this.labels = labels;
+        return this;
+    }
+
+    public void addLabel(String label) {
+        this.labels.add(label);
     }
 
     public ObjectMap getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(ObjectMap attributes) {
+    public Relationship setAttributes(ObjectMap attributes) {
         this.attributes = attributes;
+        return this;
     }
 
     public void addAttribute(String key, Object value) {
         if (key != null && value != null) {
             attributes.put(key, value);
         }
-    }
-
-    public String getOriginId() {
-        return originId;
-    }
-
-    public Relationship setOriginId(String originId) {
-        this.originId = originId;
-        return this;
-    }
-
-    public String getDestId() {
-        return destId;
-    }
-
-    public Relationship setDestId(String destId) {
-        this.destId = destId;
-        return this;
-    }
-
-    public String getOriginType() {
-        return originType;
-    }
-
-    public Relationship setOriginType(String originType) {
-        this.originType = originType;
-        return this;
-    }
-
-    public String getDestType() {
-        return destType;
-    }
-
-    public Relationship setDestType(String destType) {
-        this.destType = destType;
-        return this;
     }
 }

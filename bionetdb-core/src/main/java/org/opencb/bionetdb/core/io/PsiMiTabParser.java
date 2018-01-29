@@ -37,6 +37,11 @@ public class PsiMiTabParser {
     }
 
     public Network parse(Path path, String species) throws IOException {
+        throw new IOException("Not yet implemented");
+    }
+
+    public Network parseOLD(Path path, String species) throws IOException {
+        // TODO: update code to the new Network and NetworkManager refactoring
         Network network = new Network();
 
         // Reading GZip input stream
@@ -98,9 +103,9 @@ public class PsiMiTabParser {
                     }
                 }
 
-                network.setNode(peA);
-                network.setNode(peB);
-                network.setRelationship(interaction);
+                network.addNode(peA);
+                network.addNode(peB);
+                network.addRelationship(interaction);
             }
         }
 
@@ -321,11 +326,11 @@ public class PsiMiTabParser {
 
         // name
         physicalEntity.setName(physicalEntity.getId()); // default
-            for (Xref xref : physicalEntity.getXrefs()) {
-                if (xref.getSource().equals("psi-mi")) {
-                    physicalEntity.setName(xref.getId());
-                }
+        for (Xref xref : physicalEntity.getXrefs()) {
+            if (xref.getSource().equals("psi-mi")) {
+                physicalEntity.setName(xref.getId());
             }
+        }
 
 
         // comments
@@ -496,24 +501,26 @@ public class PsiMiTabParser {
     }
 
     private void createUndefinedProducts(Network network) {
-        for (Relationship relationship: network.getRelationships()) {
-            if (relationship.getType() == Relationship.Type.REACTION) {
-                Reaction reaction = (Reaction) relationship;
-                for (String productId : reaction.getProducts()) {
-                    Undefined undefined = new Undefined(productId, productId, Collections.<String>emptyList());
-                    Xref xref = new Xref("BioNetDB", "", productId, "");
-                    undefined.setXref(xref);
-                    network.setNode(undefined);
-                }
-            }
-        }
+        // TODO: update code to the new Network and NetworkManager refactoring
+//        for (Relationship relationship: network.getRelationships()) {
+//            if (relationship.getType() == Relationship.Type.REACTION) {
+//                Reaction reaction = (Reaction) relationship;
+//                for (String productId : reaction.getProducts()) {
+//                    Undefined undefined = new Undefined(productId, productId, Collections.<String>emptyList());
+//                    Xref xref = new Xref("BioNetDB", "", productId, "");
+//                    undefined.setXref(xref);
+//                    network.setNode(undefined);
+//                }
+//            }
+//        }
     }
 
     private void setParticipantOfInteraction(Network network) {
-        for (Relationship relationship: network.getRelationships()) {
-            for (String peId: ((Interaction) relationship).getParticipants()) {
-                ((PhysicalEntity) network.getNode(peId)).getParticipantOfInteraction().add(relationship.getId());
-            }
-        }
+        // TODO: update code to the new Network and NetworkManager refactoring
+//        for (Relationship relationship: network.getRelationships()) {
+//            for (String peId: ((Interaction) relationship).getParticipants()) {
+//                ((PhysicalEntity) network.getNode(peId)).getParticipantOfInteraction().add(relationship.getId());
+//            }
+//        }
     }
 }
