@@ -69,9 +69,11 @@ public class Node {
         }
     }
 
-    public Node() {
+    public Node(int uid) {
         labels = new ArrayList<>();
         attributes = new ObjectMap();
+
+        setUid(uid);
     }
 
     public Node(int uid, String id, String name, Type type) {

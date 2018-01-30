@@ -16,6 +16,7 @@ import org.biopax.paxtools.model.level3.Rna;
 import org.biopax.paxtools.model.level3.SmallMolecule;
 import org.biopax.paxtools.model.level3.Xref;
 import org.opencb.bionetdb.core.models.*;
+import org.sqlite.util.StringUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.util.zip.GZIPInputStream;
 public class BioPaxParser {
 
     private String level;
+    private int uidCounter;
 
     private static final String REACTOME_FEAT = "reactome.";
 
@@ -42,6 +44,7 @@ public class BioPaxParser {
     }
 
     private void init() {
+        uidCounter = 0;
     }
 
     public Network parse(Path path) throws IOException {
@@ -66,22 +69,22 @@ public class BioPaxParser {
             switch (bioPAXElement.getModelInterface().getSimpleName()) {
                 // Physical Entities
                 case "PhysicalEntity":
-                    network.setNode(createUndefinedEntity(bioPAXElement));
+                    addUndefinedEntity(bioPAXElement, network);
                     break;
                 case "Dna":
-                    network.setNode(createDna(bioPAXElement));
+                    addDna(bioPAXElement, network);
                     break;
                 case "Rna":
-                    network.setNode(createRna(bioPAXElement));
+                    addRna(bioPAXElement, network);
                     break;
                 case "Protein":
-                    network.setNode(createProtein(bioPAXElement));
+                    addProtein(bioPAXElement, network);
                     break;
                 case "Complex":
-                    network.setNode(createComplex(bioPAXElement));
+                    addComplex(bioPAXElement, network);
                     break;
                 case "SmallMolecule":
-                    network.setNode(createSmallMolecule(bioPAXElement));
+                    addSmallMolecule(bioPAXElement, network);
                     break;
 
                 // Interactions
@@ -92,14 +95,14 @@ public class BioPaxParser {
                 case "MolecularInteraction":
                 case "Transport":
                 case "TransportWithBiochemicalReaction":
-                    network.setRelationship(createReaction(bioPAXElement));
+                    addReaction(bioPAXElement), network);
                     break;
                 case "Catalysis":
-                    network.setRelationship(createCatalysis(bioPAXElement));
+                    addCatalysis(bioPAXElement), network);
                     break;
                 case "Modulation":
                 case "TemplateReactionRegulation":
-                    network.setRelationship(createRegulation(bioPAXElement));
+                    addRegulation(bioPAXElement), network);
                     break;
                 default:
                     break;
@@ -109,20 +112,19 @@ public class BioPaxParser {
         return network;
     }
 
-    private org.opencb.bionetdb.core.models.PhysicalEntity createUndefinedEntity(BioPAXElement bioPAXElement) {
-        Undefined undefined;
-        undefined = new Undefined();
-
+    private void addUndefinedEntity(BioPAXElement bioPAXElement, Network network) {
+        Node undefined = new Node(uidCounter++);
         PhysicalEntity physicalEntityBP = (PhysicalEntity) bioPAXElement;
 
         // Common properties
         setPhysicalEntityCommonProperties(physicalEntityBP, undefined);
 
-        return undefined;
+        // Add node to network
+        network.addNode(undefined);
     }
 
-    private org.opencb.bionetdb.core.models.Dna createDna(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.Dna dna = new org.opencb.bionetdb.core.models.Dna();
+    private void addDna(BioPAXElement bioPAXElement, Network network) {
+        Node dna = new Node(uidCounter++);
         Dna dnaBP = (Dna) bioPAXElement;
 
         // Common properties
@@ -134,32 +136,43 @@ public class BioPaxParser {
             EntityReference entityReference = dnaBP.getEntityReference();
 
             // altIds
-            for (String name : entityReference.getName()) {
-                org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
-                xref.setSource(REACTOME_FEAT + "biopax");
-                xref.setId(name);
-                dna.setXref(xref);
+            for (String name: entityReference.getName()) {
+                Node x = new Node(uidCounter++);
+                x.setId(name);
+                x.setType(Node.Type.XREF);
+                x.addAttribute("source", REACTOME_FEAT + "biopax");
+                network.addNode(x);
+
+                Relationship relationship = new Relationship(uidCounter++, null, null, dna.getUid(), x.getUid(),
+                        Relationship.Type.XREF);
+                network.addRelationship(relationship);
             }
 
             // description
-            dna.setDescription(new ArrayList<>(entityReference.getComment()));
+            dna.addAttribute("description", StringUtils.join(new ArrayList<>(entityReference.getComment()), ";"));
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
-            for (Xref xref : xrefs) {
-                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setSource(xref.getDb());
-                x.setSourceVersion(xref.getDbVersion());
+            for (Xref xref: xrefs) {
+                Node x = new Node(uidCounter++);
                 x.setId(xref.getId());
-                x.setIdVersion(xref.getIdVersion());
-                dna.setXref(x);
+                x.setType(Node.Type.XREF);
+                x.addAttribute("source", xref.getDb());
+                x.addAttribute("sourceVersion" , xref.getDbVersion());
+                x.addAttribute("idVersion", xref.getIdVersion());
+                network.addNode(x);
+
+                Relationship relationship = new Relationship(uidCounter++, null, null, dna.getUid(), x.getUid(),
+                        Relationship.Type.XREF);
+                network.addRelationship(relationship);
             }
         }
-        return dna;
+
+        network.addNode(dna);
     }
 
-    private org.opencb.bionetdb.core.models.Rna createRna(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.Rna rna = new org.opencb.bionetdb.core.models.Rna();
+    private void addRna(BioPAXElement bioPAXElement, Network network) {
+        Node rna = new Node(uidCounter++);
         Rna rnaBP = (Rna) bioPAXElement;
 
         // Common properties
@@ -171,32 +184,43 @@ public class BioPaxParser {
             EntityReference entityReference = rnaBP.getEntityReference();
 
             // altIds
-            for (String name : entityReference.getName()) {
-                org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
-                xref.setSource(REACTOME_FEAT + "biopax");
-                xref.setId(name);
-                rna.setXref(xref);
+            for (String name: entityReference.getName()) {
+                Node x = new Node(uidCounter++);
+                x.setId(name);
+                x.setType(Node.Type.XREF);
+                x.addAttribute("source", REACTOME_FEAT + "biopax");
+                network.addNode(x);
+
+                Relationship relationship = new Relationship(uidCounter++, null, null, rna.getUid(), x.getUid(),
+                        Relationship.Type.XREF);
+                network.addRelationship(relationship);
             }
 
             // description
-            rna.setDescription(new ArrayList<>(entityReference.getComment()));
+            rna.addAttribute("description", StringUtils.join(new ArrayList<>(entityReference.getComment()), ";"));
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
-            for (Xref xref : xrefs) {
-                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setSource(xref.getDb());
-                x.setSourceVersion(xref.getDbVersion());
+            for (Xref xref: xrefs) {
+                Node x = new Node(uidCounter++);
                 x.setId(xref.getId());
-                x.setIdVersion(xref.getIdVersion());
-                rna.setXref(x);
+                x.setType(Node.Type.XREF);
+                x.addAttribute("source", xref.getDb());
+                x.addAttribute("sourceVersion" , xref.getDbVersion());
+                x.addAttribute("idVersion", xref.getIdVersion());
+                network.addNode(x);
+
+                Relationship relationship = new Relationship(uidCounter++, null, null, rna.getUid(), x.getUid(),
+                        Relationship.Type.XREF);
+                network.addRelationship(relationship);
             }
         }
-        return rna;
+
+        network.addNode(rna);
     }
 
-    private org.opencb.bionetdb.core.models.Protein createProtein(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.Protein protein = new org.opencb.bionetdb.core.models.Protein();
+    private void addProtein(BioPAXElement bioPAXElement, Network network) {
+        Node protein = new Node((uidCounter++));
         Protein proteinBP = (Protein) bioPAXElement;
 
         // Common properties
@@ -208,33 +232,43 @@ public class BioPaxParser {
             EntityReference entityReference = proteinBP.getEntityReference();
 
             // altIds
-            for (String name : entityReference.getName()) {
-                org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
-                xref.setSource(REACTOME_FEAT + "biopax");
-                xref.setId(name);
-                protein.setXref(xref);
+            for (String name: entityReference.getName()) {
+                Node x = new Node(uidCounter++);
+                x.setId(name);
+                x.setType(Node.Type.XREF);
+                x.addAttribute("source", REACTOME_FEAT + "biopax");
+                network.addNode(x);
+
+                Relationship relationship = new Relationship(uidCounter++, null, null, protein.getUid(), x.getUid(),
+                        Relationship.Type.XREF);
+                network.addRelationship(relationship);
             }
 
             // description
-            protein.setDescription(new ArrayList<>(entityReference.getComment()));
+            protein.addAttribute("description", StringUtils.join(new ArrayList<>(entityReference.getComment()), ";"));
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
-            for (Xref xref : xrefs) {
-                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setSource(xref.getDb());
-                x.setSourceVersion(xref.getDbVersion());
+            for (Xref xref: xrefs) {
+                Node x = new Node(uidCounter++);
                 x.setId(xref.getId());
-                x.setIdVersion(xref.getIdVersion());
-                protein.setXref(x);
+                x.setType(Node.Type.XREF);
+                x.addAttribute("source", xref.getDb());
+                x.addAttribute("sourceVersion" , xref.getDbVersion());
+                x.addAttribute("idVersion", xref.getIdVersion());
+                network.addNode(x);
+
+                Relationship relationship = new Relationship(uidCounter++, null, null, protein.getUid(), x.getUid(),
+                        Relationship.Type.XREF);
+                network.addRelationship(relationship);
             }
         }
-        return protein;
+
+        network.addNode(protein);
     }
 
-    private org.opencb.bionetdb.core.models.SmallMolecule createSmallMolecule(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.SmallMolecule smallMolecule =
-                new org.opencb.bionetdb.core.models.SmallMolecule();
+    private void addSmallMolecule(BioPAXElement bioPAXElement, Network network) {
+        Node smallMolecule = new Node(uidCounter++);
         SmallMolecule smallMoleculeBP = (SmallMolecule) bioPAXElement;
 
         // Common properties
@@ -246,32 +280,43 @@ public class BioPaxParser {
             EntityReference entityReference = smallMoleculeBP.getEntityReference();
 
             // altIds
-            for (String name : entityReference.getName()) {
-                org.opencb.bionetdb.core.models.Xref xref = new org.opencb.bionetdb.core.models.Xref();
-                xref.setSource(REACTOME_FEAT + "biopax");
-                xref.setId(name);
-                smallMolecule.setXref(xref);
+            for (String name: entityReference.getName()) {
+                Node x = new Node(uidCounter++);
+                x.setId(name);
+                x.setType(Node.Type.XREF);
+                x.addAttribute("source", REACTOME_FEAT + "biopax");
+                network.addNode(x);
+
+                Relationship relationship = new Relationship(uidCounter++, null, null, smallMolecule.getUid(),
+                        x.getUid(), Relationship.Type.XREF);
+                network.addRelationship(relationship);
             }
 
             // description
-            smallMolecule.setDescription(new ArrayList<>(entityReference.getComment()));
+            smallMolecule.addAttribute("description", StringUtils.join(new ArrayList<>(entityReference.getComment()), ";"));
 
             // xref
             Set<Xref> xrefs = entityReference.getXref();
             for (Xref xref : xrefs) {
-                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
-                x.setSource(xref.getDb());
-                x.setSourceVersion(xref.getDbVersion());
+                Node x = new Node(uidCounter++);
                 x.setId(xref.getId());
-                x.setIdVersion(xref.getIdVersion());
-                smallMolecule.setXref(x);
+                x.setType(Node.Type.XREF);
+                x.addAttribute("source", xref.getDb());
+                x.addAttribute("sourceVersion" , xref.getDbVersion());
+                x.addAttribute("idVersion", xref.getIdVersion());
+                network.addNode(x);
+
+                Relationship relationship = new Relationship(uidCounter++, null, null, smallMolecule.getUid(),
+                        x.getUid(), Relationship.Type.XREF);
+                network.addRelationship(relationship);
             }
         }
-        return smallMolecule;
+
+        network.addNode(smallMolecule);
     }
 
-    private org.opencb.bionetdb.core.models.Complex createComplex(BioPAXElement bioPAXElement) {
-        org.opencb.bionetdb.core.models.Complex complex = new org.opencb.bionetdb.core.models.Complex();
+    private void addComplex(BioPAXElement bioPAXElement, Network network) {
+        Node complex = new Node(uidCounter++)
         Complex complexBP = (Complex) bioPAXElement;
 
         // Common properties
@@ -296,11 +341,11 @@ public class BioPaxParser {
         }
         complex.setStoichiometry(stoichiometry);
 
-        return complex;
+        network.addNode(complex);
     }
 
     private void setPhysicalEntityCommonProperties(PhysicalEntity physicalEntityBP,
-                                                   org.opencb.bionetdb.core.models.PhysicalEntity physicalEntity) {
+                                                   Node physicalEntity) {
         // = SPECIFIC PROPERTIES =
         // id
         physicalEntity.setId(physicalEntityBP.getRDFId().split("#")[1]);
