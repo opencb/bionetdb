@@ -1,7 +1,8 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import org.opencb.bionetdb.core.api.NetworkDBManager;
 import org.opencb.bionetdb.core.api.NetworkIterator;
-import org.opencb.bionetdb.core.api.NetworkManage;
+import org.opencb.bionetdb.core.api.NetworkManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
@@ -17,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class Neo4JNetworkManager implements NetworkManage {
+public class Neo4JNetworkDBManager implements NetworkDBManager {
 
     private String database;
     private BioNetDBConfiguration bioNetDBConfiguration;
@@ -25,11 +26,11 @@ public class Neo4JNetworkManager implements NetworkManage {
 
     private Logger logger;
 
-    public Neo4JNetworkManager(String database, BioNetDBConfiguration bioNetDBConfiguration) {
+    public Neo4JNetworkDBManager(String database, BioNetDBConfiguration bioNetDBConfiguration) {
         this.database = database;
         this.bioNetDBConfiguration = bioNetDBConfiguration;
 
-        logger = LoggerFactory.getLogger(Neo4JNetworkManager.class);
+        logger = LoggerFactory.getLogger(Neo4JNetworkDBManager.class);
     }
 
     private void init() throws BioNetDBException {

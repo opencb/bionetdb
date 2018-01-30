@@ -1,15 +1,21 @@
 package org.opencb.bionetdb.core.models;
 
+import org.apache.avro.generic.GenericData;
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Node {
+
+    protected int uid;
     protected String id;
     protected String name;
-    protected ObjectMap attributes;
 
     protected Type type;
+    protected List<String> labels;
 
-    //protected List<Type> subtypes;
+    protected ObjectMap attributes;
 
     public enum Type {
         UNDEFINED           ("UNDEFINED"),
@@ -63,14 +69,20 @@ public class Node {
         }
     }
 
-    public Node() {
+    public Node(int uid) {
+        labels = new ArrayList<>();
         attributes = new ObjectMap();
+
+        setUid(uid);
     }
 
-    public Node(String id, String name, Type type) {
+    public Node(int uid, String id, String name, Type type) {
         this.type = type;
+        labels = new ArrayList<>();
+
         attributes = new ObjectMap();
 
+        setUid(uid);
         setId(id);
         setName(name);
     }
@@ -78,48 +90,66 @@ public class Node {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Node{");
+        sb.append("uid='").append(uid).append('\'');
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
+        sb.append(", labels=").append(labels);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public int getUid() {
+        return uid;
+    }
+
+    public Node setUid(int uid) {
+        this.uid = uid;
+        return this;
     }
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public Node setId(String id) {
         this.id = id;
         addAttribute("id", id);
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Node setName(String name) {
         this.name = name;
         addAttribute("name", name);
+        return this;
     }
 
     public Type getType() {
         return type;
     }
 
-    public void setType(Type type) {
+    public Node setType(Type type) {
         this.type = type;
+        return this;
     }
 
-//    public List<Type> getSubtypes() {
-//        return subtypes;
-//    }
-//
-//    public Node setSubtypes(List<Type> subtypes) {
-//        this.subtypes = subtypes;
-//        return this;
-//    }
+    public List<String> getLabels() {
+        return labels;
+    }
+
+    public Node setLabels(List<String> labels) {
+        this.labels = labels;
+        return this;
+    }
+
+    public void addLabel(String label) {
+        labels.add(label);
+    }
 
     public ObjectMap getAttributes() {
         return attributes;

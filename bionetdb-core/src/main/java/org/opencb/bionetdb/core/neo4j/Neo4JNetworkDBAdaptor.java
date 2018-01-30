@@ -4,7 +4,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.neo4j.driver.v1.*;
-import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -17,6 +17,8 @@ import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.models.Node;
+import org.opencb.bionetdb.core.models.Relationship;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -27,6 +29,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 import static org.neo4j.driver.v1.Values.parameters;
 
 /**
@@ -1057,8 +1060,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         while (run.hasNext()) {
             Map<String, Object> map = run.next().asMap();
             for (String key: map.keySet()) {
-                Node neoNode = (Node) map.get(key);
-                org.opencb.bionetdb.core.models.Node node = new org.opencb.bionetdb.core.models.Node();
+                org.neo4j.driver.v1.types.Node neoNode = (org.neo4j.driver.v1.types.Node) map.get(key);
+                Node node = new Node();
                 node.setId(neoNode.get("id").asString());
                 node.setName(neoNode.get("name").asString());
                 Iterator<String> iterator = neoNode.labels().iterator();
@@ -1324,6 +1327,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     @Override
     public QueryResult getNetwork(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        Network network = new Network();
         Session session = this.driver.session();
 
         long startTime = System.currentTimeMillis();
@@ -1332,47 +1336,90 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (query.containsKey(NetworkQueryParams.SCRIPT.key())) {
             myQuery = query.getString(NetworkQueryParams.SCRIPT.key());
         } else {
-            throw new BioNetDBException("Not yet implemented getNework from query (but cypher syntax)");
+            throw new BioNetDBException("Not implemented yet! So far, network only can be got from a cypher statement");
         }
-//        System.out.println("Query: " + myQuery);
-//        long stopTime = System.currentTimeMillis();
-//        StatementResult run = session.run(myQuery);
-//        List<org.opencb.bionetdb.core.models.Node> nodes = new ArrayList<>();
-//        while (run.hasNext()) {
-//            Map<String, Object> map = run.next().asMap();
-//            for (String key: map.keySet()) {
-//                Node neoNode = (Node) map.get(key);
-//                org.opencb.bionetdb.core.models.Node node = new org.opencb.bionetdb.core.models.Node();
-//                node.setId(neoNode.get("id").asString());
-//                node.setName(neoNode.get("name").asString());
-//                Iterator<String> iterator = neoNode.labels().iterator();
-//                // TODO: improve type manangement
-//                String firstType = null;
-//                String secondType = null;
-//                while (iterator.hasNext()) {
-//                    if (firstType == null) {
-//                        firstType = iterator.next();
-//                    } else if (secondType == null) {
-//                        secondType = iterator.next();
-//                        break;
-//                    }
-//                }
-//                if (secondType != null) {
-//                    node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(secondType));
-//                } else if (firstType != null) {
-//                    node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(firstType));
-//                }
-//                for (String k: neoNode.keys()) {
-//                    node.addAttribute(k, neoNode.get(k).asString());
-//                }
-//                nodes.add(node);
-//            }
-//        }
-//        int time = (int) (stopTime - startTime) / 1000;
-//
-//        session.close();
-//        return new QueryResult("get", time, 0, 0, null, null, nodes);
-        return null;
+        System.out.println("Query: " + myQuery);
+
+        Map<String, org.neo4j.driver.v1.types.Node> neoNodeMap = new HashMap<>();
+
+        long stopTime = System.currentTimeMillis();
+        StatementResult run = session.run(myQuery);
+        int numRecords = 0;
+        while (run.hasNext()) {
+            Record record = run.next();
+            System.out.println((++numRecords) + ": record size = " + record.size());
+
+            for (int i = 0; i < record.size(); i++) {
+                System.out.println("\t" + i + ", " + record.get(i).type() + ", " + record.keys().get(i));
+
+                if (record.get(i).hasType(TYPE_SYSTEM.PATH())) {
+                    Path neoPath = record.get(i).asPath();
+                    // Neo4j node management
+                    for (org.neo4j.driver.v1.types.Node neoNode: neoPath.nodes()) {
+                        neoNodeMap.put(String.valueOf(neoNode.id()), neoNode);
+                        Node node = toNode(neoNode);
+                        network.setNode(node);
+                    }
+                    // Neo4j relathinship management
+                    for (org.neo4j.driver.v1.types.Relationship neoRelation: neoPath.relationships()) {
+                        Relationship relation = toRelationship(neoRelation, neoNodeMap);
+                        network.setRelationship(relation);
+                    }
+                }
+            }
+        }
+        int time = (int) (stopTime - startTime) / 1000;
+
+        session.close();
+        return new QueryResult("get", time, 0, 0, null, null, Arrays.asList(network));
+    }
+
+    private String getNeo4jNodeLabel(org.neo4j.driver.v1.types.Node neoNode) {
+        String label = null;
+        try {
+            Iterator<String> iterator = neoNode.labels().iterator();
+            while (iterator.hasNext()) {
+                label = iterator.next();
+            }
+        } catch (NullPointerException e) {
+            System.out.println(neoNode.toString());
+        }
+        return label;
+    }
+
+    private Node toNode(org.neo4j.driver.v1.types.Node neoNode) {
+        // TODO: improve label/type manangement
+        Node node;
+        String label = getNeo4jNodeLabel(neoNode);
+        if (neoNode.hasLabel(Node.Type.XREF.name())) {
+
+            node = new Xref(neoNode.get("source").asString(), neoNode.get("sourceVersion").asString(),
+                    neoNode.get("id").asString(), neoNode.get("idVersion").asString());
+        } else {
+            node = new Node(neoNode.get("id").asString(), neoNode.get("name").asString(),
+                    Node.Type.valueOf(getNeo4jNodeLabel(neoNode)));
+        }
+        for (String key: neoNode.keys()) {
+            node.addAttribute(key, neoNode.get(key).asString());
+        }
+        return node;
+    }
+
+    private Relationship toRelationship(org.neo4j.driver.v1.types.Relationship neoRelation,
+                                        Map<String, org.neo4j.driver.v1.types.Node> neoNodeMap) {
+        Relationship relation = new Relationship();
+        relation.setId(String.valueOf(neoRelation.id()));
+        relation.setOriginId(neoNodeMap.get(String.valueOf(neoRelation.startNodeId())).get("id").asString());
+        relation.setOriginType(getNeo4jNodeLabel(neoNodeMap.get(String.valueOf(neoRelation.startNodeId()))));
+        relation.setDestId(neoNodeMap.get(String.valueOf(neoRelation.endNodeId())).get("id").asString());
+        relation.setDestType(getNeo4jNodeLabel(neoNodeMap.get(String.valueOf(neoRelation.endNodeId()))));
+        relation.setType(Relationship.Type.valueOf(neoRelation.type().toString()));
+        System.out.println("NeoRelation: " + neoRelation.toString());
+//                        //neoRelation.
+        for (String key : neoRelation.keys()) {
+            relation.addAttribute(key, neoRelation.get(key).asString());
+        }
+        return relation;
     }
 
     @Override

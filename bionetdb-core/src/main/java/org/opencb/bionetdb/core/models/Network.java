@@ -15,24 +15,9 @@ public class Network {
     private String description;
 
     private List<Node> nodes;
-    private Map<String, Integer> nodesIndex;
     private List<Relationship> relationships;
-    private Map<String, Integer> relationshipsIndex;
 
     protected Map<String, Object> attributes;
-
-    protected Type type;
-
-    public enum Type {
-        NODE ("node"),
-        RELATIONSHIP ("relationship");
-
-        private final String type;
-
-        Type(String type) {
-            this.type = type;
-        }
-    }
 
     public Network() {
         this.id = "";
@@ -43,7 +28,7 @@ public class Network {
         init();
     }
 
-    public Network(String id, String name, String description) {
+    public Network(long uid, String id, String name, String description) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -56,36 +41,15 @@ public class Network {
         nodes = new ArrayList<>();
         relationships = new ArrayList<>();
 
-        nodesIndex = new HashMap<>();
-        relationshipsIndex =new HashMap<>();
-
         attributes = new HashMap<>();
     }
 
-    public Node getNode(String id) {
-        return nodes.get(nodesIndex.get(id));
+    public void addNode(Node node) {
+        nodes.add(node);
     }
 
-    public void setNode(Node node) {
-        if (node != null) {
-            if (!nodesIndex.containsKey(node.getId())) {
-                nodes.add(node);
-                nodesIndex.put(node.getId(), nodes.indexOf(node));
-            }
-        }
-    }
-
-    public Relationship getRelationship(String id) {
-        return relationships.get(relationshipsIndex.get(id));
-    }
-
-    public void setRelationship(Relationship relationship) {
-        if (relationship != null) {
-            if (!relationshipsIndex.containsKey(relationship.getId())) {
-                relationships.add(relationship);
-                relationshipsIndex.put(relationship.getId(), relationships.indexOf(relationship));
-            }
-        }
+    public void addRelationship(Relationship relationship) {
+        relationships.add(relationship);
     }
 
     public List<Node> getNodes() {
@@ -94,9 +58,6 @@ public class Network {
 
     public void setNodes(List<Node> nodes) {
         this.nodes = nodes;
-        for (Node node: nodes) {
-            nodesIndex.put(node.getId(), this.nodes.indexOf(node));
-        }
     }
 
     public List<Relationship> getRelationships() {
@@ -105,19 +66,6 @@ public class Network {
 
     public void setRelationships(List<Relationship> relationships) {
         this.relationships = relationships;
-        for (Relationship relationship: relationships) {
-            relationshipsIndex.put(relationship.getId(), this.relationships.indexOf(relationship));
-        }
-    }
-
-    public Type getNetworkElementType(String id) {
-        Type elementType = null;
-        if (nodesIndex.containsKey(id)) {
-            elementType = Type.NODE;
-        } else if (relationshipsIndex.containsKey(id)) {
-            elementType = Type.RELATIONSHIP;
-        }
-        return elementType;
     }
 
     public String getId() {

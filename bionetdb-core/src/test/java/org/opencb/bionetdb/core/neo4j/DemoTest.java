@@ -8,19 +8,20 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.avro.Expression;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
-import org.opencb.bionetdb.core.models.Network;
-import org.opencb.bionetdb.core.models.Node;
-import org.opencb.bionetdb.core.models.Relationship;
+import org.opencb.bionetdb.core.models.*;
 import org.opencb.bionetdb.core.models.Xref;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
@@ -41,11 +42,11 @@ public class DemoTest {
     NetworkDBAdaptor networkDBAdaptor = null;
     CellBaseClient cellBaseClient = null;
 
-    //String reactomeBiopaxFilename = "/home/jtarraga/data150/neo4j/vesicle.mediated.transport.biopax3";
-//    String reactomeBiopaxFilename = "/home/jtarraga/data150/neo4j/pathway.biopax";
-    String reactomeBiopaxFilename = "/home/jtarraga/data150/neo4j/pathway1.biopax3";
+    //String reactomeBiopaxFilename = "~/data150/neo4j/vesicle.mediated.transport.biopax3";
+//    String reactomeBiopaxFilename = "~/data150/neo4j/pathway.biopax";
+    String reactomeBiopaxFilename = "~/data150/neo4j/pathway1.biopax3";
 
-    String variantJsonFilename = "/home/jtarraga/data150/neo4j/test2.json";
+    String variantJsonFilename = "~/data150/neo4j/test2.json";
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -372,37 +373,89 @@ public class DemoTest {
 
     @Test
     public void annotateProteins() throws BioNetDBException, IOException {
-        Query query = new Query();
+        Network networkToUpdate = new Network();
 
-        // First, get all proteins
+        // Get proteins annotations from Cellbase...
+        // ... create the Cellbase protein client
+        ProteinClient proteinClient = cellBaseClient.getProteinClient();
+
+        // First, get all proteins from the network
+        Query query = new Query();
         String cypher = "MATCH path=(p:PROTEIN)-[xr:XREF]->(x:XREF) WHERE x.source = \"uniprot\" return path";
         query.put(NetworkDBAdaptor.NetworkQueryParams.SCRIPT.key(), cypher);
-        QueryResult<Network> network = networkDBAdaptor.getNetwork(query, null);
-//        for (Node node: nodes.getResult()) {
-//            System.out.println(node.toString());
-//        }
-//
-//        // Get proteins annotations from Cellbase...
-//        // ... create the Cellbase protein client
-//        ProteinClient proteinClient = cellBaseClient.getProteinClient();
-//
-//        // ... prepare list of protein id/names
-//        List<String> proteinIds = new ArrayList<>();
-//        for (Node node: nodes.getResult()) {
-//            if (node.getName() != null) {
-//                proteinIds.add(node.getName());
-//            }
-//        }
-//
-//        // ... finally, call Cellbase service
-//        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, new QueryOptions(QueryOptions.EXCLUDE, "reference,organism," +
-//                "comment,evidence,sequence"));
-//        for (Entry entry: entryQueryResponse.getResponse().get(0).getResult()) {
-//            System.out.println(entry.toString());
-//        }
+        QueryResult<Network> networkResult = networkDBAdaptor.getNetwork(query, null);
+
+        if (ListUtils.isEmpty(networkResult.getResult())) {
+            System.out.println("Network not found!!");
+            return;
+        }
+
+        Network network = networkResult.getResult().get(0);
+
+        // ... prepare list of protein id/names from xref/protein nodes
+        List<String> proteinIds = new ArrayList<>();
+        for (Node node: network.getNodes()) {
+            if (node.getType() == Node.Type.XREF) {
+                proteinIds.add(node.getId());
+            }
+        }
+
+        // ... finally, call Cellbase service
+        Map<String, Entry> proteinMap = new HashMap<>();
+        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, new QueryOptions(QueryOptions.EXCLUDE,
+                "reference,organism,comment,evidence,sequence"));
+        for (QueryResult<Entry> queryResult: entryQueryResponse.getResponse()) {
+            proteinMap.put(queryResult.getId(), queryResult.getResult().get(0));
+        }
+
+
+        for (Relationship relationship: network.getRelationships()) {
+            String xrefNodeId = relationship.getDestId();
+            Entry entry = proteinMap.get(relationship.getDestId());
+            Protein proteinNode = new Protein();
+            proteinNode.setId(relationship.getOriginId());
+            networkToUpdate.setNode(proteinNode);
+
+            // Add XREF nodes for each protein
+            for (DbReferenceType dbReference: entry.getDbReference()) {
+                // ... create the Xref node
+                Xref xrefNode = new Xref(dbReference.getType(), "", dbReference.getId(), null);
+                networkToUpdate.setNode(xrefNode);
+
+                // ... and create relationship protein -> protein variation annotation
+                Relationship pXRel = new Relationship(proteinNode.getId() + xrefNode.getId(), proteinNode.getId(),
+                        proteinNode.getType().toString(), xrefNode.getId(), xrefNode.getType().toString(),
+                        Relationship.Type.XREF);
+                networkToUpdate.setRelationship(pXRel);
+            }
+
+            // Add PROTEIN_ANNOTATION node for each protein
+            // ... create the Xref node
+            String protAnnotNodeId = "ProteinAnnotation_uniprot:" + relationship.getDestId();
+            Node protAnnotNode = new Node(protAnnotNodeId, null, Node.Type.PROTEIN_ANNOTATION);
+            ObjectMap update = new ObjectMap();
+            List<String> keywords = new ArrayList<>();
+            for (KeywordType keyword: entry.getKeyword()) {
+                keywords.add(keyword.getValue());
+            }
+            update.put("keywords", String.join(",", keywords));
+            protAnnotNode.addAttribute("_update", update);
+
+            network.setNode(protAnnotNode);
+
+            // ...and create relationship consequence type -> protein variation annotation
+            Relationship protAnnotRel = new Relationship(relationship.getOriginId() + protAnnotNode.getId(),
+                    relationship.getOriginId(), Node.Type.PROTEIN.name(), protAnnotNode.getId(),
+                    protAnnotNode.getType().toString(), Relationship.Type.ANNOTATION);
+            networkToUpdate.setRelationship(protAnnotRel);
+        }
 
         // Add annotations to the network
-
+        System.out.println("Inserting data...");
+        long startTime = System.currentTimeMillis();
+        networkDBAdaptor.insert(networkToUpdate, null);
+        long stopTime = System.currentTimeMillis();
+        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
     }
 
     public Network parseVariant(Variant variant) {
@@ -729,6 +782,6 @@ public class DemoTest {
 
 //        ObjectMapper mapper = new ObjectMapper();
 //        mapper.writeValue(new File("/tmp/vesicle.mediated.transport.network.json"), network);
-//        Variant variant = mapper.readValue(new File("/home/jtarraga/data150/neo4j/test2.json"), Variant.class);
+//        Variant variant = mapper.readValue(new File("~/data150/neo4j/test2.json"), Variant.class);
 
 }

@@ -9,16 +9,26 @@ import org.opencb.commons.datastore.core.QueryResult;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public interface NetworkManage extends AutoCloseable {
+/**
+ * Created by joaquin on 1/29/18.
+ */
+public interface NetworkDBManager extends AutoCloseable {
+
     void load(Path path) throws IOException, BioNetDBException;
+
     void load(Path path, QueryOptions queryOptions) throws IOException, BioNetDBException;
 
     QueryResult<Node> query(Query query, QueryOptions queryOptions) throws BioNetDBException;
+
     NetworkIterator iterator(Query query, QueryOptions queryOptions);
 
     void annotate();
+
     void annotateGenes(Query query, QueryOptions queryOptions);
+
     void annotateVariants(Query query, QueryOptions queryOptions);
 
     QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException;
+
+    void close() throws Exception;
 }
