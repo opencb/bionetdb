@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.core.models;
 
-import org.apache.avro.generic.GenericData;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;
@@ -43,7 +42,14 @@ public class Node {
         GENE_TRAIT_ASSOCIATION("GENE_TRAIT_ASSOCIATION"),
         DISEASE("DISEASE"),
         DRUG("DRUG"),
-        EXPRESION("EXPRESSION");
+        EXPRESION("EXPRESSION"),
+        ONTOLOGY("ONTOLOGY"),
+        CELLULAR_LOCATION("CELLULAR_LOCATION"),
+        REGULATION("REGULATION"),
+        CATALYSIS("CATALYSIS"),
+        REACTION("REACTION"),
+        ASSEMBLY("ASSEMBLY"),
+        TRANSPORT("TRANSPORT");
 
         private final String type;
 
@@ -135,6 +141,7 @@ public class Node {
 
     public Node setType(Type type) {
         this.type = type;
+        addLabel(type.name());
         return this;
     }
 

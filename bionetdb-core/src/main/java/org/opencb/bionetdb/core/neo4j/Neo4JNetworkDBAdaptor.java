@@ -17,8 +17,6 @@ import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.*;
-import org.opencb.bionetdb.core.models.Node;
-import org.opencb.bionetdb.core.models.Relationship;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -71,7 +69,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         TISSUE,
         TIMESERIES,
         ONTOLOGY,
-        COMPONENTOFCOMPLEX,
+        COMPONENT_OF_COMPLEX,
         CELLULAR_LOCATION,
         CELLOC_ONTOLOGY,
         POPULATION_FREQUENCY,

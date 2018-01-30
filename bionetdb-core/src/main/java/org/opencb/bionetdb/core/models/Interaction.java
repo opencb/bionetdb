@@ -8,7 +8,14 @@ import java.util.List;
 /**
  * Created by imedina on 10/08/15.
  */
+@Deprecated
 public class Interaction extends Relationship {
+
+    protected String id;
+    protected String name;
+
+    protected Type type;
+
 
     protected List<String> description;
     protected List<String> source;
@@ -19,18 +26,18 @@ public class Interaction extends Relationship {
     protected List<Ontology> ontologies;
     protected List<Publication> publications;
 
-//    public enum Type {
-//        REACTION       ("reaction"),
-//        CATALYSIS      ("catalysis"),
-//        REGULATION     ("regulation"),
-//        COLOCALIZATION ("colocalization");
-//
-//        private final String type;
-//
-//        Type(String type) {
-//            this.type = type;
-//        }
-//    }
+    public enum Type {
+        REACTION       ("reaction"),
+        CATALYSIS      ("catalysis"),
+        REGULATION     ("regulation"),
+        COLOCALIZATION ("colocalization");
+
+        private final String type;
+
+        Type(String type) {
+            this.type = type;
+        }
+    }
 
     public Interaction() {
         this.description = new ArrayList<>();

@@ -5,6 +5,7 @@ import java.util.*;
 /**
  * Created by dapregi on 14/08/15.
  */
+@Deprecated
 public class Complex extends PhysicalEntity {
 
     private List<String> components;

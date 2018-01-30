@@ -1,7 +1,5 @@
 package org.opencb.bionetdb.core.models;
 
-import org.opencb.commons.datastore.core.ObjectMap;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +7,13 @@ import java.util.Map;
 /**
  * Created by imedina on 10/08/15.
  */
-public class PhysicalEntity extends Node {
+@Deprecated
+public class PhysicalEntity {
+
+    protected String id;
+    protected String name;
+
+    protected Type type;
 
     protected List<String> description;
     protected List<CellularLocation> cellularLocation;
@@ -26,23 +30,23 @@ public class PhysicalEntity extends Node {
     // TODO think about this!
     protected Display display;
 
-//    public enum Type {
-//        UNDEFINED      ("undefined"),
-//        PROTEIN        ("protein"),
-//        GENE           ("gene"),
-//        TRANSCRIPT     ("transcript"),
-//        VARIANT        ("variant"),
-//        DNA            ("dna"),
-//        RNA            ("rna"),
-//        COMPLEX        ("complex"),
-//        SMALL_MOLECULE ("smallMolecule");
-//
-//        private final String type;
-//
-//        Type(String type) {
-//            this.type = type;
-//        }
-//    }
+    public enum Type {
+        UNDEFINED      ("undefined"),
+        PROTEIN        ("protein"),
+        GENE           ("gene"),
+        TRANSCRIPT     ("transcript"),
+        VARIANT        ("variant"),
+        DNA            ("dna"),
+        RNA            ("rna"),
+        COMPLEX        ("complex"),
+        SMALL_MOLECULE ("smallMolecule");
+
+        private final String type;
+
+        Type(String type) {
+            this.type = type;
+        }
+    }
 
     public PhysicalEntity() {
         this.id = "";
@@ -64,7 +68,7 @@ public class PhysicalEntity extends Node {
     }
 
     private void init() {
-        this.attributes = new ObjectMap();
+        //this.attributes = new ObjectMap();
         this.cellularLocation = new ArrayList<>();
         this.source = new ArrayList<>();
         this.members = new ArrayList<>();

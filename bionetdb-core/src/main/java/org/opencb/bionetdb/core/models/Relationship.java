@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.core.models;
 
-import com.sun.org.apache.regexp.internal.RE;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;
@@ -57,7 +56,16 @@ public class Relationship {
         DISEASE("DISEASE"),
         DRUG("DRUG"),
         EXPRESSION("EXPRESSION"),
-        INTERACTION("INTERACTION");
+        INTERACTION("INTERACTION"),
+        COMPONENT_OF_COMPLEX("COMPONENT_OF_COMPLEX"),
+        STOICHIOMETRY("STOICHIOMETRY"),
+        ONTOLOGY("ONTOLOGY"),
+        CELLULAR_LOCATION("CELLULAR_LOCATION"),
+        CONTROLLED("CONTROLLED"),
+        CONTROLLER("CONTROLLER"),
+        COFACTOR("COFACTOR"),
+        PRODUCT("PRODUCT"),
+        REACTANT("REACTANT");
 
         private final String type;
 
@@ -79,6 +87,13 @@ public class Relationship {
     }
 
     public Relationship() {
+        labels = new ArrayList<>();
+        attributes = new ObjectMap();
+    }
+
+    public Relationship(int uid) {
+        this.uid = uid;
+
         labels = new ArrayList<>();
         attributes = new ObjectMap();
     }
