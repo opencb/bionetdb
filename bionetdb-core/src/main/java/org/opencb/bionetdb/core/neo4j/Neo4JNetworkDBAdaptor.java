@@ -1324,16 +1324,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     @Override
     public QueryResult getNetwork(Query query, QueryOptions queryOptions) throws BioNetDBException {
-//        Session session = this.driver.session();
-//
-//        long startTime = System.currentTimeMillis();
-//        //TODO: improve
-//        String myQuery;
-//        if (query.containsKey(NetworkQueryParams.SCRIPT.key())) {
-//            myQuery = query.getString(NetworkQueryParams.SCRIPT.key());
-//        } else {
-//            throw new BioNetDBException("");
-//        }
+        Session session = this.driver.session();
+
+        long startTime = System.currentTimeMillis();
+        //TODO: improve
+        String myQuery;
+        if (query.containsKey(NetworkQueryParams.SCRIPT.key())) {
+            myQuery = query.getString(NetworkQueryParams.SCRIPT.key());
+        } else {
+            throw new BioNetDBException("Not yet implemented getNework from query (but cypher syntax)");
+        }
 //        System.out.println("Query: " + myQuery);
 //        long stopTime = System.currentTimeMillis();
 //        StatementResult run = session.run(myQuery);
