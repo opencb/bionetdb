@@ -43,14 +43,14 @@ public class SifParser {
             Node pe1 = new Node((uid++), splitLine.get(0), null, Node.Type.PHYSICAL_ENTITY);
             Node pe2 = new Node((uid++), splitLine.get(2), null, Node.Type.PHYSICAL_ENTITY);
 
-            // create relationship
-            Relationship relationship = new Relationship((uid++), splitLine.get(1), null, pe1.getUid(), pe2.getUid(),
-                    Relationship.Type.INTERACTION);
+            // create relation
+            Relation relation = new Relation((uid++), splitLine.get(1), null, pe1.getUid(), pe2.getUid(),
+                    Relation.Type.INTERACTION);
 
             // Add to network
             network.addNode(pe1);
             network.addNode(pe2);
-            network.addRelationship(relationship);
+            network.addRelationship(relation);
 
 //            // Create PhysicalEntity and Interaction with basic info
 //            PhysicalEntity pe1 = createPhysicalEntity("pe" + splitLine.get(0));

@@ -22,15 +22,15 @@ public class DotExporter {
         }
 
         // Creating Relationships
-        for (Relationship relationship: network.getRelationships()) {
-            dot.addNode(new Node(relationship.getId(), new HashMap<>()));
+        for (Relation relation : network.getRelations()) {
+            dot.addNode(new Node(relation.getId(), new HashMap<>()));
         }
 
         // Connecting Nodes and Relationships
-        for (Relationship relationship: network.getRelationships()) {
-            switch(relationship.getType()) {
+        for (Relation relation : network.getRelations()) {
+            switch(relation.getType()) {
                 case REACTION:
-                    Reaction reaction = (Reaction) relationship;
+                    Reaction reaction = (Reaction) relation;
                     for (String product : reaction.getProducts()) {
                         dot.addEdge(new Edge(reaction.getId(), product));
                     }
@@ -39,7 +39,7 @@ public class DotExporter {
                     }
                     break;
                 case CATALYSIS:
-                    Catalysis catalysis = (Catalysis) relationship;
+                    Catalysis catalysis = (Catalysis) relation;
                     for (String controller : catalysis.getControllers()) {
                         dot.addEdge(new Edge(controller, catalysis.getId()));
                     }
@@ -48,7 +48,7 @@ public class DotExporter {
                     }
                     break;
                 case REGULATION:
-                    Regulation regulation = (Regulation) relationship;
+                    Regulation regulation = (Regulation) relation;
                     for (String controller : regulation.getControllers()) {
                         dot.addEdge(new Edge(controller, regulation.getId()));
                     }

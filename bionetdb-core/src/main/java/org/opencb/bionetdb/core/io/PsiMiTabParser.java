@@ -502,8 +502,8 @@ public class PsiMiTabParser {
 
     private void createUndefinedProducts(Network network) {
         // TODO: update code to the new Network and NetworkManager refactoring
-//        for (Relationship relationship: network.getRelationships()) {
-//            if (relationship.getType() == Relationship.Type.REACTION) {
+//        for (Relation relationship: network.getRelations()) {
+//            if (relationship.getType() == Relation.Type.REACTION) {
 //                Reaction reaction = (Reaction) relationship;
 //                for (String productId : reaction.getProducts()) {
 //                    Undefined undefined = new Undefined(productId, productId, Collections.<String>emptyList());
@@ -517,7 +517,7 @@ public class PsiMiTabParser {
 
     private void setParticipantOfInteraction(Network network) {
         // TODO: update code to the new Network and NetworkManager refactoring
-//        for (Relationship relationship: network.getRelationships()) {
+//        for (Relation relationship: network.getRelations()) {
 //            for (String peId: ((Interaction) relationship).getParticipants()) {
 //                ((PhysicalEntity) network.getNode(peId)).getParticipantOfInteraction().add(relationship.getId());
 //            }

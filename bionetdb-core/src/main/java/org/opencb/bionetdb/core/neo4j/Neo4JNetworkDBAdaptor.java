@@ -187,7 +187,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public void insert(Network network, QueryOptions queryOptions) throws BioNetDBException {
         this.insertNodes(network.getNodes(), queryOptions);
-        this.insertRelationships(network.getRelationships(), queryOptions);
+        this.insertRelationships(network.getRelations(), queryOptions);
     }
 
     /**
@@ -321,12 +321,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
                 if (xrefNode != null) {
                     Node origin;
-                    for (Relationship relationship : xrefNode.getRelationships(RelTypes.XREF, Direction.INCOMING)) {
+                    for (Relation relationship : xrefNode.getRelations(RelTypes.XREF, Direction.INCOMING)) {
                         origin = relationship.getStartNode();
 
                         // Find or create tissueNode and the relationship
                         Node tissueNode = null;
-                        for (Relationship relationShip : origin.getRelationships(RelTypes.TISSUE, Direction.OUTGOING)) {
+                        for (Relation relationShip : origin.getRelations(RelTypes.TISSUE, Direction.OUTGOING)) {
                             if (relationShip.getEndNode().getProperty("tissue").equals(tissue)) {
                                 tissueNode = relationShip.getEndNode();
                                 break;
@@ -341,7 +341,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
                         // Find or create timeSeriesNode and the relationship
                         Node timeSeriesNode = null;
-                        for (Relationship relationShip : tissueNode.getRelationships(RelTypes.TIMESERIES, Direction.OUTGOING)) {
+                        for (Relation relationShip : tissueNode.getRelations(RelTypes.TIMESERIES, Direction.OUTGOING)) {
                             if (relationShip.getEndNode().getProperty("timeseries").equals(timeSeries)) {
                                 timeSeriesNode = relationShip.getEndNode();
                                 break;
@@ -526,7 +526,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 } else {
                     StringBuilder labels = new StringBuilder(node.getType().toString());
 //                    for (org.opencb.bionetdb.core.models.Node.Type subtype: node.getSubtypes()) {
-//                        labels.append(":").append(subtype.toString());
+//                        tags.append(":").append(subtype.toString());
 //                    }
                     getOrCreateNode(tx, labels.toString(), (ObjectMap) node.getAttributes());
                 }
@@ -562,7 +562,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                                         RelTypes.COMPONENTOFCOMPLEX);
                             } else {
                                 return 0;
-//                            throw new BioNetDBException("Relationship 'COMPONENTOFCOMPLEX' cannot be created "
+//                            throw new BioNetDBException("Relation 'COMPONENTOFCOMPLEX' cannot be created "
 //                                    + "because the destiny node is of type \""
 //                                    + complexNode.peek().get("LABELS").toString()
 //                                    + "\" Check Physical Entity \"" + complexID + "\"");
@@ -579,16 +579,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     /**
      * Insert all the relationships into the Neo4J database.
      *
-     * @param relationshipList List containing all the interactions to be inserted in the database
+     * @param relationList List containing all the interactions to be inserted in the database
      * @param queryOptions     Additional params for the query
      */
-    private void insertRelationships(List<Relationship> relationshipList, QueryOptions queryOptions) {
+    private void insertRelationships(List<Relation> relationList, QueryOptions queryOptions) {
         Session session = this.driver.session();
 
         // 1. Insert all interactions as nodes
-        for (Relationship r: relationshipList) {
+        for (Relation r: relationList) {
             session.writeTransaction(tx -> {
-                if (Relationship.isInteraction(r)) {
+                if (Relation.isInteraction(r)) {
                     Interaction i = (Interaction) r;
                     String interactionLabel = NodeTypes.INTERACTION + ":" + i.getType();
                     getOrCreateNode(tx, interactionLabel, parseInteraction(i));
@@ -605,9 +605,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
 
         // 2. Insert the interactions
-        for (Relationship r: relationshipList) {
+        for (Relation r: relationList) {
             session.writeTransaction(tx -> {
-                if (Relationship.isInteraction(r)) {
+                if (Relation.isInteraction(r)) {
                     Interaction i = (Interaction) r;
                     String interactionLabel = NodeTypes.INTERACTION + ":" + i.getType();
                     StatementResult interaction = getNode(tx, interactionLabel, new ObjectMap("id", i.getId()));
@@ -920,16 +920,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      *
      * @param node1    Node
      * @param node2    Node
-     * @param relation Relationship to follow
+     * @param relation Relation to follow
      */
     private Set<Node> getUniqueNodes(Node node1, Node node2, RelTypes relation) {
         Set<Node> myUniqueNodes = new HashSet<>();
         // TODO: Be sure that this set only stores non-repeated nodes
-//        for (Relationship relationShip : node1.getRelationships(relation, direction)) {
+//        for (Relation relationShip : node1.getRelations(relation, direction)) {
 //            myUniqueNodes.add(relationShip.getOtherNode(node1));
 //            relationShip.delete();
 //        }
-//        for (Relationship relationShip : node2.getRelationships(relation, direction)) {
+//        for (Relation relationShip : node2.getRelations(relation, direction)) {
 //            myUniqueNodes.add(relationShip.getOtherNode(node2));
 //            relationShip.delete();
 //        }
@@ -974,7 +974,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //        }
 //        if (node.hasRelationship(RelTypes.CELLOC_ONTOLOGY, Direction.OUTGOING)) {
 //            List<Ontology> myOntologies = new ArrayList<>();
-//            for (Relationship myRelationship : node.getRelationships(RelTypes.CELLOC_ONTOLOGY, Direction.OUTGOING)) {
+//            for (Relation myRelationship : node.getRelations(RelTypes.CELLOC_ONTOLOGY, Direction.OUTGOING)) {
 //                myOntologies.add(node2Ontology(myRelationship.getEndNode()));
 //            }
 //            myCellularLocation.setOntologies(myOntologies);
@@ -1018,7 +1018,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //
 //            if (node.hasRelationship(RelTypes.ONTOLOGY)) {
 //                List<Ontology> ontologyList = new ArrayList<>();
-//                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.ONTOLOGY)) {
+//                for (Relation relationship : node.getRelations(Direction.OUTGOING, RelTypes.ONTOLOGY)) {
 //                    Node ontologyNode = relationship.getEndNode();
 //                    ontologyList.add(node2Ontology(ontologyNode));
 //                }
@@ -1027,7 +1027,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //
 //            if (node.hasRelationship(RelTypes.CELLULAR_LOCATION)) {
 //                List<CellularLocation> cellularLocationList = new ArrayList<>();
-//                for (Relationship relationship : node.getRelationships(Direction.OUTGOING, RelTypes.CELLULAR_LOCATION)) {
+//                for (Relation relationship : node.getRelations(Direction.OUTGOING, RelTypes.CELLULAR_LOCATION)) {
 //                    Node cellularLocationNode = relationship.getEndNode();
 //                    cellularLocationList.add(node2CellularLocation(cellularLocationNode));
 //                }
@@ -1360,7 +1360,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     }
                     // Neo4j relathinship management
                     for (org.neo4j.driver.v1.types.Relationship neoRelation: neoPath.relationships()) {
-                        Relationship relation = toRelationship(neoRelation, neoNodeMap);
+                        Relation relation = toRelationship(neoRelation, neoNodeMap);
                         network.setRelationship(relation);
                     }
                 }
@@ -1403,15 +1403,15 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return node;
     }
 
-    private Relationship toRelationship(org.neo4j.driver.v1.types.Relationship neoRelation,
-                                        Map<String, org.neo4j.driver.v1.types.Node> neoNodeMap) {
-        Relationship relation = new Relationship();
+    private Relation toRelationship(org.neo4j.driver.v1.types.Relationship neoRelation,
+                                    Map<String, org.neo4j.driver.v1.types.Node> neoNodeMap) {
+        Relation relation = new Relation();
         relation.setId(String.valueOf(neoRelation.id()));
         relation.setOriginId(neoNodeMap.get(String.valueOf(neoRelation.startNodeId())).get("id").asString());
         relation.setOriginType(getNeo4jNodeLabel(neoNodeMap.get(String.valueOf(neoRelation.startNodeId()))));
         relation.setDestId(neoNodeMap.get(String.valueOf(neoRelation.endNodeId())).get("id").asString());
         relation.setDestType(getNeo4jNodeLabel(neoNodeMap.get(String.valueOf(neoRelation.endNodeId()))));
-        relation.setType(Relationship.Type.valueOf(neoRelation.type().toString()));
+        relation.setType(Relation.Type.valueOf(neoRelation.type().toString()));
         System.out.println("NeoRelation: " + neoRelation.toString());
 //                        //neoRelation.
         for (String key : neoRelation.keys()) {

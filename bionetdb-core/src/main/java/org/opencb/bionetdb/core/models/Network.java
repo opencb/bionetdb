@@ -15,7 +15,7 @@ public class Network {
     private String description;
 
     private List<Node> nodes;
-    private List<Relationship> relationships;
+    private List<Relation> relations;
 
     protected Map<String, Object> attributes;
 
@@ -39,7 +39,7 @@ public class Network {
 
     private void init() {
         nodes = new ArrayList<>();
-        relationships = new ArrayList<>();
+        relations = new ArrayList<>();
 
         attributes = new HashMap<>();
     }
@@ -48,8 +48,8 @@ public class Network {
         nodes.add(node);
     }
 
-    public void addRelationship(Relationship relationship) {
-        relationships.add(relationship);
+    public void addRelationship(Relation relation) {
+        relations.add(relation);
     }
 
     public List<Node> getNodes() {
@@ -60,12 +60,12 @@ public class Network {
         this.nodes = nodes;
     }
 
-    public List<Relationship> getRelationships() {
-        return relationships;
+    public List<Relation> getRelations() {
+        return relations;
     }
 
-    public void setRelationships(List<Relationship> relationships) {
-        this.relationships = relationships;
+    public void setRelations(List<Relation> relations) {
+        this.relations = relations;
     }
 
     public String getId() {

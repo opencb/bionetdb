@@ -166,7 +166,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--jumps"}, description = "Number of Jumps", required = false, arity = 1)
         public int jumps = 1;
 
-        @Parameter(names = {"--relationship"}, description = "Relationship", required = false, arity = 1)
+        @Parameter(names = {"--relationship"}, description = "Relation", required = false, arity = 1)
         public String relationship;
 
         @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", required = false, arity = 1)

@@ -9,7 +9,7 @@ import java.util.List;
  * Created by imedina on 10/08/15.
  */
 @Deprecated
-public class Interaction extends Relationship {
+public class Interaction extends Relation {
 
     protected String id;
     protected String name;

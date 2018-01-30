@@ -5,11 +5,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Relationship {
+public class Relation {
+
     protected int uid;
 
     protected String id;
     protected String name;
+
     protected int originUid;
     protected int destUid;
 
@@ -17,20 +19,21 @@ public class Relationship {
 //    protected String destType;
 
     protected Type type;
-    protected List<String> labels;
+    protected List<String> tags;
 
     protected ObjectMap attributes;
 
-    public Relationship(int uid, String id, String name, int originUid, int destUid, Type type) {
+    public Relation(int uid, String id, String name, int originUid, int destUid, Type type) {
         this.uid = uid;
 
         this.id = id;
         this.name = name;
+
         this.originUid = originUid;
         this.destUid = destUid;
 
         this.type = type;
-        this.labels = new ArrayList<>();
+        this.tags = new ArrayList<>(1);
 
         this.attributes = new ObjectMap();
     }
@@ -48,7 +51,7 @@ public class Relationship {
         POPULATION_FREQUENCY("POPULATION_FREQUENCY"),
         CONSERVATION        ("CONSERVATION"),
         FUNCTIONAL_SCORE    ("FUNCTIONAL_SCORE"),
-        SUBST_SCORE("SUBST_SCORE"),
+        SUBST_SCORE("SUBSTITUTION_SCORE"),
         PROTEIN("PROTEIN"),
         PROTEIN_FEATURE("PROTEIN_FEATURE"),
         TRAIT_ASSOCIATION("TRAIT_ASSOCIATION"),
@@ -74,7 +77,7 @@ public class Relationship {
         }
     }
 
-    public static boolean isInteraction(Relationship r) {
+    public static boolean isInteraction(Relation r) {
         switch (r.type) {
             case REACTION:
             case CATALYSIS:
@@ -86,15 +89,15 @@ public class Relationship {
         }
     }
 
-    public Relationship() {
-        labels = new ArrayList<>();
+    public Relation() {
+        tags = new ArrayList<>();
         attributes = new ObjectMap();
     }
 
-    public Relationship(int uid) {
+    public Relation(int uid) {
         this.uid = uid;
 
-        labels = new ArrayList<>();
+        tags = new ArrayList<>();
         attributes = new ObjectMap();
     }
 
@@ -102,7 +105,7 @@ public class Relationship {
         return uid;
     }
 
-    public Relationship setUid(int uid) {
+    public Relation setUid(int uid) {
         this.uid = uid;
         return this;
     }
@@ -111,7 +114,7 @@ public class Relationship {
         return id;
     }
 
-    public Relationship setId(String id) {
+    public Relation setId(String id) {
         this.id = id;
         return this;
     }
@@ -120,7 +123,7 @@ public class Relationship {
         return name;
     }
 
-    public Relationship setName(String name) {
+    public Relation setName(String name) {
         this.name = name;
         return this;
     }
@@ -129,7 +132,7 @@ public class Relationship {
         return originUid;
     }
 
-    public Relationship setOriginUid(int originUid) {
+    public Relation setOriginUid(int originUid) {
         this.originUid = originUid;
         return this;
     }
@@ -138,7 +141,7 @@ public class Relationship {
         return destUid;
     }
 
-    public Relationship setDestUid(int destUid) {
+    public Relation setDestUid(int destUid) {
         this.destUid = destUid;
         return this;
     }
@@ -147,29 +150,29 @@ public class Relationship {
         return type;
     }
 
-    public Relationship setType(Type type) {
+    public Relation setType(Type type) {
         this.type = type;
         return this;
     }
 
-    public List<String> getLabels() {
-        return this.labels;
+    public List<String> getTags() {
+        return this.tags;
     }
 
-    public Relationship setLabels(List<String> labels) {
-        this.labels = labels;
+    public Relation setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 
     public void addLabel(String label) {
-        this.labels.add(label);
+        this.tags.add(label);
     }
 
     public ObjectMap getAttributes() {
         return attributes;
     }
 
-    public Relationship setAttributes(ObjectMap attributes) {
+    public Relation setAttributes(ObjectMap attributes) {
         this.attributes = attributes;
         return this;
     }

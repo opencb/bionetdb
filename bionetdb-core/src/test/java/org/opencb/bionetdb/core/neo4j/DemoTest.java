@@ -141,9 +141,9 @@ public class DemoTest {
 //                        System.out.println("\t" + protein.toString());
 
                         // ... and its relationship
-                        Relationship protVARel = new Relationship(protein.getId() + protVANode.getId(),
+                        Relation protVARel = new Relation(protein.getId() + protVANode.getId(),
                                 protein.getId(), protein.getType().toString(), protVANode.getId(),
-                                protVANode.getType().toString(), Relationship.Type.ANNOTATION);
+                                protVANode.getType().toString(), Relation.Type.ANNOTATION);
                         network.setRelationship(protVARel);
                     }
                 }
@@ -188,9 +188,9 @@ public class DemoTest {
                 network.setNode(transcriptNode);
 
                 // ...and add relationship transcript to gene
-                Relationship tEgRel = new Relationship(transcriptNode.getId() + geneNode.getId(),
+                Relation tEgRel = new Relation(transcriptNode.getId() + geneNode.getId(),
                         transcriptNode.getId(), transcriptNode.getType().toString(), geneNode.getId(),
-                        geneNode.getType().toString(), Relationship.Type.GENE);
+                        geneNode.getType().toString(), Relation.Type.GENE);
                 network.setRelationship(tEgRel);
 
                 for (org.opencb.biodata.models.core.Xref xref: transcript.getXrefs()) {
@@ -199,9 +199,9 @@ public class DemoTest {
                     Xref xrefNode = new Xref(xref.getDbName(), "", xref.getId(), "");
                     network.setNode(xrefNode);
 
-                    Relationship tXEgRel = new Relationship(transcriptNode.getId() + xrefNode.getId(),
+                    Relation tXEgRel = new Relation(transcriptNode.getId() + xrefNode.getId(),
                             transcriptNode.getId(), transcriptNode.getType().toString(), xrefNode.getId(),
-                            xrefNode.getType().toString(), Relationship.Type.XREF);
+                            xrefNode.getType().toString(), Relation.Type.XREF);
                     network.setRelationship(tXEgRel);
 
                     // check to link to protein
@@ -216,9 +216,9 @@ public class DemoTest {
 //                        System.out.println("\t" + protein.toString());
 
                             // ... and its relationship: transcript - protein
-                            Relationship transcriptProtRel = new Relationship(transcriptNode.getId() + proteinNode.getId(),
+                            Relation transcriptProtRel = new Relation(transcriptNode.getId() + proteinNode.getId(),
                                     transcriptNode.getId(), transcriptNode.getType().toString(), proteinNode.getId(),
-                                    proteinNode.getType().toString(), Relationship.Type.PROTEIN);
+                                    proteinNode.getType().toString(), Relation.Type.PROTEIN);
                             network.setRelationship(transcriptProtRel);
                         }
                     }
@@ -300,9 +300,9 @@ public class DemoTest {
                 network.setNode(geneAnnotNode);
 
                 // ... and its relationship: gene - gene annotation
-                Relationship geneAnnotRel = new Relationship(geneNode.getId() + geneAnnotNode.getId(),
+                Relation geneAnnotRel = new Relation(geneNode.getId() + geneAnnotNode.getId(),
                         geneNode.getId(), geneNode.getType().toString(), geneAnnotNode.getId(),
-                        geneAnnotNode.getType().toString(), Relationship.Type.ANNOTATION);
+                        geneAnnotNode.getType().toString(), Relation.Type.ANNOTATION);
                 network.setRelationship(geneAnnotRel);
 
                 Random rnd = new Random(System.currentTimeMillis());
@@ -310,7 +310,7 @@ public class DemoTest {
                     // first, create network node...
                     String exprId = "Expression_" + expression.getFactorValue() + "_" + expression.getExperimentId()
                             + "_" + expression.getPvalue() + rnd.nextInt();
-                    Node exprNode = new Node(exprId, null, Node.Type.EXPRESION);
+                    Node exprNode = new Node(exprId, null, Node.Type.EXPRESSION);
                     exprNode.addAttribute("geneName", expression.getGeneName());
                     exprNode.addAttribute("transcriptId", expression.getTranscriptId());
                     exprNode.addAttribute("experimentalFactor", expression.getExperimentalFactor());
@@ -322,9 +322,9 @@ public class DemoTest {
                     network.setNode(exprNode);
 
                     // ... and its relationship: gene - ge3ne annotation
-                    Relationship annotExprRel = new Relationship(geneAnnotNode.getId() + exprNode.getId(),
+                    Relation annotExprRel = new Relation(geneAnnotNode.getId() + exprNode.getId(),
                             geneAnnotNode.getId(), geneAnnotNode.getType().toString(), exprNode.getId(),
-                            exprNode.getType().toString(), Relationship.Type.EXPRESSION);
+                            exprNode.getType().toString(), Relation.Type.EXPRESSION);
                     network.setRelationship(annotExprRel);
                 }
 
@@ -340,9 +340,9 @@ public class DemoTest {
                     network.setNode(traitNode);
 
                     // ... and its relationship: gene - ge3ne annotation
-                    Relationship annotTraitRel = new Relationship(geneAnnotNode.getId() + traitNode.getId(),
+                    Relation annotTraitRel = new Relation(geneAnnotNode.getId() + traitNode.getId(),
                             geneAnnotNode.getId(), geneAnnotNode.getType().toString(), traitNode.getId(),
-                            traitNode.getType().toString(), Relationship.Type.DISEASE);
+                            traitNode.getType().toString(), Relation.Type.DISEASE);
                     network.setRelationship(annotTraitRel);
                 }
 
@@ -355,9 +355,9 @@ public class DemoTest {
                     network.setNode(drugNode);
 
                     // ... and its relationship: gene - ge3ne annotation
-                    Relationship annotDrugRel = new Relationship(geneAnnotNode.getId() + drugNode.getId(),
+                    Relation annotDrugRel = new Relation(geneAnnotNode.getId() + drugNode.getId(),
                             geneAnnotNode.getId(), geneAnnotNode.getType().toString(), drugNode.getId(),
-                            drugNode.getType().toString(), Relationship.Type.DRUG);
+                            drugNode.getType().toString(), Relation.Type.DRUG);
                     network.setRelationship(annotDrugRel);
                 }
             }
@@ -409,11 +409,11 @@ public class DemoTest {
         }
 
 
-        for (Relationship relationship: network.getRelationships()) {
-            String xrefNodeId = relationship.getDestId();
-            Entry entry = proteinMap.get(relationship.getDestId());
+        for (Relation relation : network.getRelations()) {
+            String xrefNodeId = relation.getDestId();
+            Entry entry = proteinMap.get(relation.getDestId());
             Protein proteinNode = new Protein();
-            proteinNode.setId(relationship.getOriginId());
+            proteinNode.setId(relation.getOriginId());
             networkToUpdate.setNode(proteinNode);
 
             // Add XREF nodes for each protein
@@ -422,16 +422,16 @@ public class DemoTest {
                 Xref xrefNode = new Xref(dbReference.getType(), "", dbReference.getId(), null);
                 networkToUpdate.setNode(xrefNode);
 
-                // ... and create relationship protein -> protein variation annotation
-                Relationship pXRel = new Relationship(proteinNode.getId() + xrefNode.getId(), proteinNode.getId(),
+                // ... and create relation protein -> protein variation annotation
+                Relation pXRel = new Relation(proteinNode.getId() + xrefNode.getId(), proteinNode.getId(),
                         proteinNode.getType().toString(), xrefNode.getId(), xrefNode.getType().toString(),
-                        Relationship.Type.XREF);
+                        Relation.Type.XREF);
                 networkToUpdate.setRelationship(pXRel);
             }
 
             // Add PROTEIN_ANNOTATION node for each protein
             // ... create the Xref node
-            String protAnnotNodeId = "ProteinAnnotation_uniprot:" + relationship.getDestId();
+            String protAnnotNodeId = "ProteinAnnotation_uniprot:" + relation.getDestId();
             Node protAnnotNode = new Node(protAnnotNodeId, null, Node.Type.PROTEIN_ANNOTATION);
             ObjectMap update = new ObjectMap();
             List<String> keywords = new ArrayList<>();
@@ -443,10 +443,10 @@ public class DemoTest {
 
             network.setNode(protAnnotNode);
 
-            // ...and create relationship consequence type -> protein variation annotation
-            Relationship protAnnotRel = new Relationship(relationship.getOriginId() + protAnnotNode.getId(),
-                    relationship.getOriginId(), Node.Type.PROTEIN.name(), protAnnotNode.getId(),
-                    protAnnotNode.getType().toString(), Relationship.Type.ANNOTATION);
+            // ...and create relation consequence type -> protein variation annotation
+            Relation protAnnotRel = new Relation(relation.getOriginId() + protAnnotNode.getId(),
+                    relation.getOriginId(), Node.Type.PROTEIN.name(), protAnnotNode.getId(),
+                    protAnnotNode.getType().toString(), Relation.Type.ANNOTATION);
             networkToUpdate.setRelationship(protAnnotRel);
         }
 
@@ -478,9 +478,9 @@ public class DemoTest {
                 Node annotNode = new Node("VariantAnnotation_" + (countId++), null, Node.Type.VARIANT_ANNOTATION);
                 network.setNode(annotNode);
 
-                // Relationship: variant - annotation
-                Relationship vAnnotRel = new Relationship(vNode.getId() + annotNode.getId(), vNode.getId(), vNode.getType().toString(),
-                        annotNode.getId(), annotNode.getType().toString(), Relationship.Type.ANNOTATION);
+                // Relation: variant - annotation
+                Relation vAnnotRel = new Relation(vNode.getId() + annotNode.getId(), vNode.getId(), vNode.getType().toString(),
+                        annotNode.getId(), annotNode.getType().toString(), Relation.Type.ANNOTATION);
                 network.setRelationship(vAnnotRel);
 
                 if (ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
@@ -504,9 +504,9 @@ public class DemoTest {
                         ctNode.addAttribute("codon", ct.getCodon());
                         network.setNode(ctNode);
 
-                        // Relationship: variant - consequence type
-                        Relationship vCtRel = new Relationship(annotNode.getId() + ctNode.getId(), annotNode.getId(), annotNode.getType().toString(),
-                                ctNode.getId(), ctNode.getType().toString(), Relationship.Type.CONSEQUENCE_TYPE);
+                        // Relation: variant - consequence type
+                        Relation vCtRel = new Relation(annotNode.getId() + ctNode.getId(), annotNode.getId(), annotNode.getType().toString(),
+                                ctNode.getId(), ctNode.getType().toString(), Relation.Type.CONSEQUENCE_TYPE);
                         network.setRelationship(vCtRel);
 
                         // Transcript nodes
@@ -514,10 +514,10 @@ public class DemoTest {
                             Node transcriptNode = new Node("Ensembl:" + ct.getEnsemblTranscriptId(), null, Node.Type.TRANSCRIPT);
                             network.setNode(transcriptNode);
 
-                            // Relationship: consequence type - transcript
-                            Relationship ctTRel = new Relationship(ctNode.getId() + transcriptNode.getId(), ctNode.getId(),
+                            // Relation: consequence type - transcript
+                            Relation ctTRel = new Relation(ctNode.getId() + transcriptNode.getId(), ctNode.getId(),
                                     ctNode.getType().toString(), transcriptNode.getId(), transcriptNode.getType().toString(),
-                                    Relationship.Type.TRANSCRIPT);
+                                    Relation.Type.TRANSCRIPT);
                             network.setRelationship(ctTRel);
 
                             // Ensembl gene node
@@ -527,10 +527,10 @@ public class DemoTest {
                                 //xrefEGeneNode.setSubtypes(Collections.singletonList(Node.Type.GENE));
                                 network.setNode(eGeneNode);
 
-                                // Relationship: transcript - ensembl gene
-                                Relationship tEgRel = new Relationship(transcriptNode.getId() + eGeneNode.getId(),
+                                // Relation: transcript - ensembl gene
+                                Relation tEgRel = new Relation(transcriptNode.getId() + eGeneNode.getId(),
                                         transcriptNode.getId(), transcriptNode.getType().toString(), eGeneNode.getId(),
-                                        eGeneNode.getType().toString(), Relationship.Type.GENE);
+                                        eGeneNode.getType().toString(), Relation.Type.GENE);
                                 network.setRelationship(tEgRel);
                             }
 
@@ -542,30 +542,30 @@ public class DemoTest {
                             Xref xrefETranscriptNode = new Xref("Ensembl", "", ct.getEnsemblTranscriptId(), "");
                             network.setNode(xrefETranscriptNode);
 
-                            // Relationship: transcript - xref ensembl transcript
-                            Relationship tXEtRel = new Relationship(transcriptNode.getId() + xrefETranscriptNode.getId(),
+                            // Relation: transcript - xref ensembl transcript
+                            Relation tXEtRel = new Relation(transcriptNode.getId() + xrefETranscriptNode.getId(),
                                     transcriptNode.getId(), transcriptNode.getType().toString(), xrefETranscriptNode.getId(),
-                                    xrefETranscriptNode.getType().toString(), Relationship.Type.XREF);
+                                    xrefETranscriptNode.getType().toString(), Relation.Type.XREF);
                             network.setRelationship(tXEtRel);
 
                             // Xref ensembl gene node
                             Xref xrefEGeneNode = new Xref("Ensembl", "", ct.getEnsemblGeneId(), "");
                             network.setNode(xrefEGeneNode);
 
-                            // Relationship: transcript - xref ensembl gene
-                            Relationship tXEgRel = new Relationship(transcriptNode.getId() + xrefEGeneNode.getId(),
+                            // Relation: transcript - xref ensembl gene
+                            Relation tXEgRel = new Relation(transcriptNode.getId() + xrefEGeneNode.getId(),
                                     transcriptNode.getId(), transcriptNode.getType().toString(), xrefEGeneNode.getId(),
-                                    xrefEGeneNode.getType().toString(), Relationship.Type.XREF);
+                                    xrefEGeneNode.getType().toString(), Relation.Type.XREF);
                             network.setRelationship(tXEgRel);
 
                             // Xref gene node
                             Xref xrefGeneNode = new Xref("", "", ct.getGeneName(), "");
                             network.setNode(xrefGeneNode);
 
-                            // Relationship: transcript - xref gene
-                            Relationship tXGRel = new Relationship(transcriptNode.getId() + xrefGeneNode.getId(), transcriptNode.getId(),
+                            // Relation: transcript - xref gene
+                            Relation tXGRel = new Relation(transcriptNode.getId() + xrefGeneNode.getId(), transcriptNode.getId(),
                                     transcriptNode.getType().toString(), xrefGeneNode.getId(), xrefGeneNode.getType().toString(),
-                                    Relationship.Type.XREF);
+                                    Relation.Type.XREF);
                             network.setRelationship(tXGRel);
                         } else {
                             System.out.println("Transcript is NULL !!!");
@@ -594,9 +594,9 @@ public class DemoTest {
                             network.setNode(protVANode);
 
                             // And create relationship consequence type -> protein variation annotation
-                            Relationship ctTRel = new Relationship(ctNode.getId() + protVANode.getId(), ctNode.getId(),
+                            Relation ctTRel = new Relation(ctNode.getId() + protVANode.getId(), ctNode.getId(),
                                     ctNode.getType().toString(), protVANode.getId(), protVANode.getType().toString(),
-                                    Relationship.Type.ANNOTATION);
+                                    Relation.Type.ANNOTATION);
                             network.setRelationship(ctTRel);
 
                             // Check for protein features
@@ -614,10 +614,10 @@ public class DemoTest {
                                     network.setNode(protFeatNode);
 
                                     // ... and its relationship
-                                    Relationship protVAFeatRel = new Relationship(protVANode.getId()
+                                    Relation protVAFeatRel = new Relation(protVANode.getId()
                                             + protFeatNode.getId(), protVANode.getId(), protVANode.getType().toString(),
                                             protFeatNode.getId(), protFeatNode.getType().toString(),
-                                            Relationship.Type.PROTEIN_FEATURE);
+                                            Relation.Type.PROTEIN_FEATURE);
                                     network.setRelationship(protVAFeatRel);
                                 }
                             }
@@ -637,9 +637,9 @@ public class DemoTest {
 //                                network.setNode(protein);
 //
 //                                // ... and its relationship
-//                                Relationship protVARel = new Relationship(protein.getId() + protVANode.getId(),
+//                                Relation protVARel = new Relation(protein.getId() + protVANode.getId(),
 //                                        protein.getId(), protein.getType().toString(), protVANode.getId(),
-//                                        protVANode.getType().toString(), Relationship.Type.ANNOTATION);
+//                                        protVANode.getType().toString(), Relation.Type.ANNOTATION);
 //                                network.setRelationship(protVARel);
                             }
 
@@ -647,16 +647,16 @@ public class DemoTest {
                             if (ListUtils.isNotEmpty(protVA.getSubstitutionScores())) {
                                 for (Score score : protVA.getSubstitutionScores()) {
                                     // ... and create node for each substitution score
-                                    Node substNode = new Node("SubstitutionScore_" + (countId++), null, Node.Type.SUBST_SCORE);
+                                    Node substNode = new Node("SubstitutionScore_" + (countId++), null, Node.Type.SUBSTITUTION_SCORE);
                                     substNode.addAttribute("score", score.getScore());
                                     substNode.addAttribute("source", score.getSource());
                                     substNode.addAttribute("description", score.getDescription());
                                     network.setNode(substNode);
 
                                     // ... and its relationship
-                                    Relationship protVASubstRel = new Relationship(protVANode.getId() + substNode.getId(), protVANode.getId(),
+                                    Relation protVASubstRel = new Relation(protVANode.getId() + substNode.getId(), protVANode.getId(),
                                             protVANode.getType().toString(), substNode.getId(), substNode.getType().toString(),
-                                            Relationship.Type.SUBST_SCORE);
+                                            Relation.Type.SUBST_SCORE);
                                     network.setRelationship(protVASubstRel);
                                 }
                             }
@@ -670,9 +670,9 @@ public class DemoTest {
                                 soNode.addAttribute("accession", sot.getAccession());
                                 network.setNode(soNode);
 
-                                // Relationship: consequence type - so
-                                Relationship ctSoRel = new Relationship(ctNode.getId() + soNode.getId(), ctNode.getId(),
-                                        ctNode.getType().toString(), soNode.getId(), soNode.getType().toString(), Relationship.Type.SO);
+                                // Relation: consequence type - so
+                                Relation ctSoRel = new Relation(ctNode.getId() + soNode.getId(), ctNode.getId(),
+                                        ctNode.getType().toString(), soNode.getId(), soNode.getType().toString(), Relation.Type.SO);
                                 network.setRelationship(ctSoRel);
                             }
                         }
@@ -691,9 +691,9 @@ public class DemoTest {
                         popFreqNode.addAttribute("altAlleleFreq", popFreq.getAltAlleleFreq());
                         network.setNode(popFreqNode);
 
-                        // Relationship: variant - population frequency
-                        Relationship vPfRel = new Relationship(annotNode.getId() + popFreqNode.getId(), annotNode.getId(), annotNode.getType().toString(),
-                                popFreqNode.getId(), popFreqNode.getType().toString(), Relationship.Type.POPULATION_FREQUENCY);
+                        // Relation: variant - population frequency
+                        Relation vPfRel = new Relation(annotNode.getId() + popFreqNode.getId(), annotNode.getId(), annotNode.getType().toString(),
+                                popFreqNode.getId(), popFreqNode.getType().toString(), Relation.Type.POPULATION_FREQUENCY);
                         network.setRelationship(vPfRel);
 
                     }
@@ -708,10 +708,10 @@ public class DemoTest {
                         conservNode.addAttribute("description", score.getDescription());
                         network.setNode(conservNode);
 
-                        // Relationship: variant - conservation
-                        Relationship vConservRel = new Relationship(annotNode.getId() + conservNode.getId(), annotNode.getId(),
+                        // Relation: variant - conservation
+                        Relation vConservRel = new Relation(annotNode.getId() + conservNode.getId(), annotNode.getId(),
                                 annotNode.getType().toString(), conservNode.getId(), conservNode.getType().toString(),
-                                Relationship.Type.CONSERVATION);
+                                Relation.Type.CONSERVATION);
                         network.setRelationship(vConservRel);
                     }
                 }
@@ -749,10 +749,10 @@ public class DemoTest {
                         }
                         network.setNode(evNode);
 
-                        // Relationship: variant - conservation
-                        Relationship vFuncRel = new Relationship(annotNode.getId() + evNode.getId(), annotNode.getId(),
+                        // Relation: variant - conservation
+                        Relation vFuncRel = new Relation(annotNode.getId() + evNode.getId(), annotNode.getId(),
                                 annotNode.getType().toString(), evNode.getId(), evNode.getType().toString(),
-                                Relationship.Type.TRAIT_ASSOCIATION);
+                                Relation.Type.TRAIT_ASSOCIATION);
                         network.setRelationship(vFuncRel);
 
                     }
@@ -767,10 +767,10 @@ public class DemoTest {
                         funcNode.addAttribute("source", score.getSource());
                         network.setNode(funcNode);
 
-                        // Relationship: variant - conservation
-                        Relationship vTraitRel = new Relationship(annotNode.getId() + funcNode.getId(), annotNode.getId(),
+                        // Relation: variant - conservation
+                        Relation vTraitRel = new Relation(annotNode.getId() + funcNode.getId(), annotNode.getId(),
                                 annotNode.getType().toString(), funcNode.getId(), funcNode.getType().toString(),
-                                Relationship.Type.FUNCTIONAL_SCORE);
+                                Relation.Type.FUNCTIONAL_SCORE);
                         network.setRelationship(vTraitRel);
 
                     }

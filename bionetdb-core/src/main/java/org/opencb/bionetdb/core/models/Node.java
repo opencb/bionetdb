@@ -8,42 +8,55 @@ import java.util.List;
 public class Node {
 
     protected int uid;
+
     protected String id;
     protected String name;
 
     protected Type type;
-    protected List<String> labels;
+    protected List<String> tags;
 
     protected ObjectMap attributes;
 
     public enum Type {
         UNDEFINED           ("UNDEFINED"),
+
         PHYSICAL_ENTITY     ("PHYSICAL_ENTITY"),
-        PROTEIN             ("PROTEIN"),
+        TRANSCRIPT          ("TRANSCRIPT", "PHYSICAL_ENTITY"),
+        PROTEIN             ("PROTEIN", "PHYSICAL_ENTITY"),
+        COMPLEX             ("COMPLEX", "PHYSICAL_ENTITY"),
+        RNA                 ("RNA", "PHYSICAL_ENTITY"),
+        SMALL_MOLECULE      ("SMALL_MOLECULE", "PHYSICAL_ENTITY"),
+
+
+        DNA                 ("DNA"),    // ~= GENOMIC_FEATURE
         GENE                ("GENE"),
-        TRANSCRIPT          ("TRANSCRIPT"),
         VARIANT             ("VARIANT"),
-        DNA                 ("DNA"),
-        RNA                 ("RNA"),
-        COMPLEX             ("COMPLEX"),
-        SMALL_MOLECULE      ("SMALL_MOLECULE"),
+        REGULATION_REGION   ("REGULATION_REGION", "DNA"),
+        TFBS                ("TFBS", "REGULATION_REGION"),
+
+        XREF                ("XREF"),
+
+        PROTEIN_ANNOTATION  ("PROTEIN_ANNOTATION"),
+        PROTEIN_FEATURE     ("PROTEIN_FEATURE"),
+
+        VARIANT_ANNOTATION  ("VARIANT_ANNOTATION"),
         CONSEQUENCE_TYPE    ("CONSEQUENCE_TYPE"),
         SO                  ("SEQUENCE_ONTOLOGY_TERM"),
-        XREF                ("XREF"),
-        POPULATION_FREQUENCY("POPULATION_FREQUENCY"),
-        CONSERVATION        ("CONSERVATION"),
-        FUNCTIONAL_SCORE    ("FUNCTIONAL_SCORE"),
-        PROTEIN_ANNOTATION("PROTEIN_ANNOTATION"),
-        SUBST_SCORE("SUBST_SCORE"),
-        PROTEIN_FEATURE("PROTEIN_FEATURE"),
-        TRAIT_ASSOCIATION("TRAIT_ASSOCIATION"),
-        VARIANT_ANNOTATION("VARIANT_ANNOTATION"),
-        GENE_ANNOTATION("GENE_ANNOTATION"),
-        GENE_TRAIT_ASSOCIATION("GENE_TRAIT_ASSOCIATION"),
-        DISEASE("DISEASE"),
-        DRUG("DRUG"),
-        EXPRESION("EXPRESSION"),
-        ONTOLOGY("ONTOLOGY"),
+        POPULATION_FREQUENCY        ("POPULATION_FREQUENCY"),
+        CONSERVATION                ("CONSERVATION"),
+        FUNCTIONAL_SCORE            ("FUNCTIONAL_SCORE"),
+        PROTEIN_VARIANT_ANNOTATION  ("PROTEIN_VARIANT_ANNOTATION"),
+        SUBSTITUTION_SCORE          ("SUBSTITUTION_SCORE"),
+
+        GENE_ANNOTATION         ("GENE_ANNOTATION"),
+        TRAIT_ASSOCIATION       ("TRAIT_ASSOCIATION"),
+        GENE_TRAIT_ASSOCIATION  ("GENE_TRAIT_ASSOCIATION"),
+        DISEASE                 ("DISEASE"),
+        DRUG                    ("DRUG"),
+        EXPRESSION              ("EXPRESSION"),
+        ONTOLOGY                ("ONTOLOGY"),
+
+
         CELLULAR_LOCATION("CELLULAR_LOCATION"),
         REGULATION("REGULATION"),
         CATALYSIS("CATALYSIS"),
@@ -52,11 +65,16 @@ public class Node {
         TRANSPORT("TRANSPORT");
 
         private final String type;
+        private final String parentType;
 
         Type(String type) {
-            this.type = type;
+            this(type, null);
         }
 
+        Type(String type, String parentType) {
+            this.type = type;
+            this.parentType = parentType;
+        }
     }
 
     public static boolean isPhysicalEntity(Node node) {
@@ -76,7 +94,7 @@ public class Node {
     }
 
     public Node(int uid) {
-        labels = new ArrayList<>();
+        tags = new ArrayList<>();
         attributes = new ObjectMap();
 
         setUid(uid);
@@ -84,7 +102,8 @@ public class Node {
 
     public Node(int uid, String id, String name, Type type) {
         this.type = type;
-        labels = new ArrayList<>();
+
+        tags = new ArrayList<>(1);
 
         attributes = new ObjectMap();
 
@@ -100,7 +119,7 @@ public class Node {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
-        sb.append(", labels=").append(labels);
+        sb.append(", tags=").append(tags);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -145,17 +164,17 @@ public class Node {
         return this;
     }
 
-    public List<String> getLabels() {
-        return labels;
+    public List<String> getTags() {
+        return tags;
     }
 
-    public Node setLabels(List<String> labels) {
-        this.labels = labels;
+    public Node setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 
     public void addLabel(String label) {
-        labels.add(label);
+        tags.add(label);
     }
 
     public ObjectMap getAttributes() {

@@ -3,7 +3,7 @@ package org.opencb.bionetdb.core.io;
 import org.junit.Test;
 import org.opencb.bionetdb.core.models.Network;
 import org.opencb.bionetdb.core.models.Node;
-import org.opencb.bionetdb.core.models.Relationship;
+import org.opencb.bionetdb.core.models.Relation;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,12 +33,12 @@ public class BioPaxParserTest {
         assertEquals("Different number of physical entities: ", 5057, numPhysicalEntities);
 
         int numInteractions = 0;
-        for (Relationship relationship: network.getRelationships()) {
-            if (Relationship.isInteraction(relationship)) {
+        for (Relation relation : network.getRelations()) {
+            if (Relation.isInteraction(relation)) {
                 numInteractions++;
             }
         }
-        System.out.println("Number of relationships: " + network.getRelationships().size());
+        System.out.println("Number of relationships: " + network.getRelations().size());
         assertEquals("Different number of interactions: ", 1971, numInteractions);
     }
 }
