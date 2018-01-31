@@ -2,6 +2,9 @@ package org.opencb.bionetdb.core.utils;
 
 import org.junit.Test;
 import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.Relation;
 
 import java.util.ArrayList;
 import java.util.List;

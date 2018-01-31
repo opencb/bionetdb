@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.models;
+package org.opencb.bionetdb.core.network;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
@@ -7,33 +7,36 @@ import java.util.List;
 
 public class Relation {
 
-    protected int uid;
+    private long uid;
 
-    protected String id;
-    protected String name;
+    private String name;
 
-    protected int originUid;
-    protected int destUid;
+    private long origUid;
+    private long destUid;
 
-//    protected String originType;
-//    protected String destType;
+    private Type type;
+    private List<String> tags;
 
-    protected Type type;
-    protected List<String> tags;
+    private String source;
 
-    protected ObjectMap attributes;
+    private ObjectMap attributes;
 
-    public Relation(int uid, String id, String name, int originUid, int destUid, Type type) {
+    public Relation(long uid, String name, long origUid, long destUid, Type type) {
+        this (uid, name, origUid, destUid, type, null);
+    }
+
+    public Relation(long uid, String name, long origUid, long destUid, Type type, String source) {
         this.uid = uid;
 
-        this.id = id;
         this.name = name;
 
-        this.originUid = originUid;
+        this.origUid = origUid;
         this.destUid = destUid;
 
         this.type = type;
         this.tags = new ArrayList<>(1);
+
+        this.source = source;
 
         this.attributes = new ObjectMap();
     }
@@ -94,14 +97,14 @@ public class Relation {
         attributes = new ObjectMap();
     }
 
-    public Relation(int uid) {
+    public Relation(long uid) {
         this.uid = uid;
 
         tags = new ArrayList<>();
         attributes = new ObjectMap();
     }
 
-    public int getUid() {
+    public long getUid() {
         return uid;
     }
 
@@ -110,12 +113,12 @@ public class Relation {
         return this;
     }
 
-    public String getId() {
-        return id;
+    public String getSource() {
+        return source;
     }
 
-    public Relation setId(String id) {
-        this.id = id;
+    public Relation setSource(String source) {
+        this.source = source;
         return this;
     }
 
@@ -128,16 +131,16 @@ public class Relation {
         return this;
     }
 
-    public int getOriginUid() {
-        return originUid;
+    public long getOrigUid() {
+        return origUid;
     }
 
-    public Relation setOriginUid(int originUid) {
-        this.originUid = originUid;
+    public Relation setOrigUid(long origUid) {
+        this.origUid = origUid;
         return this;
     }
 
-    public int getDestUid() {
+    public long getDestUid() {
         return destUid;
     }
 
@@ -152,6 +155,7 @@ public class Relation {
 
     public Relation setType(Type type) {
         this.type = type;
+        addTag(type.name());
         return this;
     }
 
@@ -164,8 +168,8 @@ public class Relation {
         return this;
     }
 
-    public void addLabel(String label) {
-        this.tags.add(label);
+    public void addTag(String tag) {
+        this.tags.add(tag);
     }
 
     public ObjectMap getAttributes() {

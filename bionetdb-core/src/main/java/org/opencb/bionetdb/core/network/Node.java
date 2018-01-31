@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.models;
+package org.opencb.bionetdb.core.network;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
@@ -7,15 +7,17 @@ import java.util.List;
 
 public class Node {
 
-    protected int uid;
+    private long uid;
 
-    protected String id;
-    protected String name;
+    private String id;
+    private String name;
 
-    protected Type type;
-    protected List<String> tags;
+    private Type type;
+    private List<String> tags;
 
-    protected ObjectMap attributes;
+    private String source;
+
+    private ObjectMap attributes;
 
     public enum Type {
         UNDEFINED           ("UNDEFINED"),
@@ -39,9 +41,9 @@ public class Node {
         PROTEIN_ANNOTATION  ("PROTEIN_ANNOTATION"),
         PROTEIN_FEATURE     ("PROTEIN_FEATURE"),
 
-        VARIANT_ANNOTATION  ("VARIANT_ANNOTATION"),
-        CONSEQUENCE_TYPE    ("CONSEQUENCE_TYPE"),
-        SO                  ("SEQUENCE_ONTOLOGY_TERM"),
+        VARIANT_ANNOTATION          ("VARIANT_ANNOTATION"),
+        CONSEQUENCE_TYPE            ("CONSEQUENCE_TYPE"),
+        SO                          ("SEQUENCE_ONTOLOGY_TERM"),
         POPULATION_FREQUENCY        ("POPULATION_FREQUENCY"),
         CONSERVATION                ("CONSERVATION"),
         FUNCTIONAL_SCORE            ("FUNCTIONAL_SCORE"),
@@ -57,12 +59,12 @@ public class Node {
         ONTOLOGY                ("ONTOLOGY"),
 
 
-        CELLULAR_LOCATION("CELLULAR_LOCATION"),
-        REGULATION("REGULATION"),
-        CATALYSIS("CATALYSIS"),
-        REACTION("REACTION"),
-        ASSEMBLY("ASSEMBLY"),
-        TRANSPORT("TRANSPORT");
+        CELLULAR_LOCATION   ("CELLULAR_LOCATION"),
+        REGULATION          ("REGULATION"),
+        CATALYSIS           ("CATALYSIS"),
+        REACTION            ("REACTION"),
+        ASSEMBLY            ("ASSEMBLY"),
+        TRANSPORT           ("TRANSPORT");
 
         private final String type;
         private final String parentType;
@@ -101,9 +103,15 @@ public class Node {
     }
 
     public Node(int uid, String id, String name, Type type) {
+        this(uid, id, name, type, null);
+    }
+
+    public Node(int uid, String id, String name, Type type, String source) {
         this.type = type;
 
         tags = new ArrayList<>(1);
+
+        this.source = source;
 
         attributes = new ObjectMap();
 
@@ -125,11 +133,11 @@ public class Node {
         return sb.toString();
     }
 
-    public int getUid() {
+    public long getUid() {
         return uid;
     }
 
-    public Node setUid(int uid) {
+    public Node setUid(long uid) {
         this.uid = uid;
         return this;
     }
@@ -160,7 +168,7 @@ public class Node {
 
     public Node setType(Type type) {
         this.type = type;
-        addLabel(type.name());
+        addTag(type.name());
         return this;
     }
 
@@ -173,8 +181,17 @@ public class Node {
         return this;
     }
 
-    public void addLabel(String label) {
-        tags.add(label);
+    public void addTag(String tag) {
+        tags.add(tag);
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public Node setSource(String source) {
+        this.source = source;
+        return this;
     }
 
     public ObjectMap getAttributes() {

@@ -16,6 +16,9 @@ import org.biopax.paxtools.model.level3.Rna;
 import org.biopax.paxtools.model.level3.SmallMolecule;
 import org.biopax.paxtools.model.level3.Xref;
 import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.Relation;
 import org.sqlite.util.StringUtils;
 
 import java.io.FileInputStream;

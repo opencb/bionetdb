@@ -1,6 +1,9 @@
 package org.opencb.bionetdb.core.io;
 
 import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.Relation;
 
 import java.io.*;
 import java.nio.file.Files;

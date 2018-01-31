@@ -1,7 +1,7 @@
 package org.opencb.bionetdb.server.ws;
 
 import io.swagger.annotations.ApiOperation;
-import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
 

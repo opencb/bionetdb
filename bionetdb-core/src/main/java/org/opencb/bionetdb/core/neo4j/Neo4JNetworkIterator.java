@@ -3,7 +3,7 @@ package org.opencb.bionetdb.core.neo4j;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.opencb.bionetdb.core.api.NetworkIterator;
-import org.opencb.bionetdb.core.models.Node;
+import org.opencb.bionetdb.core.network.Node;
 
 public class Neo4JNetworkIterator extends NetworkIterator {
     private StatementResult statementResult;

@@ -15,12 +15,12 @@ public class NetworkManager {
     private Network network;
 
     // Network node support
-    private Map<Integer, Integer> nodesIndex;
-    private Map<String, List<Integer>> nodesUids;
+    private Map<Long, Integer> nodesIndex;
+    private Map<String, List<Long>> nodesUids;
 
     // Network relationship support
-    private Map<Integer, Integer> relationshipsIndex;
-    private Map<String, List<Integer>> relationshipsUids;
+    private Map<Long, Integer> relationshipsIndex;
+    private Map<String, List<Long>> relationshipsUids;
 
     public NetworkManager(Network network) {
         this.network = network;
@@ -33,7 +33,7 @@ public class NetworkManager {
         // Node support
         nodesIndex = new HashMap<>();
         nodesUids = new HashMap<>();
-        int size = network.getNodes().size();
+        long size = network.getNodes().size();
         for (int i = 0; i < size; i++) {
             Node node = network.getNodes().get(i);
             nodesIndex.put(node.getUid(), i);
@@ -57,13 +57,13 @@ public class NetworkManager {
         }
     }
 
-    public Node getNode(int uid) {
+    public Node getNode(long uid) {
         return network.getNodes().get(nodesIndex.get(uid));
     }
 
     public List<Node> getNodes(String id) {
         List<Node> nodes = new ArrayList<>();
-        for (int uid: nodesUids.get(id)) {
+        for (long uid: nodesUids.get(id)) {
             nodes.add(getNode(uid));
         }
         return nodes;
@@ -84,13 +84,13 @@ public class NetworkManager {
         }
     }
 
-    public Relation getRelationship(int uid) {
+    public Relation getRelationship(long uid) {
         return network.getRelations().get(relationshipsIndex.get(uid));
     }
 
     public List<Relation> getRelationships(String id) {
         List<Relation> relations = new ArrayList<>();
-        for (int uid: relationshipsUids.get(id)) {
+        for (long uid: relationshipsUids.get(id)) {
             relations.add(getRelationship(uid));
         }
         return relations;

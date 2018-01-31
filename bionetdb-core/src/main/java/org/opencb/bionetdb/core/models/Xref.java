@@ -1,5 +1,7 @@
 package org.opencb.bionetdb.core.models;
 
+import org.opencb.bionetdb.core.network.Node;
+
 /**
  * Created by dapregi on 24/08/15.
  */

@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.core.io;
 
 import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.network.Network;
 import psidev.psi.mi.tab.PsimiTabReader;
 import psidev.psi.mi.tab.model.*;
 

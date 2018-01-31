@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.models;
+package org.opencb.bionetdb.core.network;
 
 import java.util.ArrayList;
 import java.util.HashMap;

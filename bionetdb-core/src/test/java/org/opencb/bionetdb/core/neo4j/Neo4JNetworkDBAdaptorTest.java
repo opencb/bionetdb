@@ -16,7 +16,7 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
-import org.opencb.bionetdb.core.models.Network;
+import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.models.PhysicalEntity;
 import org.opencb.bionetdb.core.models.Xref;
 import org.opencb.commons.datastore.core.ObjectMap;

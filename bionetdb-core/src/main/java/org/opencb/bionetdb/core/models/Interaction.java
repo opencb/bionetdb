@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.models;
 
+import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;

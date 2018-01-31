@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.api;
 
-import org.opencb.bionetdb.core.models.Node;
+import org.opencb.bionetdb.core.network.Node;
 
 import java.util.ArrayList;
 import java.util.Iterator;

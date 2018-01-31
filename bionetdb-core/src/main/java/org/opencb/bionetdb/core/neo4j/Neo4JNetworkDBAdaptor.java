@@ -17,6 +17,9 @@ import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.*;
+import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -488,14 +491,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * @param nodeList      List containing all the nodes to be inserted in the database
      * @param queryOptions  Additional params for the query
      */
-    private void insertNodes(List<org.opencb.bionetdb.core.models.Node> nodeList, QueryOptions queryOptions) throws BioNetDBException {
+    private void insertNodes(List<Node> nodeList, QueryOptions queryOptions) throws BioNetDBException {
         Session session = this.driver.session();
 
         // 1. Insert the Physical Entities and the basic nodes they are connected to
-        for (org.opencb.bionetdb.core.models.Node node: nodeList) {
+        for (Node node: nodeList) {
             session.writeTransaction(tx -> {
-                if (org.opencb.bionetdb.core.models.Node.isPhysicalEntity(node)
-                        && node.getType() != org.opencb.bionetdb.core.models.Node.Type.GENE) {
+                if (Node.isPhysicalEntity(node)
+                        && node.getType() != Node.Type.GENE) {
                     PhysicalEntity p = (PhysicalEntity) node;
                     String peLabel = NodeTypes.PHYSICAL_ENTITY + ":" + p.getType();
                     StatementResult n = getOrCreateNode(tx, peLabel, parsePhysicalEntity(p));
@@ -521,7 +524,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                         addRelationship(tx, peLabel, NodeTypes.XREF.toString(), pEID,
                                 xr.peek().get("ID").asInt(), RelTypes.XREF);
                     }
-                } else if (node.getType() == org.opencb.bionetdb.core.models.Node.Type.XREF) {
+                } else if (node.getType() == Node.Type.XREF) {
                     getOrCreateNode(tx, NodeTypes.XREF.toString(), parseXref((Xref) node));
                 } else {
                     StringBuilder labels = new StringBuilder(node.getType().toString());
@@ -534,10 +537,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             });
         }
 
-        for (org.opencb.bionetdb.core.models.Node node: nodeList) {
+        for (Node node: nodeList) {
             session.writeTransaction(tx -> {
-                if (org.opencb.bionetdb.core.models.Node.isPhysicalEntity(node)
-                        && node.getType() != org.opencb.bionetdb.core.models.Node.Type.GENE) {
+                if (Node.isPhysicalEntity(node)
+                        && node.getType() != Node.Type.GENE) {
                     PhysicalEntity p = (PhysicalEntity) node;
                     // 2. Insert the existing relationships between Physical Entities
                     if (p.getComponentOfComplex().size() > 0) {
@@ -1054,7 +1057,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         System.out.println("Query: " + myQuery);
         long stopTime = System.currentTimeMillis();
         StatementResult run = session.run(myQuery);
-        List<org.opencb.bionetdb.core.models.Node> nodes = new ArrayList<>();
+        List<Node> nodes = new ArrayList<>();
         while (run.hasNext()) {
             Map<String, Object> map = run.next().asMap();
             for (String key: map.keySet()) {
@@ -1075,9 +1078,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     }
                 }
                 if (secondType != null) {
-                    node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(secondType));
+                    node.setType(Node.Type.valueOf(secondType));
                 } else if (firstType != null) {
-                    node.setType(org.opencb.bionetdb.core.models.Node.Type.valueOf(firstType));
+                    node.setType(Node.Type.valueOf(firstType));
                 }
                 for (String k: neoNode.keys()) {
                     node.addAttribute(k, neoNode.get(k).asString());
