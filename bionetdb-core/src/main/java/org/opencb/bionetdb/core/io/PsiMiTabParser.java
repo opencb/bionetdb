@@ -1,24 +1,11 @@
 package org.opencb.bionetdb.core.io;
 
-import org.opencb.bionetdb.core.models.*;
-import org.opencb.bionetdb.core.network.Network;
-import psidev.psi.mi.tab.PsimiTabReader;
-import psidev.psi.mi.tab.model.*;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
-
 /**
  * Created by dapregi on 8/09/15.
  */
 public class PsiMiTabParser {
-
+    //TODO: update this code according to the refactoring Network
+/*
     private static final String INTACT_FEAT = "intact.";
 
     // http://stackoverflow.com/questions/406230/regular-expression-to-match-line-that-doesnt-contain-a-word
@@ -524,4 +511,5 @@ public class PsiMiTabParser {
 //            }
 //        }
     }
+    */
 }

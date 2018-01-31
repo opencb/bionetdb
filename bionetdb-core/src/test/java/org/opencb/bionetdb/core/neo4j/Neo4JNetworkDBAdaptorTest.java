@@ -6,8 +6,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.StatementResult;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -16,9 +14,8 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
-import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.core.models.PhysicalEntity;
 import org.opencb.bionetdb.core.models.Xref;
+import org.opencb.bionetdb.core.network.Network;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -63,7 +60,9 @@ public class Neo4JNetworkDBAdaptorTest {
                 System.out.println(dbConfig);
             }
             networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration, true);
-        } catch (BioNetDBException | IOException e) {
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (BioNetDBException e) {
             e.printStackTrace();
         }
     }
@@ -296,29 +295,29 @@ public class Neo4JNetworkDBAdaptorTest {
         QueryResult myResult = networkDBAdaptor.getSummaryStats(null, null);
     }
 
-
-    @Test
-    public void testGetProteinXrefs() throws Exception {
-        StatementResult proteinXrefs = ((Neo4JNetworkDBAdaptor) networkDBAdaptor).getXrefs(PhysicalEntity.Type.PROTEIN.name());
-        int i = 0;
-        while (proteinXrefs.hasNext()) {
-            Record next = proteinXrefs.next();
-            Map<String, Object> map = next.asMap();
-            for (String key: map.keySet()) {
-                if (map.get(key) instanceof List) {
-                    System.out.println(">>>> List");
-                }
-                System.out.println(key + " -> " + map.get(key));
-            }
-            System.exit(-1);
-
-
-            System.out.println((++i) + ":\t" + next.get(0) + "\t" + next.get(1));
-            assert(next.get(2).asList().size() == next.get(3).asList().size());
-            int size = next.get(2).asList().size();
-            for (int j = 0; j < size; j++) {
-                System.out.println("\t" + next.get(2).asList().get(j) + " ---- " + next.get(3).asList().get(j));
-            }
-        }
-    }
+// TODO: update this code according to the refactoring Network code
+//    @Test
+//    public void testGetProteinXrefs() throws Exception {
+//        StatementResult proteinXrefs = ((Neo4JNetworkDBAdaptor) networkDBAdaptor).getXrefs(PhysicalEntity.Type.PROTEIN.name());
+//        int i = 0;
+//        while (proteinXrefs.hasNext()) {
+//            Record next = proteinXrefs.next();
+//            Map<String, Object> map = next.asMap();
+//            for (String key: map.keySet()) {
+//                if (map.get(key) instanceof List) {
+//                    System.out.println(">>>> List");
+//                }
+//                System.out.println(key + " -> " + map.get(key));
+//            }
+//            System.exit(-1);
+//
+//
+//            System.out.println((++i) + ":\t" + next.get(0) + "\t" + next.get(1));
+//            assert(next.get(2).asList().size() == next.get(3).asList().size());
+//            int size = next.get(2).asList().size();
+//            for (int j = 0; j < size; j++) {
+//                System.out.println("\t" + next.get(2).asList().get(j) + " ---- " + next.get(3).asList().get(j));
+//            }
+//        }
+//    }
 }

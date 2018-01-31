@@ -2,24 +2,62 @@ package org.opencb.bionetdb.core.neo4j;
 
 import org.opencb.bionetdb.core.api.NetworkDBManager;
 import org.opencb.bionetdb.core.api.NetworkIterator;
-import org.opencb.bionetdb.core.api.NetworkManager;
-import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.io.BioPaxParser;
-import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
 public class Neo4JNetworkDBManager implements NetworkDBManager {
+    @Override
+    public void load(Path path) throws IOException, BioNetDBException {
 
+    }
+
+    @Override
+    public void load(Path path, QueryOptions queryOptions) throws IOException, BioNetDBException {
+
+    }
+
+    @Override
+    public QueryResult<Node> query(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public NetworkIterator iterator(Query query, QueryOptions queryOptions) {
+        return null;
+    }
+
+    @Override
+    public void annotate() {
+
+    }
+
+    @Override
+    public void annotateGenes(Query query, QueryOptions queryOptions) {
+
+    }
+
+    @Override
+    public void annotateVariants(Query query, QueryOptions queryOptions) {
+
+    }
+
+    @Override
+    public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public void close() throws Exception {
+
+    }
+    // TODO: update this code according to the refactoring Network code
+/*
     private String database;
     private BioNetDBConfiguration bioNetDBConfiguration;
     private Neo4JNetworkDBAdaptor networkDBAdaptor;
@@ -107,4 +145,5 @@ public class Neo4JNetworkDBManager implements NetworkDBManager {
             networkDBAdaptor.close();
         }
     }
+    */
 }

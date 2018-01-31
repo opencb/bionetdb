@@ -1,15 +1,13 @@
 package org.opencb.bionetdb.core.models;
 
-import org.opencb.bionetdb.core.network.Node;
-
 /**
  * Created by dapregi on 24/08/15.
  */
-public class Xref extends Node {
+public class Xref {
 
     private String source;
     private String sourceVersion;
-//    private String id;
+    private String id;
     private String idVersion;
 
     public Xref() {
@@ -37,7 +35,6 @@ public class Xref extends Node {
         this.sourceVersion = "";
         this.id = "";
         this.idVersion = "";
-        this.type = Type.XREF;
     }
 
     public boolean isEqual(Xref that) {
@@ -64,15 +61,15 @@ public class Xref extends Node {
         }
     }
 
-//    public String getId() {
-//        return id;
-//    }
-//
-//    public void setId(String id) {
-//        if (id != null) {
-//            this.id = id;
-//        }
-//    }
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        if (id != null) {
+            this.id = id;
+        }
+    }
 
     public String getIdVersion() {
         return idVersion;

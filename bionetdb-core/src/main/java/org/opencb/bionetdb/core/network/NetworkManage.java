@@ -1,16 +1,13 @@
-package org.opencb.bionetdb.core.api;
+package org.opencb.bionetdb.core.network;
 
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.Network;
-import org.opencb.bionetdb.core.models.Node;
-import org.opencb.bionetdb.core.models.Relation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NetworkManager {
+public class NetworkManage {
 
     private Network network;
 
@@ -22,7 +19,7 @@ public class NetworkManager {
     private Map<Long, Integer> relationshipsIndex;
     private Map<String, List<Long>> relationshipsUids;
 
-    public NetworkManager(Network network) {
+    public NetworkManage(Network network) {
         this.network = network;
         init();
     }
@@ -50,10 +47,10 @@ public class NetworkManager {
         for (int i = 0; i < size; i++) {
             Relation relation = network.getRelations().get(i);
             relationshipsIndex.put(relation.getUid(), i);
-            if (!relationshipsUids.containsKey(relation.getId())) {
-                relationshipsUids.put(relation.getId(), new ArrayList<>());
+            if (!relationshipsUids.containsKey(relation.getName())) {
+                relationshipsUids.put(relation.getName(), new ArrayList<>());
             }
-            relationshipsUids.get(relation.getId()).add(relation.getUid());
+            relationshipsUids.get(relation.getName()).add(relation.getUid());
         }
     }
 
@@ -101,10 +98,10 @@ public class NetworkManager {
             if (!relationshipsIndex.containsKey(relation.getUid())) {
                 network.getRelations().add(relation);
                 relationshipsIndex.put(relation.getUid(), network.getRelations().indexOf(relation));
-                if (!relationshipsUids.containsKey(relation.getId())) {
-                    relationshipsUids.put(relation.getId(), new ArrayList<>());
+                if (!relationshipsUids.containsKey(relation.getName())) {
+                    relationshipsUids.put(relation.getName(), new ArrayList<>());
                 }
-                relationshipsUids.get(relation.getId()).add(relation.getUid());
+                relationshipsUids.get(relation.getName()).add(relation.getUid());
             } else {
                 throw new BioNetDBException("Relation UID '" + relation.getUid() + "' is not unique");
             }

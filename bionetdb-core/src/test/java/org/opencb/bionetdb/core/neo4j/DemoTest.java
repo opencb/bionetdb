@@ -1,45 +1,8 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
-import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.core.Transcript;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.biodata.models.variant.avro.Expression;
-import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
-import org.opencb.bionetdb.core.config.DatabaseConfiguration;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.io.BioPaxParser;
-import org.opencb.bionetdb.core.models.*;
-import org.opencb.bionetdb.core.models.Xref;
-import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.core.network.Node;
-import org.opencb.bionetdb.core.network.Relation;
-import org.opencb.cellbase.client.config.ClientConfiguration;
-import org.opencb.cellbase.client.config.RestConfig;
-import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.cellbase.client.rest.ProteinClient;
-import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.utils.ListUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.*;
-
 public class DemoTest {
+    // TODO: update this code according to the refactoring Network code
+/*
     //    String database = "demo";
     String database = "scerevisiae";
     NetworkDBAdaptor networkDBAdaptor = null;
@@ -786,5 +749,5 @@ public class DemoTest {
 //        ObjectMapper mapper = new ObjectMapper();
 //        mapper.writeValue(new File("/tmp/vesicle.mediated.transport.network.json"), network);
 //        Variant variant = mapper.readValue(new File("~/data150/neo4j/test2.json"), Variant.class);
-
+*/
 }

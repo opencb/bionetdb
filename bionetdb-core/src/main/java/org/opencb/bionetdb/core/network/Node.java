@@ -102,11 +102,11 @@ public class Node {
         setUid(uid);
     }
 
-    public Node(int uid, String id, String name, Type type) {
+    public Node(long uid, String id, String name, Type type) {
         this(uid, id, name, type, null);
     }
 
-    public Node(int uid, String id, String name, Type type, String source) {
+    public Node(long uid, String id, String name, Type type, String source) {
         this.type = type;
 
         tags = new ArrayList<>(1);

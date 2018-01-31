@@ -1,21 +1,14 @@
 package org.opencb.bionetdb.core.utils;
 
-import org.opencb.biodata.formats.graph.dot.Dot;
-import org.opencb.biodata.formats.graph.dot.Edge;
-import org.opencb.biodata.formats.graph.dot.Node;
-import org.opencb.bionetdb.core.models.*;
-import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.core.network.Relation;
-
-import java.util.HashMap;
-
 /**
  * Created by imedina on 30/09/15.
  */
 public class DotExporter {
 
-    public static Dot convert(Network network) {
 
+    // TODO: update this code according to the refactoring Network code
+/*
+    public static Dot convert(Network network) {
         Dot dot = new Dot("network", true);
 
         // Creating Nodes
@@ -25,7 +18,7 @@ public class DotExporter {
 
         // Creating Relationships
         for (Relation relation : network.getRelations()) {
-            dot.addNode(new Node(relation.getId(), new HashMap<>()));
+            dot.addNode(new Node(relation.getName(), new HashMap<>()));
         }
 
         // Connecting Nodes and Relationships
@@ -96,4 +89,5 @@ public class DotExporter {
         }
         return dot;
     }
+    */
 }

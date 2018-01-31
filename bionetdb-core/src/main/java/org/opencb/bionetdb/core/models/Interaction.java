@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.core.models;
 
-import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;
@@ -10,7 +9,7 @@ import java.util.List;
  * Created by imedina on 10/08/15.
  */
 @Deprecated
-public class Interaction extends Relation {
+public class Interaction {
 
     protected String id;
     protected String name;
@@ -26,6 +25,8 @@ public class Interaction extends Relation {
     protected List<Xref> xrefs;
     protected List<Ontology> ontologies;
     protected List<Publication> publications;
+
+    protected ObjectMap attributes;
 
     public enum Type {
         REACTION       ("reaction"),

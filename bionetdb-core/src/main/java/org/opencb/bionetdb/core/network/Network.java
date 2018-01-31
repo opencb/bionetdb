@@ -17,7 +17,7 @@ public class Network {
     private List<Node> nodes;
     private List<Relation> relations;
 
-    protected Map<String, Object> attributes;
+    private Map<String, Object> attributes;
 
     public Network() {
         this.id = "";

@@ -3,7 +3,6 @@ package org.opencb.bionetdb.app.cli;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.bionetdb.core.io.BioPaxParser;
-import org.opencb.bionetdb.core.io.PsiMiTabParser;
 import org.opencb.bionetdb.core.io.SbmlParser;
 import org.opencb.bionetdb.core.io.SifParser;
 import org.opencb.bionetdb.core.network.Network;
@@ -45,9 +44,10 @@ public class BuildCommandExecutor extends CommandExecutor {
             } else if (inputPath.getFileName().toString().endsWith("sif") || inputPath.getFileName().toString().endsWith("sif.gz")) {
                 SifParser sifParser = new SifParser();
                 network = sifParser.parse(inputPath);
-            } else if (inputPath.getFileName().toString().endsWith("txt") || inputPath.getFileName().toString().endsWith("txt.gz")) {
-                PsiMiTabParser psiMiTabParser = new PsiMiTabParser();
-                network = psiMiTabParser.parse(inputPath, "Homo sapiens");
+                // TODO: update this code according to the refactoring Network code
+//            } else if (inputPath.getFileName().toString().endsWith("txt") || inputPath.getFileName().toString().endsWith("txt.gz")) {
+//                PsiMiTabParser psiMiTabParser = new PsiMiTabParser();
+//                network = psiMiTabParser.parse(inputPath, "Homo sapiens");
             }
 
             if (network != null) {
