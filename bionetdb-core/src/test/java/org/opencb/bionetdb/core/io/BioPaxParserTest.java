@@ -7,8 +7,8 @@ import org.opencb.bionetdb.core.network.Relation;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import static org.junit.Assert.assertEquals;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by imedina on 17/08/15.
@@ -21,24 +21,39 @@ public class BioPaxParserTest {
         Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
         Network network = bioPaxParser.parse(inputPath);
 
-        int numPhysicalEntities = 0;
-        for (Node node: network.getNodes()) {
-            if (Node.isPhysicalEntity(node)) {
-                numPhysicalEntities++;
-            } else {
-                System.out.println(node.getType());
-            }
-        }
-        System.out.println("Number of nodes: " + network.getNodes().size());
-        assertEquals("Different number of physical entities: ", 5057, numPhysicalEntities);
+        int total;
 
-        int numInteractions = 0;
-        for (Relation relation : network.getRelations()) {
-            if (Relation.isInteraction(relation)) {
-                numInteractions++;
+        System.out.println("Nodes:");
+        System.out.println("------");
+        Map<Node.Type, Integer> typeCounter = new HashMap<>();
+        for (Node node: network.getNodes()) {
+            if (!typeCounter.containsKey(node.getType())) {
+                typeCounter.put(node.getType(), 0);
             }
+            typeCounter.put(node.getType(), typeCounter.get(node.getType()) + 1);
         }
-        System.out.println("Number of relationships: " + network.getRelations().size());
-        assertEquals("Different number of interactions: ", 1971, numInteractions);
+        total = 0;
+        for (Node.Type key: typeCounter.keySet()) {
+            System.out.println(key.name() + ": " + typeCounter.get(key));
+            total += typeCounter.get(key);
+        }
+        System.out.println("\nNumber of nodes: " + total + "\n");
+
+        total = 0;
+        System.out.println("Relationships:");
+        System.out.println("------");
+        Map<Relation.Type, Integer> relTypeCounter = new HashMap<>();
+        for (Relation relation: network.getRelations()) {
+            if (!relTypeCounter.containsKey(relation.getType())) {
+                relTypeCounter.put(relation.getType(), 0);
+            }
+            relTypeCounter.put(relation.getType(), relTypeCounter.get(relation.getType()) + 1);
+        }
+        total = 0;
+        for (Relation.Type key: relTypeCounter.keySet()) {
+            System.out.println(key.name() + ": " + relTypeCounter.get(key));
+            total += relTypeCounter.get(key);
+        }
+        System.out.println("\nNumber of relationships: " + total + "\n");
     }
 }

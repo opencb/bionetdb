@@ -176,6 +176,8 @@ public class BioPaxParser {
         // Common properties
         Node undefined = setPhysicalEntityCommonProperties(physicalEntityBP, network);
 
+        undefined.setType(Node.Type.UNDEFINED);
+
         // Add node to network
         network.addNode(undefined);
     }
@@ -188,6 +190,8 @@ public class BioPaxParser {
         if (dna == null) {
             return;
         }
+
+        dna.setType(Node.Type.DNA);
 
         // Dna properties
         if (dnaBP.getEntityReference() != null) {
@@ -211,6 +215,8 @@ public class BioPaxParser {
             return;
         }
 
+        rna.setType(Node.Type.RNA);
+
         // Rna properties
         if (rnaBP.getEntityReference() != null) {
 
@@ -232,6 +238,8 @@ public class BioPaxParser {
         if (protein == null) {
             return;
         }
+
+        protein.setType(Node.Type.PROTEIN);
 
         // Protein properties
         if (proteinBP.getEntityReference() != null) {
@@ -264,6 +272,8 @@ public class BioPaxParser {
             return;
         }
 
+        smallMolecule.setType(Node.Type.SMALL_MOLECULE);
+
         // SmallMolecule properties
         if (smallMoleculeBP.getEntityReference() != null) {
 
@@ -285,6 +295,8 @@ public class BioPaxParser {
         if (complex == null) {
             return;
         }
+
+        complex.setType(Node.Type.COMPLEX);
 
         // Complex properties
 
@@ -391,8 +403,12 @@ public class BioPaxParser {
         // = SPECIFIC PROPERTIES =
         // id
         String id = physicalEntityBP.getRDFId().split("#")[1];
-        if (!nodeMap.containsKey(id)) {
+        if (!rdfToUidMap.containsKey(id)) {
             System.out.println("ID " + id + " does not exist!!");
+            return null;
+        }
+        if (!nodeMap.containsKey(rdfToUidMap.get(id))) {
+            System.out.println("ID " + id + ":" + rdfToUidMap.get(id) + " does not exist!!");
             return null;
         }
         Node physicalEntity = nodeMap.get(rdfToUidMap.get(id));
@@ -770,8 +786,12 @@ public class BioPaxParser {
         // = SPECIFIC PROPERTIES =
         // id
         String id = interactionBP.getRDFId().split("#")[1];
-        if (!nodeMap.containsKey(id)) {
-            System.out.println("Node ID " + id + " does not exist (Interaction node)!!");
+        if (!rdfToUidMap.containsKey(id)) {
+            System.out.println("ID " + id + " does not exist!! (Interaction node)!!");
+            return null;
+        }
+        if (!nodeMap.containsKey(rdfToUidMap.get(id))) {
+            System.out.println("ID " + id + ":" + rdfToUidMap.get(id) + " does not exist (Interaction node)!!");
             return null;
         }
         Node interaction = nodeMap.get(rdfToUidMap.get(id));
