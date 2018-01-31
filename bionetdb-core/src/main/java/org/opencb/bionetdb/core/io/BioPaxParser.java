@@ -15,7 +15,6 @@ import org.biopax.paxtools.model.level3.Protein;
 import org.biopax.paxtools.model.level3.Rna;
 import org.biopax.paxtools.model.level3.SmallMolecule;
 import org.biopax.paxtools.model.level3.Xref;
-import org.opencb.bionetdb.core.models.*;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
@@ -186,6 +185,9 @@ public class BioPaxParser {
 
         // Common properties
         Node dna = setPhysicalEntityCommonProperties(dnaBP, network);
+        if (dna == null) {
+            return;
+        }
 
         // Dna properties
         if (dnaBP.getEntityReference() != null) {
@@ -205,6 +207,9 @@ public class BioPaxParser {
 
         // Common properties
         Node rna = setPhysicalEntityCommonProperties(rnaBP, network);
+        if (rna == null) {
+            return;
+        }
 
         // Rna properties
         if (rnaBP.getEntityReference() != null) {
@@ -224,6 +229,9 @@ public class BioPaxParser {
 
         // Common properties
         Node protein = setPhysicalEntityCommonProperties(proteinBP, network);
+        if (protein == null) {
+            return;
+        }
 
         // Protein properties
         if (proteinBP.getEntityReference() != null) {
@@ -252,6 +260,9 @@ public class BioPaxParser {
 
         // Common properties
         Node smallMolecule = setPhysicalEntityCommonProperties(smallMoleculeBP, network);
+        if (smallMolecule == null) {
+            return;
+        }
 
         // SmallMolecule properties
         if (smallMoleculeBP.getEntityReference() != null) {
@@ -271,6 +282,9 @@ public class BioPaxParser {
 
         // Common properties
         Node complex = setPhysicalEntityCommonProperties(complexBP, network);
+        if (complex == null) {
+            return;
+        }
 
         // Complex properties
 
@@ -278,11 +292,14 @@ public class BioPaxParser {
         Set<PhysicalEntity> components = complexBP.getComponent();
         for (PhysicalEntity component: components) {
             String id = component.getRDFId().split("#")[1];
-            assert(rdfToUidMap.containsKey(id));
-            int origUid = rdfToUidMap.get(id);
-            Relation relation = new Relation(uidCounter++, null, origUid, complex.getUid(),
-                    Relation.Type.COMPONENT_OF_COMPLEX);
-            network.addRelationship(relation);
+            if (!rdfToUidMap.containsKey(id)) {
+                System.out.println("Component ID " + id + " does not exist!!");
+            } else {
+                int origUid = rdfToUidMap.get(id);
+                Relation relation = new Relation(uidCounter++, null, origUid, complex.getUid(),
+                        Relation.Type.COMPONENT_OF_COMPLEX);
+                network.addRelationship(relation);
+            }
         }
 
         // Stoichiometry
@@ -291,12 +308,15 @@ public class BioPaxParser {
         for (Stoichiometry stoichiometryItem: stoichiometryItems) {
             // component
             String id = stoichiometryItem.getPhysicalEntity().toString().split("#")[1];
-            assert(rdfToUidMap.containsKey(id));
-            int destUid = rdfToUidMap.get(id);
-            Relation relation = new Relation(uidCounter++, null, complex.getUid(), destUid,
-                    Relation.Type.STOICHIOMETRY);
-            relation.addAttribute("coefficient", stoichiometryItem.getStoichiometricCoefficient());
-            network.addRelationship(relation);
+            if (!rdfToUidMap.containsKey(id)) {
+                System.out.println("Stoichiometry Item ID " + id + " does not exist!!");
+            } else {
+                int destUid = rdfToUidMap.get(id);
+                Relation relation = new Relation(uidCounter++, null, complex.getUid(), destUid,
+                        Relation.Type.STOICHIOMETRY);
+                relation.addAttribute("coefficient", stoichiometryItem.getStoichiometricCoefficient());
+                network.addRelationship(relation);
+            }
         }
 
         network.addNode(complex);
@@ -371,7 +391,10 @@ public class BioPaxParser {
         // = SPECIFIC PROPERTIES =
         // id
         String id = physicalEntityBP.getRDFId().split("#")[1];
-        assert(nodeMap.containsKey(id));
+        if (!nodeMap.containsKey(id)) {
+            System.out.println("ID " + id + " does not exist!!");
+            return null;
+        }
         Node physicalEntity = nodeMap.get(rdfToUidMap.get(id));
 
         // name
@@ -403,7 +426,6 @@ public class BioPaxParser {
         }
 
         // cellularLocation
-        CellularLocation cellularLocation = new CellularLocation();
         for (String name: physicalEntityBP.getCellularLocation().getTerm()) {
             Node x = new Node(uidCounter++);
             x.setId(name);
@@ -415,23 +437,17 @@ public class BioPaxParser {
             network.addRelationship(relation);
         }
         for (Xref cellLocXref: physicalEntityBP.getCellularLocation().getXref()) {
-            Ontology ontology = new Ontology();
-            if (cellLocXref.getDb().toLowerCase().equals("gene ontology")) {
-                ontology.setSource("go");
-                ontology.setId(cellLocXref.getId().split(":")[1]);
-            } else {
-                ontology.setSource(cellLocXref.getDb());
-                ontology.setId(cellLocXref.getId());
-            }
-            ontology.setSourceVersion(cellLocXref.getDbVersion());
-            ontology.setIdVersion(cellLocXref.getIdVersion());
-
             Node x = new Node(uidCounter++);
-            x.setId(ontology.getId());
+            if (cellLocXref.getDb().toLowerCase().equals("gene ontology")) {
+                x.setId(cellLocXref.getId().split(":")[1]);
+                x.addAttribute("source", "go");
+            } else {
+                x.setId(cellLocXref.getId());
+                x.addAttribute("source", cellLocXref.getDb());
+            }
             x.setType(Node.Type.ONTOLOGY);
-            x.addAttribute("source", ontology.getSource());
-            x.addAttribute("sourceVersion", ontology.getSourceVersion());
-            x.addAttribute("idVersion", ontology.getIdVersion());
+            x.addAttribute("sourceVersion", cellLocXref.getDbVersion());
+            x.addAttribute("idVersion", cellLocXref.getIdVersion());
             network.addNode(x);
 
             Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(),
@@ -465,11 +481,14 @@ public class BioPaxParser {
         // componentOfComplex
         for (Complex complex: physicalEntityBP.getComponentOf()) {
             String complexId = complex.getRDFId().split("#")[1];
-            assert(rdfToUidMap.containsKey(complexId));
-            int destUid = rdfToUidMap.get(complexId);
-            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), destUid,
-                    Relation.Type.COMPONENT_OF_COMPLEX);
-            network.addRelationship(relation);
+            if (!rdfToUidMap.containsKey(complexId)) {
+                System.out.println("Complex ID " + id + " does not exist, componentOfComplex!!");
+            } else {
+                int destUid = rdfToUidMap.get(complexId);
+                Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), destUid,
+                        Relation.Type.COMPONENT_OF_COMPLEX);
+                network.addRelationship(relation);
+            }
         }
 
         // participantOfInteraction
@@ -517,6 +536,9 @@ public class BioPaxParser {
 
         // Common Interaction properties
         Node reaction = setInteractionCommonProperties(interactionBP, network);
+        if (reaction == null) {
+            return;
+        }
 
         String className = bioPAXElement.getModelInterface().getSimpleName();
 
@@ -658,6 +680,9 @@ public class BioPaxParser {
 
         // Common Interaction properties
         Node catalysis = setInteractionCommonProperties(catalysisBP, network);
+        if (catalysis == null) {
+            return;
+        }
 
         // Catalysis properties
 
@@ -706,6 +731,9 @@ public class BioPaxParser {
 
         // Common Interaction properties
         Node regulation = setInteractionCommonProperties(controlBP, network);
+        if (regulation == null) {
+            return;
+        }
 
         // Regulation properties
 
@@ -742,7 +770,10 @@ public class BioPaxParser {
         // = SPECIFIC PROPERTIES =
         // id
         String id = interactionBP.getRDFId().split("#")[1];
-        assert(nodeMap.containsKey(id));
+        if (!nodeMap.containsKey(id)) {
+            System.out.println("Node ID " + id + " does not exist (Interaction node)!!");
+            return null;
+        }
         Node interaction = nodeMap.get(rdfToUidMap.get(id));
 
         // description
@@ -833,6 +864,10 @@ public class BioPaxParser {
 
     private void addRelathionships(long origUid, List<String> destIds, Relation.Type type, Network network) {
         for (String destId: destIds) {
+            if (!rdfToUidMap.containsKey(destId)) {
+                System.out.println("Destination Node ID " + destId + " does not exist!!!");
+                continue;
+            }
             long destUid = rdfToUidMap.get(destId);
 
             Relation relation = new Relation(uidCounter++, null, origUid, destUid, type);
