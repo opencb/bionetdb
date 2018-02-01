@@ -42,7 +42,7 @@ public class QueryCommandExecutor extends CommandExecutor {
 //                query.put("nodeLabel", queryCommandOptions.nodeType);
                 query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), queryCommandOptions.nodeType);
 
-                QueryResult betweenness = networkDBAdaptor.betweenness(query);
+                QueryResult betweenness = null; //networkDBAdaptor.betweenness(query);
                 System.out.println("betweenness = " + betweenness);
                 return;
             }
@@ -51,7 +51,7 @@ public class QueryCommandExecutor extends CommandExecutor {
                 Query query = new Query("id", queryCommandOptions.id);
                 query.put("nodeLabel", queryCommandOptions.nodeType);
 
-                QueryResult queryResult = networkDBAdaptor.clusteringCoefficient(query);
+                QueryResult queryResult = null; //networkDBAdaptor.clusteringCoefficient(query);
                 System.out.println("queryResult = " + queryResult);
                 return;
             }
@@ -82,10 +82,10 @@ public class QueryCommandExecutor extends CommandExecutor {
                 if (StringUtils.isNotEmpty(queryCommandOptions.relationship)) {
                     queryOptions.put(NetworkDBAdaptor.NetworkQueryParams.REL_TYPE.key(), queryCommandOptions.relationship);
                 }
-                networkDBAdaptor.getNodes(query1, query2, queryOptions);
+                //networkDBAdaptor.getNodes(query1, query2, queryOptions);
                 return;
             }
-            networkDBAdaptor.getNodes(query1, null);
+            //networkDBAdaptor.getNodes(query1, null);
 
         } catch (Exception e) {
             e.printStackTrace();

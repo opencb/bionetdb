@@ -97,7 +97,7 @@ public class Node {
         }
     }
 
-    public Node(int uid) {
+    public Node(long uid) {
         tags = new ArrayList<>();
         attributes = new ObjectMap();
 

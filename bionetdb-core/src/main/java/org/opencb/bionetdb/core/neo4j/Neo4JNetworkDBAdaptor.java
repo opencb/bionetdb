@@ -28,6 +28,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private BioNetDBConfiguration configuration;
     private CellBaseClient cellBaseClient;
 
+    private final String PREFIX_ATTRIBUTES = "attr_";
+
     public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
         this(database, configuration, false);
     }
@@ -158,9 +160,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         for (String key : node.getAttributes().keySet()) {
             if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
-                props.add("attrs_" + key + ":" + node.getAttributes().getString(key));
+                props.add(PREFIX_ATTRIBUTES + key + ":" + node.getAttributes().getString(key));
             } else {
-                props.add("attrs_" + key + ":\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
+                props.add(PREFIX_ATTRIBUTES + key + ":\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
             }
         }
         String propsJoined = "{" + String.join(",", props) + "}";
@@ -169,7 +171,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return tx.run("CREATE (n:" + StringUtils.join(node.getTags(), ":") + " " + propsJoined + ") RETURN ID(n) AS ID");
     }
 
-    private void addRelation(Transaction tx, Relation relation) {
+    private StatementResult addRelation(Transaction tx, Relation relation) {
         List<String> props = new ArrayList<>();
         props.add("uid:" + relation.getUid());
         if (StringUtils.isNotEmpty(relation.getName())) {
@@ -179,23 +181,17 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             props.add("source:\"" + relation.getSource() + "\"");
         }
         for (String key : relation.getAttributes().keySet()) {
-            props.add("attrs_" + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
+            props.add(PREFIX_ATTRIBUTES + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
         }
         String propsJoined = "{" + String.join(",", props) + "}";
-
-//        System.out.println("relation: id = " + relation.getUid() + ", name = " + relation.getName() + ", type = "
-//                + relation.getType() + ", tags = " + StringUtils.join(relation.getTags(), ":"));
 
         StringBuilder statementTemplate = new StringBuilder();
         statementTemplate.append("MATCH (o) WHERE o.uid = $origUid")
                 .append(" MATCH (d) WHERE d.uid = $destUiD")
                 .append(" MERGE (o)-[:").append(StringUtils.join(relation.getTags(), ":")).append(propsJoined).append("]->(d)");
 
-//        System.out.println("relation: id = " + relation.getUid() + ", name = " + relation.getName() + ", type = "
-//                + relation.getType() + ", tags = " + StringUtils.join(relation.getTags(), ":"));
-//        System.out.println("cypher: " + statementTemplate.toString());
-
-        tx.run(statementTemplate.toString(), parameters("origUid", relation.getOrigUid(), "destUiD", relation.getDestUid()));
+        // Create the relationship
+        return tx.run(statementTemplate.toString(), parameters("origUid", relation.getOrigUid(), "destUiD", relation.getDestUid()));
     }
 
     private String cleanValue(String value) {

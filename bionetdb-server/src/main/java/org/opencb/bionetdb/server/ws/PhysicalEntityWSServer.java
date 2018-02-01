@@ -5,7 +5,6 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +37,7 @@ public class PhysicalEntityWSServer extends GenericRestWSServer {
              NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration);
 //            Query query = new Query("id", physicalEntity);
 //            query.put("nodeLabel", queryCommandOptions.nodeType);
-            QueryResult queryResult = networkDBAdaptor.clusteringCoefficient(new Query("id", physicalEntity));
+            QueryResult queryResult = null; //networkDBAdaptor.clusteringCoefficient(new Query("id", physicalEntity));
             networkDBAdaptor.close();
             return createOkResponse(queryResult);
         } catch (Exception e) {
