@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.network;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;
@@ -64,7 +65,8 @@ public class Node {
         CATALYSIS           ("CATALYSIS"),
         REACTION            ("REACTION"),
         ASSEMBLY            ("ASSEMBLY"),
-        TRANSPORT           ("TRANSPORT");
+        TRANSPORT           ("TRANSPORT"),
+        INTERACTION         ("INTERACTION");
 
         private final String type;
         private final String parentType;
@@ -110,6 +112,9 @@ public class Node {
         this.type = type;
 
         tags = new ArrayList<>(1);
+        if (StringUtils.isNotEmpty(type.name())) {
+            tags.add(type.name());
+        }
 
         this.source = source;
 
@@ -148,7 +153,6 @@ public class Node {
 
     public Node setId(String id) {
         this.id = id;
-        addAttribute("id", id);
         return this;
     }
 
@@ -158,7 +162,6 @@ public class Node {
 
     public Node setName(String name) {
         this.name = name;
-        addAttribute("name", name);
         return this;
     }
 

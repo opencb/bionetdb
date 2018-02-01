@@ -1,20 +1,11 @@
 package org.opencb.bionetdb.core.api;
 
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.Expression;
 import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.core.models.Xref;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 
-import java.util.List;
-
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER;
-import static org.opencb.commons.datastore.core.QueryParam.Type.STRING;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * Created by imedina on 05/08/15.
@@ -58,31 +49,30 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     void insert(Network network, QueryOptions queryOptions) throws BioNetDBException;
 
-    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
-
-    void addVariants(List<Variant> variants) throws BioNetDBException;
-
-    /**
-     *
-     * @param tissue Tissue of the current expression experiment
-     * @param timeSeries Timeseries of the current expression experiment
-     * @param myExpression List of expression data to be add in the database
-     * @param options Boolean to know if nodes not found in the database have to be created and insert their expression or not
-     */
-    void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options);
-
-    QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
-
-    QueryResult getNodes(Query queryN, Query queryM, QueryOptions queryOptions) throws BioNetDBException;
-
-    QueryResult getNetwork(Query query, QueryOptions queryOptions) throws BioNetDBException;
-
-    QueryResult getSummaryStats(Query query, QueryOptions queryOptions);
-
-    QueryResult betweenness(Query query);
-
-    QueryResult clusteringCoefficient(Query query);
-
-    QueryResult getAnnotations(Query query, String annotateField);
-
+//    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
+//
+//    void addVariants(List<Variant> variants) throws BioNetDBException;
+//
+//    /**
+//     *
+//     * @param tissue Tissue of the current expression experiment
+//     * @param timeSeries Timeseries of the current expression experiment
+//     * @param myExpression List of expression data to be add in the database
+//     * @param options Boolean to know if nodes not found in the database have to be created and insert their expression or not
+//     */
+//    void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options);
+//
+//    QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
+//
+//    QueryResult getNodes(Query queryN, Query queryM, QueryOptions queryOptions) throws BioNetDBException;
+//
+//    QueryResult getNetwork(Query query, QueryOptions queryOptions) throws BioNetDBException;
+//
+//    QueryResult getSummaryStats(Query query, QueryOptions queryOptions);
+//
+//    QueryResult betweenness(Query query);
+//
+//    QueryResult clusteringCoefficient(Query query);
+//
+//    QueryResult getAnnotations(Query query, String annotateField);
 }

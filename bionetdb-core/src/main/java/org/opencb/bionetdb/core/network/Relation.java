@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.network;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.ArrayList;
@@ -35,6 +36,9 @@ public class Relation {
 
         this.type = type;
         this.tags = new ArrayList<>(1);
+        if (StringUtils.isNotEmpty(type.name())) {
+            tags.add(type.name());
+        }
 
         this.source = source;
 

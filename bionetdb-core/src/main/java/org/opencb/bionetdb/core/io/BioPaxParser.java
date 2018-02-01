@@ -300,19 +300,20 @@ public class BioPaxParser {
 
         // Complex properties
 
-        // Components
-        Set<PhysicalEntity> components = complexBP.getComponent();
-        for (PhysicalEntity component: components) {
-            String id = component.getRDFId().split("#")[1];
-            if (!rdfToUidMap.containsKey(id)) {
-                System.out.println("Component ID " + id + " does not exist!!");
-            } else {
-                int origUid = rdfToUidMap.get(id);
-                Relation relation = new Relation(uidCounter++, null, origUid, complex.getUid(),
-                        Relation.Type.COMPONENT_OF_COMPLEX);
-                network.addRelationship(relation);
-            }
-        }
+        // TODO: check if it is done in setPhysicalEntityCommonProperties when managing PhysicalEntity.getComponentOf()
+//        // Components
+//        Set<PhysicalEntity> components = complexBP.getComponent();
+//        for (PhysicalEntity component: components) {
+//            String id = component.getRDFId().split("#")[1];
+//            if (!rdfToUidMap.containsKey(id)) {
+//                System.out.println("Component ID " + id + " does not exist!!");
+//            } else {
+//                int origUid = rdfToUidMap.get(id);
+//                Relation relation = new Relation(uidCounter++, null, origUid, complex.getUid(),
+//                        Relation.Type.COMPONENT_OF_COMPLEX);
+//                network.addRelationship(relation);
+//            }
+//        }
 
         // Stoichiometry
         List<Map<String, Object>> stoichiometry = new ArrayList<>();
@@ -517,16 +518,16 @@ public class BioPaxParser {
 
         // = NONSPECIFIC PROPERTIES =
         // comment
-        physicalEntity.getAttributes().put(REACTOME_FEAT + "comment",
-                physicalEntityBP.getComment());
-
-        // availability
-        physicalEntity.getAttributes().put(REACTOME_FEAT + "availability",
-                physicalEntityBP.getAvailability());
-
-        // annotations
-        physicalEntity.getAttributes().put(REACTOME_FEAT + "annotations",
-                physicalEntityBP.getAnnotations());
+//        physicalEntity.getAttributes().put(REACTOME_FEAT + "comment",
+//                physicalEntityBP.getComment());
+//
+//        // availability
+//        physicalEntity.getAttributes().put(REACTOME_FEAT + "availability",
+//                physicalEntityBP.getAvailability());
+//
+//        // annotations
+//        physicalEntity.getAttributes().put(REACTOME_FEAT + "annotations",
+//                physicalEntityBP.getAnnotations());
 
 //        // features
 //        List<Map<String, Object>> features = new ArrayList<>();
@@ -609,6 +610,7 @@ public class BioPaxParser {
                         reaction.setType(Node.Type.TRANSPORT);
                         break;
                     default:
+                        reaction.setType(Node.Type.INTERACTION);
                         break;
                 }
 
@@ -685,6 +687,7 @@ public class BioPaxParser {
 
                 break;
             default:
+                reaction.setType(Node.Type.INTERACTION);
                 break;
         }
 
@@ -866,18 +869,18 @@ public class BioPaxParser {
 //            }
 //        }
 
-        // = NONSPECIFIC PROPERTIES =
-        // availability
-        interaction.getAttributes().put(REACTOME_FEAT + "availability",
-                interactionBP.getAvailability());
-
-        // annotations
-        interaction.getAttributes().put(REACTOME_FEAT + "annotations",
-                interactionBP.getAnnotations());
-
-        // interactionType
-        interaction.getAttributes().put(REACTOME_FEAT + "interactionType",
-                interactionBP.getInteractionType());
+//        // = NONSPECIFIC PROPERTIES =
+//        // availability
+//        interaction.getAttributes().put(REACTOME_FEAT + "availability",
+//                interactionBP.getAvailability());
+//
+//        // annotations
+//        interaction.getAttributes().put(REACTOME_FEAT + "annotations",
+//                interactionBP.getAnnotations());
+//
+//        // interactionType
+//        interaction.getAttributes().put(REACTOME_FEAT + "interactionType",
+//                interactionBP.getInteractionType());
 
         return interaction;
     }

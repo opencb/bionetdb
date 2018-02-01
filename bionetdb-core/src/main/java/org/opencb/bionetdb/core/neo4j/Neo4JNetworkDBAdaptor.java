@@ -1,22 +1,22 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.opencb.biodata.models.variant.Variant;
+import org.apache.commons.lang3.StringUtils;
+import org.neo4j.driver.v1.*;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.Expression;
-import org.opencb.bionetdb.core.models.Xref;
+import org.opencb.bionetdb.core.models.PhysicalEntity;
 import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import static org.neo4j.driver.v1.Values.parameters;
 
 /**
  * Created by imedina on 05/08/15.
@@ -27,118 +27,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private BioNetDBConfiguration configuration;
     private CellBaseClient cellBaseClient;
-
-    @Override
-    public void insert(Network network, QueryOptions queryOptions) throws BioNetDBException {
-
-    }
-
-    @Override
-    public void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException {
-
-    }
-
-    @Override
-    public void addVariants(List<Variant> variants) throws BioNetDBException {
-
-    }
-
-    @Override
-    public void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options) {
-
-    }
-
-    @Override
-    public QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult getNodes(Query queryN, Query queryM, QueryOptions queryOptions) throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult getNetwork(Query query, QueryOptions queryOptions) throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) {
-        return null;
-    }
-
-    @Override
-    public QueryResult betweenness(Query query) {
-        return null;
-    }
-
-    @Override
-    public QueryResult clusteringCoefficient(Query query) {
-        return null;
-    }
-
-    @Override
-    public QueryResult getAnnotations(Query query, String annotateField) {
-        return null;
-    }
-
-    @Override
-    public void close() throws Exception {
-
-    }
-
-    private enum NodeTypes {
-        PHYSICAL_ENTITY,
-        INTERACTION,
-        STUDY,
-        FILE,
-        SAMPLE,
-        GENOTYPE,
-        XREF,
-        CELLULAR_LOCATION,
-        ONTOLOGY,
-        POPULATION_FREQUENCY,
-        SEQUENCE_ONTOLOGY,
-        CONSEQUENCE_TYPE,
-        BIOTYPE;
-    }
-
-    private enum RelTypes {
-        REACTANT,
-        PRODUCT,
-        STUDY,
-        FILE,
-        SAMPLE,
-        GENOTYPE,
-        XREF,
-        CONTROLLED,
-        CONTROLLER,
-        TISSUE,
-        TIMESERIES,
-        ONTOLOGY,
-        COMPONENT_OF_COMPLEX,
-        CELLULAR_LOCATION,
-        CELLOC_ONTOLOGY,
-        POPULATION_FREQUENCY,
-        CONSERVATION,
-        FUNCTIONAL_SCORE,
-        ANNOTATION,
-        TRAIT_ASSOCIATION,
-        SUBST_SCORE,
-        SEQUENCE_ONTOLOGY,
-        CONSEQUENCE_TYPE,
-        BIOTYPE,
-        PROTEIN,
-        PROTEIN_FEATURE,
-        TRANSCRIPT,
-        SO,
-        GENE,
-        IN_GENE,
-        DISEASE,
-        DRUG,
-        EXPRESSION;
-    }
 
     public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
         this(database, configuration, false);
@@ -166,16 +54,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-    //
-//    //    private void registerShutdownHook(final Driver driver, final Session session) {
-////        Runtime.getRuntime().addShutdownHook(new Thread() {
-////            @Override
-////            public void run() {
-////                session.close();
-////                driver.close();
-////            }
-////        });
-////    }
     private void registerShutdownHook(final Driver driver) {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
@@ -195,52 +73,141 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return databaseConfiguration;
     }
 
-    // TODO: update this code according to the refactoring Network code
     private void createIndexes() {
+        Session session = this.driver.session();
+        if (session != null) {
+            try (Transaction tx = session.beginTransaction()) {
+                tx.run("CREATE INDEX ON :" + Node.Type.PHYSICAL_ENTITY + "(uid)");
+                //             tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(name)");
+
+                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(uid)");
+
+                tx.run("CREATE INDEX ON :" + Node.Type.COMPLEX + "(uid)");
+
+                tx.run("CREATE INDEX ON :" + Node.Type.SMALL_MOLECULE + "(uid)");
+
+                tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(uid)");
+
+                tx.run("CREATE INDEX ON :" + Node.Type.CATALYSIS + "(uid)");
+
+                tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(uid)");
+                //               tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(name)");
+
+                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
+//                tx.run("CREATE INDEX ON :" + NodeTypes.XREF + "(source)");
+//
+                tx.run("CREATE INDEX ON :" + Node.Type.ONTOLOGY + "(uid)");
+//                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(source)");
+//                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(name)");
+
+//                tx.run("CREATE INDEX ON :Tissue(tissue)");
+//                tx.run("CREATE INDEX ON :TimeSeries(timeseries)");
+
+                tx.run("CREATE INDEX ON :" + PhysicalEntity.Type.UNDEFINED + "(uid)");
+
+                tx.success();
+            }
+            session.close();
+        }
     }
-//    private void createIndexes() {
-//        Session session = this.driver.session();
-//        if (session != null) {
-//            try (Transaction tx = session.beginTransaction()) {
-//                tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(id)");
-//                //             tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(name)");
-//
-//                tx.run("CREATE INDEX ON :" + PhysicalEntity.Type.PROTEIN + "(id)");
-//
-//                tx.run("CREATE INDEX ON :" + NodeTypes.CELLULAR_LOCATION + "(name)");
-//
-//                tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(id)");
-//                //               tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(name)");
-//
-//                tx.run("CREATE INDEX ON :" + NodeTypes.XREF + "(id)");
-////                tx.run("CREATE INDEX ON :" + NodeTypes.XREF + "(source)");
-////
-//                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(id)");
-////                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(source)");
-////                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(name)");
-//
-////                tx.run("CREATE INDEX ON :Tissue(tissue)");
-////                tx.run("CREATE INDEX ON :TimeSeries(timeseries)");
-//
-//                tx.run("CREATE INDEX ON :" + PhysicalEntity.Type.UNDEFINED + "(id)");
-//
-//                tx.success();
-//            }
-//            session.close();
-//        }
-//    }
-//
-//    /**
-//     * Insert an entire network into the Neo4J database.
-//     *
-//     * @param network      Object containing all the nodes and interactions
-//     * @param queryOptions Optional params
-//     */
-//    @Override
-//    public void insert(Network network, QueryOptions queryOptions) throws BioNetDBException {
-//        this.insertNodes(network.getNodes(), queryOptions);
-//        this.insertRelationships(network.getRelations(), queryOptions);
-//    }
+
+
+
+    /**
+     * Insert an entire network into the Neo4J database.
+     *
+     * @param network      Object containing all the nodes and interactions
+     * @param queryOptions Optional params
+     */
+    @Override
+    public void insert(Network network, QueryOptions queryOptions) throws BioNetDBException {
+
+        Session session = this.driver.session();
+
+        // First, insert Neo4J nodes
+        for (Node node: network.getNodes()) {
+            session.writeTransaction(tx -> {
+                addNode(tx, node);
+                return 1;
+            });
+        }
+
+        // Second, insert Neo4J relationships
+        for (Relation relation: network.getRelations()) {
+            session.writeTransaction(tx -> {
+                addRelation(tx, relation);
+                return 1;
+            });
+        }
+
+        session.close();
+    }
+
+    private StatementResult addNode(Transaction tx, Node node) {
+        // Gather properties of the node to create a cypher string with them
+        List<String> props = new ArrayList<>();
+        props.add("uid:" + node.getUid());
+        if (StringUtils.isNotEmpty(node.getId())) {
+            props.add("id:\"" + cleanValue(node.getId()) + "\"");
+        }
+        if (StringUtils.isNotEmpty(node.getName())) {
+            props.add("name:\"" + cleanValue(node.getName()) + "\"");
+        }
+        if (StringUtils.isNotEmpty(node.getSource())) {
+            props.add("source:\"" + node.getSource() + "\"");
+        }
+        for (String key : node.getAttributes().keySet()) {
+            if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
+                props.add("attrs_" + key + ":" + node.getAttributes().getString(key));
+            } else {
+                props.add("attrs_" + key + ":\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
+            }
+        }
+        String propsJoined = "{" + String.join(",", props) + "}";
+
+        // Create the desired node
+        return tx.run("CREATE (n:" + StringUtils.join(node.getTags(), ":") + " " + propsJoined + ") RETURN ID(n) AS ID");
+    }
+
+    private void addRelation(Transaction tx, Relation relation) {
+        List<String> props = new ArrayList<>();
+        props.add("uid:" + relation.getUid());
+        if (StringUtils.isNotEmpty(relation.getName())) {
+            props.add("name:\"" + cleanValue(relation.getName()) + "\"");
+        }
+        if (StringUtils.isNotEmpty(relation.getSource())) {
+            props.add("source:\"" + relation.getSource() + "\"");
+        }
+        for (String key : relation.getAttributes().keySet()) {
+            props.add("attrs_" + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
+        }
+        String propsJoined = "{" + String.join(",", props) + "}";
+
+//        System.out.println("relation: id = " + relation.getUid() + ", name = " + relation.getName() + ", type = "
+//                + relation.getType() + ", tags = " + StringUtils.join(relation.getTags(), ":"));
+
+        StringBuilder statementTemplate = new StringBuilder();
+        statementTemplate.append("MATCH (o) WHERE o.uid = $origUid")
+                .append(" MATCH (d) WHERE d.uid = $destUiD")
+                .append(" MERGE (o)-[:").append(StringUtils.join(relation.getTags(), ":")).append(propsJoined).append("]->(d)");
+
+//        System.out.println("relation: id = " + relation.getUid() + ", name = " + relation.getName() + ", type = "
+//                + relation.getType() + ", tags = " + StringUtils.join(relation.getTags(), ":"));
+//        System.out.println("cypher: " + statementTemplate.toString());
+
+        tx.run(statementTemplate.toString(), parameters("origUid", relation.getOrigUid(), "destUiD", relation.getDestUid()));
+    }
+
+    private String cleanValue(String value) {
+        return value.replace("\"", ",").replace("\\", "|");
+    }
+
+    @Override
+    public void close() throws Exception {
+        driver.close();
+    }
+
+
 //
 //    /**
 //     * Method to annotate Xrefs in the database.

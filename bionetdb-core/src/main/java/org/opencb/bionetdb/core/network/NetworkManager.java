@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NetworkManage {
+public class NetworkManager {
 
     private Network network;
 
@@ -19,7 +19,7 @@ public class NetworkManage {
     private Map<Long, Integer> relationshipsIndex;
     private Map<String, List<Long>> relationshipsUids;
 
-    public NetworkManage(Network network) {
+    public NetworkManager(Network network) {
         this.network = network;
         init();
     }
