@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.models;
 /**
  * Created by dapregi on 24/08/15.
  */
+@Deprecated
 public class Xref {
 
     private String source;

@@ -48,7 +48,7 @@ public class Network {
         nodes.add(node);
     }
 
-    public void addRelationship(Relation relation) {
+    public void addRelation(Relation relation) {
         relations.add(relation);
     }
 

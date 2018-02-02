@@ -66,6 +66,16 @@ public class NetworkManager {
         return nodes;
     }
 
+    public List<Node> getNodes(Node.Type type) {
+        List<Node> nodes = new ArrayList<>();
+        for (Node node: network.getNodes()) {
+            if (node.getType() == type) {
+                nodes.add(node);
+            }
+        }
+        return nodes;
+    }
+
     public void setNode(Node node) throws BioNetDBException {
         if (node != null) {
             if (!nodesIndex.containsKey(node.getUid())) {
@@ -110,12 +120,29 @@ public class NetworkManager {
 
     public Network getNetwork() {
         return network;
-   }
+    }
 
-   public void setNetwork(Network network) {
+    public void setNetwork(Network network) {
         this.network = network;
         init();
-   }
+    }
+
+    public void replaceUid(long oldUid, long newUid) {
+        for (Node node: network.getNodes()) {
+            if (node.getUid() == oldUid) {
+                node.setUid(newUid);
+            }
+        }
+
+        for (Relation relation: network.getRelations()) {
+            if (relation.getOrigUid() == oldUid) {
+                relation.setOrigUid(newUid);
+            }
+            if (relation.getDestUid() == oldUid) {
+                relation.setDestUid(newUid);
+            }
+        }
+    }
 
 //    void load(Path path) throws IOException, BioNetDBException;
 //    void load(Path path, QueryOptions queryOptions) throws IOException, BioNetDBException;

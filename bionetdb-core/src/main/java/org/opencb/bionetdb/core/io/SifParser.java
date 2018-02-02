@@ -53,7 +53,7 @@ public class SifParser {
             // Add to network
             network.addNode(pe1);
             network.addNode(pe2);
-            network.addRelationship(relation);
+            network.addRelation(relation);
 
             line = br.readLine();
         }

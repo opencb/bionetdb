@@ -93,7 +93,7 @@ public class PsiMiTabParser {
 
                 network.addNode(peA);
                 network.addNode(peB);
-                network.addRelationship(interaction);
+                network.addRelation(interaction);
             }
         }
 

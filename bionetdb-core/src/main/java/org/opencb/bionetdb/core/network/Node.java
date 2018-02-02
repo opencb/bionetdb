@@ -66,7 +66,11 @@ public class Node {
         REACTION            ("REACTION"),
         ASSEMBLY            ("ASSEMBLY"),
         TRANSPORT           ("TRANSPORT"),
-        INTERACTION         ("INTERACTION");
+        INTERACTION         ("INTERACTION"),
+
+        SAMPLE("SAMPLE"),
+        VARIANT_CALL("VARIANT_CALL"),
+        VARIANT_CALL_INFO("VARIANT_CALL_INFO");
 
         private final String type;
         private final String parentType;

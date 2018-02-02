@@ -75,7 +75,9 @@ public class Relation {
         CONTROLLER("CONTROLLER"),
         COFACTOR("COFACTOR"),
         PRODUCT("PRODUCT"),
-        REACTANT("REACTANT");
+        REACTANT("REACTANT"),
+        VARIANT_CALL_INFO("VARIANT_CALL_INFO"),
+        VARIANT_CALL("VARIANT_CALL");
 
         private final String type;
 
@@ -112,7 +114,7 @@ public class Relation {
         return uid;
     }
 
-    public Relation setUid(int uid) {
+    public Relation setUid(long uid) {
         this.uid = uid;
         return this;
     }
@@ -148,7 +150,7 @@ public class Relation {
         return destUid;
     }
 
-    public Relation setDestUid(int destUid) {
+    public Relation setDestUid(long destUid) {
         this.destUid = destUid;
         return this;
     }
