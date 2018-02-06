@@ -8,7 +8,6 @@ import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.commons.utils.ListUtils;
-import sun.plugin2.jvm.RemoteJVMLauncher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +31,7 @@ public class VariantParser {
         for (Variant variant: variants) {
             parse(variant);
             System.out.println(vCounter++ + ": Variant : " + variant.getId()
-                    + ", total nodes = " + Node.counter + ", total relations = " + Relation.counter);
+                    + ", total nodes = " + Node.getCounter() + ", total relations = " + Relation.getCounter());
         }
         return network;
     }

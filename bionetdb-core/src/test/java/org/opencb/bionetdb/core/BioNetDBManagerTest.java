@@ -24,6 +24,8 @@ public class BioNetDBManagerTest {
              bioNetDBManager = new BioNetDBManager(database, bioNetDBConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (BioNetDBException e) {
+            e.printStackTrace();
         }
 
 //        ClientConfiguration clientConfiguration = new ClientConfiguration();

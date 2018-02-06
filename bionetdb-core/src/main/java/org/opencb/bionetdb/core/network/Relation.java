@@ -22,7 +22,7 @@ public class Relation {
 
     private ObjectMap attributes;
 
-    public static long counter = 0;
+    private static long counter = 0;
 
     public Relation(long uid, String name, long origUid, long destUid, Type type) {
         this (uid, name, origUid, destUid, type, null);
@@ -114,6 +114,12 @@ public class Relation {
         attributes = new ObjectMap();
     }
 
+    public void addAttribute(String key, Object value) {
+        if (key != null && value != null) {
+            attributes.put(key, value);
+        }
+    }
+
     public long getUid() {
         return uid;
     }
@@ -191,9 +197,7 @@ public class Relation {
         return this;
     }
 
-    public void addAttribute(String key, Object value) {
-        if (key != null && value != null) {
-            attributes.put(key, value);
-        }
+    public static long getCounter() {
+        return counter;
     }
 }

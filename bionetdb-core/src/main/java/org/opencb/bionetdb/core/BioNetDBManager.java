@@ -41,7 +41,7 @@ public class BioNetDBManager {
 
     private Map<String, Long> idToUidMap;
 
-    private final static int VARIANT_BATCH_SIZE = 10000;
+    private static final int VARIANT_BATCH_SIZE = 10000;
 
 
     public BioNetDBManager(String database, BioNetDBConfiguration bioNetDBConfiguration) throws BioNetDBException {
@@ -115,31 +115,6 @@ public class BioNetDBManager {
         vcfFileReader.close();
     }
 
-    private void processVariantContexts(List<VariantContext> variantContexts, VariantContextToVariantConverter converter,
-                                        VariantParser variantParser) throws BioNetDBException {
-        // Convert to variants, parse and merge it into the final network
-        List<Variant> variants = convert(variantContexts, converter);
-        Network network = variantParser.parse(variants);
-
-        // Update network
-        NetworkManager netManager = new NetworkManager(network);
-        List<Node> variantNodes = netManager.getNodes(Node.Type.VARIANT);
-        for (Node node: variantNodes) {
-            System.out.println("node " + node.getType().name() + ": uid=" + node.getUid() + ", id=" + node.getId() + ", name="
-                    + node.getName());
-        }
-
-        List<Node> sampleNodes = netManager.getNodes(Node.Type.SAMPLE);
-        for (Node node: sampleNodes) {
-            System.out.println("node " + node.getType().name() + ": uid=" + node.getUid() + ", id=" + node.getId() + ", name="
-                    + node.getName());
-        }
-
-
-        // Load network to the database
-//        networkDBAdaptor.insert(network, QueryOptions.empty());
-    }
-
 
     public void annotate() {
 
@@ -152,9 +127,6 @@ public class BioNetDBManager {
     public void annotateVariants(Query query, QueryOptions queryOptions) {
 
     }
-
-
-
 
     public QueryResult<Node> getNode(long uid) throws BioNetDBException {
         return null;

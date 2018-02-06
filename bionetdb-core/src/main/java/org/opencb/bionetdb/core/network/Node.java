@@ -20,7 +20,7 @@ public class Node {
 
     private ObjectMap attributes;
 
-    public static long counter = 0;
+    private static long counter = 0;
 
     public enum Type {
         UNDEFINED           ("UNDEFINED"),
@@ -220,5 +220,9 @@ public class Node {
         if (key != null && value != null) {
             attributes.put(key, value);
         }
+    }
+
+    public static long getCounter() {
+        return counter;
     }
 }
