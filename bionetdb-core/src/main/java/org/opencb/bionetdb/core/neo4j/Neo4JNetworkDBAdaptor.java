@@ -11,10 +11,13 @@ import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -152,6 +155,50 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         session.close();
     }
+
+    @Override
+    public QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        Session session = this.driver.session();
+
+        long startTime = System.currentTimeMillis();
+        //TODO: improve
+        String myQuery;
+        if (query.containsKey(NetworkQueryParams.SCRIPT.key())) {
+            myQuery = query.getString(NetworkQueryParams.SCRIPT.key());
+        } else {
+            String nodeName = "n";
+            myQuery = "MATCH " + Neo4JQueryParser.parse(nodeName, query, queryOptions) + " RETURN " + nodeName;
+        }
+        System.out.println("Query: " + myQuery);
+        long stopTime = System.currentTimeMillis();
+        StatementResult run = session.run(myQuery);
+        List<Node> nodes = new ArrayList<>();
+        while (run.hasNext()) {
+            Map<String, Object> map = run.next().asMap();
+            for (String key: map.keySet()) {
+                org.neo4j.driver.v1.types.Node neoNode = (org.neo4j.driver.v1.types.Node) map.get(key);
+                Node node = new Node(0);
+                node.setUid(neoNode.get("uid").asLong());
+                node.setId(neoNode.get("id").asString());
+                node.setName(neoNode.get("name").asString());
+                node.setType(Node.Type.valueOf(neoNode.get("type").asString()));
+                for (String k: neoNode.keys()) {
+                    if (k.startsWith(PREFIX_ATTRIBUTES)) {
+                        node.addAttribute(k, neoNode.get(k).asString());
+                    }
+                }
+                nodes.add(node);
+            }
+        }
+        int time = (int) (stopTime - startTime) / 1000;
+
+        session.close();
+        return new QueryResult("get", time, nodes.size(), nodes.size(), null, null, nodes);
+    }
+
+    //-------------------------------------------------------------------------
+    // P R I V A T E     M E T H O D S
+    //-------------------------------------------------------------------------
 
     private StatementResult addNode(Transaction tx, Node node) {
         // Gather properties of the node to create a cypher string with them

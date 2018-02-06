@@ -22,6 +22,8 @@ public class Relation {
 
     private ObjectMap attributes;
 
+    public static long counter = 0;
+
     public Relation(long uid, String name, long origUid, long destUid, Type type) {
         this (uid, name, origUid, destUid, type, null);
     }
@@ -43,6 +45,8 @@ public class Relation {
         this.source = source;
 
         this.attributes = new ObjectMap();
+
+        counter++;
     }
 
     public enum Type {

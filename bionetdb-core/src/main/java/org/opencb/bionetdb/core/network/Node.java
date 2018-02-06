@@ -20,6 +20,8 @@ public class Node {
 
     private ObjectMap attributes;
 
+    public static long counter = 0;
+
     public enum Type {
         UNDEFINED           ("UNDEFINED"),
 
@@ -102,10 +104,13 @@ public class Node {
     }
 
     public Node(long uid) {
-        tags = new ArrayList<>();
-        attributes = new ObjectMap();
-
-        setUid(uid);
+        this(uid, null, null, null, null);
+//        tags = new ArrayList<>();
+//        attributes = new ObjectMap();
+//
+//        setUid(uid);
+//
+//        counter++;
     }
 
     public Node(long uid, String id, String name, Type type) {
@@ -127,6 +132,8 @@ public class Node {
         setUid(uid);
         setId(id);
         setName(name);
+
+        counter++;
     }
 
     @Override

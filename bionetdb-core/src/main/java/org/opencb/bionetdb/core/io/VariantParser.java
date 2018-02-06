@@ -8,6 +8,7 @@ import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.commons.utils.ListUtils;
+import sun.plugin2.jvm.RemoteJVMLauncher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,16 +20,19 @@ public class VariantParser {
     private Network network;
 
     private ArrayList<String> sampleNames;
-    private Map<String, Long> sampleUidMap;
+    private Map<String, Node> sampleNodeMap;
 
     public VariantParser() {
         network = new Network();
-        sampleUidMap = new HashMap<>();
+        sampleNodeMap = new HashMap<>();
     }
 
     public Network parse(List<Variant> variants) {
+        int vCounter = 1;
         for (Variant variant: variants) {
             parse(variant);
+            System.out.println(vCounter++ + ": Variant : " + variant.getId()
+                    + ", total nodes = " + Node.counter + ", total relations = " + Relation.counter);
         }
         return network;
     }
@@ -66,15 +70,18 @@ public class VariantParser {
 
                     for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
                         // Create the sample node
-                        Node sampleNode;
-                        if (!sampleUidMap.containsKey(sampleNames.get(i))) {
-                            sampleNode = new Node(uid++, sampleNames.get(i), sampleNames.get(i), Node.Type.SAMPLE);
-                            network.addNode(sampleNode);
-
-                            sampleUidMap.put(sampleNode.getId(), sampleNode.getUid());
-                        } else {
-                            sampleNode = new Node(sampleUidMap.get(sampleNames.get(i)));
+                        if (!sampleNodeMap.containsKey(sampleNames.get(i))) {
+                            System.out.println("Internal error: sample name " + sampleNames.get(i) + " does not exist!!!");
                         }
+                        Node sampleNode = sampleNodeMap.get(sampleNames.get(i));
+//                        if (!sampleUidMap.containsKey(sampleNames.get(i))) {
+//                            sampleNode = new Node(uid++, sampleNames.get(i), sampleNames.get(i), Node.Type.SAMPLE);
+//                            network.addNode(sampleNode);
+//
+//                            sampleUidMap.put(sampleNode.getId(), sampleNode.getUid());
+//                        } else {
+//                            sampleNode = new Node(sampleUidMap.get(sampleNames.get(i)));
+//                        }
 
                         // And the call node for that sample adding the format attributes
                         Node callNode = new Node(uid++, studyEntry.getSampleData(i).get(0), studyEntry.getSampleData(i).get(0),
@@ -398,5 +405,11 @@ public class VariantParser {
 
     public void setSampleNames(ArrayList<String> sampleNames) {
         this.sampleNames = sampleNames;
+        for (String sampleName: sampleNames) {
+            Node sampleNode = new Node(uid++, sampleName, sampleName, Node.Type.SAMPLE);
+            network.addNode(sampleNode);
+
+            sampleNodeMap.put(sampleName, sampleNode);
+        }
     }
 }

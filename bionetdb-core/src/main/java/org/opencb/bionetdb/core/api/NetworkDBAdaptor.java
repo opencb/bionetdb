@@ -2,8 +2,11 @@ package org.opencb.bionetdb.core.api;
 
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.Node;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -14,6 +17,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     enum NetworkQueryParams implements QueryParam {
         NODE_TYPE("node.type", TEXT_ARRAY, ""),   // This is PHYSICAL_ENTITY, INTERACTION, XREF, ...
+        NODE_UID("node.uid", STRING, ""),
+        NODE_ID("node.id", STRING, ""),
         PE_ID ("pe.id", TEXT_ARRAY, ""),
         PE_DESCRIPTION ("pe.description", TEXT_ARRAY, ""),
         REL_TYPE("rel.type", TEXT_ARRAY, ""),
@@ -46,8 +51,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
         }
     }
 
-
     void insert(Network network, QueryOptions queryOptions) throws BioNetDBException;
+
+    QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
 
 //    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
 //

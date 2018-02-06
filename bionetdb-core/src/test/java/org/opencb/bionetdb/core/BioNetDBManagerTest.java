@@ -34,7 +34,7 @@ public class BioNetDBManagerTest {
 
     @Test
     public void insertVCF() throws BioNetDBException {
-        String vcfFilename = "/home/jtarraga/data150/vcf/2.vcf";
+        String vcfFilename = "/home/jtarraga/data150/vcf/1k.vcf";
         bioNetDBManager.loadVcf(Paths.get(vcfFilename));
     }
 
