@@ -16,6 +16,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface NetworkDBAdaptor extends AutoCloseable {
 
     enum NetworkQueryParams implements QueryParam {
+        ID("node.id", TEXT_ARRAY, ""),   // This is PHYSICAL_ENTITY, INTERACTION, XREF, ...
         NODE_TYPE("node.type", TEXT_ARRAY, ""),   // This is PHYSICAL_ENTITY, INTERACTION, XREF, ...
         NODE_UID("node.uid", STRING, ""),
         NODE_ID("node.id", STRING, ""),

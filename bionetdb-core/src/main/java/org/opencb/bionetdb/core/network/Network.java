@@ -20,15 +20,10 @@ public class Network {
     private Map<String, Object> attributes;
 
     public Network() {
-        this.id = "";
-        this.name = "";
-        this.description = "";
-
-        // init rest of attributes
-        init();
+        this("", "", "");
     }
 
-    public Network(long uid, String id, String name, String description) {
+    public Network(String id, String name, String description) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -40,7 +35,6 @@ public class Network {
     private void init() {
         nodes = new ArrayList<>();
         relations = new ArrayList<>();
-
         attributes = new HashMap<>();
     }
 
@@ -52,51 +46,71 @@ public class Network {
         relations.add(relation);
     }
 
-    public List<Node> getNodes() {
-        return nodes;
-    }
 
-    public void setNodes(List<Node> nodes) {
-        this.nodes = nodes;
-    }
-
-    public List<Relation> getRelations() {
-        return relations;
-    }
-
-    public void setRelations(List<Relation> relations) {
-        this.relations = relations;
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Network{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", nodes=").append(nodes);
+        sb.append(", relations=").append(relations);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public Network setId(String id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Network setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Network setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public List<Node> getNodes() {
+        return nodes;
+    }
+
+    public Network setNodes(List<Node> nodes) {
+        this.nodes = nodes;
+        return this;
+    }
+
+    public List<Relation> getRelations() {
+        return relations;
+    }
+
+    public Network setRelations(List<Relation> relations) {
+        this.relations = relations;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Network setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
 }
