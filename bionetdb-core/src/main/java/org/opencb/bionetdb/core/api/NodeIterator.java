@@ -1,0 +1,18 @@
+package org.opencb.bionetdb.core.api;
+
+import org.opencb.bionetdb.core.network.Node;
+
+import java.util.Iterator;
+
+public interface NodeIterator extends Iterator<Node> {
+
+//    @Override
+//    public boolean hasNext() {
+//        return hasNext();
+//    }
+//
+//    @Override
+//    public T next() {
+//        return next();
+//    }
+}

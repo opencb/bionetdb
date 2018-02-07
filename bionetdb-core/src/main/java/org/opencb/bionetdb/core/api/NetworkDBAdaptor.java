@@ -16,10 +16,16 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface NetworkDBAdaptor extends AutoCloseable {
 
     enum NetworkQueryParams implements QueryParam {
-        ID("node.id", TEXT_ARRAY, ""),   // This is PHYSICAL_ENTITY, INTERACTION, XREF, ...
         NODE_TYPE("node.type", TEXT_ARRAY, ""),   // This is PHYSICAL_ENTITY, INTERACTION, XREF, ...
         NODE_UID("node.uid", STRING, ""),
-        NODE_ID("node.id", STRING, ""),
+        NODE_ID("node.id", TEXT_ARRAY, ""),
+
+        SRC_NODE("src-node", TEXT_ARRAY, ""),
+        DEST_NODE("dest-node", TEXT_ARRAY, ""),
+        INTERM_NODE("interm-node", TEXT_ARRAY, ""),
+        MAX_JUMPS("max-jumps", INTEGER, ""),
+        OUTPUT("output", STRING, ""),
+
         PE_ID ("pe.id", TEXT_ARRAY, ""),
         PE_DESCRIPTION ("pe.description", TEXT_ARRAY, ""),
         REL_TYPE("rel.type", TEXT_ARRAY, ""),
@@ -55,6 +61,12 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     void insert(Network network, QueryOptions queryOptions) throws BioNetDBException;
 
     QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
+
+    NodeIterator nodeIterator(Query query, QueryOptions queryOptions);
+    NodeIterator nodeIterator(String cypher);
+
+    RowIterator rowIterator(Query query, QueryOptions queryOptions);
+    RowIterator rowIterator(String cypher);
 
 //    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
 //

@@ -148,7 +148,7 @@ public class NetworkManager {
 //    void load(Path path, QueryOptions queryOptions) throws IOException, BioNetDBException;
 //
 //    QueryResult<Node> query(Query query, QueryOptions queryOptions) throws BioNetDBException;
-//    NetworkIterator iterator(Query query, QueryOptions queryOptions);
+//    NodeIterator iterator(Query query, QueryOptions queryOptions);
 //
 //    void annotate();
 //    void annotateGenes(Query query, QueryOptions queryOptions);

@@ -3,6 +3,8 @@ package org.opencb.bionetdb.core.neo4j;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.*;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.api.NodeIterator;
+import org.opencb.bionetdb.core.api.RowIterator;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -31,7 +33,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private BioNetDBConfiguration configuration;
     private CellBaseClient cellBaseClient;
 
-    private final String PREFIX_ATTRIBUTES = "attr_";
+    public static final String PREFIX_ATTRIBUTES = "attr_";
 
     public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
         this(database, configuration, false);
@@ -194,6 +196,44 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         session.close();
         return new QueryResult("get", time, nodes.size(), nodes.size(), null, null, nodes);
+    }
+
+    //-------------------------------------------------------------------------
+
+    public NodeIterator nodeIterator(Query query, QueryOptions queryOptions) {
+        Session session = this.driver.session();
+
+        String myQuery = "MATCH (n) return n"; // Neo4JQueryParser.parse(query, queryOptions)
+        System.out.println("Cypher query: " + myQuery);
+
+        return new Neo4JNodeIterator(session.run(myQuery));
+    }
+
+    public NodeIterator nodeIterator(String cypher) {
+        Session session = this.driver.session();
+
+        System.out.println("Cypher query: " + cypher);
+
+        return new Neo4JNodeIterator(session.run(cypher));
+    }
+
+    //-------------------------------------------------------------------------
+
+    public RowIterator rowIterator(Query query, QueryOptions queryOptions) {
+        Session session = this.driver.session();
+
+        String myQuery = "MATCH (n) return n"; // Neo4JQueryParser.parse(query, queryOptions)
+        System.out.println("Cypher query: " + myQuery);
+
+        return new Neo4JRowIterator(session.run(myQuery));
+    }
+
+    public RowIterator rowIterator(String cypher) {
+        Session session = this.driver.session();
+
+        System.out.println("Cypher query: " + cypher);
+
+        return new Neo4JRowIterator(session.run(cypher));
     }
 
     //-------------------------------------------------------------------------

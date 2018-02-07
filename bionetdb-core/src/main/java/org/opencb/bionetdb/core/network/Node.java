@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.network;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
@@ -105,12 +106,6 @@ public class Node {
 
     public Node(long uid) {
         this(uid, null, null, null, null);
-//        tags = new ArrayList<>();
-//        attributes = new ObjectMap();
-//
-//        setUid(uid);
-//
-//        counter++;
     }
 
     public Node(long uid, String id, String name, Type type) {
@@ -121,7 +116,7 @@ public class Node {
         this.type = type;
 
         tags = new ArrayList<>(1);
-        if (StringUtils.isNotEmpty(type.name())) {
+        if (type != null && StringUtils.isNotEmpty(type.name())) {
             tags.add(type.name());
         }
 
@@ -134,6 +129,23 @@ public class Node {
         setName(name);
 
         counter++;
+    }
+
+    public String toStringEx() {
+        final StringBuilder sb = new StringBuilder("Node{");
+        sb.append("uid='").append(uid).append('\'');
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", tags=").append(tags);
+        sb.append(", attributes={");
+        if (MapUtils.isNotEmpty(attributes)) {
+            for (String key: attributes.keySet()) {
+                sb.append(key).append("=").append(attributes.get(key)).append(',');
+            }
+        }
+        sb.append("}}");
+        return sb.toString();
     }
 
     @Override

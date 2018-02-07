@@ -1,8 +1,31 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.config.DatabaseConfiguration;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.io.BioPaxParser;
+import org.opencb.bionetdb.core.io.VariantParser;
+import org.opencb.bionetdb.core.network.Network;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Collections;
+
 public class DemoTest {
     // TODO: update this code according to the refactoring Network code
-/*
+
     //    String database = "demo";
     String database = "scerevisiae";
     NetworkDBAdaptor networkDBAdaptor = null;
@@ -12,7 +35,7 @@ public class DemoTest {
 //    String reactomeBiopaxFilename = "~/data150/neo4j/pathway.biopax";
     String reactomeBiopaxFilename = "~/data150/neo4j/pathway1.biopax3";
 
-    String variantJsonFilename = "~/data150/neo4j/test2.json";
+    String variantJsonFilename = "/home/jtarraga/data150/neo4j/test2.json";
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -58,10 +81,10 @@ public class DemoTest {
 
         // Complete network, i.e.: search genes and check if all its transcripts are there, otherwise
         // add the remaining transcripts to the network
-        completeNetwork();
+        //completeNetwork();
 
         // Annotate network, it implies to annotate variants, genes and proteins
-        annotateNetwork();
+        //annotateNetwork();
 
         // Load clinical layer
         // TODO
@@ -90,9 +113,11 @@ public class DemoTest {
         // ...parse variants from json
         ObjectMapper mapper = new ObjectMapper();
         Variant variant = mapper.readValue(new File(variantJsonFilename), Variant.class);
-        Network network = parseVariant(variant);
-        //System.out.println(variant.toJson());
 
+        VariantParser variantParser = new VariantParser();
+        Network network = variantParser.parse(variant);
+        //System.out.println(variant.toJson());
+/*
         // ...link experimental network to physical network
         if (network.getAttributes().containsKey("_uniprot")) {
             Map<String, List<Node>> uniprotMap = (Map<String, List<Node>>) network.getAttributes().get("_uniprot");
@@ -110,12 +135,12 @@ public class DemoTest {
                         Relation protVARel = new Relation(protein.getId() + protVANode.getId(),
                                 protein.getId(), protein.getType().toString(), protVANode.getId(),
                                 protVANode.getType().toString(), Relation.Type.ANNOTATION);
-                        network.setRelationship(protVARel);
+                        network.addRelation(protVARel);
                     }
                 }
             }
         }
-
+*/
         // ...and insert into the network
         System.out.println("Inserting data...");
         long startTime = System.currentTimeMillis();
@@ -123,7 +148,7 @@ public class DemoTest {
         long stopTime = System.currentTimeMillis();
         System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
     }
-
+/*
     @Test
     public void completeNetwork() throws BioNetDBException, IOException {
         // Get transcripts for each gene in the network. Transcript are gotten by Cellbase.
