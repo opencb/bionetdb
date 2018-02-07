@@ -111,14 +111,14 @@ public class Neo4JQueryParser {
         StringBuilder retStatement = new StringBuilder();
         retStatement.append(" RETURN ");
 
-        String split[];
+        String[] split;
         if ("network".equals(output)) {
             // Output as network
             retStatement.append("path");
         } else if (output.contains(".")) {
             // Output as table
             List<String> ret = new ArrayList<>();
-            String nodes[] = output.split(",");
+            String[] nodes = output.split(",");
             for (int i = 0; i < nodes.length; i++) {
                 if (nodes[i].contains(".")) {
                     split = nodes[i].split("\\.");
@@ -131,7 +131,7 @@ public class Neo4JQueryParser {
         } else {
             // Output as node
             List<String> ret = new ArrayList<>();
-            String nodes[] = output.split(",");
+            String[] nodes = output.split(",");
             for (int i = 0; i < nodes.length; i++) {
                 if (StringUtils.isNotEmpty(aliasMap.get(nodes[i]))) {
                     ret.add(aliasMap.get(nodes[i]));
