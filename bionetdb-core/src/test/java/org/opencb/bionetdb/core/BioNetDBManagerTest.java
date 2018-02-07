@@ -2,10 +2,15 @@ package org.opencb.bionetdb.core;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.neo4j.Neo4JQueryParser;
+import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
@@ -50,11 +55,37 @@ public class BioNetDBManagerTest {
     }
 
     @Test
+    public void nodeQuery() throws Exception {
+        // match path=(g:GENE)-[r]-(t:TRANSCRIPT) where g.name="APOE" return path
+        Query query = new Query();
+        query.put(NetworkDBAdaptor.NetworkQueryParams.SRC_NODE.key(), "GENE:name=\"APOE\"");
+//        query.put(NetworkDBAdaptor.NetworkQueryParams.DEST_NODE.key(), "TRANSCRIPT");
+        query.put(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key(), "GENE,TRANSCRIPT");
+        String cypher = Neo4JQueryParser.parse(query, QueryOptions.empty());
+        System.out.println(cypher);
+        QueryResult<Node> queryResult = bioNetDBManager.nodeQuery(cypher.toString());
+        printNodes(queryResult.getResult());
+    }
+
+    @Test
     public void nodeQueryByCypher() throws Exception {
         StringBuilder cypher = new StringBuilder();
         cypher.append("match (g:GENE)-[r]-(t:TRANSCRIPT) where g.name=\"APOE\" return g,t");
         QueryResult<Node> queryResult = bioNetDBManager.nodeQuery(cypher.toString());
         printNodes(queryResult.getResult());
+    }
+
+    @Test
+    public void tableQuery() throws Exception {
+        // match path=(g:GENE)-[r]-(t:TRANSCRIPT) where g.name="APOE" return path
+        Query query = new Query();
+        query.put(NetworkDBAdaptor.NetworkQueryParams.SRC_NODE.key(), "GENE:name=\"APOE\"");
+//        query.put(NetworkDBAdaptor.NetworkQueryParams.DEST_NODE.key(), "TRANSCRIPT");
+        query.put(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key(), "GENE.name,GENE.id,TRANSCRIPT.id");
+        String cypher = Neo4JQueryParser.parse(query, QueryOptions.empty());
+        System.out.println(cypher);
+        QueryResult<List<Object>> queryResult = bioNetDBManager.table(cypher);
+        printLists(queryResult.getResult());
     }
 
     @Test
@@ -64,6 +95,31 @@ public class BioNetDBManagerTest {
         QueryResult<List<Object>> queryResult = bioNetDBManager.table(cypher.toString());
         printLists(queryResult.getResult());
     }
+
+    @Test
+    public void networkQuery() throws Exception {
+        // match path=(g:GENE)-[r]-(t:TRANSCRIPT) where g.name="APOE" return path
+        Query query = new Query();
+        query.put(NetworkDBAdaptor.NetworkQueryParams.SRC_NODE.key(), "GENE:name=\"APOE\"");
+        query.put(NetworkDBAdaptor.NetworkQueryParams.DEST_NODE.key(), "TRANSCRIPT");
+        query.put(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key(), "network");
+        String cypher = Neo4JQueryParser.parse(query, QueryOptions.empty());
+        System.out.println(cypher);
+        QueryResult<Network> queryResult = bioNetDBManager.networkQuery(cypher);
+        System.out.println(queryResult.getResult().get(0).toString());
+    }
+
+    @Test
+    public void networkByCypher() throws Exception {
+        StringBuilder cypher = new StringBuilder();
+        cypher.append("match path=(g:GENE)-[r]-(t:TRANSCRIPT) where g.name=\"APOE\" return path");
+        QueryResult<Network> queryResult = bioNetDBManager.networkQuery(cypher.toString());
+        System.out.println(queryResult.getResult().get(0).toString());
+    }
+
+    //-------------------------------------------------------------------------
+    //
+    //-------------------------------------------------------------------------
 
     private void printNodes(List<Node> nodes) {
         for (Node node: nodes) {

@@ -12,12 +12,14 @@ import org.opencb.bionetdb.core.models.PhysicalEntity;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.bionetdb.core.utils.Neo4JConverter;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -158,6 +160,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         session.close();
     }
 
+    //-------------------------------------------------------------------------
+    // N O D E     Q U E R I E S
+    //-------------------------------------------------------------------------
+
     @Override
     public QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException {
         Session session = this.driver.session();
@@ -198,8 +204,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return new QueryResult("get", time, nodes.size(), nodes.size(), null, null, nodes);
     }
 
-    //-------------------------------------------------------------------------
-
     public NodeIterator nodeIterator(Query query, QueryOptions queryOptions) {
         Session session = this.driver.session();
 
@@ -218,6 +222,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     //-------------------------------------------------------------------------
+    // T A B L E     Q U E R I E S
+    //-------------------------------------------------------------------------
 
     public RowIterator rowIterator(Query query, QueryOptions queryOptions) {
         Session session = this.driver.session();
@@ -234,6 +240,32 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         System.out.println("Cypher query: " + cypher);
 
         return new Neo4JRowIterator(session.run(cypher));
+    }
+
+    //-------------------------------------------------------------------------
+    // N E T W O R K     Q U E R I E S
+    //-------------------------------------------------------------------------
+
+    public QueryResult<Network> networkQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parse(query, queryOptions);
+        return networkQuery(cypher);
+    }
+
+    public QueryResult<Network> networkQuery(String cypher) throws BioNetDBException {
+        // Open session
+        Session session = this.driver.session();
+
+        long startTime = System.currentTimeMillis();
+        StatementResult run = session.run(cypher);
+        Network network = Neo4JConverter.toNetwork(run);
+        long stopTime = System.currentTimeMillis();
+
+        // Close session
+        session.close();
+
+        // Build the query result
+        int time = (int) (stopTime - startTime) / 1000;
+        return new QueryResult("networkQuery", time, 1, 1, null, null, Arrays.asList(network));
     }
 
     //-------------------------------------------------------------------------

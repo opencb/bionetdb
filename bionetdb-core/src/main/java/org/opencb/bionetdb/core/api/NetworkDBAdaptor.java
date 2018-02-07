@@ -62,6 +62,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
 
+    QueryResult<Network> networkQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
+
     NodeIterator nodeIterator(Query query, QueryOptions queryOptions);
     NodeIterator nodeIterator(String cypher);
 

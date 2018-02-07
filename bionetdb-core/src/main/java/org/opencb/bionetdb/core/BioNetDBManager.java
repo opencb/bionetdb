@@ -25,10 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by joaquin on 1/29/18.
@@ -222,6 +219,14 @@ public class BioNetDBManager {
     // N E T W O R K S
     //-------------------------------------------------------------------------
 
+    public QueryResult<Network> networkQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parse(query, queryOptions);
+        return networkQuery(cypher);
+    }
+
+    public QueryResult<Network> networkQuery(String cypher) throws BioNetDBException {
+        return networkDBAdaptor.networkQuery(cypher);
+    }
 
     //-------------------------------------------------------------------------
     // A N A L Y S I S

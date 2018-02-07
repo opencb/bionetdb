@@ -5,9 +5,12 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.ListUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 03/09/15.
@@ -17,7 +20,127 @@ public class Neo4JQueryParser {
     //public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
     public static String parse(Query query, QueryOptions options) throws BioNetDBException {
-        return parse("n", query, options);
+
+        // match path=(g:GENE)-[r]-(t:TRANSCRIPT) where g.name="APOE" return path
+        int counter = 1;
+        Map<String, Integer> nodeAlias = new HashMap<>();
+
+        StringBuilder match = new StringBuilder();
+        String srcNode = null, destNode = null;
+
+        // Max jumps
+        int maxJumps = 2;
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.MAX_JUMPS.key()))) {
+            maxJumps = query.getInt(NetworkDBAdaptor.NetworkQueryParams.MAX_JUMPS.key());
+        }
+
+        // Output
+        String output = "network";
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key()))) {
+            output = query.getString(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key());
+        }
+
+        // Source node
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.SRC_NODE.key()))) {
+            srcNode = query.getString(NetworkDBAdaptor.NetworkQueryParams.SRC_NODE.key());
+        }
+
+        // Destination node
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.DEST_NODE.key()))) {
+            destNode = query.getString(NetworkDBAdaptor.NetworkQueryParams.DEST_NODE.key());
+        }
+
+        if (StringUtils.isEmpty(srcNode) || StringUtils.isEmpty(destNode)) {
+            String inputNode = null;
+            if (StringUtils.isNotEmpty(srcNode)) {
+                inputNode = srcNode;
+            }
+            if (StringUtils.isNotEmpty(destNode)) {
+                inputNode = destNode;
+            }
+            if (StringUtils.isNotEmpty(inputNode)) {
+                Map<String, String> aliasMap = new HashMap<>();
+                List<String> where = new ArrayList<>();
+
+                // Source node
+                String[] split = inputNode.split(":");
+                String alias = "n" + (counter++);
+                String inputLabel = alias + ":" + split[0];
+                aliasMap.put(split[0], alias);
+                if (split.length > 1) {
+                    where.add(alias + "." + split[1]);
+                }
+                match.append("MATCH path=(").append(inputLabel).append(")");
+                if (ListUtils.isNotEmpty(where)) {
+                    match.append(" WHERE ").append(StringUtils.join(where, " AND "));
+                }
+                match.append(getReturnStatment(output, aliasMap));
+            }
+        } else {
+            Map<String, String> aliasMap = new HashMap<>();
+            List<String> where = new ArrayList<>();
+
+            // Source node
+            String[] split = srcNode.split(":");
+            String alias = "n" + (counter++);
+            String srcLabel = alias + ":" + split[0];
+            aliasMap.put(split[0], alias);
+            if (split.length > 1) {
+                where.add(alias + "." + split[1]);
+            }
+
+            // Dest node
+            split = destNode.split(":");
+            alias = "n" + (counter++);
+            String destLabel = alias + ":" + split[0];
+            aliasMap.put(split[0], alias);
+            if (split.length > 1) {
+                where.add(alias + "." + split[1]);
+            }
+
+            match.append("MATCH path=(").append(srcLabel).append(")-[*..").append(maxJumps).append("]-(").append(destLabel).append(")");
+            if (ListUtils.isNotEmpty(where)) {
+                match.append(" WHERE ").append(StringUtils.join(where, " AND "));
+            }
+            match.append(getReturnStatment(output, aliasMap));
+        }
+        return match.toString();
+    }
+
+    private static String getReturnStatment(String output, Map<String, String> aliasMap) {
+        StringBuilder retStatement = new StringBuilder();
+        retStatement.append(" RETURN ");
+
+        String split[];
+        if ("network".equals(output)) {
+            // Output as network
+            retStatement.append("path");
+        } else if (output.contains(".")) {
+            // Output as table
+            List<String> ret = new ArrayList<>();
+            String nodes[] = output.split(",");
+            for (int i = 0; i < nodes.length; i++) {
+                if (nodes[i].contains(".")) {
+                    split = nodes[i].split("\\.");
+                    if (StringUtils.isNotEmpty(aliasMap.get(split[0]))) {
+                        ret.add(aliasMap.get(split[0]) + "." + split[1]);
+                    }
+                }
+            }
+            retStatement.append(StringUtils.join(ret, ", "));
+        } else {
+            // Output as node
+            List<String> ret = new ArrayList<>();
+            String nodes[] = output.split(",");
+            for (int i = 0; i < nodes.length; i++) {
+                if (StringUtils.isNotEmpty(aliasMap.get(nodes[i]))) {
+                    ret.add(aliasMap.get(nodes[i]));
+                }
+            }
+            retStatement.append(StringUtils.join(ret, ","));
+        }
+
+        return retStatement.toString();
     }
 
     public static String parse(String nodeName, Query query, QueryOptions options) throws BioNetDBException {
