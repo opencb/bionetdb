@@ -71,7 +71,10 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     RowIterator rowIterator(Query query, QueryOptions queryOptions);
     RowIterator rowIterator(String cypher);
 
-//    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
+    PathIterator pathIterator(Query srcQuery, Query destQuery, QueryOptions queryOptions);
+    PathIterator pathIterator(String cypher);
+
+    //    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
 //
 //    void addVariants(List<Variant> variants) throws BioNetDBException;
 //

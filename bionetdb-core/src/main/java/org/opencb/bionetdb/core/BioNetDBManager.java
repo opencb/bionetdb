@@ -7,6 +7,7 @@ import org.opencb.biodata.tools.variant.VcfFileReader;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
+import org.opencb.bionetdb.core.api.PathIterator;
 import org.opencb.bionetdb.core.api.RowIterator;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -25,7 +26,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by joaquin on 1/29/18.
@@ -146,7 +150,7 @@ public class BioNetDBManager {
 
     public QueryResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
         String cypher = Neo4JQueryParser.parse(query, queryOptions);
-        return nodeQuery(cypher);
+            return nodeQuery(cypher);
     }
 
 //    public List<QueryResult<Node>> getNode(List<String> id) throws BioNetDBException {
@@ -186,7 +190,7 @@ public class BioNetDBManager {
 
     public QueryResult<List<Object>> table(Query query, QueryOptions queryOptions) throws BioNetDBException {
         String cypher = Neo4JQueryParser.parse(query, queryOptions);
-        return table(cypher);
+            return table(cypher);
     }
 
     public QueryResult<List<Object>> table(String cypher) throws BioNetDBException {
@@ -214,6 +218,40 @@ public class BioNetDBManager {
         return networkDBAdaptor.rowIterator(cypher);
     }
 
+    //-------------------------------------------------------------------------
+    // P A T H S
+    //   - a path is a network
+    //-------------------------------------------------------------------------
+
+    public QueryResult<Network> pathQuery(Query srcQuery, Query destQuery, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parse(srcQuery, destQuery, queryOptions);
+        return pathQuery(cypher);
+    }
+
+    public QueryResult<Network> pathQuery(String cypher) throws BioNetDBException {
+        List<Network> networks = new ArrayList<>();
+
+        long startTime = System.currentTimeMillis();
+        PathIterator pathIterator = pathIterator(cypher);
+        while (pathIterator.hasNext()) {
+            if (networks.size() >= this.QUERY_MAX_RESULTS) {
+                break;
+            }
+            networks.add(pathIterator.next());
+        }
+        long stopTime = System.currentTimeMillis();
+
+        int time = (int) (stopTime - startTime) / 1000;
+        return new QueryResult("table", time, networks.size(), networks.size(), null, null, networks);
+    }
+
+    public PathIterator pathIterator(Query srcQuery, Query destQuery, QueryOptions queryOptions) {
+        return networkDBAdaptor.pathIterator(srcQuery, destQuery, queryOptions);
+    }
+
+    public PathIterator pathIterator(String cypher) {
+        return networkDBAdaptor.pathIterator(cypher);
+    }
 
     //-------------------------------------------------------------------------
     // N E T W O R K S

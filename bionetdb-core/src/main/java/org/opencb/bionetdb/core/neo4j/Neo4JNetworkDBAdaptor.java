@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.*;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
+import org.opencb.bionetdb.core.api.PathIterator;
 import org.opencb.bionetdb.core.api.RowIterator;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -240,6 +241,27 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         System.out.println("Cypher query: " + cypher);
 
         return new Neo4JRowIterator(session.run(cypher));
+    }
+
+    //-------------------------------------------------------------------------
+    // P A T H     Q U E R I E S
+    //-------------------------------------------------------------------------
+
+    public PathIterator pathIterator(Query srcQuery, Query destQuery, QueryOptions queryOptions) {
+        Session session = this.driver.session();
+
+        String cypher = Neo4JQueryParser.parse(srcQuery, destQuery, queryOptions);
+        System.out.println("Cypher query: " + cypher);
+
+        return new Neo4JPathIterator(session.run(cypher));
+    }
+
+    public PathIterator pathIterator(String cypher) {
+        Session session = this.driver.session();
+
+        System.out.println("Cypher query: " + cypher);
+
+        return new Neo4JPathIterator(session.run(cypher));
     }
 
     //-------------------------------------------------------------------------

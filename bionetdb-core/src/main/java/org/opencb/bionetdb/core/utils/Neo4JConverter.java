@@ -46,6 +46,18 @@ public class Neo4JConverter {
         return row;
     }
 
+    public static List<Network> toNetworks(Record record) {
+        List<Network> networks = new ArrayList<>();
+
+//        for (Pair<String, Value> pair : record.fields()) {
+//            if (pair.value().hasType(TYPE_SYSTEM.NODE())) {
+//                nodes.add(toNode(pair.value().asNode()));
+//            }
+//        }
+
+        return networks;
+    }
+
     public static Network toNetwork(StatementResult statementResult) {
         Network network = new Network();
 

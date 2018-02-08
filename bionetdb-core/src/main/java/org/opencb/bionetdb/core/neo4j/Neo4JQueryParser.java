@@ -20,25 +20,10 @@ public class Neo4JQueryParser {
     //public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
     public static String parse(Query query, QueryOptions options) throws BioNetDBException {
-
-        // match path=(g:GENE)-[r]-(t:TRANSCRIPT) where g.name="APOE" return path
         int counter = 1;
-        Map<String, Integer> nodeAlias = new HashMap<>();
 
         StringBuilder match = new StringBuilder();
         String srcNode = null, destNode = null;
-
-        // Max jumps
-        int maxJumps = 2;
-        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.MAX_JUMPS.key()))) {
-            maxJumps = query.getInt(NetworkDBAdaptor.NetworkQueryParams.MAX_JUMPS.key());
-        }
-
-        // Output
-        String output = "network";
-        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key()))) {
-            output = query.getString(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key());
-        }
 
         // Source node
         if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.SRC_NODE.key()))) {
@@ -50,14 +35,17 @@ public class Neo4JQueryParser {
             destNode = query.getString(NetworkDBAdaptor.NetworkQueryParams.DEST_NODE.key());
         }
 
+        // Max jumps
+        int maxJumps = query.getInt(NetworkDBAdaptor.NetworkQueryParams.MAX_JUMPS.key(), 2);
+
+        // Output
+        String output = "network";
+        if (StringUtils.isNotEmpty(query.getString(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key()))) {
+            output = query.getString(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key());
+        }
+
         if (StringUtils.isEmpty(srcNode) || StringUtils.isEmpty(destNode)) {
-            String inputNode = null;
-            if (StringUtils.isNotEmpty(srcNode)) {
-                inputNode = srcNode;
-            }
-            if (StringUtils.isNotEmpty(destNode)) {
-                inputNode = destNode;
-            }
+            String inputNode = (StringUtils.isNotEmpty(srcNode) ? srcNode : destNode);
             if (StringUtils.isNotEmpty(inputNode)) {
                 Map<String, String> aliasMap = new HashMap<>();
                 List<String> where = new ArrayList<>();
@@ -141,6 +129,10 @@ public class Neo4JQueryParser {
         }
 
         return retStatement.toString();
+    }
+
+    public static String parse(Query srcQuery, Query destQuery, QueryOptions options) {
+        return null;
     }
 
     public static String parse(String nodeName, Query query, QueryOptions options) throws BioNetDBException {
