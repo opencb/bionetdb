@@ -227,7 +227,8 @@ public class BioNetDBManager {
     //   - a path is a network
     //-------------------------------------------------------------------------
 
-    public QueryResult<Network> pathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions) throws BioNetDBException {
+    public QueryResult<Network> pathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions)
+            throws BioNetDBException {
         String cypher = Neo4JQueryParser.parse(srcNodeQuery, destNodeQuery, queryOptions);
         return pathQuery(cypher);
     }
@@ -329,7 +330,8 @@ public class BioNetDBManager {
     }
 
 
-    private void updateNodeUids(Node.Type type, Query query, QueryOptions queryOptions, NetworkManager netManager) throws BioNetDBException {
+    private void updateNodeUids(Node.Type type, Query query, QueryOptions queryOptions, NetworkManager netManager)
+            throws BioNetDBException {
         // Get network nodes
         List<Node> nodes = netManager.getNodes(type);
 

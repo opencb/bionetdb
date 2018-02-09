@@ -12,7 +12,6 @@ public class Neo4JGeneQueryParser {
         // with t, ct match (ct)-[:SO]-(so:SO) where so.name="missense_variant"
         // with t match(t)-[:XREF]-(xref:SAMPLE) where xref.id = "HG00121"
         // return t
-        
 
         StringBuilder cypher = new StringBuilder();
 

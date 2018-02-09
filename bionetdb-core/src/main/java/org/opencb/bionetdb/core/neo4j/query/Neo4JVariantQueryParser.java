@@ -39,9 +39,9 @@ public class Neo4JVariantQueryParser {
         List<Region> regions = new ArrayList<>();
         if (query.containsKey(VariantNodeQueryParam.REGION.key())) {
             regions = Region.parseRegions(query.getString(VariantNodeQueryParam.REGION.key()));
-            for (int i = 1; i < regions.size(); i++) {
-                //whereStatement.add(" OR " + regions.get(i).toString() + ")")
-            }
+//            for (int i = 1; i < regions.size(); i++) {
+//                //whereStatement.add(" OR " + regions.get(i).toString() + ")")
+//            }
         }
 
         // Get genes
