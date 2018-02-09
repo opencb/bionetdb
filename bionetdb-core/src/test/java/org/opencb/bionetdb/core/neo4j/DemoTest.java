@@ -33,7 +33,7 @@ public class DemoTest {
 
     //String reactomeBiopaxFilename = "~/data150/neo4j/vesicle.mediated.transport.biopax3";
 //    String reactomeBiopaxFilename = "~/data150/neo4j/pathway.biopax";
-    String reactomeBiopaxFilename = "~/data150/neo4j/pathway1.biopax3";
+    String reactomeBiopaxFilename = "/home/jtarraga/data150/neo4j/pathway1.biopax3";
 
     String variantJsonFilename = "/home/jtarraga/data150/neo4j/test2.json";
 

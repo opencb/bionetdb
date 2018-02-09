@@ -1,8 +1,10 @@
-package org.opencb.bionetdb.core.neo4j;
+package org.opencb.bionetdb.core.neo4j.query;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.network.Node;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
@@ -18,6 +20,39 @@ import java.util.Map;
 public class Neo4JQueryParser {
 
     //public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+
+    public static String parse(NodeQuery query, QueryOptions options) throws BioNetDBException {
+        if (query.getType() == Node.Type.VARIANT) {
+            return Neo4JVariantQueryParser.parse(query, options);
+        } else if (query.getType() == Node.Type.GENE) {
+            return Neo4JGeneQueryParser.parse(query, options);
+        } else {
+            return parseNodeQuery(query, options);
+        }
+    }
+
+    public static String parse(Query srcNodeQuery, Query destNodeQuery, QueryOptions options) throws BioNetDBException {
+        return null;
+    }
+
+    public static String parse(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
+        return null;
+//        if (query.getType() == Node.Type.VARIANT) {
+//            return Neo4JVariantQueryParser.parse(query, options);
+//        } else if (query.getType() == Node.Type.GENE) {
+//            return Neo4JGeneQueryParser.parse(query, options);
+//        } else {
+//            return parseNodeQuery(query, options);
+//        }
+    }
+
+    private static String parseNodeQuery(NodeQuery query, QueryOptions options)  throws BioNetDBException {
+        StringBuilder cypher = new StringBuilder();
+        return cypher.toString();
+    }
+
+
+    //------------------------------------------------------------------
 
     public static String parse(Query query, QueryOptions options) throws BioNetDBException {
         int counter = 1;
@@ -129,10 +164,6 @@ public class Neo4JQueryParser {
         }
 
         return retStatement.toString();
-    }
-
-    public static String parse(Query srcQuery, Query destQuery, QueryOptions options) {
-        return null;
     }
 
     public static String parse(String nodeName, Query query, QueryOptions options) throws BioNetDBException {

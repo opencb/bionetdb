@@ -6,10 +6,12 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
 import org.opencb.bionetdb.core.api.PathIterator;
 import org.opencb.bionetdb.core.api.RowIterator;
+import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.PhysicalEntity;
+import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
@@ -161,11 +163,32 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         session.close();
     }
 
+
     //-------------------------------------------------------------------------
     // N O D E     Q U E R I E S
     //-------------------------------------------------------------------------
 
     @Override
+    public QueryResult<Node> getNode(long uid) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Node> getNode(String id) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Node> nodeQuery(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException {
+        return null;
+    }
+
+//    @Override
     public QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException {
         Session session = this.driver.session();
 
@@ -222,6 +245,21 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return new Neo4JNodeIterator(session.run(cypher));
     }
 
+    @Override
+    public QueryResult<List<Object>> table(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<List<Object>> table(String cypher) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
     //-------------------------------------------------------------------------
     // T A B L E     Q U E R I E S
     //-------------------------------------------------------------------------
@@ -243,14 +281,24 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return new Neo4JRowIterator(session.run(cypher));
     }
 
+    @Override
+    public QueryResult<Network> pathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Network> pathQuery(String cypher) throws BioNetDBException {
+        return null;
+    }
+
     //-------------------------------------------------------------------------
     // P A T H     Q U E R I E S
     //-------------------------------------------------------------------------
 
-    public PathIterator pathIterator(Query srcQuery, Query destQuery, QueryOptions queryOptions) {
+    public PathIterator pathIterator(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions) throws BioNetDBException {
         Session session = this.driver.session();
 
-        String cypher = Neo4JQueryParser.parse(srcQuery, destQuery, queryOptions);
+        String cypher = Neo4JQueryParser.parse(srcNodeQuery, destNodeQuery, queryOptions);
         System.out.println("Cypher query: " + cypher);
 
         return new Neo4JPathIterator(session.run(cypher));
@@ -262,6 +310,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         System.out.println("Cypher query: " + cypher);
 
         return new Neo4JPathIterator(session.run(cypher));
+    }
+
+    @Override
+    public QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Network> networkQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
     }
 
     //-------------------------------------------------------------------------
