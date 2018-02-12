@@ -17,14 +17,12 @@ import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.Neo4JConverter;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -163,176 +161,77 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         session.close();
     }
 
-
     //-------------------------------------------------------------------------
     // N O D E     Q U E R I E S
     //-------------------------------------------------------------------------
 
     @Override
-    public QueryResult<Node> getNode(long uid) throws BioNetDBException {
-        return null;
+    public NodeIterator nodeIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parse(query, queryOptions);
+        return nodeIterator(cypher);
     }
 
     @Override
-    public QueryResult<Node> getNode(String id) throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<Node> nodeQuery(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException {
-        return null;
-    }
-
-//    @Override
-    public QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException {
+    public NodeIterator nodeIterator(String cypher) throws BioNetDBException {
         Session session = this.driver.session();
-
-        long startTime = System.currentTimeMillis();
-        //TODO: improve
-        String myQuery;
-        if (query.containsKey(NetworkQueryParams.SCRIPT.key())) {
-            myQuery = query.getString(NetworkQueryParams.SCRIPT.key());
-        } else {
-            String nodeName = "n";
-            myQuery = "MATCH " + Neo4JQueryParser.parse(nodeName, query, queryOptions) + " RETURN " + nodeName;
-        }
-        System.out.println("Query: " + myQuery);
-        long stopTime = System.currentTimeMillis();
-        StatementResult run = session.run(myQuery);
-        List<Node> nodes = new ArrayList<>();
-        while (run.hasNext()) {
-            Map<String, Object> map = run.next().asMap();
-            for (String key: map.keySet()) {
-                org.neo4j.driver.v1.types.Node neoNode = (org.neo4j.driver.v1.types.Node) map.get(key);
-                Node node = new Node(0);
-                node.setUid(neoNode.get("uid").asLong());
-                node.setId(neoNode.get("id").asString());
-                node.setName(neoNode.get("name").asString());
-                node.setType(Node.Type.valueOf(neoNode.get("type").asString()));
-                for (String k: neoNode.keys()) {
-                    if (k.startsWith(PREFIX_ATTRIBUTES)) {
-                        node.addAttribute(k, neoNode.get(k).asString());
-                    }
-                }
-                nodes.add(node);
-            }
-        }
-        int time = (int) (stopTime - startTime) / 1000;
-
-        session.close();
-        return new QueryResult("get", time, nodes.size(), nodes.size(), null, null, nodes);
-    }
-
-    public NodeIterator nodeIterator(Query query, QueryOptions queryOptions) {
-        Session session = this.driver.session();
-
-        String myQuery = "MATCH (n) return n"; // Neo4JQueryParser.parse(query, queryOptions)
-        System.out.println("Cypher query: " + myQuery);
-
-        return new Neo4JNodeIterator(session.run(myQuery));
-    }
-
-    public NodeIterator nodeIterator(String cypher) {
-        Session session = this.driver.session();
-
-        System.out.println("Cypher query: " + cypher);
-
+//        System.out.println("Cypher query: " + cypher);
         return new Neo4JNodeIterator(session.run(cypher));
-    }
-
-    @Override
-    public QueryResult<List<Object>> table(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<List<Object>> table(String cypher) throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        return null;
     }
 
     //-------------------------------------------------------------------------
     // T A B L E     Q U E R I E S
     //-------------------------------------------------------------------------
 
-    public RowIterator rowIterator(Query query, QueryOptions queryOptions) {
-        Session session = this.driver.session();
-
-        String myQuery = "MATCH (n) return n"; // Neo4JQueryParser.parse(query, queryOptions)
-        System.out.println("Cypher query: " + myQuery);
-
-        return new Neo4JRowIterator(session.run(myQuery));
+    @Override
+    public RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parse(query, queryOptions);
+        return rowIterator(cypher);
     }
 
-    public RowIterator rowIterator(String cypher) {
+    public RowIterator rowIterator(String cypher) throws BioNetDBException {
         Session session = this.driver.session();
-
-        System.out.println("Cypher query: " + cypher);
-
+//        System.out.println("Cypher query: " + cypher);
         return new Neo4JRowIterator(session.run(cypher));
-    }
-
-    @Override
-    public QueryResult<Network> pathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions)
-            throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<Network> pathQuery(String cypher) throws BioNetDBException {
-        return null;
     }
 
     //-------------------------------------------------------------------------
     // P A T H     Q U E R I E S
     //-------------------------------------------------------------------------
 
-    public PathIterator pathIterator(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions) throws BioNetDBException {
-        Session session = this.driver.session();
+    @Override
+    public PathIterator pathIterator(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery,
+                                     QueryOptions queryOptions) throws BioNetDBException {
 
-        String cypher = Neo4JQueryParser.parse(srcNodeQuery, destNodeQuery, queryOptions);
-        System.out.println("Cypher query: " + cypher);
-
-        return new Neo4JPathIterator(session.run(cypher));
-    }
-
-    public PathIterator pathIterator(String cypher) {
-        Session session = this.driver.session();
-
-        System.out.println("Cypher query: " + cypher);
-
-        return new Neo4JPathIterator(session.run(cypher));
+        String cypher = Neo4JQueryParser.parse(srcNodeQuery, destNodeQuery, intermediateNodeQuery, queryOptions);
+        return pathIterator(cypher);
     }
 
     @Override
-    public QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions) throws BioNetDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<Network> networkQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions)
-            throws BioNetDBException {
-        return null;
+    public PathIterator pathIterator(String cypher) throws BioNetDBException {
+        Session session = this.driver.session();
+//        System.out.println("Cypher query: " + cypher);
+        return new Neo4JPathIterator(session.run(cypher));
     }
 
     //-------------------------------------------------------------------------
     // N E T W O R K     Q U E R I E S
     //-------------------------------------------------------------------------
 
-    public QueryResult<Network> networkQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parse(query, queryOptions);
+    @Override
+    public QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
+            throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parse(nodeQueries, queryOptions);
         return networkQuery(cypher);
     }
 
+    @Override
+    public QueryResult<Network> networkQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery,
+                                      QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parse(srcNodeQuery, destNodeQuery, intermediateNodeQuery, queryOptions);
+        return networkQuery(cypher);
+    }
+
+    @Override
     public QueryResult<Network> networkQuery(String cypher) throws BioNetDBException {
         // Open session
         Session session = this.driver.session();

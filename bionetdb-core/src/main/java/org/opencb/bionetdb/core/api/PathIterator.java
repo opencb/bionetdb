@@ -1,10 +1,10 @@
 package org.opencb.bionetdb.core.api;
 
-import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.Path;
 
 import java.util.Iterator;
 
-public interface PathIterator extends Iterator<Network> {
+public interface PathIterator extends Iterator<Path> {
 
 //    @Override
 //    public boolean hasNext() {

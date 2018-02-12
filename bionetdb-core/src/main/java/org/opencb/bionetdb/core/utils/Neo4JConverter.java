@@ -58,6 +58,11 @@ public class Neo4JConverter {
         return networks;
     }
 
+    public static List<org.opencb.bionetdb.core.network.Path> toPath(Record next) {
+        List<org.opencb.bionetdb.core.network.Path> paths = new ArrayList<>();
+        return paths;
+    }
+
     public static Network toNetwork(StatementResult statementResult) {
         Network network = new Network();
 

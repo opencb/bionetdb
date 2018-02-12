@@ -3,8 +3,6 @@ package org.opencb.bionetdb.core.api;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.core.network.Node;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -67,12 +65,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     // N O D E S
     //-------------------------------------------------------------------------
 
-    QueryResult<Node> getNode(long uid) throws BioNetDBException;
-    QueryResult<Node> getNode(String id) throws BioNetDBException;
-    QueryResult<Node> nodeQuery(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException;
-    QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException;
-
-    NodeIterator nodeIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    NodeIterator nodeIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException;
     NodeIterator nodeIterator(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
@@ -80,9 +73,6 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //   - a table is modeled as a list of rows, and
     //   - a row is modeled as a list of Object
     //-------------------------------------------------------------------------
-
-    QueryResult<List<Object>> table(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException;
-    QueryResult<List<Object>> table(String cypher) throws BioNetDBException;
 
     RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException;
     RowIterator rowIterator(String cypher) throws BioNetDBException;
@@ -92,10 +82,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //   - a path is modeled as a network
     //-------------------------------------------------------------------------
 
-    QueryResult<Network> pathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions) throws BioNetDBException;
-    QueryResult<Network> pathQuery(String cypher) throws BioNetDBException;
-
-    PathIterator pathIterator(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions) throws BioNetDBException;
+    PathIterator pathIterator(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery,
+                              QueryOptions queryOptions) throws BioNetDBException;
     PathIterator pathIterator(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
@@ -103,7 +91,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //-------------------------------------------------------------------------
 
     QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions) throws BioNetDBException;
-    QueryResult<Network> networkQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult<Network> networkQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery,
+                                      QueryOptions queryOptions) throws BioNetDBException;
     QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
 
 

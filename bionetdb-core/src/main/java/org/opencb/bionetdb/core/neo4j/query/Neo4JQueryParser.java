@@ -31,7 +31,8 @@ public class Neo4JQueryParser {
         }
     }
 
-    public static String parse(Query srcNodeQuery, Query destNodeQuery, QueryOptions options) throws BioNetDBException {
+    public static String parse(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermNodeQuery,
+                               QueryOptions options) throws BioNetDBException {
         return null;
     }
 
