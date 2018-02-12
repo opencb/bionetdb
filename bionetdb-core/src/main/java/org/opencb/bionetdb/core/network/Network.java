@@ -2,20 +2,16 @@ package org.opencb.bionetdb.core.network;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Created by imedina on 10/08/15.
  */
-public class Network {
+public class Network extends Graph {
 
     private String id;
     private String name;
     private String description;
-
-    private List<Node> nodes;
-    private List<Relation> relations;
 
     private Map<String, Object> attributes;
 
@@ -84,24 +80,6 @@ public class Network {
 
     public Network setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public List<Node> getNodes() {
-        return nodes;
-    }
-
-    public Network setNodes(List<Node> nodes) {
-        this.nodes = nodes;
-        return this;
-    }
-
-    public List<Relation> getRelations() {
-        return relations;
-    }
-
-    public Network setRelations(List<Relation> relations) {
-        this.relations = relations;
         return this;
     }
 
