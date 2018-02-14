@@ -11,12 +11,12 @@ import org.opencb.bionetdb.core.api.PathIterator;
 import org.opencb.bionetdb.core.api.RowIterator;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.api.query.NodeQueryParam;
+import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.VariantParser;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
-import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.NetworkManager;
 import org.opencb.bionetdb.core.network.Node;
@@ -153,25 +153,13 @@ public class BioNetDBManager {
     }
 
     public QueryResult<Node> nodeQuery(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parse(query, queryOptions);
-        return nodeQuery(cypher);
+        NodeIterator nodeIterator = nodeIterator(query, queryOptions);
+        return getQueryResult(nodeIterator);
     }
 
     public QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException {
-        List<Node> nodes = new ArrayList<>();
-
-        long startTime = System.currentTimeMillis();
-        NodeIterator nodoIterator = nodeIterator(cypher);
-        while (nodoIterator.hasNext()) {
-            if (nodes.size() >= this.QUERY_MAX_RESULTS) {
-                break;
-            }
-            nodes.add(nodoIterator.next());
-        }
-        long stopTime = System.currentTimeMillis();
-
-        int time = (int) (stopTime - startTime) / 1000;
-        return new QueryResult("get", time, nodes.size(), nodes.size(), null, null, nodes);
+        NodeIterator nodeIterator = nodeIterator(cypher);
+        return getQueryResult(nodeIterator);
     }
 
     public NodeIterator nodeIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
@@ -189,25 +177,13 @@ public class BioNetDBManager {
     //-------------------------------------------------------------------------
 
     public QueryResult<List<Object>> table(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parse(query, queryOptions);
-            return table(cypher);
+        RowIterator rowIterator = rowIterator(query, queryOptions);
+        return getQueryResult(rowIterator);
     }
 
     public QueryResult<List<Object>> table(String cypher) throws BioNetDBException {
-        List<List<Object>> rows = new ArrayList<>();
-
-        long startTime = System.currentTimeMillis();
         RowIterator rowIterator = rowIterator(cypher);
-        while (rowIterator.hasNext()) {
-            if (rows.size() >= this.QUERY_MAX_RESULTS) {
-                break;
-            }
-            rows.add(rowIterator.next());
-        }
-        long stopTime = System.currentTimeMillis();
-
-        int time = (int) (stopTime - startTime) / 1000;
-        return new QueryResult("table", time, rows.size(), rows.size(), null, null, rows);
+        return getQueryResult(rowIterator);
     }
 
     public RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
@@ -222,44 +198,19 @@ public class BioNetDBManager {
     // P A T H S
     //-------------------------------------------------------------------------
 
-    public QueryResult<org.opencb.bionetdb.core.network.Path> pathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery,
-                                                                        QueryOptions queryOptions)
+    public QueryResult<org.opencb.bionetdb.core.network.Path> pathQuery(PathQuery pathQuery, QueryOptions queryOptions)
             throws BioNetDBException {
-        return pathQuery(srcNodeQuery, destNodeQuery, null, queryOptions);
-    }
-
-    public QueryResult<org.opencb.bionetdb.core.network.Path> pathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery,
-                                                                        NodeQuery intermNodeQuery, QueryOptions queryOptions)
-            throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parse(srcNodeQuery, destNodeQuery, intermNodeQuery, queryOptions);
-        return pathQuery(cypher);
+        PathIterator pathIterator = pathIterator(pathQuery, queryOptions);
+        return getQueryResult(pathIterator);
     }
 
     public QueryResult<org.opencb.bionetdb.core.network.Path> pathQuery(String cypher) throws BioNetDBException {
-        List<org.opencb.bionetdb.core.network.Path> paths = new ArrayList<>();
-
-        long startTime = System.currentTimeMillis();
         PathIterator pathIterator = pathIterator(cypher);
-        while (pathIterator.hasNext()) {
-            if (paths.size() >= this.QUERY_MAX_RESULTS) {
-                break;
-            }
-            paths.add(pathIterator.next());
-        }
-        long stopTime = System.currentTimeMillis();
-
-        int time = (int) (stopTime - startTime) / 1000;
-        return new QueryResult("get", time, paths.size(), paths.size(), null, null, paths);
+        return getQueryResult(pathIterator);
     }
 
-    public PathIterator pathIterator(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions)
-            throws BioNetDBException {
-        return networkDBAdaptor.pathIterator(srcNodeQuery, destNodeQuery, null, queryOptions);
-    }
-
-    public PathIterator pathIterator(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermNodeQuery,
-                                     QueryOptions queryOptions) throws BioNetDBException {
-        return networkDBAdaptor.pathIterator(srcNodeQuery, destNodeQuery, intermNodeQuery, queryOptions);
+    public PathIterator pathIterator(PathQuery pathQuery, QueryOptions queryOptions) throws BioNetDBException {
+        return networkDBAdaptor.pathIterator(pathQuery, queryOptions);
     }
 
     public PathIterator pathIterator(String cypher) throws BioNetDBException {
@@ -275,14 +226,9 @@ public class BioNetDBManager {
         return networkDBAdaptor.networkQuery(nodeQueries, queryOptions);
     }
 
-    public QueryResult<Network> networkQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, QueryOptions queryOptions)
+    public QueryResult<Network> networkQueryByPaths(List<PathQuery> pathQueries, QueryOptions queryOptions)
             throws BioNetDBException {
-        return networkQuery(srcNodeQuery, destNodeQuery, null, queryOptions);
-    }
-
-    public QueryResult<Network> networkQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery,
-                                      QueryOptions queryOptions) throws BioNetDBException {
-       return networkDBAdaptor.networkQuery(srcNodeQuery, destNodeQuery, intermediateNodeQuery, queryOptions);
+       return networkDBAdaptor.networkQueryByPaths(pathQueries, queryOptions);
     }
 
     public QueryResult<Network> networkQuery(String cypher) throws BioNetDBException {
@@ -365,5 +311,55 @@ public class BioNetDBManager {
 //            System.out.println("node " + node.getType().name() + ": uid=" + node.getUid() + ", id=" + node.getId() + ", name="
 //                    + node.getName());
         }
+    }
+
+    private QueryResult<Node> getQueryResult(NodeIterator nodeIterator) {
+        List<Node> nodes = new ArrayList<>();
+
+        long startTime = System.currentTimeMillis();
+        while (nodeIterator.hasNext()) {
+            if (nodes.size() >= this.QUERY_MAX_RESULTS) {
+                break;
+            }
+            nodes.add(nodeIterator.next());
+        }
+        long stopTime = System.currentTimeMillis();
+
+        int time = (int) (stopTime - startTime) / 1000;
+        return new QueryResult("get", time, nodes.size(), nodes.size(), null, null, nodes);
+
+    }
+
+    private QueryResult<List<Object>> getQueryResult(RowIterator rowIterator) {
+        List<List<Object>> rows = new ArrayList<>();
+
+        long startTime = System.currentTimeMillis();
+        while (rowIterator.hasNext()) {
+            if (rows.size() >= this.QUERY_MAX_RESULTS) {
+                break;
+            }
+            rows.add(rowIterator.next());
+        }
+        long stopTime = System.currentTimeMillis();
+
+        int time = (int) (stopTime - startTime) / 1000;
+        return new QueryResult("table", time, rows.size(), rows.size(), null, null, rows);
+    }
+
+    public QueryResult<org.opencb.bionetdb.core.network.Path> getQueryResult(PathIterator pathIterator)
+            throws BioNetDBException {
+        List<org.opencb.bionetdb.core.network.Path> paths = new ArrayList<>();
+
+        long startTime = System.currentTimeMillis();
+        while (pathIterator.hasNext()) {
+            if (paths.size() >= this.QUERY_MAX_RESULTS) {
+                break;
+            }
+            paths.add(pathIterator.next());
+        }
+        long stopTime = System.currentTimeMillis();
+
+        int time = (int) (stopTime - startTime) / 1000;
+        return new QueryResult("get", time, paths.size(), paths.size(), null, null, paths);
     }
 }

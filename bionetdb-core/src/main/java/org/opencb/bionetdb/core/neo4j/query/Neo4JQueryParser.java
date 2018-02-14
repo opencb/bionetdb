@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.neo4j.query;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
+import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.commons.datastore.core.Query;
@@ -21,7 +22,7 @@ public class Neo4JQueryParser {
 
     //public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
-    public static String parse(NodeQuery query, QueryOptions options) throws BioNetDBException {
+    public static String parseNode(NodeQuery query, QueryOptions options) throws BioNetDBException {
         if (query.getType() == Node.Type.VARIANT) {
             return Neo4JVariantQueryParser.parse(query, options);
         } else if (query.getType() == Node.Type.GENE) {
@@ -31,21 +32,32 @@ public class Neo4JQueryParser {
         }
     }
 
-    public static String parse(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermNodeQuery,
-                               QueryOptions options) throws BioNetDBException {
+    public static String parseNodes(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
         return null;
     }
 
-    public static String parse(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
+    public static String parsePath(PathQuery pathQuery, QueryOptions options) throws BioNetDBException {
         return null;
-//        if (query.getType() == Node.Type.VARIANT) {
-//            return Neo4JVariantQueryParser.parse(query, options);
-//        } else if (query.getType() == Node.Type.GENE) {
-//            return Neo4JGeneQueryParser.parse(query, options);
-//        } else {
-//            return parseNodeQuery(query, options);
-//        }
     }
+
+    public static String parsePaths(List<PathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
+        return null;
+    }
+
+//    public static String parseNodeQueries(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
+//        return null;
+////        if (query.getType() == Node.Type.VARIANT) {
+////            return Neo4JVariantQueryParser.parse(query, options);
+////        } else if (query.getType() == Node.Type.GENE) {
+////            return Neo4JGeneQueryParser.parse(query, options);
+////        } else {
+////            return parseNodeQuery(query, options);
+////        }
+//    }
+//
+//    public static String parse(List<PathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
+//        return null;
+//    }
 
     private static String parseNodeQuery(NodeQuery query, QueryOptions options)  throws BioNetDBException {
         StringBuilder cypher = new StringBuilder();

@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.core.api;
 
 import org.opencb.bionetdb.core.api.query.NodeQuery;
+import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -82,8 +83,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //   - a path is modeled as a network
     //-------------------------------------------------------------------------
 
-    PathIterator pathIterator(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery,
-                              QueryOptions queryOptions) throws BioNetDBException;
+    PathIterator pathIterator(PathQuery pathQuery, QueryOptions queryOptions) throws BioNetDBException;
     PathIterator pathIterator(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
@@ -91,8 +91,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //-------------------------------------------------------------------------
 
     QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions) throws BioNetDBException;
-    QueryResult<Network> networkQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery,
-                                      QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult<Network> networkQueryByPaths(List<PathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
     QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
 
 
