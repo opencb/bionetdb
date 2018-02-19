@@ -220,13 +220,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
             throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parseNodes(nodeQueries, queryOptions);
+        String cypher = Neo4JQueryParser.parseNodesForNetwork(nodeQueries, queryOptions);
         return networkQuery(cypher);
     }
 
     @Override
     public QueryResult<Network> networkQueryByPaths(List<PathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parsePaths(pathQueries, queryOptions);
+        String cypher = Neo4JQueryParser.parsePathsForNetwork(pathQueries, queryOptions);
         return networkQuery(cypher);
     }
 

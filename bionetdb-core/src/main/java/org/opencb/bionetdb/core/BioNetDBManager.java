@@ -139,14 +139,14 @@ public class BioNetDBManager {
     //-------------------------------------------------------------------------
 
     public QueryResult<Node> getNode(long uid) throws BioNetDBException {
-        NodeQuery query = new NodeQuery(Node.Type.UNDEFINED);
+        NodeQuery query = new NodeQuery();
         query.put(NodeQueryParam.UID.key(), uid);
         query.put(NodeQueryParam.OUTPUT.key(), "node");
         return nodeQuery(query, QueryOptions.empty());
     }
 
     public QueryResult<Node> getNode(String id) throws BioNetDBException {
-        NodeQuery query = new NodeQuery(Node.Type.UNDEFINED);
+        NodeQuery query = new NodeQuery();
         query.put(NodeQueryParam.ID.key(), id);
         query.put(NodeQueryParam.OUTPUT.key(), "node");
         return nodeQuery(query, QueryOptions.empty());

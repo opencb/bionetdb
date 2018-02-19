@@ -7,6 +7,10 @@ public class NodeQuery extends Query {
 
     private Node.Type type;
 
+    public NodeQuery() {
+        this.type = null;
+    }
+
     public NodeQuery(Node.Type type) {
         this.type = type;
     }
