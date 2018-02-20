@@ -23,7 +23,7 @@ public class Neo4JNodeIterator implements NodeIterator {
             return true;
         } else {
             if (statementResult.hasNext()) {
-                buffer = Neo4JConverter.toNodes(statementResult.next());
+                buffer = Neo4JConverter.toNodeList(statementResult.next());
             }
             return !buffer.isEmpty();
         }

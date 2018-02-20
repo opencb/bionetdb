@@ -7,6 +7,12 @@ public class Path extends Graph {
     private int startIndex;
     private int endIndex;
 
+    public Path() {
+        super();
+        startIndex = 0;
+        endIndex = 0;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Path{");

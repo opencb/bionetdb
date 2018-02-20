@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.network;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -8,6 +9,19 @@ import java.util.List;
 public class Graph {
     protected List<Node> nodes;
     protected List<Relation> relations;
+
+    public Graph() {
+        nodes = new ArrayList<>();
+        relations = new ArrayList<>();
+    }
+
+    public void addNode(Node node) {
+        nodes.add(node);
+    }
+
+    public void addRelation(Relation relation) {
+        relations.add(relation);
+    }
 
     public List<Node> getNodes() {
         return nodes;

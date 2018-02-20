@@ -23,7 +23,7 @@ public class Neo4JPathIterator implements PathIterator {
             return true;
         } else {
             if (statementResult.hasNext()) {
-                buffer = Neo4JConverter.toPath(statementResult.next());
+                buffer = Neo4JConverter.toPathList(statementResult.next());
             }
             return !buffer.isEmpty();
         }

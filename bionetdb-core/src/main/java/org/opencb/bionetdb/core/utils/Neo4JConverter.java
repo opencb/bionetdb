@@ -17,10 +17,10 @@ import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 public class Neo4JConverter {
 
-    public static List<Node> toNodes(Record record) {
+    public static List<Node> toNodeList(Record record) {
         List<Node> nodes = new ArrayList<>();
 
-        for (Pair<String, Value> pair : record.fields()) {
+        for (Pair<String, Value> pair: record.fields()) {
             if (pair.value().hasType(TYPE_SYSTEM.NODE())) {
                 nodes.add(toNode(pair.value().asNode()));
             }
@@ -29,15 +29,14 @@ public class Neo4JConverter {
         return nodes;
     }
 
-    public static List<Object> toRow(Record record) {
+    public static List<Object> toObjectList(Record record) {
         List<Object> row = new ArrayList<>();
 
-        for (Pair<String, Value> pair : record.fields()) {
+        for (Pair<String, Value> pair: record.fields()) {
             if (pair.value().hasType(TYPE_SYSTEM.NODE()) || pair.value().hasType(TYPE_SYSTEM.RELATIONSHIP())
-                    || pair.value().hasType(TYPE_SYSTEM.PATH()) || pair.value().hasType(TYPE_SYSTEM.LIST())
-                    || pair.value().hasType(TYPE_SYSTEM.MAP())) {
-                //row.add(toNode(pair.value().asNode()));
-                System.out.println("Complex types are not supported (i.e.: Node, Relation, Path, List and Map types)");
+                    || pair.value().hasType(TYPE_SYSTEM.PATH())) {
+                // Skip nodes, relationships and paths
+                continue;
             } else {
                 row.add(pair.value());
             }
@@ -46,20 +45,15 @@ public class Neo4JConverter {
         return row;
     }
 
-    public static List<Network> toNetworks(Record record) {
-        List<Network> networks = new ArrayList<>();
-
-//        for (Pair<String, Value> pair : record.fields()) {
-//            if (pair.value().hasType(TYPE_SYSTEM.NODE())) {
-//                nodes.add(toNode(pair.value().asNode()));
-//            }
-//        }
-
-        return networks;
-    }
-
-    public static List<org.opencb.bionetdb.core.network.Path> toPath(Record next) {
+    public static List<org.opencb.bionetdb.core.network.Path> toPathList(Record record) {
         List<org.opencb.bionetdb.core.network.Path> paths = new ArrayList<>();
+
+        for (Pair<String, Value> pair: record.fields()) {
+            if (pair.value().hasType(TYPE_SYSTEM.PATH())) {
+                paths.add(toPath(pair.value().asPath()));
+            }
+        }
+
         return paths;
     }
 
@@ -81,21 +75,7 @@ public class Neo4JConverter {
                         relationshipMap.put(neoRelation.id(), neoRelation);
                 } else if (pair.value().hasType(TYPE_SYSTEM.PATH())) {
                     Path path = pair.value().asPath();
-                    if (path.nodes() != null) {
-                        Iterator<org.neo4j.driver.v1.types.Node> iterator = path.nodes().iterator();
-                        while (iterator.hasNext()) {
-                            org.neo4j.driver.v1.types.Node neoNode = iterator.next();
-                            Node node = toNode(neoNode);
-                            nodeMap.put(neoNode.id(), node);
-                        }
-                    }
-                    if (path.relationships() != null) {
-                        Iterator<org.neo4j.driver.v1.types.Relationship> iterator = path.relationships().iterator();
-                        while (iterator.hasNext()) {
-                            Relationship neoRelation = iterator.next();
-                            relationshipMap.put(neoRelation.id(), neoRelation);
-                        }
-                    }
+                    getPathContent(path, nodeMap, relationshipMap);
                 }
             }
         }
@@ -148,5 +128,60 @@ public class Neo4JConverter {
             }
         }
         return node;
+    }
+
+    private static org.opencb.bionetdb.core.network.Path toPath(Path neoPath) {
+        org.opencb.bionetdb.core.network.Path path = new org.opencb.bionetdb.core.network.Path();
+
+        // First, be sure to process nodes first
+        Map<Long, Node> nodeMap = new HashMap<>();
+        Map<Long, Relationship> relationshipMap = new HashMap<>();
+        getPathContent(neoPath, nodeMap, relationshipMap);
+
+        // Now, we can add these nodes to the path and set the start and end node indices
+        int i = 0;
+        int startIndex = 0, endIndex = 0;
+        for (long key: nodeMap.keySet()) {
+            if (neoPath.start().id() == key) {
+                startIndex = i;
+            }
+            if (neoPath.end().id() == key) {
+                endIndex = i;
+            }
+            path.addNode(nodeMap.get(key));
+            i++;
+        }
+        path.setStartIndex(startIndex);
+        path.setEndIndex(endIndex);
+
+        // Then, we can process relationships and insert them into the path
+        for (long key: relationshipMap.keySet()) {
+            Relationship neoRelation = relationshipMap.get(key);
+            Relation relation = new Relation(neoRelation.get("uid").asLong(), neoRelation.get("name").asString(),
+                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getUid(),
+                    Relation.Type.valueOf(neoRelation.type()));
+            path.addRelation(relation);
+        }
+
+        // Return path
+        return path;
+    }
+
+    private static void getPathContent(Path neoPath, Map<Long, Node> nodeMap, Map<Long, Relationship> relationshipMap) {
+        if (neoPath.nodes() != null) {
+            Iterator<org.neo4j.driver.v1.types.Node> iterator = neoPath.nodes().iterator();
+            while (iterator.hasNext()) {
+                org.neo4j.driver.v1.types.Node neoNode = iterator.next();
+                Node node = toNode(neoNode);
+                nodeMap.put(neoNode.id(), node);
+            }
+        }
+        if (neoPath.relationships() != null) {
+            Iterator<org.neo4j.driver.v1.types.Relationship> iterator = neoPath.relationships().iterator();
+            while (iterator.hasNext()) {
+                Relationship neoRelation = iterator.next();
+                relationshipMap.put(neoRelation.id(), neoRelation);
+            }
+        }
     }
 }

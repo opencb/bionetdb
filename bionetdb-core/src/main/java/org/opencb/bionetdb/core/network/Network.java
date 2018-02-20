@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.core.network;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,28 +19,13 @@ public class Network extends Graph {
     }
 
     public Network(String id, String name, String description) {
+        super();
         this.id = id;
         this.name = name;
         this.description = description;
 
-        // init rest of attributes
-        init();
-    }
-
-    private void init() {
-        nodes = new ArrayList<>();
-        relations = new ArrayList<>();
         attributes = new HashMap<>();
     }
-
-    public void addNode(Node node) {
-        nodes.add(node);
-    }
-
-    public void addRelation(Relation relation) {
-        relations.add(relation);
-    }
-
 
     @Override
     public String toString() {

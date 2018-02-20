@@ -22,7 +22,7 @@ public class Neo4JRowIterator implements RowIterator {
     @Override
     public List<Object> next() {
         Record record = statementResult.next();
-        return Neo4JConverter.toRow(record);
+        return Neo4JConverter.toObjectList(record);
     }
 
 }
