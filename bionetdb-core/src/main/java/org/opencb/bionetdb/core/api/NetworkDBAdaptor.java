@@ -4,10 +4,12 @@ import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Network;
+import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 
+import java.io.IOException;
 import java.util.List;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -61,6 +63,12 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     }
 
     void insert(Network network, QueryOptions queryOptions) throws BioNetDBException;
+
+    //-------------------------------------------------------------------------
+    // A N N O T A T I O N     M E T H O D s
+    //-------------------------------------------------------------------------
+
+    void annotateProtein(ProteinClient proteinClient) throws BioNetDBException, IOException;
 
     //-------------------------------------------------------------------------
     // N O D E S

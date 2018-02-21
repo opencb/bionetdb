@@ -20,6 +20,10 @@ import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.NetworkManager;
 import org.opencb.bionetdb.core.network.Node;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -27,10 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by joaquin on 1/29/18.
@@ -126,13 +127,24 @@ public class BioNetDBManager {
     }
 
     public void annotateGenes(Query query, QueryOptions queryOptions) {
-
     }
 
     public void annotateVariants(Query query, QueryOptions queryOptions) {
-
     }
 
+    public void annotateProtein() throws BioNetDBException, IOException {
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setVersion("v4");
+        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", clientConfiguration);
+        ProteinClient proteinClient = cellBaseClient.getProteinClient();
+
+        networkDBAdaptor.annotateProtein(proteinClient);
+    }
+
+    //=========================================================================
+    // S I M P L E     Q U E R I E S: NODES, PATHS, NETWORK
+    //=========================================================================
 
     //-------------------------------------------------------------------------
     // N O D E S
@@ -235,10 +247,9 @@ public class BioNetDBManager {
         return networkDBAdaptor.networkQuery(cypher);
     }
 
-
-    //-------------------------------------------------------------------------
+    //=========================================================================
     // A N A L Y S I S
-    //-------------------------------------------------------------------------
+    //=========================================================================
 
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
         return null;

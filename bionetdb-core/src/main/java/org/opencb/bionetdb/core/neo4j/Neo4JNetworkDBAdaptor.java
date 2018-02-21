@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core.neo4j;
 
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.*;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
 import org.opencb.bionetdb.core.api.PathIterator;
@@ -18,12 +19,12 @@ import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.Neo4JConverter;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.cellbase.client.rest.ProteinClient;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -63,6 +64,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (createIndex) {
             createIndexes();
         }
+
+        // Add configuration node
+        if (!existConfigNode()) {
+            createConfigNode();
+        }
     }
 
     private void registerShutdownHook(final Driver driver) {
@@ -89,48 +95,24 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (session != null) {
             try (Transaction tx = session.beginTransaction()) {
                 tx.run("CREATE INDEX ON :" + Node.Type.PHYSICAL_ENTITY + "(uid)");
-                //             tx.run("CREATE INDEX ON :" + NodeTypes.PHYSICAL_ENTITY + "(name)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.COMPLEX + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.SMALL_MOLECULE + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.CATALYSIS + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(uid)");
-                //               tx.run("CREATE INDEX ON :" + NodeTypes.INTERACTION + "(name)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
-//                tx.run("CREATE INDEX ON :" + NodeTypes.XREF + "(source)");
-//
                 tx.run("CREATE INDEX ON :" + Node.Type.ONTOLOGY + "(uid)");
-//                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(source)");
-//                tx.run("CREATE INDEX ON :" + NodeTypes.ONTOLOGY + "(name)");
-
-//                tx.run("CREATE INDEX ON :Tissue(tissue)");
-//                tx.run("CREATE INDEX ON :TimeSeries(timeseries)");
-
                 tx.run("CREATE INDEX ON :" + PhysicalEntity.Type.UNDEFINED + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CALL + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CALL_INFO + "(uid)");
-
                 tx.run("CREATE INDEX ON :" + Node.Type.SAMPLE + "(uid)");
-
                 tx.success();
             }
             session.close();
         }
     }
-
-
 
     /**
      * Insert an entire network into the Neo4J database.
@@ -160,6 +142,93 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
 
         session.close();
+    }
+
+    //-------------------------------------------------------------------------
+    // A N N O T A T I O N     M E T H O D s
+    //-------------------------------------------------------------------------
+
+    public void annotateProtein(ProteinClient proteinClient) throws BioNetDBException, IOException {
+        // First, get all proteins from the network
+        Query query = new Query();
+        String cypher = "MATCH path=(p:PROTEIN)-[xr:XREF]->(x:XREF) WHERE toLower(x.attr_source) = \"uniprot\" return path";
+        QueryResult<Network> networkResult = networkQuery(cypher);
+
+        if (ListUtils.isEmpty(networkResult.getResult())) {
+            System.out.println("Network not found!!");
+            return;
+        }
+        Network network = networkResult.getResult().get(0);
+
+        // Get proteins annotations from Cellbase...
+        // ... prepare list of protein id/names from xref/protein nodes
+        List<String> proteinIds = new ArrayList<>();
+        for (Node node: network.getNodes()) {
+            if (node.getType() == Node.Type.XREF) {
+                proteinIds.add(node.getId());
+            }
+        }
+
+        // ... finally, call Cellbase service
+        Map<String, Entry> proteinMap = new HashMap<>();
+        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, new QueryOptions(QueryOptions.EXCLUDE,
+                "reference,organism,comment,evidence,sequence"));
+        for (QueryResult<Entry> queryResult: entryQueryResponse.getResponse()) {
+            proteinMap.put(queryResult.getId(), queryResult.getResult().get(0));
+        }
+
+        for (String key: proteinMap.keySet()) {
+            System.out.println(key + " -> " + proteinMap.get(key));
+        }
+
+//        Network networkToUpdate = new Network();
+//        for (Relation relation : network.getRelations()) {
+//            String xrefNodeId = relation..getDestId();
+//            Entry entry = proteinMap.get(relation.getDestId());
+//            Node proteinNode = new Node(0);
+//            proteinNode.setId(relation.getOriginId());
+//            networkToUpdate.setNode(proteinNode);
+//
+//            // Add XREF nodes for each protein
+//            for (DbReferenceType dbReference: entry.getDbReference()) {
+//                // ... create the Xref node
+//                Xref xrefNode = new Xref(dbReference.getType(), "", dbReference.getId(), null);
+//                networkToUpdate.setNode(xrefNode);
+//
+//                // ... and create relation protein -> protein variation annotation
+//                Relation pXRel = new Relation(proteinNode.getId() + xrefNode.getId(), proteinNode.getId(),
+//                        proteinNode.getType().toString(), xrefNode.getId(), xrefNode.getType().toString(),
+//                        Relation.Type.XREF);
+//                networkToUpdate.setRelationship(pXRel);
+//            }
+//
+//            // Add PROTEIN_ANNOTATION node for each protein
+//            // ... create the Xref node
+//            String protAnnotNodeId = "ProteinAnnotation_uniprot:" + relation.getDestId();
+//            Node protAnnotNode = new Node(protAnnotNodeId, null, Node.Type.PROTEIN_ANNOTATION);
+//            ObjectMap update = new ObjectMap();
+//            List<String> keywords = new ArrayList<>();
+//            for (KeywordType keyword: entry.getKeyword()) {
+//                keywords.add(keyword.getValue());
+//            }
+//            update.put("keywords", String.join(",", keywords));
+//            protAnnotNode.addAttribute("_update", update);
+//
+//            network.addNode(protAnnotNode);
+//
+//            // ...and create relation consequence type -> protein variation annotation
+//            Relation protAnnotRel = new Relation(relation.getOriginId() + protAnnotNode.getId(),
+//                    relation.getOriginId(), Node.Type.PROTEIN.name(), protAnnotNode.getId(),
+//                    protAnnotNode.getType().toString(), Relation.Type.ANNOTATION);
+//            networkToUpdate.setRelationship(protAnnotRel);
+//        }
+//
+//        // Add annotations to the network
+//        System.out.println("Inserting data...");
+//        long startTime = System.currentTimeMillis();
+//        insert(networkToUpdate, null);
+//        long stopTime = System.currentTimeMillis();
+//        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
     }
 
     //-------------------------------------------------------------------------
@@ -1857,4 +1926,71 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //        session.close();
 //        return statementResult;
 //    }
+
+    private boolean existConfigNode() {
+        Session session = this.driver.session();
+        StatementResult statementResult = session.run("match (n{uid:0}) return count(n) as count");
+        session.close();
+
+        return (statementResult.peek().get(0).asInt() == 1);
+    }
+
+    private long getUidCounter() {
+        Session session = this.driver.session();
+        StatementResult statementResult = session.run("match (n{uid:0}) return n." + PREFIX_ATTRIBUTES + "uidCounter");
+        session.close();
+
+        return (statementResult.peek().get(0).asLong());
+    }
+
+    private void setUidCounter(long uidCounter) {
+        // Build Cypher statement
+        StringBuilder cypher = new StringBuilder();
+        cypher.append("merge (n{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=").append(uidCounter);
+
+        // Run cypher statement
+        Session session = this.driver.session();
+        session.writeTransaction(tx -> {
+            tx.run(cypher.toString());
+            return 1;
+        });
+        session.close();
+    }
+
+    private void createConfigNode() {
+        // Create configuration node and set it uid = 0
+        Session session = this.driver.session();
+        Node node = new Node(0, "0", "config", Node.Type.CONFIG);
+        node.addAttribute("uidCounter", 1);
+        session.writeTransaction(tx -> {
+            addNode(tx, node);
+            return 1;
+        });
+        session.close();
+    }
+
+    private void updateConfigNode(ObjectMap attrs) {
+        // Build Cypher statement
+        StringBuilder cypher = new StringBuilder();
+        cypher.append("merge (n{uid:0}) set ");
+        List<String> sets = new ArrayList<>();
+        for (String key: attrs.keySet()) {
+            StringBuilder strSet = new StringBuilder("n.").append(PREFIX_ATTRIBUTES).append(key).append("=");
+            if (attrs.get(key) instanceof String) {
+                strSet.append("'").append(attrs.get(key)).append("'");
+            } else {
+                strSet.append(attrs.get(key));
+            }
+            sets.add(strSet.toString());
+        }
+        cypher.append(StringUtils.join(sets, ","));
+
+        // Run cypher statement
+        Session session = this.driver.session();
+        session.writeTransaction(tx -> {
+            tx.run(cypher.toString());
+            return 1;
+        });
+        session.close();
+    }
 }

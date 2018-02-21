@@ -14,7 +14,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.List;
 
 public class BioNetDBManagerTest {
@@ -42,11 +41,28 @@ public class BioNetDBManagerTest {
 //        cellBaseClient = new CellBaseClient("hsapiens", clientConfiguration);
     }
 
+    //-------------------------------------------------------------------------
+    //
+    //-------------------------------------------------------------------------
+
     @Test
     public void insertVCF() throws BioNetDBException {
         String vcfFilename = "/home/jtarraga/data150/vcf/1k.vcf";
-        bioNetDBManager.loadVcf(Paths.get(vcfFilename));
+        //bioNetDBManager.loadVcf(Paths.get(vcfFilename));
     }
+
+    //-------------------------------------------------------------------------
+    //
+    //-------------------------------------------------------------------------
+
+    @Test
+    public void annotateProtein() throws BioNetDBException, IOException {
+        bioNetDBManager.annotateProtein();
+    }
+
+    //-------------------------------------------------------------------------
+    //
+    //-------------------------------------------------------------------------
 
     @Test
     public void getNodeByUid() throws Exception {
