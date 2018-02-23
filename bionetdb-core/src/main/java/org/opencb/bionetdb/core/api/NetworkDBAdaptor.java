@@ -62,6 +62,18 @@ public interface NetworkDBAdaptor extends AutoCloseable {
         }
     }
 
+
+    //-------------------------------------------------------------------------
+    // U I D     C O U N T E R     M A N A G E M E N T
+    //-------------------------------------------------------------------------
+
+    long getUidCounter();
+    void setUidCounter(long uidCounter);
+
+    //-------------------------------------------------------------------------
+    // I N S E R T     N E T W O R K S
+    //-------------------------------------------------------------------------
+
     void insert(Network network, QueryOptions queryOptions) throws BioNetDBException;
 
     //-------------------------------------------------------------------------

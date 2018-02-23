@@ -307,3 +307,52 @@ public class Neo4JNetworkDBAdaptorTest {
 ////        }
 ////    }
 }
+
+//        Network networkToUpdate = new Network();
+//        for (Relation relation : network.getRelations()) {
+//            String xrefNodeId = relation..getDestId();
+//            Entry entry = proteinMap.get(relation.getDestId());
+//            Node proteinNode = new Node(0);
+//            proteinNode.setId(relation.getOriginId());
+//            networkToUpdate.setNode(proteinNode);
+//
+//            // Add XREF nodes for each protein
+//            for (DbReferenceType dbReference: entry.getDbReference()) {
+//                // ... create the Xref node
+//                Xref xrefNode = new Xref(dbReference.getType(), "", dbReference.getId(), null);
+//                networkToUpdate.setNode(xrefNode);
+//
+//                // ... and create relation protein -> protein variation annotation
+//                Relation pXRel = new Relation(proteinNode.getId() + xrefNode.getId(), proteinNode.getId(),
+//                        proteinNode.getType().toString(), xrefNode.getId(), xrefNode.getType().toString(),
+//                        Relation.Type.XREF);
+//                networkToUpdate.setRelationship(pXRel);
+//            }
+//
+//            // Add PROTEIN_ANNOTATION node for each protein
+//            // ... create the Xref node
+//            String protAnnotNodeId = "ProteinAnnotation_uniprot:" + relation.getDestId();
+//            Node protAnnotNode = new Node(protAnnotNodeId, null, Node.Type.PROTEIN_ANNOTATION);
+//            ObjectMap update = new ObjectMap();
+//            List<String> keywords = new ArrayList<>();
+//            for (KeywordType keyword: entry.getKeyword()) {
+//                keywords.add(keyword.getValue());
+//            }
+//            update.put("keywords", String.join(",", keywords));
+//            protAnnotNode.addAttribute("_update", update);
+//
+//            network.addNode(protAnnotNode);
+//
+//            // ...and create relation consequence type -> protein variation annotation
+//            Relation protAnnotRel = new Relation(relation.getOriginId() + protAnnotNode.getId(),
+//                    relation.getOriginId(), Node.Type.PROTEIN.name(), protAnnotNode.getId(),
+//                    protAnnotNode.getType().toString(), Relation.Type.ANNOTATION);
+//            networkToUpdate.setRelationship(protAnnotRel);
+//        }
+//
+//        // Add annotations to the network
+//        System.out.println("Inserting data...");
+//        long startTime = System.currentTimeMillis();
+//        insert(networkToUpdate, null);
+//        long stopTime = System.currentTimeMillis();
+//        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");

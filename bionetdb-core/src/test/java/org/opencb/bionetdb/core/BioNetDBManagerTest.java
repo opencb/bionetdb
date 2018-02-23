@@ -14,12 +14,14 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class BioNetDBManagerTest {
 
     private String database = "scerevisiae";
     private BioNetDBManager bioNetDBManager;
+
 
     @Before
     public void initialize () {
@@ -46,9 +48,15 @@ public class BioNetDBManagerTest {
     //-------------------------------------------------------------------------
 
     @Test
-    public void insertVCF() throws BioNetDBException {
-        String vcfFilename = "/home/jtarraga/data150/vcf/1k.vcf";
-        //bioNetDBManager.loadVcf(Paths.get(vcfFilename));
+    public void loadBiopax() throws BioNetDBException, IOException {
+        String filename = "/home/jtarraga/data150/neo4j/hsapiens.meiosis.biopax3";
+        bioNetDBManager.loadBiopax(Paths.get(filename));
+    }
+
+    @Test
+    public void loadVCF() throws BioNetDBException {
+        String filename = "/home/jtarraga/data150/vcf/2.vcf";
+        bioNetDBManager.loadVcf(Paths.get(filename));
     }
 
     //-------------------------------------------------------------------------

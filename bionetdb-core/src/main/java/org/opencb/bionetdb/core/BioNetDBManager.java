@@ -27,6 +27,7 @@ import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,17 +54,14 @@ public class BioNetDBManager {
     public BioNetDBManager(String database, BioNetDBConfiguration bioNetDBConfiguration) throws BioNetDBException {
         this.database = database;
         this.bioNetDBConfiguration = bioNetDBConfiguration;
+        networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration, true);
 
         idToUidMap = new HashMap<>();
 
-        init();
-    }
-
-    private void init() throws BioNetDBException {
         logger = LoggerFactory.getLogger(BioNetDBManager.class);
-
-        networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration, true);
     }
+
+
 
     public void loadBiopax(java.nio.file.Path path) throws IOException, BioNetDBException {
         // Parse a BioPax file and get the network
@@ -83,11 +81,8 @@ public class BioNetDBManager {
     }
 
     public void loadVcf(java.nio.file.Path path) throws BioNetDBException {
-        // Be sure to initialize the network DB adapter
-        init();
-
         // Variant parser
-        VariantParser variantParser = new VariantParser();
+        VariantParser variantParser = new VariantParser(networkDBAdaptor.getUidCounter());
 
         // VCF File reader management
         VcfFileReader vcfFileReader = new VcfFileReader(path.toString(), false);
@@ -107,9 +102,6 @@ public class BioNetDBManager {
 
             // Read next batch
             variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
-
-            // TODO: only for test, process two batches, remove later
-            break;
         }
         // Process the remaining variants
         if (variantContexts.size() > 0) {
@@ -119,6 +111,9 @@ public class BioNetDBManager {
 
         // close VCF file reader
         vcfFileReader.close();
+
+        // Update UID counter
+        networkDBAdaptor.setUidCounter(variantParser.getUidCounter());
     }
 
 
@@ -141,6 +136,45 @@ public class BioNetDBManager {
 
         networkDBAdaptor.annotateProtein(proteinClient);
     }
+
+    /*
+        long uidCounter = getUidCounter();
+        long maxUid = 0;
+
+        Session session = this.driver.session();
+
+        // First, insert Neo4J nodes
+        for (Node node: network.getNodes()) {
+            long uid = uidCounter + node.getUid();
+            if (uid > maxUid) {
+                maxUid = uid;
+            }
+            session.writeTransaction(tx -> {
+                node.setUid(uid);
+                addNode(tx, node);
+                return 1;
+            });
+        }
+
+        // Second, insert Neo4J relationships
+        for (Relation relation: network.getRelations()) {
+            long uid = uidCounter + relation.getUid();
+            if (uid > maxUid) {
+                maxUid = uid;
+            }
+            session.writeTransaction(tx -> {
+                relation.setUid(uid);
+                relation.setOrigUid(relation.getOrigUid() + uidCounter);
+                relation.setDestUid(relation.getDestUid() + uidCounter);
+                addRelation(tx, relation);
+                return 1;
+            });
+        }
+
+        setUidCounter(maxUid + 1);
+
+        session.close();
+     */
 
     //=========================================================================
     // S I M P L E     Q U E R I E S: NODES, PATHS, NETWORK
@@ -273,30 +307,45 @@ public class BioNetDBManager {
                                         VariantParser variantParser) throws BioNetDBException {
         // Convert to variants, parse and merge it into the final network
         List<Variant> variants = convert(variantContexts, converter);
+
         Network network = variantParser.parse(variants);
+
         NetworkManager netManager = new NetworkManager(network);
 
-        Query query = new Query();
+        Map<Long, Long> oldUidToNewUidMap = new HashMap<>();
 
-        // Update uid for variant nodes
-        query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), Node.Type.VARIANT.name());
-        QueryOptions queryOptions = QueryOptions.empty();
-        updateNodeUids(Node.Type.VARIANT, query, queryOptions, netManager);
+        // Check recyclable nodes to update UIDs, such as VARIANT, SAMPLE,...
+        // and update UID is necessary
+        for (Node node: netManager.getNodes()) {
+            if (node.getType() == Node.Type.SAMPLE || node.getType() == Node.Type.VARIANT) {
+                // Sample, variant nodes
+                if (idToUidMap.containsKey(node.getName())) {
+                    oldUidToNewUidMap.put(node.getUid(), idToUidMap.get(node.getName()));
+                    node.setUid(idToUidMap.get(node.getName()));
+                } else {
+                    NodeQuery query = new NodeQuery(node.getType());
+                    query.put((node.getType() == Node.Type.VARIANT ? "name" : "id"), node.getName());
+                    QueryResult<Node> queryResult = nodeQuery(query, QueryOptions.empty());
+                    if (ListUtils.isNotEmpty(queryResult.getResult())) {
+                        if (queryResult.getResult().size() != 1) {
+                            logger.error("Skipping processing: {} node {} has multiple instances", node.getType(), node.getName());
+                            continue;
+                        }
+                        idToUidMap.put(node.getName(), queryResult.getResult().get(0).getUid());
+                        oldUidToNewUidMap.put(node.getUid(), idToUidMap.get(node.getName()));
+                        node.setUid(idToUidMap.get(node.getName()));
+                    } else {
+                        idToUidMap.put(node.getName(), node.getUid());
+                    }
+                }
+            }
+        }
 
-        // Update uid for sample nodes
-        query.put(NetworkDBAdaptor.NetworkQueryParams.NODE_TYPE.key(), Node.Type.SAMPLE.name());
-        updateNodeUids(Node.Type.VARIANT, query, queryOptions, netManager);
-
-//
-//        List<Node> sampleNodes = netManager.getNodes(Node.Type.SAMPLE);
-//        for (Node node: sampleNodes) {
-//            System.out.println("node " + node.getType().name() + ": uid=" + node.getUid() + ", id=" + node.getId() + ", name="
-//                    + node.getName());
-//        }
-
+        // Now, relations' origin and destination UIDs are updated
+        netManager.replaceRelationNodeUids(oldUidToNewUidMap);
 
         // Load network to the database
-//        networkDBAdaptor.insert(network, QueryOptions.empty());
+        networkDBAdaptor.insert(network, QueryOptions.empty());
     }
 
 

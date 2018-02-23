@@ -80,7 +80,7 @@ public class Relation {
         COFACTOR("COFACTOR"),
         PRODUCT("PRODUCT"),
         REACTANT("REACTANT"),
-        VARIANT_CALL_INFO("VARIANT_CALL_INFO"),
+        VARIANT_FILE_INFO("VARIANT_FILE_INFO"),
         VARIANT_CALL("VARIANT_CALL");
 
         private final String type;

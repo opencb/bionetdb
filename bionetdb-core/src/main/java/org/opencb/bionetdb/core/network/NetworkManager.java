@@ -16,8 +16,8 @@ public class NetworkManager {
     private Map<String, List<Long>> nodesUids;
 
     // Network relationship support
-    private Map<Long, Integer> relationshipsIndex;
-    private Map<String, List<Long>> relationshipsUids;
+    private Map<Long, Integer> relationsIndex;
+    private Map<String, List<Long>> relationsUids;
 
     public NetworkManager(Network network) {
         this.network = network;
@@ -41,21 +41,25 @@ public class NetworkManager {
         }
 
         // Relation support
-        relationshipsIndex = new HashMap<>();
-        relationshipsUids = new HashMap<>();
+        relationsIndex = new HashMap<>();
+        relationsUids = new HashMap<>();
         size = network.getRelations().size();
         for (int i = 0; i < size; i++) {
             Relation relation = network.getRelations().get(i);
-            relationshipsIndex.put(relation.getUid(), i);
-            if (!relationshipsUids.containsKey(relation.getName())) {
-                relationshipsUids.put(relation.getName(), new ArrayList<>());
+            relationsIndex.put(relation.getUid(), i);
+            if (!relationsUids.containsKey(relation.getName())) {
+                relationsUids.put(relation.getName(), new ArrayList<>());
             }
-            relationshipsUids.get(relation.getName()).add(relation.getUid());
+            relationsUids.get(relation.getName()).add(relation.getUid());
         }
     }
 
     public Node getNode(long uid) {
         return network.getNodes().get(nodesIndex.get(uid));
+    }
+
+    public List<Node> getNodes() {
+        return network.getNodes();
     }
 
     public List<Node> getNodes(String id) {
@@ -92,12 +96,16 @@ public class NetworkManager {
     }
 
     public Relation getRelationship(long uid) {
-        return network.getRelations().get(relationshipsIndex.get(uid));
+        return network.getRelations().get(relationsIndex.get(uid));
+    }
+
+    public List<Relation> getRelationships() {
+        return network.getRelations();
     }
 
     public List<Relation> getRelationships(String id) {
         List<Relation> relations = new ArrayList<>();
-        for (long uid: relationshipsUids.get(id)) {
+        for (long uid: relationsUids.get(id)) {
             relations.add(getRelationship(uid));
         }
         return relations;
@@ -105,13 +113,13 @@ public class NetworkManager {
 
     public void setRelationship(Relation relation) throws BioNetDBException {
         if (relation != null) {
-            if (!relationshipsIndex.containsKey(relation.getUid())) {
+            if (!relationsIndex.containsKey(relation.getUid())) {
                 network.getRelations().add(relation);
-                relationshipsIndex.put(relation.getUid(), network.getRelations().indexOf(relation));
-                if (!relationshipsUids.containsKey(relation.getName())) {
-                    relationshipsUids.put(relation.getName(), new ArrayList<>());
+                relationsIndex.put(relation.getUid(), network.getRelations().indexOf(relation));
+                if (!relationsUids.containsKey(relation.getName())) {
+                    relationsUids.put(relation.getName(), new ArrayList<>());
                 }
-                relationshipsUids.get(relation.getName()).add(relation.getUid());
+                relationsUids.get(relation.getName()).add(relation.getUid());
             } else {
                 throw new BioNetDBException("Relation UID '" + relation.getUid() + "' is not unique");
             }
@@ -131,6 +139,7 @@ public class NetworkManager {
         for (Node node: network.getNodes()) {
             if (node.getUid() == oldUid) {
                 node.setUid(newUid);
+                break;
             }
         }
 
@@ -144,7 +153,18 @@ public class NetworkManager {
         }
     }
 
-//    void load(Path path) throws IOException, BioNetDBException;
+    public void replaceRelationNodeUids(Map<Long, Long> old2NewUid) {
+        for (Relation relation: network.getRelations()) {
+            if (old2NewUid.containsKey(relation.getOrigUid())) {
+                relation.setOrigUid(old2NewUid.get(relation.getOrigUid()));
+            }
+            if (old2NewUid.containsKey(relation.getDestUid())) {
+                relation.setDestUid(old2NewUid.get(relation.getDestUid()));
+            }
+        }
+    }
+
+    //    void load(Path path) throws IOException, BioNetDBException;
 //    void load(Path path, QueryOptions queryOptions) throws IOException, BioNetDBException;
 //
 //    QueryResult<Node> query(Query query, QueryOptions queryOptions) throws BioNetDBException;

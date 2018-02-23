@@ -75,7 +75,7 @@ public class Node {
 
         SAMPLE("SAMPLE"),
         VARIANT_CALL("VARIANT_CALL"),
-        VARIANT_CALL_INFO("VARIANT_CALL_INFO");
+        VARIANT_FILE_INFO("VARIANT_FILE_INFO");
 
         private final String type;
         private final String parentType;
