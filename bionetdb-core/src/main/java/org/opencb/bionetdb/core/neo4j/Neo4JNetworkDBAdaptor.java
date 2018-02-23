@@ -157,7 +157,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // First, insert Neo4J nodes
         for (Node node: network.getNodes()) {
             session.writeTransaction(tx -> {
-                addNode(tx, node);
+                addNode(node, tx);
                 return 1;
             });
         }
@@ -165,7 +165,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // Second, insert Neo4J relationships
         for (Relation relation: network.getRelations()) {
             session.writeTransaction(tx -> {
-                addRelation(tx, relation);
+                addRelation(relation, tx);
                 return 1;
             });
         }
@@ -297,14 +297,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return new QueryResult("networkQuery", time, 1, 1, null, null, Arrays.asList(network));
     }
 
-    //-------------------------------------------------------------------------
-    // P R I V A T E     M E T H O D S
-    //-------------------------------------------------------------------------
+    public StatementResult addNode(Node node, Transaction tx) {
+        return addNode(node, "uid", node.getUid(), tx);
+    }
 
-    private StatementResult addNode(Transaction tx, Node node) {
+    public StatementResult addNode(Node node, String byKey, Object value, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
         List<String> props = new ArrayList<>();
-        //props.add("uid:" + node.getUid());
         if (StringUtils.isNotEmpty(node.getId())) {
             props.add("n.id=\"" + cleanValue(node.getId()) + "\"");
         }
@@ -328,7 +327,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (ListUtils.isNotEmpty(node.getTags())) {
             cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
         }
-        cypher.append("{uid:").append(node.getUid()).append("})");
+        cypher.append("{").append(byKey).append(":");
+        if (value instanceof String) {
+            cypher.append("\"").append(value).append("\"");
+        } else {
+            cypher.append(value);
+        }
+        cypher.append("})");
         if (ListUtils.isNotEmpty(props)) {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
         }
@@ -336,7 +341,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         //return tx.run("CREATE (n:" + StringUtils.join(node.getTags(), ":") + " " + propsJoined + ") RETURN ID(n) AS ID");
     }
 
-    private StatementResult addRelation(Transaction tx, Relation relation) {
+    public StatementResult addRelation(Relation relation, Transaction tx) {
         List<String> props = new ArrayList<>();
         props.add("uid:" + relation.getUid());
         if (StringUtils.isNotEmpty(relation.getName())) {
@@ -358,6 +363,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         // Create the relationship
         return tx.run(statementTemplate.toString(), parameters("origUid", relation.getOrigUid(), "destUiD", relation.getDestUid()));
     }
+
+    //-------------------------------------------------------------------------
+    // P R I V A T E     M E T H O D S
+    //-------------------------------------------------------------------------
 
     private String cleanValue(String value) {
         return value.replace("\"", ",").replace("\\", "|");
@@ -1930,7 +1939,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Node node = new Node(0, "0", "config", Node.Type.CONFIG);
         node.addAttribute("uidCounter", 1);
         session.writeTransaction(tx -> {
-            addNode(tx, node);
+            addNode(node, tx);
             return 1;
         });
         session.close();
@@ -1959,5 +1968,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             return 1;
         });
         session.close();
+    }
+
+    public Driver getDriver() {
+        return driver;
+    }
+
+    public Neo4JNetworkDBAdaptor setDriver(Driver driver) {
+        this.driver = driver;
+        return this;
     }
 }
