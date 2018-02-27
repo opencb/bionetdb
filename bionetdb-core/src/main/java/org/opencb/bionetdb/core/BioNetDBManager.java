@@ -13,7 +13,7 @@ import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.BioPaxParser;
-import org.opencb.bionetdb.core.io.VariantLoader;
+import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.NetworkManager;
@@ -47,7 +47,6 @@ public class BioNetDBManager {
     private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
 
-
     public BioNetDBManager(String database, BioNetDBConfiguration bioNetDBConfiguration) throws BioNetDBException {
         this.database = database;
         this.bioNetDBConfiguration = bioNetDBConfiguration;
@@ -57,8 +56,6 @@ public class BioNetDBManager {
 
         logger = LoggerFactory.getLogger(BioNetDBManager.class);
     }
-
-
 
     public void loadBiopax(java.nio.file.Path path) throws IOException, BioNetDBException {
         // Parse a BioPax file and get the network
@@ -79,10 +76,9 @@ public class BioNetDBManager {
 
     public void loadVcf(java.nio.file.Path path) throws BioNetDBException {
         // VCF loader
-        VariantLoader variantLoader = new VariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
-        variantLoader.loadVCFFile(path);
+        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
+        neo4JVariantLoader.loadVCFFile(path);
     }
-
 
     public void annotate() {
 

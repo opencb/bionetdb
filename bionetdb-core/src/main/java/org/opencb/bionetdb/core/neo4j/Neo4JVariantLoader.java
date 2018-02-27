@@ -1,28 +1,30 @@
-package org.opencb.bionetdb.core.io;
+package org.opencb.bionetdb.core.neo4j;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.VcfFileReader;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.bionetdb.core.utils.NodeBuilder;
+import org.opencb.commons.utils.ListUtils;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VariantLoader {
+public class Neo4JVariantLoader {
 
     private Neo4JNetworkDBAdaptor networkDBAdaptor;
     private List<String> sampleNames;
 
     private static final int VARIANT_BATCH_SIZE = 10000;
 
-    public VariantLoader(Neo4JNetworkDBAdaptor networkDBAdaptor) {
+    public Neo4JVariantLoader(Neo4JNetworkDBAdaptor networkDBAdaptor) {
         this.networkDBAdaptor = networkDBAdaptor;
     }
 
@@ -74,19 +76,46 @@ public class VariantLoader {
 
     private void loadVariant(Variant variant, Transaction tx) {
         if (variant != null) {
-            // Main node
-            Node vNode = createVariantNode(variant);
-            StatementResult vNeoNode = networkDBAdaptor.addNode(vNode, "name", vNode.getName(), tx);
+            // Variant node
+            Node variantNode = NodeBuilder.newNode(variant);
+            networkDBAdaptor.mergeNode(variantNode, "name", variantNode.getName(), tx);
 
-//            //vStmResult.peek().get
-//            // Sample management
-//            if (ListUtils.isNotEmpty(variant.getStudies())) {
-//                // Only one single study is supported
-//                StudyEntry studyEntry = variant.getStudies().get(0);
-//
-//                if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
-//                }
-//            }
+            // Sample management
+            if (ListUtils.isNotEmpty(variant.getStudies())) {
+                // Only one single study is supported
+                StudyEntry studyEntry = variant.getStudies().get(0);
+
+                if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
+                    // Create the variant call info node adding all file attributes (FILTER, QUAL, INFO fields...)
+                    Node fileEntryNode = NodeBuilder.newNode(variant.getStudies().get(0), variantNode);
+                    networkDBAdaptor.addNode(fileEntryNode, tx);
+
+                    for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
+                        // Create the sample node
+                        Node sampleNode = new Node(-1, sampleNames.get(i), sampleNames.get(i), Node.Type.SAMPLE);
+                        networkDBAdaptor.mergeNode(sampleNode, "id", sampleNode.getId(), tx);
+
+                        // And the call node for that sample adding the format attributes
+                        Node callNode = NodeBuilder.newCallNode(studyEntry.getFormat(), studyEntry.getSampleData(i));
+                        networkDBAdaptor.addNode(callNode, tx);
+
+                        // Relation: sample - variant call
+                        Relation sVCallRel = new Relation(-1, sampleNode.getId() + "_" + callNode.getId(), sampleNode.getUid(),
+                                callNode.getUid(), Relation.Type.VARIANT_CALL);
+                        networkDBAdaptor.mergeRelation(sVCallRel, tx);
+
+                        // Relation: variant call - variant file info
+                        Relation vFileInfoRel = new Relation(-1, callNode.getId() + "_" + fileEntryNode.getId(), callNode.getUid(),
+                                fileEntryNode.getUid(), Relation.Type.VARIANT_FILE_INFO);
+                        networkDBAdaptor.mergeRelation(vFileInfoRel, tx);
+
+                        // Relation: variant - variant call
+                        Relation vCallRel = new Relation(-1, variantNode.getId() + "_" + callNode.getId(), variantNode.getUid(),
+                                callNode.getUid(), Relation.Type.VARIANT_CALL);
+                        networkDBAdaptor.addRelation(vCallRel, tx);
+                    }
+                }
+            }
 //
 //            // Variant annotation
 //            if (variant.getAnnotation() != null) {
@@ -176,16 +205,4 @@ public class VariantLoader {
 //        // Load network to the database
 //        networkDBAdaptor.insert(network, QueryOptions.empty());
 //    }
-
-    private Node createVariantNode(Variant variant) {
-        Node vNode = new Node(-1, variant.getId(), variant.toString(), Node.Type.VARIANT);
-        vNode.addAttribute("chromosome", variant.getChromosome());
-        vNode.addAttribute("start", variant.getStart());
-        vNode.addAttribute("end", variant.getEnd());
-        vNode.addAttribute("reference", variant.getReference());
-        vNode.addAttribute("alternate", variant.getAlternate());
-        vNode.addAttribute("strand", variant.getStrand());
-        vNode.addAttribute("type", variant.getType().toString());
-        return vNode;
-    }
 }

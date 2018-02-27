@@ -64,11 +64,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (createIndex) {
             createIndexes();
         }
-
-        // Add configuration node
-        if (!existConfigNode()) {
-            createConfigNode();
-        }
     }
 
     private void registerShutdownHook(final Driver driver) {
@@ -112,32 +107,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
             session.close();
         }
-    }
-
-    //-------------------------------------------------------------------------
-    // U I D     C O U N T E R     M A N A G E M E N T
-    //-------------------------------------------------------------------------
-
-    public long getUidCounter() {
-        Session session = this.driver.session();
-        StatementResult statementResult = session.run("match (n{uid:0}) return n." + PREFIX_ATTRIBUTES + "uidCounter");
-        session.close();
-
-        return (statementResult.peek().get(0).asLong());
-    }
-
-    public void setUidCounter(long uidCounter) {
-        // Build Cypher statement
-        StringBuilder cypher = new StringBuilder();
-        cypher.append("merge (n{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=").append(uidCounter);
-
-        // Run cypher statement
-        Session session = this.driver.session();
-        session.writeTransaction(tx -> {
-            tx.run(cypher.toString());
-            return 1;
-        });
-        session.close();
     }
 
     //-------------------------------------------------------------------------
@@ -298,11 +267,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     public StatementResult addNode(Node node, Transaction tx) {
-        return addNode(node, "uid", node.getUid(), tx);
-    }
-
-    public StatementResult addNode(Node node, String byKey, Object value, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
+        boolean prefix = false;
         List<String> props = new ArrayList<>();
         if (StringUtils.isNotEmpty(node.getId())) {
             props.add("n.id=\"" + cleanValue(node.getId()) + "\"");
@@ -313,7 +279,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (StringUtils.isNotEmpty(node.getSource())) {
             props.add("n.source=\"" + node.getSource() + "\"");
         }
-        for (String key : node.getAttributes().keySet()) {
+        for (String key: node.getAttributes().keySet()) {
             if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
                 props.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
             } else {
@@ -323,11 +289,62 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         //String propsJoined = "{" + String.join(",", props) + "}";
 
         // Create the desired node
+        StringBuilder cypher = new StringBuilder("CREATE (n");
+        if (ListUtils.isNotEmpty(node.getTags())) {
+            cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
+        }
+        cypher.append(")");
+        if (ListUtils.isNotEmpty(props)) {
+            cypher.append(" SET ").append(StringUtils.join(props, ","));
+        }
+        cypher.append(" RETURN ID(n) AS UID");
+        StatementResult ret = tx.run(cypher.toString());
+        node.setUid(ret.peek().get("UID").asLong());
+        return ret;
+    }
+
+    public StatementResult mergeNode(Node node, String byKey, Object value, Transaction tx) {
+        // Gather properties of the node to create a cypher string with them
+        boolean prefix = false;
+        List<String> props = new ArrayList<>();
+        if (!"id".equals(byKey)) {
+            if (StringUtils.isNotEmpty(node.getId())) {
+                props.add("n.id=\"" + cleanValue(node.getId()) + "\"");
+            }
+        }
+        if (!"name".equals(byKey)) {
+            if (StringUtils.isNotEmpty(node.getName())) {
+                props.add("n.name=\"" + cleanValue(node.getName()) + "\"");
+            }
+        }
+        if (!"source".equals(byKey)) {
+            if (StringUtils.isNotEmpty(node.getSource())) {
+                props.add("n.source=\"" + node.getSource() + "\"");
+            }
+        }
+        for (String key: node.getAttributes().keySet()) {
+            if (key.equals(byKey)) {
+                prefix = true;
+            } else {
+                if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
+                    props.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
+                } else {
+                    props.add("n." + PREFIX_ATTRIBUTES + key + "=\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
+                }
+            }
+        }
+        //String propsJoined = "{" + String.join(",", props) + "}";
+
+        // Create the desired node
         StringBuilder cypher = new StringBuilder("MERGE (n");
         if (ListUtils.isNotEmpty(node.getTags())) {
             cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
         }
-        cypher.append("{").append(byKey).append(":");
+        cypher.append("{");
+        if (prefix) {
+            cypher.append(PREFIX_ATTRIBUTES);
+        }
+        cypher.append(byKey).append(":");
         if (value instanceof String) {
             cypher.append("\"").append(value).append("\"");
         } else {
@@ -337,13 +354,18 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (ListUtils.isNotEmpty(props)) {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
         }
-        return tx.run(cypher.toString());
-        //return tx.run("CREATE (n:" + StringUtils.join(node.getTags(), ":") + " " + propsJoined + ") RETURN ID(n) AS ID");
+        cypher.append(" RETURN ID(n) AS UID");
+        StatementResult ret = tx.run(cypher.toString());
+        node.setUid(ret.peek().get("UID").asLong());
+        return ret;
+    }
+
+    public StatementResult mergeRelation(Relation relation, Transaction tx) {
+        return addRelation(relation, tx);
     }
 
     public StatementResult addRelation(Relation relation, Transaction tx) {
         List<String> props = new ArrayList<>();
-        props.add("uid:" + relation.getUid());
         if (StringUtils.isNotEmpty(relation.getName())) {
             props.add("name:\"" + cleanValue(relation.getName()) + "\"");
         }
@@ -356,12 +378,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String propsJoined = "{" + String.join(",", props) + "}";
 
         StringBuilder statementTemplate = new StringBuilder();
-        statementTemplate.append("MATCH (o) WHERE o.uid = $origUid")
-                .append(" MATCH (d) WHERE d.uid = $destUiD")
-                .append(" MERGE (o)-[:").append(StringUtils.join(relation.getTags(), ":")).append(propsJoined).append("]->(d)");
+        statementTemplate.append("MATCH (o) WHERE ID(o) = $origUid")
+                .append(" MATCH (d) WHERE ID(d) = $destUid")
+                .append(" MERGE (o)-[r:").append(StringUtils.join(relation.getTags(), ":")).append(propsJoined).append("]->(d)")
+                .append(" RETURN ID(r) AS UID");
 
         // Create the relationship
-        return tx.run(statementTemplate.toString(), parameters("origUid", relation.getOrigUid(), "destUiD", relation.getDestUid()));
+        StatementResult ret = tx.run(statementTemplate.toString(),
+                parameters("origUid", relation.getOrigUid(), "destUid", relation.getDestUid()));
+        relation.setUid(ret.peek().get("UID").asLong());
+        return ret;
     }
 
     //-------------------------------------------------------------------------
@@ -1924,51 +1950,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //        session.close();
 //        return statementResult;
 //    }
-
-    private boolean existConfigNode() {
-        Session session = this.driver.session();
-        StatementResult statementResult = session.run("match (n{uid:0}) return count(n) as count");
-        session.close();
-
-        return (statementResult.peek().get(0).asInt() == 1);
-    }
-
-    private void createConfigNode() {
-        // Create configuration node and set it uid = 0
-        Session session = this.driver.session();
-        Node node = new Node(0, "0", "config", Node.Type.CONFIG);
-        node.addAttribute("uidCounter", 1);
-        session.writeTransaction(tx -> {
-            addNode(node, tx);
-            return 1;
-        });
-        session.close();
-    }
-
-    private void updateConfigNode(ObjectMap attrs) {
-        // Build Cypher statement
-        StringBuilder cypher = new StringBuilder();
-        cypher.append("merge (n{uid:0}) set ");
-        List<String> sets = new ArrayList<>();
-        for (String key: attrs.keySet()) {
-            StringBuilder strSet = new StringBuilder("n.").append(PREFIX_ATTRIBUTES).append(key).append("=");
-            if (attrs.get(key) instanceof String) {
-                strSet.append("'").append(attrs.get(key)).append("'");
-            } else {
-                strSet.append(attrs.get(key));
-            }
-            sets.add(strSet.toString());
-        }
-        cypher.append(StringUtils.join(sets, ","));
-
-        // Run cypher statement
-        Session session = this.driver.session();
-        session.writeTransaction(tx -> {
-            tx.run(cypher.toString());
-            return 1;
-        });
-        session.close();
-    }
 
     public Driver getDriver() {
         return driver;

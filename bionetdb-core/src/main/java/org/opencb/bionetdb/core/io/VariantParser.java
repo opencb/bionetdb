@@ -1,7 +1,6 @@
 package org.opencb.bionetdb.core.io;
 
 import org.apache.commons.collections.MapUtils;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.network.Network;
@@ -54,65 +53,65 @@ public class VariantParser {
             vNode.addAttribute("type", variant.getType().toString());
             network.addNode(vNode);
 
-            if (ListUtils.isNotEmpty(variant.getStudies())) {
-                // Only one single study is supported
-                StudyEntry studyEntry = variant.getStudies().get(0);
-
-                if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
-                    String source = studyEntry.getFiles().get(0).getFileId();
-                    if (org.apache.commons.lang.StringUtils.isNotEmpty(source)) {
-                        vNode.setSource(source);
-                    }
-
-                    // Create the variant call info node adding all file attributes (FILTER, QUAL, INFO fields...)
-                    Node fileInfoNode = new Node(uidCounter++, vNode.getId() + "_" + source, "", Node.Type.VARIANT_FILE_INFO);
-                    Map<String, String> fileAttrs = studyEntry.getFiles().get(0).getAttributes();
-                    fileInfoNode.addAttribute("filename", studyEntry.getFiles().get(0).getFileId());
-                    for (String key: fileAttrs.keySet()) {
-                        fileInfoNode.addAttribute(key, fileAttrs.get(key));
-                    }
-                    network.addNode(fileInfoNode);
-
-                    for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
-                        // Create the sample node
-                        if (!sampleNodeMap.containsKey(sampleNames.get(i))) {
-                            System.out.println("Internal error: sample name " + sampleNames.get(i) + " does not exist!!!");
-                        }
-                        Node sampleNode = sampleNodeMap.get(sampleNames.get(i));
-//                        if (!sampleUidMap.containsKey(sampleNames.get(i))) {
-//                            sampleNode = new Node(uidCounter++, sampleNames.get(i), sampleNames.get(i), Node.Type.SAMPLE);
-//                            network.addNode(sampleNode);
+//            if (ListUtils.isNotEmpty(variant.getStudies())) {
+//                // Only one single study is supported
+//                StudyEntry studyEntry = variant.getStudies().get(0);
 //
-//                            sampleUidMap.put(sampleNode.getId(), sampleNode.getUid());
-//                        } else {
-//                            sampleNode = new Node(sampleUidMap.get(sampleNames.get(i)));
+//                if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
+//                    String source = studyEntry.getFiles().get(0).getFileId();
+//                    if (org.apache.commons.lang.StringUtils.isNotEmpty(source)) {
+//                        vNode.setSource(source);
+//                    }
+//
+//                    // Create the variant call info node adding all file attributes (FILTER, QUAL, INFO fields...)
+//                    Node fileInfoNode = new Node(uidCounter++, vNode.getId() + "_" + source, "", Node.Type.VARIANT_FILE_INFO);
+//                    Map<String, String> fileAttrs = studyEntry.getFiles().get(0).getAttributes();
+//                    fileInfoNode.addAttribute("filename", studyEntry.getFiles().get(0).getFileId());
+//                    for (String key: fileAttrs.keySet()) {
+//                        fileInfoNode.addAttribute(key, fileAttrs.get(key));
+//                    }
+//                    network.addNode(fileInfoNode);
+//
+//                    for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
+//                        // Create the sample node
+//                        if (!sampleNodeMap.containsKey(sampleNames.get(i))) {
+//                            System.out.println("Internal error: sample name " + sampleNames.get(i) + " does not exist!!!");
 //                        }
-
-                        // And the call node for that sample adding the format attributes
-                        Node callNode = new Node(uidCounter++, studyEntry.getSampleData(i).get(0), studyEntry.getSampleData(i).get(0),
-                                Node.Type.VARIANT_CALL);
-                        for (int j = 0; j < studyEntry.getSamplesData().get(i).size(); j++) {
-                            callNode.addAttribute(studyEntry.getFormat().get(j), studyEntry.getSampleData(i).get(j));
-                        }
-                        network.addNode(callNode);
-
-                        // Relation: sample - variant call
-                        Relation sVCallRel = new Relation(uidCounter++, sampleNode.getId() + callNode.getId(), sampleNode.getUid(),
-                                callNode.getUid(), Relation.Type.VARIANT_CALL);
-                        network.addRelation(sVCallRel);
-
-                        // Relation: variant call - variant file info
-                        Relation vFileInfoRel = new Relation(uidCounter++, callNode.getId() + fileInfoNode.getId(), callNode.getUid(),
-                                fileInfoNode.getUid(), Relation.Type.VARIANT_FILE_INFO);
-                        network.addRelation(vFileInfoRel);
-
-                        // Relation: variant - variant call
-                        Relation vCallRel = new Relation(uidCounter++, vNode.getId() + callNode.getId(), vNode.getUid(),
-                                callNode.getUid(), Relation.Type.VARIANT_CALL);
-                        network.addRelation(vCallRel);
-                    }
-                }
-            }
+//                        Node sampleNode = sampleNodeMap.get(sampleNames.get(i));
+////                        if (!sampleUidMap.containsKey(sampleNames.get(i))) {
+////                            sampleNode = new Node(uidCounter++, sampleNames.get(i), sampleNames.get(i), Node.Type.SAMPLE);
+////                            network.addNode(sampleNode);
+////
+////                            sampleUidMap.put(sampleNode.getId(), sampleNode.getUid());
+////                        } else {
+////                            sampleNode = new Node(sampleUidMap.get(sampleNames.get(i)));
+////                        }
+//
+//                        // And the call node for that sample adding the format attributes
+//                        Node callNode = new Node(uidCounter++, studyEntry.getSampleData(i).get(0), studyEntry.getSampleData(i).get(0),
+//                                Node.Type.VARIANT_CALL);
+//                        for (int j = 0; j < studyEntry.getSamplesData().get(i).size(); j++) {
+//                            callNode.addAttribute(studyEntry.getFormat().get(j), studyEntry.getSampleData(i).get(j));
+//                        }
+//                        network.addNode(callNode);
+//
+//                        // Relation: sample - variant call
+//                        Relation sVCallRel = new Relation(uidCounter++, sampleNode.getId() + callNode.getId(), sampleNode.getUid(),
+//                                callNode.getUid(), Relation.Type.VARIANT_CALL);
+//                        network.addRelation(sVCallRel);
+//
+//                        // Relation: variant call - variant file info
+//                        Relation vFileInfoRel = new Relation(uidCounter++, callNode.getId() + fileInfoNode.getId(), callNode.getUid(),
+//                                fileInfoNode.getUid(), Relation.Type.VARIANT_FILE_INFO);
+//                        network.addRelation(vFileInfoRel);
+//
+//                        // Relation: variant - variant call
+//                        Relation vCallRel = new Relation(uidCounter++, vNode.getId() + callNode.getId(), vNode.getUid(),
+//                                callNode.getUid(), Relation.Type.VARIANT_CALL);
+//                        network.addRelation(vCallRel);
+//                    }
+//                }
+//            }
 
             if (variant.getAnnotation() != null) {
                 // Annotation node
