@@ -6,6 +6,9 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.EvidenceEntry;
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
+import org.opencb.biodata.models.variant.avro.Score;
 import org.opencb.biodata.tools.variant.VcfFileReader;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.network.Node;
@@ -110,15 +113,15 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.mergeRelation(vFileInfoRel, tx);
 
                         // Relation: variant - variant call
-                        Relation vCallRel = new Relation(-1, variantNode.getId() + "_" + callNode.getId(), variantNode.getUid(),
+                        Relation vCallRel = new Relation(-1, null, variantNode.getUid(),
                                 callNode.getUid(), Relation.Type.VARIANT_CALL);
                         networkDBAdaptor.addRelation(vCallRel, tx);
                     }
                 }
             }
-//
-//            // Variant annotation
-//            if (variant.getAnnotation() != null) {
+
+            // Variant annotation
+            if (variant.getAnnotation() != null) {
 //                // Consequence types
 //                if (ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
 //                    // internal management for Proteins
@@ -130,23 +133,59 @@ public class Neo4JVariantLoader {
 //                    }
 //                }
 //
-//                // Population frequencies
-//                if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
-//                }
-//
-//                // Conservation values
-//                if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
-//
-//                }
-//
-//                // Trait associations
-//                if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
-//                }
-//
-//                // Functional scores
-//                if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
-//                }
-//            }
+                // Population frequencies
+                if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
+                    for (PopulationFrequency popFreq : variant.getAnnotation().getPopulationFrequencies()) {
+                        Node popFreqNode = NodeBuilder.newNode(popFreq);
+                        networkDBAdaptor.addNode(popFreqNode, tx);
+
+                        // Relation: variant - population frequency
+                        Relation vPfRel = new Relation(-1, null, variantNode.getUid(), popFreqNode.getUid(),
+                                Relation.Type.POPULATION_FREQUENCY);
+                        networkDBAdaptor.mergeRelation(vPfRel, tx);
+                    }
+                }
+
+                // Conservation values
+                if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
+                    for (Score score: variant.getAnnotation().getConservation()) {
+                        Node consNode = NodeBuilder.newNode(score, Node.Type.CONSERVATION);
+                        networkDBAdaptor.addNode(consNode, tx);
+
+                        // Relation: variant - conservation
+                        Relation vConsRel = new Relation(-1, null, variantNode.getUid(), consNode.getUid(),
+                                Relation.Type.CONSERVATION);
+                        networkDBAdaptor.mergeRelation(vConsRel, tx);
+                    }
+                }
+
+                // Trait associations
+                if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
+                    for (EvidenceEntry evidence : variant.getAnnotation().getTraitAssociation()) {
+                        Node evNode = NodeBuilder.newNode(evidence);
+                        networkDBAdaptor.addNode(evNode, tx);
+
+                        // Relation: variant - conservation
+                        Relation vFuncRel = new Relation(annotNode.getId() + evNode.getId(), annotNode.getId(),
+                                annotNode.getType().toString(), evNode.getId(), evNode.getType().toString(),
+                                Relation.Type.TRAIT_ASSOCIATION);
+                        network.setRelationship(vFuncRel);
+                    }
+                }
+
+                // Functional scores
+                if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
+                    for (Score score: variant.getAnnotation().getFunctionalScore()) {
+                        Node funcNode = NodeBuilder.newNode(score, Node.Type.FUNCTIONAL_SCORE);
+                        networkDBAdaptor.addNode(funcNode, tx);
+
+                        // Relation: variant - conservation
+                        Relation vFuncRel = new Relation(-1, null, variantNode.getUid(), funcNode.getUid(),
+                                Relation.Type.FUNCTIONAL_SCORE);
+                        networkDBAdaptor.mergeRelation(vFuncRel, tx);
+                    }
+                }
+            }
         }
     }
 

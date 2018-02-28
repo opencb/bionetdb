@@ -3,6 +3,9 @@ package org.opencb.bionetdb.core.utils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.EvidenceEntry;
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
+import org.opencb.biodata.models.variant.avro.Score;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.commons.utils.ListUtils;
 
@@ -45,11 +48,58 @@ public class NodeBuilder {
     }
 
     public static Node newCallNode(List<String> formatKeys, List<String> formatValues) {
-        Node callNode = new Node(-1, formatValues.get(0), formatValues.get(0), Node.Type.VARIANT_CALL);
+        Node node = new Node(-1, formatValues.get(0), formatValues.get(0), Node.Type.VARIANT_CALL);
         for (int i = 0; i < formatKeys.size(); i++) {
-            callNode.addAttribute(formatKeys.get(i), formatValues.get(i));
+            node.addAttribute(formatKeys.get(i), formatValues.get(i));
         }
-        return callNode;
+        return node;
     }
 
+    public static Node newNode(PopulationFrequency popFreq) {
+        Node node = new Node(-1, popFreq.getPopulation(), popFreq.getPopulation(), Node.Type.POPULATION_FREQUENCY);
+        node.addAttribute("study", popFreq.getStudy());
+        node.addAttribute("population", popFreq.getPopulation());
+        node.addAttribute("refAlleleFreq", popFreq.getRefAlleleFreq());
+        node.addAttribute("altAlleleFreq", popFreq.getAltAlleleFreq());
+        return node;
+    }
+
+    public static Node newNode(Score score, Node.Type nodeType) {
+        Node node = new Node(-1, score.getSource(), null, nodeType);
+        node.addAttribute("score", score.getScore());
+        node.addAttribute("source", score.getSource());
+        node.addAttribute("description", score.getDescription());
+        return node;
+    }
+
+    public static Node newNode(EvidenceEntry evidence, Node.Type nodeType) {
+        Node evNode = new Node("TraitAssociation_" + (countId++), null, Node.Type.TRAIT_ASSOCIATION);
+        if (evidence.getSource() != null && evidence.getSource().getName() != null) {
+            evNode.addAttribute("source", evidence.getSource().getName());
+        }
+        evNode.addAttribute("url", evidence.getUrl());
+        if (ListUtils.isNotEmpty(evidence.getHeritableTraits())) {
+            StringBuilder her = new StringBuilder();
+            for (HeritableTrait heritableTrait : evidence.getHeritableTraits()) {
+                if (her.length() > 0) {
+                    her.append(",");
+                }
+                her.append(heritableTrait.getTrait());
+            }
+            evNode.addAttribute("heritableTraits", her.toString());
+        }
+        if (evidence.getSource() != null && evidence.getSource().getName() != null) {
+            evNode.addAttribute("source", evidence.getSource().getName());
+        }
+        if (ListUtils.isNotEmpty(evidence.getAlleleOrigin())) {
+            StringBuilder alleleOri = new StringBuilder();
+            for (AlleleOrigin alleleOrigin : evidence.getAlleleOrigin()) {
+                if (alleleOri.length() > 0 && alleleOrigin.name() != null) {
+                    alleleOri.append(",");
+                }
+                alleleOri.append(alleleOrigin.name());
+            }
+            evNode.addAttribute("alleleOrigin", alleleOri.toString());
+        }
+    }
 }
