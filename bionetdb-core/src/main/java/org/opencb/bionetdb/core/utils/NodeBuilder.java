@@ -3,9 +3,7 @@ package org.opencb.bionetdb.core.utils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.EvidenceEntry;
-import org.opencb.biodata.models.variant.avro.PopulationFrequency;
-import org.opencb.biodata.models.variant.avro.Score;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.commons.utils.ListUtils;
 
@@ -73,11 +71,8 @@ public class NodeBuilder {
     }
 
     public static Node newNode(EvidenceEntry evidence, Node.Type nodeType) {
-        Node evNode = new Node("TraitAssociation_" + (countId++), null, Node.Type.TRAIT_ASSOCIATION);
-        if (evidence.getSource() != null && evidence.getSource().getName() != null) {
-            evNode.addAttribute("source", evidence.getSource().getName());
-        }
-        evNode.addAttribute("url", evidence.getUrl());
+        Node node = new Node(-1, null, null, nodeType);
+        node.addAttribute("url", evidence.getUrl());
         if (ListUtils.isNotEmpty(evidence.getHeritableTraits())) {
             StringBuilder her = new StringBuilder();
             for (HeritableTrait heritableTrait : evidence.getHeritableTraits()) {
@@ -86,10 +81,10 @@ public class NodeBuilder {
                 }
                 her.append(heritableTrait.getTrait());
             }
-            evNode.addAttribute("heritableTraits", her.toString());
+            node.addAttribute("heritableTraits", her.toString());
         }
         if (evidence.getSource() != null && evidence.getSource().getName() != null) {
-            evNode.addAttribute("source", evidence.getSource().getName());
+            node.addAttribute("source", evidence.getSource().getName());
         }
         if (ListUtils.isNotEmpty(evidence.getAlleleOrigin())) {
             StringBuilder alleleOri = new StringBuilder();
@@ -99,7 +94,8 @@ public class NodeBuilder {
                 }
                 alleleOri.append(alleleOrigin.name());
             }
-            evNode.addAttribute("alleleOrigin", alleleOri.toString());
+            node.addAttribute("alleleOrigin", alleleOri.toString());
         }
+        return node;
     }
 }

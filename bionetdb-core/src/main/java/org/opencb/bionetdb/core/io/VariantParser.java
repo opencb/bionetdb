@@ -317,95 +317,95 @@ public class VariantParser {
                     }
                 }
 
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
-                    for (PopulationFrequency popFreq : variant.getAnnotation().getPopulationFrequencies()) {
-                        Node popFreqNode = new Node(uidCounter++, "PopulationFrequency", null, Node.Type.POPULATION_FREQUENCY);
-                        popFreqNode.addAttribute("study", popFreq.getStudy());
-                        popFreqNode.addAttribute("population", popFreq.getPopulation());
-                        popFreqNode.addAttribute("refAlleleFreq", popFreq.getRefAlleleFreq());
-                        popFreqNode.addAttribute("altAlleleFreq", popFreq.getAltAlleleFreq());
-                        network.addNode(popFreqNode);
-
-                        // Relation: variant - population frequency
-                        Relation vPfRel = new Relation(uidCounter++, annotNode.getId() + popFreqNode.getId(), annotNode.getUid(),
-                                popFreqNode.getUid(), Relation.Type.POPULATION_FREQUENCY);
-                        network.addRelation(vPfRel);
-
-                    }
-                }
-
-                // Conservation
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
-                    for (Score score : variant.getAnnotation().getConservation()) {
-                        Node conservNode = new Node(uidCounter++, "Conservation", null, Node.Type.CONSERVATION);
-                        conservNode.addAttribute("score", score.getScore());
-                        conservNode.addAttribute("source", score.getSource());
-                        conservNode.addAttribute("description", score.getDescription());
-                        network.addNode(conservNode);
-
-                        // Relation: variant - conservation
-                        Relation vConservRel = new Relation(uidCounter++, annotNode.getId() + conservNode.getId(), annotNode.getUid(),
-                                conservNode.getUid(), Relation.Type.CONSERVATION);
-                        network.addRelation(vConservRel);
-                    }
-                }
-
-                // Trait association
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
-                    for (EvidenceEntry evidence : variant.getAnnotation().getTraitAssociation()) {
-                        Node evNode = new Node(uidCounter++, "TraitAssociation", null, Node.Type.TRAIT_ASSOCIATION);
-                        if (evidence.getSource() != null && evidence.getSource().getName() != null) {
-                            evNode.addAttribute("source", evidence.getSource().getName());
-                        }
-                        evNode.addAttribute("url", evidence.getUrl());
-                        if (ListUtils.isNotEmpty(evidence.getHeritableTraits())) {
-                            StringBuilder her = new StringBuilder();
-                            for (HeritableTrait heritableTrait : evidence.getHeritableTraits()) {
-                                if (her.length() > 0) {
-                                    her.append(",");
-                                }
-                                her.append(heritableTrait.getTrait());
-                            }
-                            evNode.addAttribute("heritableTraits", her.toString());
-                        }
-                        if (evidence.getSource() != null && evidence.getSource().getName() != null) {
-                            evNode.addAttribute("source", evidence.getSource().getName());
-                        }
-                        if (ListUtils.isNotEmpty(evidence.getAlleleOrigin())) {
-                            StringBuilder alleleOri = new StringBuilder();
-                            for (AlleleOrigin alleleOrigin : evidence.getAlleleOrigin()) {
-                                if (alleleOri.length() > 0 && alleleOrigin.name() != null) {
-                                    alleleOri.append(",");
-                                }
-                                alleleOri.append(alleleOrigin.name());
-                            }
-                            evNode.addAttribute("alleleOrigin", alleleOri.toString());
-                        }
-                        network.addNode(evNode);
-
-                        // Relation: variant - conservation
-                        Relation vFuncRel = new Relation(uidCounter++, annotNode.getId() + evNode.getId(), annotNode.getUid(),
-                                evNode.getUid(), Relation.Type.TRAIT_ASSOCIATION);
-                        network.addRelation(vFuncRel);
-
-                    }
-                }
-
-                // Functional score
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
-                    for (Score score : variant.getAnnotation().getFunctionalScore()) {
-                        Node funcNode = new Node(uidCounter++, "FunctionalScore", null, Node.Type.FUNCTIONAL_SCORE);
-                        funcNode.addAttribute("score", score.getScore());
-                        funcNode.addAttribute("source", score.getSource());
-                        network.addNode(funcNode);
-
-                        // Relation: variant - conservation
-                        Relation vTraitRel = new Relation(uidCounter++, annotNode.getId() + funcNode.getId(), annotNode.getUid(),
-                                funcNode.getUid(), Relation.Type.FUNCTIONAL_SCORE);
-                        network.addRelation(vTraitRel);
-
-                    }
-                }
+//                if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
+//                    for (PopulationFrequency popFreq : variant.getAnnotation().getPopulationFrequencies()) {
+//                        Node popFreqNode = new Node(uidCounter++, "PopulationFrequency", null, Node.Type.POPULATION_FREQUENCY);
+//                        popFreqNode.addAttribute("study", popFreq.getStudy());
+//                        popFreqNode.addAttribute("population", popFreq.getPopulation());
+//                        popFreqNode.addAttribute("refAlleleFreq", popFreq.getRefAlleleFreq());
+//                        popFreqNode.addAttribute("altAlleleFreq", popFreq.getAltAlleleFreq());
+//                        network.addNode(popFreqNode);
+//
+//                        // Relation: variant - population frequency
+//                        Relation vPfRel = new Relation(uidCounter++, annotNode.getId() + popFreqNode.getId(), annotNode.getUid(),
+//                                popFreqNode.getUid(), Relation.Type.POPULATION_FREQUENCY);
+//                        network.addRelation(vPfRel);
+//
+//                    }
+//                }
+//
+//                // Conservation
+//                if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
+//                    for (Score score : variant.getAnnotation().getConservation()) {
+//                        Node conservNode = new Node(uidCounter++, "Conservation", null, Node.Type.CONSERVATION);
+//                        conservNode.addAttribute("score", score.getScore());
+//                        conservNode.addAttribute("source", score.getSource());
+//                        conservNode.addAttribute("description", score.getDescription());
+//                        network.addNode(conservNode);
+//
+//                        // Relation: variant - conservation
+//                        Relation vConservRel = new Relation(uidCounter++, annotNode.getId() + conservNode.getId(), annotNode.getUid(),
+//                                conservNode.getUid(), Relation.Type.CONSERVATION);
+//                        network.addRelation(vConservRel);
+//                    }
+//                }
+//
+//                // Trait association
+//                if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
+//                    for (EvidenceEntry evidence : variant.getAnnotation().getTraitAssociation()) {
+//                        Node evNode = new Node(uidCounter++, "TraitAssociation", null, Node.Type.TRAIT_ASSOCIATION);
+//                        if (evidence.getSource() != null && evidence.getSource().getName() != null) {
+//                            evNode.addAttribute("source", evidence.getSource().getName());
+//                        }
+//                        evNode.addAttribute("url", evidence.getUrl());
+//                        if (ListUtils.isNotEmpty(evidence.getHeritableTraits())) {
+//                            StringBuilder her = new StringBuilder();
+//                            for (HeritableTrait heritableTrait : evidence.getHeritableTraits()) {
+//                                if (her.length() > 0) {
+//                                    her.append(",");
+//                                }
+//                                her.append(heritableTrait.getTrait());
+//                            }
+//                            evNode.addAttribute("heritableTraits", her.toString());
+//                        }
+//                        if (evidence.getSource() != null && evidence.getSource().getName() != null) {
+//                            evNode.addAttribute("source", evidence.getSource().getName());
+//                        }
+//                        if (ListUtils.isNotEmpty(evidence.getAlleleOrigin())) {
+//                            StringBuilder alleleOri = new StringBuilder();
+//                            for (AlleleOrigin alleleOrigin : evidence.getAlleleOrigin()) {
+//                                if (alleleOri.length() > 0 && alleleOrigin.name() != null) {
+//                                    alleleOri.append(",");
+//                                }
+//                                alleleOri.append(alleleOrigin.name());
+//                            }
+//                            evNode.addAttribute("alleleOrigin", alleleOri.toString());
+//                        }
+//                        network.addNode(evNode);
+//
+//                        // Relation: variant - conservation
+//                        Relation vFuncRel = new Relation(uidCounter++, annotNode.getId() + evNode.getId(), annotNode.getUid(),
+//                                evNode.getUid(), Relation.Type.TRAIT_ASSOCIATION);
+//                        network.addRelation(vFuncRel);
+//
+//                    }
+//                }
+//
+//                // Functional score
+//                if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
+//                    for (Score score : variant.getAnnotation().getFunctionalScore()) {
+//                        Node funcNode = new Node(uidCounter++, "FunctionalScore", null, Node.Type.FUNCTIONAL_SCORE);
+//                        funcNode.addAttribute("score", score.getScore());
+//                        funcNode.addAttribute("source", score.getSource());
+//                        network.addNode(funcNode);
+//
+//                        // Relation: variant - conservation
+//                        Relation vTraitRel = new Relation(uidCounter++, annotNode.getId() + funcNode.getId(), annotNode.getUid(),
+//                                funcNode.getUid(), Relation.Type.FUNCTIONAL_SCORE);
+//                        network.addRelation(vTraitRel);
+//
+//                    }
+//                }
             }
         }
         return network;

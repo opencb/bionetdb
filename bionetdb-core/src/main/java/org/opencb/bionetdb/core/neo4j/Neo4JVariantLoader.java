@@ -162,14 +162,13 @@ public class Neo4JVariantLoader {
                 // Trait associations
                 if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
                     for (EvidenceEntry evidence : variant.getAnnotation().getTraitAssociation()) {
-                        Node evNode = NodeBuilder.newNode(evidence);
+                        Node evNode = NodeBuilder.newNode(evidence, Node.Type.TRAIT_ASSOCIATION);
                         networkDBAdaptor.addNode(evNode, tx);
 
                         // Relation: variant - conservation
-                        Relation vFuncRel = new Relation(annotNode.getId() + evNode.getId(), annotNode.getId(),
-                                annotNode.getType().toString(), evNode.getId(), evNode.getType().toString(),
+                        Relation vFuncRel = new Relation(-1, null, variantNode.getUid(), evNode.getUid(),
                                 Relation.Type.TRAIT_ASSOCIATION);
-                        network.setRelationship(vFuncRel);
+                        networkDBAdaptor.mergeRelation(vFuncRel, tx);
                     }
                 }
 
