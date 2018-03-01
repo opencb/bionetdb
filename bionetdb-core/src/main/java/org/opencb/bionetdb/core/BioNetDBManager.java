@@ -22,6 +22,7 @@ import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
+import org.opencb.cellbase.client.rest.VariationClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -38,6 +39,8 @@ public class BioNetDBManager {
 
     private String database;
     private BioNetDBConfiguration bioNetDBConfiguration;
+    private ClientConfiguration clientConfiguration;
+    private CellBaseClient cellBaseClient;
 
     private NetworkDBAdaptor networkDBAdaptor;
     private Logger logger;
@@ -51,6 +54,11 @@ public class BioNetDBManager {
         this.database = database;
         this.bioNetDBConfiguration = bioNetDBConfiguration;
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration, true);
+
+        clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setVersion("v4");
+        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+        cellBaseClient = new CellBaseClient("hsapiens", clientConfiguration);
 
         idToUidMap = new HashMap<>();
 
@@ -87,7 +95,16 @@ public class BioNetDBManager {
     public void annotateGenes(Query query, QueryOptions queryOptions) {
     }
 
-    public void annotateVariants(Query query, QueryOptions queryOptions) {
+    public void annotateVariants(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
+        VariationClient variationClient = cellBaseClient.getVariationClient();
+
+        networkDBAdaptor.annotateVariants(query, options, variationClient);
+    }
+
+    public void annotateVariants(List<String> variantIds) throws IOException, BioNetDBException {
+        VariationClient variationClient = cellBaseClient.getVariationClient();
+
+        networkDBAdaptor.annotateVariants(variantIds, variationClient);
     }
 
     public void annotateProtein() throws BioNetDBException, IOException {

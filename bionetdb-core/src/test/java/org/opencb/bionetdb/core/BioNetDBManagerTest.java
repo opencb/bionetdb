@@ -15,6 +15,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class BioNetDBManagerTest {
@@ -62,6 +63,15 @@ public class BioNetDBManagerTest {
     //-------------------------------------------------------------------------
     //
     //-------------------------------------------------------------------------
+
+    @Test
+    public void annotateVariants() throws BioNetDBException, IOException {
+        loadVCF();
+        List<String> variantIds = new ArrayList<>();
+        variantIds.add("rs540431307");
+        variantIds.add("rs367896724");
+        bioNetDBManager.annotateVariants(variantIds);
+    }
 
     @Test
     public void annotateProtein() throws BioNetDBException, IOException {

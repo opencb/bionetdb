@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core.neo4j;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
+import org.apache.commons.lang.StringUtils;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -78,9 +79,13 @@ public class Neo4JVariantLoader {
 
     private void loadVariant(Variant variant, Transaction tx) {
         if (variant != null) {
+            if (StringUtils.isEmpty(variant.getId()) || ".".equals(variant.getId())) {
+                return;
+            }
+
             // Variant node
             Node variantNode = NodeBuilder.newNode(variant);
-            networkDBAdaptor.mergeNode(variantNode, "name", tx);
+            networkDBAdaptor.mergeNode(variantNode, "id", tx);
 
             // Sample management
             if (ListUtils.isNotEmpty(variant.getStudies())) {

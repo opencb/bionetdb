@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.neo4j;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.*;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
 import org.opencb.bionetdb.core.api.PathIterator;
@@ -20,7 +21,11 @@ import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.Neo4JConverter;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.cellbase.client.rest.VariationClient;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
@@ -144,6 +149,35 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     //-------------------------------------------------------------------------
     // A N N O T A T I O N     M E T H O D s
+    //-------------------------------------------------------------------------
+
+    public void annotateVariants(NodeQuery query, QueryOptions options, VariationClient variationClient) throws BioNetDBException,
+            IOException {
+        NodeIterator nodeIterator = nodeIterator(query, options);
+        List<String> variantIds = new ArrayList<>(1000);
+        while (nodeIterator.hasNext()) {
+            Node variantNode = nodeIterator.next();
+            variantIds.add(variantNode.getId());
+            if (variantIds.size() >= 1000) {
+                annotateVariants(variantIds, variationClient);
+                variantIds.clear();
+            }
+        }
+        if (ListUtils.isNotEmpty(variantIds)) {
+            annotateVariants(variantIds, variationClient);
+        }
+    }
+
+    public void annotateVariants(List<String> variantIds, VariationClient variationClient) throws BioNetDBException, IOException {
+        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
+        QueryResponse<Variant> entryQueryResponse = variationClient.get(variantIds, QueryOptions.empty());
+        for (QueryResult<Variant> queryResult: entryQueryResponse.getResponse()) {
+            if (ListUtils.isNotEmpty(queryResult.getResult())) {
+                variantLoader.loadVariants(queryResult.getResult());
+            }
+        }
+    }
+
     //-------------------------------------------------------------------------
 
     public void annotateProtein(ProteinClient proteinClient) throws BioNetDBException, IOException {
