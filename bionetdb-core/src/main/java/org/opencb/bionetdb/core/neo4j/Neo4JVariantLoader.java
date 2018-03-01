@@ -6,11 +6,10 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.EvidenceEntry;
-import org.opencb.biodata.models.variant.avro.PopulationFrequency;
-import org.opencb.biodata.models.variant.avro.Score;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.VcfFileReader;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
@@ -81,7 +80,7 @@ public class Neo4JVariantLoader {
         if (variant != null) {
             // Variant node
             Node variantNode = NodeBuilder.newNode(variant);
-            networkDBAdaptor.mergeNode(variantNode, "name", variantNode.getName(), tx);
+            networkDBAdaptor.mergeNode(variantNode, "name", tx);
 
             // Sample management
             if (ListUtils.isNotEmpty(variant.getStudies())) {
@@ -96,7 +95,7 @@ public class Neo4JVariantLoader {
                     for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
                         // Create the sample node
                         Node sampleNode = new Node(-1, sampleNames.get(i), sampleNames.get(i), Node.Type.SAMPLE);
-                        networkDBAdaptor.mergeNode(sampleNode, "id", sampleNode.getId(), tx);
+                        networkDBAdaptor.mergeNode(sampleNode, "id", tx);
 
                         // And the call node for that sample adding the format attributes
                         Node callNode = NodeBuilder.newCallNode(studyEntry.getFormat(), studyEntry.getSampleData(i));
@@ -122,17 +121,127 @@ public class Neo4JVariantLoader {
 
             // Variant annotation
             if (variant.getAnnotation() != null) {
-//                // Consequence types
-//                if (ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
-//                    // internal management for Proteins
-//                    Map<String, List<Node>> mapUniprotVANode = new HashMap<>();
-//
-//                    // consequence type nodes
-//                    for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
-//
-//                    }
-//                }
-//
+                // Consequence types
+                if (ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                    // Consequence type nodes
+                    for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
+                        Node ctNode = NodeBuilder.newNode(ct);
+                        networkDBAdaptor.addNode(ctNode, tx);
+
+                        // Relation: variant - consequence type
+                        Relation vCtRel = new Relation(-1, null, variantNode.getUid(), ctNode.getUid(),
+                                Relation.Type.CONSEQUENCE_TYPE);
+                        networkDBAdaptor.mergeRelation(vCtRel, tx);
+
+
+                        // SO
+                        if (ListUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
+                            for (SequenceOntologyTerm so: ct.getSequenceOntologyTerms()) {
+                                Node soNode = new Node(-1, so.getAccession(), so.getName(), Node.Type.SO);
+                                networkDBAdaptor.mergeNode(soNode, "id", tx);
+
+                                // Relation: consequence type - so
+                                Relation ctSoRel = new Relation(-1, null, ctNode.getUid(), soNode.getUid(),
+                                        Relation.Type.SO);
+                                networkDBAdaptor.mergeRelation(ctSoRel, tx);
+                            }
+                        }
+
+                        // Protein annotation: substitution scores, keywords and features
+                        if (ct.getProteinVariantAnnotation() != null) {
+                            // Protein variant annotation node
+                            Node annotNode = NodeBuilder.newNode(ct.getProteinVariantAnnotation());
+                            networkDBAdaptor.addNode(annotNode, tx);
+
+                            // Relation: consequence type - protein variant annotation
+                            Relation ctAnnotRel = new Relation(-1, null, ctNode.getUid(), annotNode.getUid(),
+                                    Relation.Type.PROTEIN_VARIANT_ANNOTATION);
+                            networkDBAdaptor.mergeRelation(ctAnnotRel, tx);
+
+                            // Protein relationship management
+                            if (ct.getProteinVariantAnnotation().getUniprotAccession() != null) {
+                                String uniprotId = ct.getProteinVariantAnnotation().getUniprotAccession();
+                                String uniprotName = ct.getProteinVariantAnnotation().getUniprotName();
+                                StringBuilder cypher = new StringBuilder();
+                                cypher.append("MATCH (n:PROTEIN)-[rx:XREF]->(x:XREF{attr_source:'uniprot'}) WHERE x.id = '")
+                                        .append(uniprotId).append("' RETURN n");
+                                List<Node> proteinNodes = null;
+                                try {
+                                    proteinNodes = networkDBAdaptor.nodeQuery(cypher.toString());
+                                    if (ListUtils.isEmpty(proteinNodes)) {
+                                        // This protein is not stored in the database, we must create the node and then
+                                        // link to the protein variant annotation
+                                        Node proteinNode = new Node(-1, uniprotId, uniprotName, Node.Type.PROTEIN);
+                                        networkDBAdaptor.addNode(proteinNode, tx);
+
+                                        proteinNodes.add(proteinNode);
+                                    }
+                                } catch (BioNetDBException e) {
+                                    e.printStackTrace();
+                                }
+
+                                // Link protein nodes to the protein variant annotation
+                                for (Node proteinNode: proteinNodes) {
+                                    // Relation: protein - protein variant annotation
+                                    Relation proteinAnnotRel = new Relation(-1, null, proteinNode.getUid(), annotNode.getUid(),
+                                            Relation.Type.PROTEIN_VARIANT_ANNOTATION);
+                                    networkDBAdaptor.mergeRelation(proteinAnnotRel, tx);
+                                }
+                            }
+
+                            // Protein substitution scores
+                            if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getSubstitutionScores())) {
+                                for (Score score: ct.getProteinVariantAnnotation().getSubstitutionScores()) {
+                                    Node subsNode = NodeBuilder.newNode(score, Node.Type.SUBSTITUTION_SCORE);
+                                    networkDBAdaptor.addNode(subsNode, tx);
+
+                                    // Relation: protein variant annotation - substitution score
+                                    Relation ctSubsRel = new Relation(-1, null, annotNode.getUid(), subsNode.getUid(),
+                                            Relation.Type.SUBSTITUTION_SCORE);
+                                    networkDBAdaptor.mergeRelation(ctSubsRel, tx);
+                                }
+                            }
+
+                            // Protein keywords
+                            if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getKeywords())) {
+                                for (String keyword: ct.getProteinVariantAnnotation().getKeywords()) {
+                                    Node kwNode = new Node(-1, null, keyword, Node.Type.PROTEIN_KEYWORD);
+                                    networkDBAdaptor.mergeNode(kwNode, "name", tx);
+
+                                    // Relation: protein variant annotation - so
+                                    Relation ctKwRel = new Relation(-1, null, annotNode.getUid(), kwNode.getUid(),
+                                            Relation.Type.PROTEIN_KEYWORD);
+                                    networkDBAdaptor.mergeRelation(ctKwRel, tx);
+                                }
+                            }
+
+                            // Protein features
+                            if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getFeatures())) {
+                                for (ProteinFeature feature : ct.getProteinVariantAnnotation().getFeatures()) {
+                                    Node featureNode = NodeBuilder.newNode(feature);
+                                    networkDBAdaptor.addNode(featureNode, tx);
+
+                                    // Relation: protein variant annotation - protein feature
+                                    Relation ctFeatureRel = new Relation(-1, null, annotNode.getUid(), featureNode.getUid(),
+                                            Relation.Type.PROTEIN_FEATURE);
+                                    networkDBAdaptor.mergeRelation(ctFeatureRel, tx);
+                                }
+                            }
+                        }
+
+                        // Transcript
+                        if (ct.getEnsemblTranscriptId() != null) {
+                            Node transcriptNode = new Node(-1, ct.getEnsemblTranscriptId(), null, Node.Type.TRANSCRIPT);
+                            networkDBAdaptor.mergeNode(transcriptNode, "id", tx);
+
+                            // Relation: consequence type - transcript
+                            Relation ctTranscriptRel = new Relation(-1, null, ctNode.getUid(), transcriptNode.getUid(),
+                                    Relation.Type.TRANSCRIPT);
+                            networkDBAdaptor.mergeRelation(ctTranscriptRel, tx);
+                        }
+                    }
+                }
+
                 // Population frequencies
                 if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
                     for (PopulationFrequency popFreq : variant.getAnnotation().getPopulationFrequencies()) {

@@ -193,10 +193,25 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public NodeIterator nodeIterator(String cypher) throws BioNetDBException {
         Session session = this.driver.session();
-//        System.out.println("Cypher query: " + cypher);
         return new Neo4JNodeIterator(session.run(cypher));
     }
 
+    @Override
+    public List<Node> nodeQuery(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parseNode(query, queryOptions);
+        return nodeQuery(cypher);
+    }
+
+    @Override
+    public List<Node> nodeQuery(String cypher) throws BioNetDBException {
+        Session session = this.driver.session();
+        NodeIterator nodeIterator = nodeIterator(cypher);
+        List<Node> nodes = new ArrayList<>();
+        while (nodeIterator.hasNext()) {
+            nodes.add(nodeIterator.next());
+        }
+        return nodes;
+    }
     //-------------------------------------------------------------------------
     // T A B L E     Q U E R I E S
     //-------------------------------------------------------------------------
@@ -303,21 +318,29 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return ret;
     }
 
-    public StatementResult mergeNode(Node node, String byKey, Object value, Transaction tx) {
+    public StatementResult mergeNode(Node node, String byKey, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
         boolean prefix = false;
+        Object value = null;
+
         List<String> props = new ArrayList<>();
-        if (!"id".equals(byKey)) {
+        if ("id".equals(byKey)) {
+            value = node.getId();
+        } else {
             if (StringUtils.isNotEmpty(node.getId())) {
                 props.add("n.id=\"" + cleanValue(node.getId()) + "\"");
             }
         }
-        if (!"name".equals(byKey)) {
+        if ("name".equals(byKey)) {
+            value = node.getName();
+        } else {
             if (StringUtils.isNotEmpty(node.getName())) {
                 props.add("n.name=\"" + cleanValue(node.getName()) + "\"");
             }
         }
-        if (!"source".equals(byKey)) {
+        if ("source".equals(byKey)) {
+            value = node.getSource();
+        } else {
             if (StringUtils.isNotEmpty(node.getSource())) {
                 props.add("n.source=\"" + node.getSource() + "\"");
             }
@@ -325,6 +348,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         for (String key: node.getAttributes().keySet()) {
             if (key.equals(byKey)) {
                 prefix = true;
+                value = node.getAttributes().get(key);
             } else {
                 if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
                     props.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));

@@ -98,4 +98,52 @@ public class NodeBuilder {
         }
         return node;
     }
+
+    public static Node newNode(ConsequenceType ct) {
+        Node node = new Node(-1, ct.getBiotype(), null, Node.Type.CONSEQUENCE_TYPE);
+        node.addAttribute("biotype", ct.getBiotype());
+        node.addAttribute("cdnaPosition", ct.getCdnaPosition());
+        node.addAttribute("cdsPosition", ct.getCdsPosition());
+        node.addAttribute("codon", ct.getCodon());
+        node.addAttribute("strand", ct.getStrand());
+        node.addAttribute("gene", ct.getEnsemblGeneId());
+        node.addAttribute("transcript", ct.getEnsemblTranscriptId());
+
+        // Transcript annotation flags
+        if (ListUtils.isNotEmpty(ct.getTranscriptAnnotationFlags())) {
+            node.addAttribute("transcriptAnnotationFlags", StringUtils.join(ct.getTranscriptAnnotationFlags(), ","));
+        }
+
+        // Exon overlap
+        if (ListUtils.isNotEmpty(ct.getExonOverlap())) {
+            StringBuilder overlaps = new StringBuilder();
+            overlaps.append(ct.getExonOverlap().get(0).getNumber()).append(":").append(ct.getExonOverlap().get(0).getPercentage());
+            for (int i = 1; i < ct.getExonOverlap().size(); i++) {
+                overlaps.append(",");
+                overlaps.append(ct.getExonOverlap().get(i).getNumber()).append(":").append(ct.getExonOverlap().get(i).getPercentage());
+            }
+            node.addAttribute("exonOverlap", overlaps.toString());
+        }
+
+        return node;
+    }
+
+    public static Node newNode(ProteinVariantAnnotation annotation) {
+        Node node = new Node(-1, annotation.getUniprotAccession(), annotation.getUniprotName(),
+                Node.Type.PROTEIN_VARIANT_ANNOTATION);
+        node.addAttribute("position", annotation.getPosition());
+        node.addAttribute("reference", annotation.getReference());
+        node.addAttribute("alternate", annotation.getAlternate());
+        node.addAttribute("functionalDescription", annotation.getFunctionalDescription());
+        return node;
+    }
+
+    public static Node newNode(ProteinFeature feature) {
+        Node node = new Node(-1, null, feature.getId(), Node.Type.PROTEIN_FEATURE);
+        node.addAttribute("start", feature.getStart());
+        node.addAttribute("end", feature.getEnd());
+        node.addAttribute("type", feature.getType());
+        node.addAttribute("description", feature.getDescription());
+        return node;
+    }
 }

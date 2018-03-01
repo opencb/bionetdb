@@ -75,7 +75,11 @@ public class Node {
 
         SAMPLE("SAMPLE"),
         VARIANT_CALL("VARIANT_CALL"),
-        VARIANT_FILE_INFO("VARIANT_FILE_INFO");
+        VARIANT_FILE_INFO("VARIANT_FILE_INFO"),
+
+        TRANSCRIPT_ANNOTATION_FLAG("TRANSCRIPT_ANNOTATION_FLAG"),
+        EXON_OVERLAP("EXON_OVERLAP"),
+        PROTEIN_KEYWORD("PROTEIN_KEYWORD");
 
         private final String type;
         private final String parentType;

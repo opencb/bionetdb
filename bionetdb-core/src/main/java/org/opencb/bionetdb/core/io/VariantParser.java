@@ -291,7 +291,7 @@ public class VariantParser {
 
                                     // ... and its relationship
                                     Relation protVASubstRel = new Relation(uidCounter++, protVANode.getId() + substNode.getId(),
-                                            protVANode.getUid(), substNode.getUid(), Relation.Type.SUBST_SCORE);
+                                            protVANode.getUid(), substNode.getUid(), Relation.Type.SUBSTITUTION_SCORE);
                                     network.addRelation(protVASubstRel);
                                 }
                             }

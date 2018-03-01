@@ -564,7 +564,7 @@ public class DemoTest {
                                     // ... and its relationship
                                     Relation protVASubstRel = new Relation(protVANode.getId() + substNode.getId(), protVANode.getId(),
                                             protVANode.getType().toString(), substNode.getId(), substNode.getType().toString(),
-                                            Relation.Type.SUBST_SCORE);
+                                            Relation.Type.SUBSTITUTION_SCORE);
                                     network.setRelationship(protVASubstRel);
                                 }
                             }
