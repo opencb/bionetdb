@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.server.ws;
+package org.opencb.bionetdb.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -12,10 +12,7 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,65 +21,66 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
 /**
  * Created by imedina on 01/10/15.
  */
-@Path("/{version}/{database}")
-@Produces("application/json")
+@ApplicationPath("/")
+@Path("/{version}")
+@Produces(MediaType.APPLICATION_JSON)
 public class GenericRestWSServer {
 
     @DefaultValue("")
     @PathParam("version")
-    @ApiParam(name = "version", value = "Use 'latest' for last stable version", allowableValues = "v3,latest", defaultValue = "v3")
+    @ApiParam(name = "version", value = "Use 'latest' for last stable version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
 
-    @DefaultValue("")
-    @PathParam("database")
-    @ApiParam(name = "database", value = "Name of the database to query")
+//    @DefaultValue("")
+//    @PathParam("database")
+//    @ApiParam(name = "database", value = "Name of the database to query")
     protected String database;
 
-    @ApiParam(name = "excluded fields", value = "Set which fields are excluded in the response, e.g.: transcripts.exons")
-    @DefaultValue("")
-    @QueryParam("exclude")
+//    @ApiParam(name = "excluded fields", value = "Set which fields are excluded in the response, e.g.: transcripts.exons")
+//    @DefaultValue("")
+//    @QueryParam("exclude")
     protected String exclude;
 
-    @DefaultValue("")
-    @QueryParam("include")
-    @ApiParam(name = "included fields", value = "Set which fields are included in the response, e.g.: transcripts.id")
+//    @DefaultValue("")
+//    @QueryParam("include")
+//    @ApiParam(name = "included fields", value = "Set which fields are included in the response, e.g.: transcripts.id")
     protected String include;
 
-    @DefaultValue("-1")
-    @QueryParam("limit")
-    @ApiParam(name = "limit", value = "Max number of results to be returned. No limit applied when -1. No limit is set by default.")
+//    @DefaultValue("-1")
+//    @QueryParam("limit")
+//    @ApiParam(name = "limit", value = "Max number of results to be returned. No limit applied when -1. No limit is set by default.")
     protected int limit;
 
-    @DefaultValue("-1")
-    @QueryParam("skip")
-    @ApiParam(name = "skip", value = "Number of results to be skipped. No skip applied when -1. No skip by default.")
+//    @DefaultValue("-1")
+//    @QueryParam("skip")
+//    @ApiParam(name = "skip", value = "Number of results to be skipped. No skip applied when -1. No skip by default.")
     protected int skip;
 
-    @DefaultValue("false")
-    @QueryParam("count")
-    @ApiParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
-            defaultValue = "false", allowableValues = "false,true")
+//    @DefaultValue("false")
+//    @QueryParam("count")
+//    @ApiParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
+//            defaultValue = "false", allowableValues = "false,true")
     protected String count;
 
 
-    protected QueryResponse queryResponse;
+    protected Query query;
     protected QueryOptions queryOptions;
+    protected QueryResponse queryResponse;
 
     protected UriInfo uriInfo;
     protected HttpServletRequest httpServletRequest;
+    protected MultivaluedMap<String, String> params;
 
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
 
     protected long startTime;
-    protected long endTime;
 
     protected static Logger logger;
 
@@ -108,9 +106,9 @@ public class GenericRestWSServer {
         logger.info("Static block, creating Neo4JNetworkDBAdaptor");
         try {
             if (System.getenv("BIONETDB_HOME") != null) {
-                logger.info("Loading configuration from '{}'", System.getenv("cellBaseConfiguration") + "/configuration.yml");
+                logger.info("Loading configuration from '{}'", System.getenv("BIONETDB_HOME") + "/configuration.yml");
                 bioNetDBConfiguration = BioNetDBConfiguration
-                        .load(new FileInputStream(new File(System.getenv("cellBaseConfiguration") + "/configuration.yml")));
+                        .load(new FileInputStream(new File(System.getenv("BIONETDB_HOME") + "/configuration.yml")));
             } else {
                 logger.info("Loading configuration from '{}'",
                         BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml").toString());
@@ -121,8 +119,6 @@ public class GenericRestWSServer {
 //            networkDBAdaptor = new Neo4JNetworkDBAdaptor("test1", bioNetDBConfiguration);
 //        } catch (BioNetDBException e) {
 //            e.printStackTrace();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -144,6 +140,7 @@ public class GenericRestWSServer {
         init(false);
     }
 
+    @Deprecated
     public GenericRestWSServer(@PathParam("version") String version, @PathParam("database") String database, @Context UriInfo uriInfo,
                                @Context HttpServletRequest hsr) throws VersionException, DatabaseException {
         this.version = version;
@@ -232,16 +229,16 @@ public class GenericRestWSServer {
         return createOkResponse("No help available");
     }
 
-    @GET
-    public Response defaultMethod() {
-        switch (database) {
-            case "echo":
-                return createStringResponse("Status active");
-            default:
-                break;
-        }
-        return createOkResponse("Not valid option");
-    }
+//    @GET
+//    public Response defaultMethod() {
+//        switch (database) {
+//            case "echo":
+//                return createStringResponse("Status active");
+//            default:
+//                break;
+//        }
+//        return createOkResponse("Not valid option");
+//    }
 
 
     protected Response createModelResponse(Class clazz) {
