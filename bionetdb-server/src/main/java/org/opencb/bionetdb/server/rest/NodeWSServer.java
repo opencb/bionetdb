@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.server.ws;
+package org.opencb.bionetdb.server.rest;
 
 import io.swagger.annotations.ApiOperation;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -19,20 +19,19 @@ import javax.ws.rs.core.UriInfo;
 /**
  * Created by imedina on 06/10/15.
  */
-@Path("/{version}/{database}/pe")
+@Path("/{version}/node")
 @Produces("application/json")
-public class PhysicalEntityWSServer extends GenericRestWSServer {
+public class NodeWSServer extends GenericRestWSServer {
 
-
-    public PhysicalEntityWSServer(@PathParam("version") String version, @PathParam("database") String database,
-                                  @Context UriInfo uriInfo, @Context HttpServletRequest hsr) throws VersionException, DatabaseException {
-        super(version, database, uriInfo, hsr);
+    public NodeWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                        @Context HttpServletRequest hsr) throws VersionException, DatabaseException {
+        super(version, uriInfo, hsr);
     }
 
     @GET
-    @Path("/{peId}/cc")
+    @Path("/{type}/cc")
     @ApiOperation(httpMethod = "GET", value = "Get the object data model")
-    public Response getModel(@PathParam("peId") String physicalEntity) {
+    public Response getModel(@PathParam("type") String type) {
         try {
              NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration);
 //            Query query = new Query("id", physicalEntity);
@@ -43,7 +42,6 @@ public class PhysicalEntityWSServer extends GenericRestWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-
     }
 
 }
