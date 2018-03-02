@@ -81,7 +81,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     void annotateGenes(NodeQuery query, QueryOptions options, GeneClient geneClient) throws BioNetDBException, IOException;
     void annotateGenes(List<String> geneIds, GeneClient geneClient) throws BioNetDBException, IOException;
 
-    void annotateProtein(ProteinClient proteinClient) throws BioNetDBException, IOException;
+    void annotateProteins(NodeQuery query, QueryOptions options, ProteinClient proteinClient) throws BioNetDBException, IOException;
+    void annotateProteins(List<String> proteinIds, ProteinClient proteinClient) throws BioNetDBException, IOException;
 
     //-------------------------------------------------------------------------
     // N O D E S

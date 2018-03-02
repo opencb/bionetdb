@@ -24,14 +24,15 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -179,6 +180,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
         }
     }
+
     //-------------------------------------------------------------------------
 
     public void annotateGenes(NodeQuery query, QueryOptions options, GeneClient geneClient) throws BioNetDBException,
@@ -211,39 +213,67 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     //-------------------------------------------------------------------------
 
-    public void annotateProtein(ProteinClient proteinClient) throws BioNetDBException, IOException {
-        // First, get all proteins from the network
-        Query query = new Query();
-        String cypher = "MATCH path=(p:PROTEIN)-[xr:XREF]->(x:XREF) WHERE toLower(x.attr_source) = \"uniprot\" return path";
-        QueryResult<Network> networkResult = networkQuery(cypher);
-
-        if (ListUtils.isEmpty(networkResult.getResult())) {
-            System.out.println("Network not found!!");
-            return;
-        }
-        Network network = networkResult.getResult().get(0);
-
-        // Get proteins annotations from Cellbase...
-        // ... prepare list of protein id/names from xref/protein nodes
-        List<String> proteinIds = new ArrayList<>();
-        for (Node node: network.getNodes()) {
-            if (node.getType() == Node.Type.XREF) {
-                proteinIds.add(node.getId());
+    public void annotateProteins(NodeQuery query, QueryOptions options, ProteinClient proteinClient) throws BioNetDBException,
+            IOException {
+        NodeIterator nodeIterator = nodeIterator(query, options);
+        List<String> proteinIds = new ArrayList<>(1000);
+        while (nodeIterator.hasNext()) {
+            Node geneNode = nodeIterator.next();
+            proteinIds.add(geneNode.getId());
+            if (proteinIds.size() >= 1000) {
+                annotateProteins(proteinIds, proteinClient);
+                proteinIds.clear();
             }
         }
-
-        // ... finally, call Cellbase service
-        Map<String, Entry> proteinMap = new HashMap<>();
-        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, new QueryOptions(QueryOptions.EXCLUDE,
-                "reference,organism,comment,evidence,sequence"));
-        for (QueryResult<Entry> queryResult: entryQueryResponse.getResponse()) {
-            proteinMap.put(queryResult.getId(), queryResult.getResult().get(0));
-        }
-
-        for (String key: proteinMap.keySet()) {
-            System.out.println(key + " -> " + proteinMap.get(key));
+        if (ListUtils.isNotEmpty(proteinIds)) {
+            annotateProteins(proteinIds, proteinClient);
         }
     }
+
+    public void annotateProteins(List<String> proteinIds, ProteinClient proteinClient) throws BioNetDBException, IOException {
+        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
+        QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
+        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, options);
+        for (QueryResult<Entry> queryResult: entryQueryResponse.getResponse()) {
+            if (ListUtils.isNotEmpty(queryResult.getResult())) {
+                variantLoader.loadProteins(queryResult.getResult());
+            }
+        }
+    }
+
+//    public void annotateProtein(ProteinClient proteinClient) throws BioNetDBException, IOException {
+//        // First, get all proteins from the network
+//        Query query = new Query();
+//        String cypher = "MATCH path=(p:PROTEIN)-[xr:XREF]->(x:XREF) WHERE toLower(x.attr_source) = \"uniprot\" return path";
+//        QueryResult<Network> networkResult = networkQuery(cypher);
+//
+//        if (ListUtils.isEmpty(networkResult.getResult())) {
+//            System.out.println("Network not found!!");
+//            return;
+//        }
+//        Network network = networkResult.getResult().get(0);
+//
+//        // Get proteins annotations from Cellbase...
+//        // ... prepare list of protein id/names from xref/protein nodes
+//        List<String> proteinIds = new ArrayList<>();
+//        for (Node node: network.getNodes()) {
+//            if (node.getType() == Node.Type.XREF) {
+//                proteinIds.add(node.getId());
+//            }
+//        }
+//
+//        // ... finally, call Cellbase service
+//        Map<String, Entry> proteinMap = new HashMap<>();
+//        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, new QueryOptions(QueryOptions.EXCLUDE,
+//                "reference,organism,comment,evidence,sequence"));
+//        for (QueryResult<Entry> queryResult: entryQueryResponse.getResponse()) {
+//            proteinMap.put(queryResult.getId(), queryResult.getResult().get(0));
+//        }
+//
+//        for (String key: proteinMap.keySet()) {
+//            System.out.println(key + " -> " + proteinMap.get(key));
+//        }
+//    }
 
     //-------------------------------------------------------------------------
     // N O D E     Q U E R I E S

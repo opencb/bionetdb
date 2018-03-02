@@ -88,7 +88,7 @@ public class Neo4JConverter {
         // Then, we can process relationships and insert them into the network
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
-            Relation relation = new Relation(neoRelation.get("uid").asLong(), neoRelation.get("name").asString(),
+            Relation relation = new Relation(neoRelation.id(), neoRelation.get("name").asString(),
                     nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getUid(),
                     Relation.Type.valueOf(neoRelation.type()));
             network.addRelation(relation);
@@ -104,9 +104,16 @@ public class Neo4JConverter {
 
     private static Node toNode(org.neo4j.driver.v1.types.Node neoNode) {
         // Set uid, id and name
-        Node node = new Node(neoNode.get("uid").asLong());
-        node.setId(neoNode.get("id").asString());
-        node.setName(neoNode.get("name").asString());
+        Node node = new Node(neoNode.id());
+        if (neoNode.containsKey("id")) {
+            node.setId(neoNode.get("id").asString());
+        }
+        if (neoNode.containsKey("name")) {
+            node.setName(neoNode.get("name").asString());
+        }
+        if (neoNode.containsKey("source")) {
+            node.setSource(neoNode.get("source").asString());
+        }
 
         // Set type and tags
         boolean first = true;
@@ -157,7 +164,7 @@ public class Neo4JConverter {
         // Then, we can process relationships and insert them into the path
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
-            Relation relation = new Relation(neoRelation.get("uid").asLong(), neoRelation.get("name").asString(),
+            Relation relation = new Relation(neoRelation.id(), neoRelation.get("name").asString(),
                     nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getUid(),
                     Relation.Type.valueOf(neoRelation.type()));
             path.addRelation(relation);

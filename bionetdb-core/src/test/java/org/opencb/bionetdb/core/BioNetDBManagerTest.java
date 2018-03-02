@@ -12,11 +12,15 @@ import org.opencb.bionetdb.core.network.Node;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.fail;
 
 public class BioNetDBManagerTest {
 
@@ -50,14 +54,17 @@ public class BioNetDBManagerTest {
 
     @Test
     public void loadBiopax() throws BioNetDBException, IOException {
-        String filename = "/home/jtarraga/data150/neo4j/hsapiens.meiosis.biopax3";
+        String filename = "~/neo4j/hsapiens.meiosis.biopax3";
         bioNetDBManager.loadBiopax(Paths.get(filename));
     }
 
     @Test
     public void loadVCF() throws BioNetDBException {
-        String filename = "/home/jtarraga/data150/vcf/2.vcf";
-        bioNetDBManager.loadVcf(Paths.get(filename));
+        try {
+            bioNetDBManager.loadVcf(Paths.get(getClass().getResource("/3.vcf").toURI()));
+        } catch (URISyntaxException e) {
+            fail();
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -67,24 +74,57 @@ public class BioNetDBManagerTest {
     @Test
     public void annotateVariants() throws BioNetDBException, IOException {
         loadVCF();
-        List<String> variantIds = new ArrayList<>();
-        variantIds.add("rs540431307");
-        variantIds.add("rs367896724");
-        bioNetDBManager.annotateVariants(variantIds);
+
+        List<String> ids = new ArrayList<>();
+
+//        variantIds.add("rs540431307");
+//        variantIds.add("rs367896724");
+//        variantIds.add("rs429358");
+
+        QueryResult<Node> queryResult = bioNetDBManager.nodeQuery("MATCH (n:VARIANT) return n");
+        if (queryResult != null && ListUtils.isNotEmpty(queryResult.getResult())) {
+            for (Node node: queryResult.getResult()) {
+                ids.add(node.getId());
+            }
+        }
+
+        bioNetDBManager.annotateVariants(ids);
     }
 
     @Test
     public void annotateGenes() throws BioNetDBException, IOException {
-        //loadVCF();
-        List<String> geneIds = new ArrayList<>();
-        geneIds.add("");
-        //variantIds.add("rs367896724");
-        bioNetDBManager.annotateGenes(geneIds);
+        annotateVariants();
+        List<String> ids = new ArrayList<>();
+
+//        geneIds.add("ENSG00000227232");
+//        geneIds.add("ENSG00000223972");
+
+        QueryResult<Node> queryResult = bioNetDBManager.nodeQuery("MATCH (n:GENE) return n");
+        if (queryResult != null && ListUtils.isNotEmpty(queryResult.getResult())) {
+            for (Node node: queryResult.getResult()) {
+                ids.add(node.getId());
+            }
+        }
+
+        bioNetDBManager.annotateGenes(ids);
     }
 
     @Test
     public void annotateProtein() throws BioNetDBException, IOException {
-        bioNetDBManager.annotateProtein();
+        annotateGenes();
+
+        List<String> ids = new ArrayList<>();
+
+        QueryResult<Node> queryResult = bioNetDBManager.nodeQuery("MATCH (n:PROTEIN) return n");
+        if (queryResult != null && ListUtils.isNotEmpty(queryResult.getResult())) {
+            for (Node node: queryResult.getResult()) {
+                ids.add(node.getId());
+            }
+        }
+
+//        proteinIds.add("P02649");
+
+        bioNetDBManager.annotateProteins(ids);
     }
 
     //-------------------------------------------------------------------------

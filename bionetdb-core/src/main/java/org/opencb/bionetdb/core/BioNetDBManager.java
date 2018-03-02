@@ -113,14 +113,14 @@ public class BioNetDBManager {
         networkDBAdaptor.annotateVariants(variantIds, variationClient);
     }
 
-    public void annotateProtein() throws BioNetDBException, IOException {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", clientConfiguration);
+    public void annotateProteins(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
         ProteinClient proteinClient = cellBaseClient.getProteinClient();
+        networkDBAdaptor.annotateProteins(query, options, proteinClient);
+    }
 
-        networkDBAdaptor.annotateProtein(proteinClient);
+    public void annotateProteins(List<String> proteinIds) throws IOException, BioNetDBException {
+        ProteinClient proteinClient = cellBaseClient.getProteinClient();
+        networkDBAdaptor.annotateProteins(proteinIds, proteinClient);
     }
 
     /*

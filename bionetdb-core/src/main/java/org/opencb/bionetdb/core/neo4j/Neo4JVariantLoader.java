@@ -79,12 +79,22 @@ public class Neo4JVariantLoader {
         session.close();
     }
 
-
     public void loadGenes(List<Gene> genes) {
         Session session = networkDBAdaptor.getDriver().session();
         for (Gene gene: genes) {
             session.writeTransaction(tx -> {
                 loadGene(gene, tx);
+                return 1;
+            });
+        }
+        session.close();
+    }
+
+    public void loadProteins(List<Entry> proteins) {
+        Session session = networkDBAdaptor.getDriver().session();
+        for (Entry protein: proteins) {
+            session.writeTransaction(tx -> {
+                loadProtein(protein, tx);
                 return 1;
             });
         }

@@ -59,7 +59,7 @@ public class Neo4JNetworkDBAdaptorTest {
     @Test
     public void testInsert() throws Exception {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
-        String reactomeBiopaxFilename = "/home/jtarraga/data150/neo4j/pathway1.biopax3";
+        String reactomeBiopaxFilename = "~/jtarraga/data150/neo4j/pathway1.biopax3";
         //Path inputPath = Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI());
         Path inputPath = Paths.get(reactomeBiopaxFilename);
         Network network = bioPaxParser.parse(inputPath);
