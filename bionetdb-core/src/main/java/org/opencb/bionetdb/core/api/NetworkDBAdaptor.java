@@ -5,6 +5,7 @@ import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
+import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -76,6 +77,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     void annotateVariants(NodeQuery query, QueryOptions options, VariationClient variationClient) throws BioNetDBException, IOException;
     void annotateVariants(List<String> variantIds, VariationClient variationClient) throws BioNetDBException, IOException;
+
+    void annotateGenes(NodeQuery query, QueryOptions options, GeneClient geneClient) throws BioNetDBException, IOException;
+    void annotateGenes(List<String> geneIds, GeneClient geneClient) throws BioNetDBException, IOException;
 
     void annotateProtein(ProteinClient proteinClient) throws BioNetDBException, IOException;
 

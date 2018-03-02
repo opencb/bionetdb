@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.neo4j;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.*;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
@@ -20,6 +21,7 @@ import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.Neo4JConverter;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
 import org.opencb.commons.datastore.core.Query;
@@ -174,6 +176,35 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         for (QueryResult<Variant> queryResult: entryQueryResponse.getResponse()) {
             if (ListUtils.isNotEmpty(queryResult.getResult())) {
                 variantLoader.loadVariants(queryResult.getResult());
+            }
+        }
+    }
+    //-------------------------------------------------------------------------
+
+    public void annotateGenes(NodeQuery query, QueryOptions options, GeneClient geneClient) throws BioNetDBException,
+            IOException {
+        NodeIterator nodeIterator = nodeIterator(query, options);
+        List<String> geneIds = new ArrayList<>(1000);
+        while (nodeIterator.hasNext()) {
+            Node geneNode = nodeIterator.next();
+            geneIds.add(geneNode.getId());
+            if (geneIds.size() >= 1000) {
+                annotateGenes(geneIds, geneClient);
+                geneIds.clear();
+            }
+        }
+        if (ListUtils.isNotEmpty(geneIds)) {
+            annotateGenes(geneIds, geneClient);
+        }
+    }
+
+    public void annotateGenes(List<String> geneIds, GeneClient geneClient) throws BioNetDBException, IOException {
+        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
+        QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
+        QueryResponse<Gene> entryQueryResponse = geneClient.get(geneIds, options);
+        for (QueryResult<Gene> queryResult: entryQueryResponse.getResponse()) {
+            if (ListUtils.isNotEmpty(queryResult.getResult())) {
+                variantLoader.loadGenes(queryResult.getResult());
             }
         }
     }

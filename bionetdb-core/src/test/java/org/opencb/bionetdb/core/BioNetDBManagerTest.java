@@ -74,6 +74,15 @@ public class BioNetDBManagerTest {
     }
 
     @Test
+    public void annotateGenes() throws BioNetDBException, IOException {
+        //loadVCF();
+        List<String> geneIds = new ArrayList<>();
+        geneIds.add("");
+        //variantIds.add("rs367896724");
+        bioNetDBManager.annotateGenes(geneIds);
+    }
+
+    @Test
     public void annotateProtein() throws BioNetDBException, IOException {
         bioNetDBManager.annotateProtein();
     }

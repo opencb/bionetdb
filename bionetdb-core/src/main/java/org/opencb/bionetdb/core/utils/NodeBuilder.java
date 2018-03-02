@@ -1,6 +1,8 @@
 package org.opencb.bionetdb.core.utils;
 
 import org.apache.commons.lang.StringUtils;
+import org.opencb.biodata.models.core.*;
+import org.opencb.biodata.models.core.Xref;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
@@ -144,6 +146,84 @@ public class NodeBuilder {
         node.addAttribute("end", feature.getEnd());
         node.addAttribute("type", feature.getType());
         node.addAttribute("description", feature.getDescription());
+        return node;
+    }
+
+    public static Node newNode(Gene gene) {
+        Node node = new Node(-1, gene.getId(), gene.getName(), Node.Type.GENE);
+        node.addAttribute("biotype", gene.getBiotype());
+        node.addAttribute("chromosome", gene.getChromosome());
+        node.addAttribute("start", gene.getStart());
+        node.addAttribute("end", gene.getEnd());
+        node.addAttribute("strand", gene.getStrand());
+        node.addAttribute("description", gene.getDescription());
+        node.addAttribute("source", gene.getSource());
+        node.addAttribute("status", gene.getStatus());
+        return node;
+    }
+
+    public static Node newNode(GeneDrugInteraction drug) {
+        Node node = new Node(-1, null, drug.getDrugName(), Node.Type.DRUG);
+        node.addAttribute("source", drug.getSource());
+        node.addAttribute("type", drug.getType());
+        node.addAttribute("studyType", drug.getStudyType());
+        return node;
+    }
+
+    public static Node newNode(GeneTraitAssociation disease) {
+        Node node = new Node(-1, disease.getId(), disease.getName(), Node.Type.DISEASE);
+        node.addAttribute("hpo", disease.getHpo());
+        node.addAttribute("numberOfPubmeds", disease.getNumberOfPubmeds());
+        node.addAttribute("score", disease.getScore());
+        node.addAttribute("source", disease.getSource());
+        if (ListUtils.isNotEmpty(disease.getSources())) {
+            node.addAttribute("sources", StringUtils.join(disease.getSources(), ","));
+        }
+        if (ListUtils.isNotEmpty(disease.getAssociationTypes())) {
+            node.addAttribute("associationTypes", StringUtils.join(disease.getAssociationTypes(), ","));
+        }
+        return node;
+    }
+
+    public static Node newNode(Transcript transcript) {
+        Node node = new Node(-1, transcript.getId(), transcript.getName(), Node.Type.TRANSCRIPT);
+        node.addAttribute("proteinId", transcript.getProteinID());
+        node.addAttribute("biotype", transcript.getBiotype());
+        node.addAttribute("chromosome", transcript.getChromosome());
+        node.addAttribute("start", transcript.getStart());
+        node.addAttribute("end", transcript.getEnd());
+        node.addAttribute("strand", transcript.getStrand());
+        node.addAttribute("status", transcript.getStatus());
+        node.addAttribute("cdnaCodingStart", transcript.getCdnaCodingStart());
+        node.addAttribute("cdnaCodingEnd", transcript.getCdnaCodingEnd());
+        node.addAttribute("genomicCodingStart", transcript.getGenomicCodingStart());
+        node.addAttribute("genomicCodingEnd", transcript.getGenomicCodingEnd());
+        node.addAttribute("cdsLength", transcript.getCdsLength());
+        node.addAttribute("description", transcript.getDescription());
+        if (ListUtils.isNotEmpty(transcript.getAnnotationFlags())) {
+            node.addAttribute("annotationFlags", StringUtils.join(transcript.getAnnotationFlags(), ","));
+        }
+        return node;
+    }
+
+    public static Node newNode(TranscriptTfbs tfbs) {
+        Node node = new Node(-1, null, tfbs.getTfName(), Node.Type.TFBS);
+        node.addAttribute("chromosome", tfbs.getChromosome());
+        node.addAttribute("start", tfbs.getStart());
+        node.addAttribute("end", tfbs.getEnd());
+        node.addAttribute("strand", tfbs.getStrand());
+        node.addAttribute("relativeStart", tfbs.getRelativeStart());
+        node.addAttribute("relativeEnd", tfbs.getRelativeEnd());
+        node.addAttribute("score", tfbs.getScore());
+        node.addAttribute("pwm", tfbs.getPwm());
+        return node;
+    }
+
+    public static Node newNode(Xref xref) {
+        Node node = new Node(-1, xref.getId(), null, Node.Type.XREF);
+        node.addAttribute("dbName", xref.getDbName());
+        node.addAttribute("dbDisplayName", xref.getDbDisplayName());
+        node.addAttribute("description", xref.getDescription());
         return node;
     }
 }

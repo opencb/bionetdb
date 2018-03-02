@@ -5,6 +5,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
+import org.opencb.biodata.models.core.*;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
@@ -72,6 +73,17 @@ public class Neo4JVariantLoader {
         session.close();
     }
 
+
+    public void loadGenes(List<Gene> genes) {
+        Session session = networkDBAdaptor.getDriver().session();
+        for (Gene gene: genes) {
+            session.writeTransaction(tx -> {
+                loadGene(gene, tx);
+                return 1;
+            });
+        }
+        session.close();
+    }
 
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
@@ -234,6 +246,17 @@ public class Neo4JVariantLoader {
                             }
                         }
 
+                        // Gene
+                        if (ct.getEnsemblGeneId() != null) {
+                            Node geneNode = new Node(-1, ct.getEnsemblGeneId(), null, Node.Type.GENE);
+                            networkDBAdaptor.mergeNode(geneNode, "id", tx);
+
+                            // Relation: consequence type - gene
+                            Relation ctGeneRel = new Relation(-1, null, ctNode.getUid(), geneNode.getUid(),
+                                    Relation.Type.GENE);
+                            networkDBAdaptor.mergeRelation(ctGeneRel, tx);
+                        }
+
                         // Transcript
                         if (ct.getEnsemblTranscriptId() != null) {
                             Node transcriptNode = new Node(-1, ct.getEnsemblTranscriptId(), null, Node.Type.TRANSCRIPT);
@@ -302,6 +325,81 @@ public class Neo4JVariantLoader {
         }
     }
 
+    private void loadGene(Gene gene, Transaction tx) {
+        if (gene != null) {
+            // Gene node
+            Node geneNode = NodeBuilder.newNode(gene);
+            networkDBAdaptor.mergeNode(geneNode, "id", tx);
+
+            // Transcripts
+            if (ListUtils.isNotEmpty(gene.getTranscripts())) {
+                for (Transcript transcript: gene.getTranscripts()) {
+                    Node tNode = NodeBuilder.newNode(transcript);
+                    networkDBAdaptor.mergeNode(tNode, "id", tx);
+
+                    // Relation: gene - transcript
+                    Relation gTRel = new Relation(-1, null, geneNode.getUid(), tNode.getUid(),
+                            Relation.Type.TRANSCRIPT);
+                    networkDBAdaptor.mergeRelation(gTRel, tx);
+
+                    // Tfbs
+                    if (ListUtils.isNotEmpty(transcript.getTfbs())) {
+                        for (TranscriptTfbs tfbs: transcript.getTfbs()) {
+                            Node tfbsNode = NodeBuilder.newNode(tfbs);
+                            networkDBAdaptor.addNode(tfbsNode, tx);
+
+                            // Relation: transcript - tfbs
+                            Relation tTfbsRel = new Relation(-1, null, tNode.getUid(), tfbsNode.getUid(),
+                                    Relation.Type.TFBS);
+                            networkDBAdaptor.mergeRelation(tTfbsRel, tx);
+                        }
+                    }
+
+                    // Xrefs
+                    if (ListUtils.isNotEmpty(transcript.getXrefs())) {
+                        for (org.opencb.biodata.models.core.Xref xref: transcript.getXrefs()) {
+                            Node xrefNode = NodeBuilder.newNode(xref);
+                            networkDBAdaptor.mergeNode(xrefNode, "id", tx);
+
+                            // Relation: transcript - xref
+                            Relation tXrefRel = new Relation(-1, null, tNode.getUid(), xrefNode.getUid(),
+                                    Relation.Type.XREF);
+                            networkDBAdaptor.mergeRelation(tXrefRel, tx);
+                        }
+                    }
+                }
+            }
+
+
+            if (gene.getAnnotation() != null) {
+                // Drug
+                if (ListUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
+                    for (GeneDrugInteraction drug: gene.getAnnotation().getDrugs()) {
+                        Node drugNode = NodeBuilder.newNode(drug);
+                        networkDBAdaptor.mergeNode(drugNode, "name", tx);
+
+                        // Relation: gene - drug interaction
+                        Relation gDrugRel = new Relation(-1, null, geneNode.getUid(), drugNode.getUid(),
+                                Relation.Type.DRUG);
+                        networkDBAdaptor.mergeRelation(gDrugRel, tx);
+                    }
+                }
+
+                // Disease
+                if (ListUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
+                    for (GeneTraitAssociation disease: gene.getAnnotation().getDiseases()) {
+                        Node diseaseNode = NodeBuilder.newNode(disease);
+                        networkDBAdaptor.mergeNode(diseaseNode, "id", tx);
+
+                        // Relation: gene - disease (trait association)
+                        Relation gDiseaseRel = new Relation(-1, null, geneNode.getUid(), diseaseNode.getUid(),
+                                Relation.Type.DISEASE);
+                        networkDBAdaptor.mergeRelation(gDiseaseRel, tx);
+                    }
+                }
+            }
+        }
+    }
 
     private List<Variant> convert(List<VariantContext> variantContexts, VariantContextToVariantConverter converter) {
         // Iterate over variant context and convert to variant
