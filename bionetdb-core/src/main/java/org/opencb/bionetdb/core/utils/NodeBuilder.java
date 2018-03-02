@@ -1,7 +1,13 @@
 package org.opencb.bionetdb.core.utils;
 
 import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.models.core.*;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.FeatureType;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
+import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.models.core.TranscriptTfbs;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -224,6 +230,62 @@ public class NodeBuilder {
         node.addAttribute("dbName", xref.getDbName());
         node.addAttribute("dbDisplayName", xref.getDbDisplayName());
         node.addAttribute("description", xref.getDescription());
+        return node;
+    }
+
+    public static Node newNode(Entry protein) {
+        String id = (ListUtils.isNotEmpty(protein.getAccession()) ? protein.getAccession().get(0) : null);
+        String name = (ListUtils.isNotEmpty(protein.getName()) ? protein.getName().get(0) : null);
+        Node node = new Node(-1, id, name, Node.Type.PROTEIN);
+        if (ListUtils.isNotEmpty(protein.getAccession())) {
+            node.addAttribute("accession", StringUtils.join(protein.getAccession(), ","));
+        }
+        if (ListUtils.isNotEmpty(protein.getAccession())) {
+            node.addAttribute("name", StringUtils.join(protein.getName(), ","));
+        }
+        node.addAttribute("dataset", protein.getDataset());
+        node.addAttribute("dbReference", protein.getDbReference());
+        node.addAttribute("proteinExistence", protein.getProteinExistence());
+        if (ListUtils.isNotEmpty(protein.getEvidence())) {
+            node.addAttribute("evidence", StringUtils.join(protein.getEvidence(), ","));
+        }
+//        // Gene location
+//        if (protein.getGeneLocation() != null) {
+//            for (GeneLocationType location: protein.getGeneLocation()) {
+//            }
+//        }
+//        // Gene type
+//        if (ListUtils.isNotEmpty(protein.getGene())) {
+//            protein.getGene().get(0).getName().get(0).
+//        }
+        return node;
+    }
+
+    public static Node newNode(KeywordType keyword) {
+        Node node = new Node(-1, keyword.getId(), keyword.getValue(), Node.Type.PROTEIN_KEYWORD);
+        if (ListUtils.isNotEmpty(keyword.getEvidence())) {
+            node.addAttribute("evidence", StringUtils.join(keyword.getEvidence(), ","));
+        }
+        return node;
+    }
+
+    public static Node newNode(FeatureType feature) {
+        Node node = new Node(-1, feature.getId(), null, Node.Type.PROTEIN_FEATURE);
+        if (ListUtils.isNotEmpty(feature.getEvidence())) {
+            node.addAttribute("evidence", StringUtils.join(feature.getEvidence(), ","));
+        }
+        if (feature.getLocation() != null) {
+            node.addAttribute("location_position", feature.getLocation().getPosition());
+            node.addAttribute("location_begin", feature.getLocation().getBegin());
+            node.addAttribute("location_end", feature.getLocation().getEnd());
+        }
+        node.addAttribute("description", feature.getDescription());
+        return node;
+    }
+
+    public static Node newNode(DbReferenceType xref) {
+        Node node = new Node(-1, xref.getId(), null, Node.Type.XREF);
+        node.addAttribute("dbName", xref.getType());
         return node;
     }
 }

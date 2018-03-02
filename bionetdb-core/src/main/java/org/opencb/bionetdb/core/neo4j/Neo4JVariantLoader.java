@@ -5,7 +5,13 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.opencb.biodata.models.core.*;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.FeatureType;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
+import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.models.core.TranscriptTfbs;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
@@ -359,7 +365,7 @@ public class Neo4JVariantLoader {
                     if (ListUtils.isNotEmpty(transcript.getXrefs())) {
                         for (org.opencb.biodata.models.core.Xref xref: transcript.getXrefs()) {
                             Node xrefNode = NodeBuilder.newNode(xref);
-                            networkDBAdaptor.mergeNode(xrefNode, "id", tx);
+                            networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
 
                             // Relation: transcript - xref
                             Relation tXrefRel = new Relation(-1, null, tNode.getUid(), xrefNode.getUid(),
@@ -369,7 +375,6 @@ public class Neo4JVariantLoader {
                     }
                 }
             }
-
 
             if (gene.getAnnotation() != null) {
                 // Drug
@@ -401,6 +406,52 @@ public class Neo4JVariantLoader {
         }
     }
 
+    private void loadProtein(Entry protein, Transaction tx) {
+        if (protein != null) {
+            Node proteinNode = NodeBuilder.newNode(protein);
+            networkDBAdaptor.mergeNode(proteinNode, "id", tx);
+
+            // Protein keywords
+            if (ListUtils.isNotEmpty(protein.getKeyword())) {
+                for (KeywordType keyword: protein.getKeyword()) {
+                    Node kwNode = NodeBuilder.newNode(keyword);
+                    networkDBAdaptor.mergeNode(kwNode, "name", tx);
+
+                    // Relation: protein variant annotation - so
+                    Relation pKwRel = new Relation(-1, null, proteinNode.getUid(), kwNode.getUid(),
+                            Relation.Type.PROTEIN_KEYWORD);
+                    networkDBAdaptor.mergeRelation(pKwRel, tx);
+                }
+            }
+
+            // Protein features
+            if (ListUtils.isNotEmpty(protein.getFeature())) {
+                for (FeatureType feature : protein.getFeature()) {
+                    Node featureNode = NodeBuilder.newNode(feature);
+                    networkDBAdaptor.addNode(featureNode, tx);
+
+                    // Relation: protein variant annotation - protein feature
+                    Relation pFeatureRel = new Relation(-1, null, proteinNode.getUid(), featureNode.getUid(),
+                            Relation.Type.PROTEIN_FEATURE);
+                    networkDBAdaptor.mergeRelation(pFeatureRel, tx);
+                }
+            }
+
+            // Xrefs
+            if (ListUtils.isNotEmpty(protein.getDbReference())) {
+                for (DbReferenceType xref : protein.getDbReference()) {
+                    Node xrefNode = NodeBuilder.newNode(xref);
+                    networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
+
+                    // Relation: protein variant annotation - protein feature
+                    Relation pFeatureRel = new Relation(-1, null, proteinNode.getUid(), xrefNode.getUid(),
+                            Relation.Type.XREF);
+                    networkDBAdaptor.mergeRelation(pFeatureRel, tx);
+                }
+            }
+        }
+    }
+
     private List<Variant> convert(List<VariantContext> variantContexts, VariantContextToVariantConverter converter) {
         // Iterate over variant context and convert to variant
         List<Variant> variants = new ArrayList<>(variantContexts.size());
@@ -410,49 +461,4 @@ public class Neo4JVariantLoader {
         }
         return variants;
     }
-
-//    private void processVariantContexts(List<VariantContext> variantContexts, VariantContextToVariantConverter converter,
-//                                        VariantParser variantParser) throws BioNetDBException {
-//        // Convert to variants, parse and merge it into the final network
-//        List<Variant> variants = convert(variantContexts, converter);
-//
-//        Network network = variantParser.parse(variants);
-//
-//        NetworkManager netManager = new NetworkManager(network);
-//
-//        Map<Long, Long> oldUidToNewUidMap = new HashMap<>();
-//
-//        // Check recyclable nodes to update UIDs, such as VARIANT, SAMPLE,...
-//        // and update UID is necessary
-//        for (Node node: netManager.getNodes()) {
-//            if (node.getType() == Node.Type.SAMPLE || node.getType() == Node.Type.VARIANT) {
-//                // Sample, variant nodes
-//                if (idToUidMap.containsKey(node.getName())) {
-//                    oldUidToNewUidMap.put(node.getUid(), idToUidMap.get(node.getName()));
-//                    node.setUid(idToUidMap.get(node.getName()));
-//                } else {
-//                    NodeQuery query = new NodeQuery(node.getType());
-//                    query.put((node.getType() == Node.Type.VARIANT ? "name" : "id"), node.getName());
-//                    QueryResult<Node> queryResult = nodeQuery(query, QueryOptions.empty());
-//                    if (ListUtils.isNotEmpty(queryResult.getResult())) {
-//                        if (queryResult.getResult().size() != 1) {
-//                            logger.error("Skipping processing: {} node {} has multiple instances", node.getType(), node.getName());
-//                            continue;
-//                        }
-//                        idToUidMap.put(node.getName(), queryResult.getResult().get(0).getUid());
-//                        oldUidToNewUidMap.put(node.getUid(), idToUidMap.get(node.getName()));
-//                        node.setUid(idToUidMap.get(node.getName()));
-//                    } else {
-//                        idToUidMap.put(node.getName(), node.getUid());
-//                    }
-//                }
-//            }
-//        }
-//
-//        // Now, relations' origin and destination UIDs are updated
-//        netManager.replaceRelationNodeUids(oldUidToNewUidMap);
-//
-//        // Load network to the database
-//        networkDBAdaptor.insert(network, QueryOptions.empty());
-//    }
 }

@@ -449,6 +449,91 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return ret;
     }
 
+    public StatementResult mergeNode(Node node, String byKey1, String byKey2, Transaction tx) {
+        // Gather properties of the node to create a cypher string with them
+        boolean prefix1 = false;
+        boolean prefix2 = false;
+        Object value1 = null;
+        Object value2 = null;
+
+        List<String> props = new ArrayList<>();
+        if ("id".equals(byKey1)) {
+            value1 = node.getId();
+        } else if ("id".equals(byKey2)) {
+            value2 = node.getId();
+        } else {
+            if (StringUtils.isNotEmpty(node.getId())) {
+                props.add("n.id=\"" + cleanValue(node.getId()) + "\"");
+            }
+        }
+        if ("name".equals(byKey1)) {
+            value1 = node.getName();
+        } else if ("name".equals(byKey2)) {
+            value2 = node.getName();
+        } else {
+            if (StringUtils.isNotEmpty(node.getName())) {
+                props.add("n.name=\"" + cleanValue(node.getName()) + "\"");
+            }
+        }
+        if ("source".equals(byKey1)) {
+            value1 = node.getSource();
+        } else if ("source".equals(byKey2)) {
+            value2 = node.getSource();
+        } else if (StringUtils.isNotEmpty(node.getSource())) {
+            props.add("n.source=\"" + node.getSource() + "\"");
+        }
+        for (String key: node.getAttributes().keySet()) {
+            if (key.equals(byKey1)) {
+                prefix1 = true;
+                value1 = node.getAttributes().get(key);
+            } else if (key.equals(byKey2)) {
+                prefix2 = true;
+                value2 = node.getAttributes().get(key);
+            } else {
+                if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
+                    props.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
+                } else {
+                    props.add("n." + PREFIX_ATTRIBUTES + key + "=\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
+                }
+            }
+        }
+        //String propsJoined = "{" + String.join(",", props) + "}";
+
+        // Create the desired node
+        StringBuilder cypher = new StringBuilder("MERGE (n");
+        if (ListUtils.isNotEmpty(node.getTags())) {
+            cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
+        }
+        cypher.append("{");
+        if (prefix1) {
+            cypher.append(PREFIX_ATTRIBUTES);
+        }
+        cypher.append(byKey1).append(":");
+        if (value1 instanceof String) {
+            cypher.append("\"").append(value1).append("\"");
+        } else {
+            cypher.append(value1);
+        }
+        cypher.append(",");
+        if (prefix2) {
+            cypher.append(PREFIX_ATTRIBUTES);
+        }
+        cypher.append(byKey2).append(":");
+        if (value1 instanceof String) {
+            cypher.append("\"").append(value2).append("\"");
+        } else {
+            cypher.append(value2);
+        }
+        cypher.append("})");
+        if (ListUtils.isNotEmpty(props)) {
+            cypher.append(" SET ").append(StringUtils.join(props, ","));
+        }
+        cypher.append(" RETURN ID(n) AS UID");
+        StatementResult ret = tx.run(cypher.toString());
+        node.setUid(ret.peek().get("UID").asLong());
+        return ret;
+    }
+
     public StatementResult mergeRelation(Relation relation, Transaction tx) {
         return addRelation(relation, tx);
     }
