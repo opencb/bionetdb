@@ -140,7 +140,7 @@ public class Node {
     public String toStringEx() {
         final StringBuilder sb = new StringBuilder("Node{");
         sb.append("uid='").append(uid).append('\'');
-        sb.append("id='").append(id).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", tags=").append(tags);

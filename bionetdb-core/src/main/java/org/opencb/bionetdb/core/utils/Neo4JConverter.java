@@ -38,7 +38,7 @@ public class Neo4JConverter {
                 // Skip nodes, relationships and paths
                 continue;
             } else {
-                row.add(pair.value());
+                row.add(pair.value().asObject());
             }
         }
 
@@ -131,7 +131,7 @@ public class Neo4JConverter {
         int pos = Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES.length();
         for (String k : neoNode.keys()) {
             if (k.startsWith(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES)) {
-                node.addAttribute(k.substring(pos), neoNode.get(k));
+                    node.addAttribute(k.substring(pos), neoNode.get(k).asObject());
             }
         }
         return node;

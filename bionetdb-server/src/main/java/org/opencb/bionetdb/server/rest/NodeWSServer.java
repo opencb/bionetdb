@@ -55,9 +55,12 @@ public class NodeWSServer extends GenericRestWSServer {
             logger.info(cypher);
             for (Node node: nodes) {
                 logger.info(node.toStringEx());
+//                node.addAttribute("end", 3);
+//                node.addAttribute("start", 4);
+//                node.addAttribute("strand", 1);
+//                node.addAttribute("chromosome", 2);
             }
-            QueryResult<Node> queryResult = new QueryResult<>(null, 0, nodes.size(), nodes.size(), null, null, nodes);
-            networkDBAdaptor.close();
+            QueryResult queryResult = new QueryResult(null, 0, nodes.size(), nodes.size(), null, null, nodes);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
