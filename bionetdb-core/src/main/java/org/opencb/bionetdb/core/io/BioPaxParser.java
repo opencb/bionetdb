@@ -1,32 +1,16 @@
 package org.opencb.bionetdb.core.io;
 
-import org.biopax.paxtools.io.BioPAXIOHandler;
-import org.biopax.paxtools.io.SimpleIOHandler;
 import org.biopax.paxtools.model.BioPAXElement;
-import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
-import org.biopax.paxtools.model.level3.Catalysis;
-import org.biopax.paxtools.model.level3.Complex;
-import org.biopax.paxtools.model.level3.Dna;
-import org.biopax.paxtools.model.level3.Interaction;
-import org.biopax.paxtools.model.level3.PhysicalEntity;
 import org.biopax.paxtools.model.level3.Process;
-import org.biopax.paxtools.model.level3.Protein;
-import org.biopax.paxtools.model.level3.Rna;
-import org.biopax.paxtools.model.level3.SmallMolecule;
-import org.biopax.paxtools.model.level3.Xref;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.sqlite.util.StringUtils;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Created by imedina on 05/08/15.
@@ -65,111 +49,112 @@ public class BioPaxParser {
     }
 
     public Network parse(Path path) throws IOException {
-        // Reading GZip input stream
-        InputStream inputStream;
-        if (path.toFile().getName().endsWith(".gz")) {
-            inputStream = new GZIPInputStream(new FileInputStream(path.toFile()));
-        } else {
-            inputStream = Files.newInputStream(path);
-        }
-
-        this.source = path.toFile().getName();
-
-        // Retrieving model from BioPAX file
-        BioPAXIOHandler handler = new SimpleIOHandler();
-        Model model = handler.convertFromOWL(inputStream);
-
-        // Retrieving BioPAX elements
-        Set<BioPAXElement> bioPAXElements = model.getObjects();
-
-        // First loop to create all physical entity nodes
-        for (BioPAXElement bioPAXElement: bioPAXElements) {
-            switch (bioPAXElement.getModelInterface().getSimpleName()) {
-                // Physical Entities
-                case "PhysicalEntity":
-                case "Dna":
-                case "Rna":
-                case "Protein":
-                case "Complex":
-                case "SmallMolecule":
-                    PhysicalEntity physicalEntityBP = (PhysicalEntity) bioPAXElement;
-                    String peId = physicalEntityBP.getRDFId().split("#")[1];
-                    rdfToUidMap.put(peId, uidCounter);
-                    Node peNode = new Node(uidCounter);
-                    peNode.setId(peId);
-                    nodeMap.put(uidCounter, peNode);
-                    uidCounter++;
-                    break;
-                case "BiochemicalReaction":
-                case "TemplateReaction":
-                case "Degradation":
-                case "ComplexAssembly":
-                case "MolecularInteraction":
-                case "Transport":
-                case "TransportWithBiochemicalReaction":
-                case "Catalysis":
-                case "Modulation":
-                case "TemplateReactionRegulation":
-                    Interaction interactionBP = (Interaction) bioPAXElement;
-                    String interactionId = interactionBP.getRDFId().split("#")[1];
-                    rdfToUidMap.put(interactionId, uidCounter);
-                    Node intNode = new Node(uidCounter);
-                    intNode.setId(interactionId);
-                    nodeMap.put(uidCounter, intNode);
-                    uidCounter++;
-                    break;
-                default:
-                    break;
-
-            }
-        }
-
-        // Second loop to add nodes and relationships to the network
-        for (BioPAXElement bioPAXElement: bioPAXElements) {
-            switch (bioPAXElement.getModelInterface().getSimpleName()) {
-                // Physical Entities
-                case "PhysicalEntity":
-                    addUndefinedEntity(bioPAXElement);
-                    break;
-                case "Dna":
-                    addDna(bioPAXElement);
-                    break;
-                case "Rna":
-                    addRna(bioPAXElement);
-                    break;
-                case "Protein":
-                    addProtein(bioPAXElement);
-                    break;
-                case "Complex":
-                    addComplex(bioPAXElement);
-                    break;
-                case "SmallMolecule":
-                    addSmallMolecule(bioPAXElement);
-                    break;
-
-                // Interactions
-                case "BiochemicalReaction":
-                case "TemplateReaction":
-                case "Degradation":
-                case "ComplexAssembly":
-                case "MolecularInteraction":
-                case "Transport":
-                case "TransportWithBiochemicalReaction":
-                    addReaction(bioPAXElement);
-                    break;
-                case "Catalysis":
-                    addCatalysis(bioPAXElement);
-                    break;
-                case "Modulation":
-                case "TemplateReactionRegulation":
-                    addRegulation(bioPAXElement);
-                    break;
-                default:
-                    break;
-            }
-        }
-        inputStream.close();
-        return network;
+//        // Reading GZip input stream
+//        InputStream inputStream;
+//        if (path.toFile().getName().endsWith(".gz")) {
+//            inputStream = new GZIPInputStream(new FileInputStream(path.toFile()));
+//        } else {
+//            inputStream = Files.newInputStream(path);
+//        }
+//
+//        this.source = path.toFile().getName();
+//
+//        // Retrieving model from BioPAX file
+//        BioPAXIOHandler handler = new SimpleIOHandler();
+//        Model model = handler.convertFromOWL(inputStream);
+//
+//        // Retrieving BioPAX elements
+//        Set<BioPAXElement> bioPAXElements = model.getObjects();
+//
+//        // First loop to create all physical entity nodes
+//        for (BioPAXElement bioPAXElement: bioPAXElements) {
+//            switch (bioPAXElement.getModelInterface().getSimpleName()) {
+//                // Physical Entities
+//                case "PhysicalEntity":
+//                case "Dna":
+//                case "Rna":
+//                case "Protein":
+//                case "Complex":
+//                case "SmallMolecule":
+//                    PhysicalEntity physicalEntityBP = (PhysicalEntity) bioPAXElement;
+//                    String peId = physicalEntityBP.getRDFId().split("#")[1];
+//                    rdfToUidMap.put(peId, uidCounter);
+//                    Node peNode = new Node(uidCounter);
+//                    peNode.setId(peId);
+//                    nodeMap.put(uidCounter, peNode);
+//                    uidCounter++;
+//                    break;
+//                case "BiochemicalReaction":
+//                case "TemplateReaction":
+//                case "Degradation":
+//                case "ComplexAssembly":
+//                case "MolecularInteraction":
+//                case "Transport":
+//                case "TransportWithBiochemicalReaction":
+//                case "Catalysis":
+//                case "Modulation":
+//                case "TemplateReactionRegulation":
+//                    Interaction interactionBP = (Interaction) bioPAXElement;
+//                    String interactionId = interactionBP.getRDFId().split("#")[1];
+//                    rdfToUidMap.put(interactionId, uidCounter);
+//                    Node intNode = new Node(uidCounter);
+//                    intNode.setId(interactionId);
+//                    nodeMap.put(uidCounter, intNode);
+//                    uidCounter++;
+//                    break;
+//                default:
+//                    break;
+//
+//            }
+//        }
+//
+//        // Second loop to add nodes and relationships to the network
+//        for (BioPAXElement bioPAXElement: bioPAXElements) {
+//            switch (bioPAXElement.getModelInterface().getSimpleName()) {
+//                // Physical Entities
+//                case "PhysicalEntity":
+//                    addUndefinedEntity(bioPAXElement);
+//                    break;
+//                case "Dna":
+//                    addDna(bioPAXElement);
+//                    break;
+//                case "Rna":
+//                    addRna(bioPAXElement);
+//                    break;
+//                case "Protein":
+//                    addProtein(bioPAXElement);
+//                    break;
+//                case "Complex":
+//                    addComplex(bioPAXElement);
+//                    break;
+//                case "SmallMolecule":
+//                    addSmallMolecule(bioPAXElement);
+//                    break;
+//
+//                // Interactions
+//                case "BiochemicalReaction":
+//                case "TemplateReaction":
+//                case "Degradation":
+//                case "ComplexAssembly":
+//                case "MolecularInteraction":
+//                case "Transport":
+//                case "TransportWithBiochemicalReaction":
+//                    addReaction(bioPAXElement);
+//                    break;
+//                case "Catalysis":
+//                    addCatalysis(bioPAXElement);
+//                    break;
+//                case "Modulation":
+//                case "TemplateReactionRegulation":
+//                    addRegulation(bioPAXElement);
+//                    break;
+//                default:
+//                    break;
+//            }
+//        }
+//        inputStream.close();
+//        return network;
+        return null;
     }
 
     //---------------------------------------------------------------

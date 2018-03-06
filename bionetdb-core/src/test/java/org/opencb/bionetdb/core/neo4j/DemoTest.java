@@ -1,26 +1,18 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.io.BioPaxParser;
-import org.opencb.bionetdb.core.io.VariantParser;
-import org.opencb.bionetdb.core.network.Network;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Collections;
 
 public class DemoTest {
@@ -71,83 +63,83 @@ public class DemoTest {
         networkDBAdaptor.close();
     }
 
-    @Test
-    public void createNetwork() throws IOException, BioNetDBException {
-        // Load physical data from Reactome data: Biopax files
-        loadPhysicalData();
+//    @Test
+//    public void createNetwork() throws IOException, BioNetDBException {
+//        // Load physical data from Reactome data: Biopax files
+//        loadPhysicalData();
+//
+//        // Load experimental data from variant data: VCF files, (json files)
+//        loadExperimentalData();
+//
+//        // Complete network, i.e.: search genes and check if all its transcripts are there, otherwise
+//        // add the remaining transcripts to the network
+//        //completeNetwork();
+//
+//        // Annotate network, it implies to annotate variants, genes and proteins
+//        //annotateNetwork();
+//
+//        // Load clinical layer
+//        // TODO
+//    }
 
-        // Load experimental data from variant data: VCF files, (json files)
-        loadExperimentalData();
-
-        // Complete network, i.e.: search genes and check if all its transcripts are there, otherwise
-        // add the remaining transcripts to the network
-        //completeNetwork();
-
-        // Annotate network, it implies to annotate variants, genes and proteins
-        //annotateNetwork();
-
-        // Load clinical layer
-        // TODO
-    }
-
-    @Test
-    public void loadPhysicalData() throws IOException, BioNetDBException {
-        // Load physical data from Reactome data: Biopax files
-
-        // ... parse Reactome data from Biopax parse
-        BioPaxParser parser = new BioPaxParser("L3");
-        Network network = parser.parse(Paths.get(reactomeBiopaxFilename));
-
-        /// ...and insert into the network
-        System.out.println("Inserting data...");
-        long startTime = System.currentTimeMillis();
-        networkDBAdaptor.insert(network, null);
-        long stopTime = System.currentTimeMillis();
-        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
-    }
-
-    @Test
-    public void loadExperimentalData() throws IOException, BioNetDBException {
-        // Load experimental data from variant data: VCF files, (json files)
-
-        // ...parse variants from json
-        ObjectMapper mapper = new ObjectMapper();
-        Variant variant = mapper.readValue(new File(variantJsonFilename), Variant.class);
-
-        VariantParser variantParser = new VariantParser();
-        Network network = variantParser.parse(variant);
-        //System.out.println(variant.toJson());
-/*
-        // ...link experimental network to physical network
-        if (network.getAttributes().containsKey("_uniprot")) {
-            Map<String, List<Node>> uniprotMap = (Map<String, List<Node>>) network.getAttributes().get("_uniprot");
-            for (String key: uniprotMap.keySet()) {
-                Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.SCRIPT.key(),
-                        "match (p:PROTEIN)-[xr:XREF]->(x:XREF) where x.source = \"uniprot\" and "
-                                + " x.id = \"" + key + "\" return p");
-                QueryResult<Node> nodes = networkDBAdaptor.getNodes(query, QueryOptions.empty());
-//                System.out.println("uniprot: " + key + ", value list size = " + uniprotMap.get(key).size());
-                for (Node protVANode: uniprotMap.get(key)) {
-                    for (Node protein: nodes.getResult()) {
-//                        System.out.println("\t" + protein.toString());
-
-                        // ... and its relationship
-                        Relation protVARel = new Relation(protein.getId() + protVANode.getId(),
-                                protein.getId(), protein.getType().toString(), protVANode.getId(),
-                                protVANode.getType().toString(), Relation.Type.ANNOTATION);
-                        network.addRelation(protVARel);
-                    }
-                }
-            }
-        }
-*/
-        // ...and insert into the network
-        System.out.println("Inserting data...");
-        long startTime = System.currentTimeMillis();
-        networkDBAdaptor.insert(network, null);
-        long stopTime = System.currentTimeMillis();
-        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
-    }
+//    @Test
+//    public void loadPhysicalData() throws IOException, BioNetDBException {
+//        // Load physical data from Reactome data: Biopax files
+//
+//        // ... parse Reactome data from Biopax parse
+//        BioPaxParser parser = new BioPaxParser("L3");
+//        Network network = parser.parse(Paths.get(reactomeBiopaxFilename));
+//
+//        /// ...and insert into the network
+//        System.out.println("Inserting data...");
+//        long startTime = System.currentTimeMillis();
+//        networkDBAdaptor.insert(network, null);
+//        long stopTime = System.currentTimeMillis();
+//        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
+//    }
+//
+//    @Test
+//    public void loadExperimentalData() throws IOException, BioNetDBException {
+//        // Load experimental data from variant data: VCF files, (json files)
+//
+//        // ...parse variants from json
+//        ObjectMapper mapper = new ObjectMapper();
+//        Variant variant = mapper.readValue(new File(variantJsonFilename), Variant.class);
+//
+//        VariantParser variantParser = new VariantParser();
+//        Network network = variantParser.parse(variant);
+//        //System.out.println(variant.toJson());
+///*
+//        // ...link experimental network to physical network
+//        if (network.getAttributes().containsKey("_uniprot")) {
+//            Map<String, List<Node>> uniprotMap = (Map<String, List<Node>>) network.getAttributes().get("_uniprot");
+//            for (String key: uniprotMap.keySet()) {
+//                Query query = new Query(NetworkDBAdaptor.NetworkQueryParams.SCRIPT.key(),
+//                        "match (p:PROTEIN)-[xr:XREF]->(x:XREF) where x.source = \"uniprot\" and "
+//                                + " x.id = \"" + key + "\" return p");
+//                QueryResult<Node> nodes = networkDBAdaptor.getNodes(query, QueryOptions.empty());
+////                System.out.println("uniprot: " + key + ", value list size = " + uniprotMap.get(key).size());
+//                for (Node protVANode: uniprotMap.get(key)) {
+//                    for (Node protein: nodes.getResult()) {
+////                        System.out.println("\t" + protein.toString());
+//
+//                        // ... and its relationship
+//                        Relation protVARel = new Relation(protein.getId() + protVANode.getId(),
+//                                protein.getId(), protein.getType().toString(), protVANode.getId(),
+//                                protVANode.getType().toString(), Relation.Type.ANNOTATION);
+//                        network.addRelation(protVARel);
+//                    }
+//                }
+//            }
+//        }
+//*/
+//        // ...and insert into the network
+//        System.out.println("Inserting data...");
+//        long startTime = System.currentTimeMillis();
+//        networkDBAdaptor.insert(network, null);
+//        long stopTime = System.currentTimeMillis();
+//        System.out.println("Insertion of data took " + (stopTime - startTime) / 1000 + " seconds.");
+//    }
 /*
     @Test
     public void completeNetwork() throws BioNetDBException, IOException {

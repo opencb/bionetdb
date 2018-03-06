@@ -35,7 +35,7 @@ public class BioNetDBManagerTest {
             for (DatabaseConfiguration dbConfig: bioNetDBConfiguration.getDatabases()) {
                 System.out.println(dbConfig);
             }
-             bioNetDBManager = new BioNetDBManager(database, bioNetDBConfiguration);
+            bioNetDBManager = new BioNetDBManager(database, bioNetDBConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (BioNetDBException e) {
@@ -53,9 +53,16 @@ public class BioNetDBManagerTest {
     //-------------------------------------------------------------------------
 
     @Test
-    public void loadBiopax() throws BioNetDBException, IOException {
-        String filename = "~/neo4j/hsapiens.meiosis.biopax3";
-        bioNetDBManager.loadBiopax(Paths.get(filename));
+    public void loadBioPax() throws BioNetDBException, IOException {
+//        try {
+        //bioNetDBManager.loadBioPax(Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI()));
+        String filename = "/home/jtarraga/data150/neo4j/hsapiens.meiosis.biopax3";
+        bioNetDBManager.loadBioPax(Paths.get(filename));
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//            fail();
+//        }
+
     }
 
     @Test
@@ -63,6 +70,7 @@ public class BioNetDBManagerTest {
         try {
             bioNetDBManager.loadVcf(Paths.get(getClass().getResource("/3.vcf").toURI()));
         } catch (URISyntaxException e) {
+            e.printStackTrace();
             fail();
         }
     }
@@ -111,7 +119,7 @@ public class BioNetDBManagerTest {
 
     @Test
     public void annotateProtein() throws BioNetDBException, IOException {
-        annotateGenes();
+        //annotateGenes();
 
         List<String> ids = new ArrayList<>();
 
@@ -122,7 +130,8 @@ public class BioNetDBManagerTest {
             }
         }
 
-//        proteinIds.add("P02649");
+//        ids.add("P02649");
+//        ids.add("HIST2H3A");
 
         bioNetDBManager.annotateProteins(ids);
     }
