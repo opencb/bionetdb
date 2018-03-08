@@ -8,8 +8,11 @@ import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
+import org.opencb.bionetdb.core.BioNetDBManager;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.config.DatabaseConfiguration;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.*;
@@ -22,6 +25,7 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.annotation.Documented;
 import java.util.*;
 
 /**
@@ -37,37 +41,14 @@ public class GenericRestWSServer {
     @ApiParam(name = "version", value = "Use 'latest' for last stable version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
 
-//    @DefaultValue("")
-//    @PathParam("database")
-//    @ApiParam(name = "database", value = "Name of the database to query")
     protected String database;
 
-//    @ApiParam(name = "excluded fields", value = "Set which fields are excluded in the response, e.g.: transcripts.exons")
-//    @DefaultValue("")
-//    @QueryParam("exclude")
     protected String exclude;
-
-//    @DefaultValue("")
-//    @QueryParam("include")
-//    @ApiParam(name = "included fields", value = "Set which fields are included in the response, e.g.: transcripts.id")
     protected String include;
 
-//    @DefaultValue("-1")
-//    @QueryParam("limit")
-//    @ApiParam(name = "limit", value = "Max number of results to be returned. No limit applied when -1. No limit is set by default.")
     protected int limit;
-
-//    @DefaultValue("-1")
-//    @QueryParam("skip")
-//    @ApiParam(name = "skip", value = "Number of results to be skipped. No skip applied when -1. No skip by default.")
     protected int skip;
-
-//    @DefaultValue("false")
-//    @QueryParam("count")
-//    @ApiParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
-//            defaultValue = "false", allowableValues = "false,true")
     protected String count;
-
 
     protected Query query;
     protected QueryOptions queryOptions;
@@ -91,12 +72,9 @@ public class GenericRestWSServer {
      */
     protected static BioNetDBConfiguration bioNetDBConfiguration;
 
-    /**
-     * DBAdaptorFactory creation, this object can be initialize with an
-     * HibernateDBAdaptorFactory or an HBaseDBAdaptorFactory. This object is a
-     * factory for creating adaptors like GeneDBAdaptor
-     */
+    @Deprecated
     protected static NetworkDBAdaptor networkDBAdaptor;
+    protected static Map<String, BioNetDBManager> bioNetDBManagers;
 
     private static final int LIMIT_DEFAULT = 1000;
     private static final int LIMIT_MAX = 5000;
@@ -119,9 +97,22 @@ public class GenericRestWSServer {
 //            networkDBAdaptor = new Neo4JNetworkDBAdaptor("test1", bioNetDBConfiguration);
 //        } catch (BioNetDBException e) {
 //            e.printStackTrace();
-            } catch (IOException e) {
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Init the manager map with the managers, this will allow methods to query the right database
+        bioNetDBManagers = new HashMap<>();
+        if (bioNetDBConfiguration != null && bioNetDBConfiguration.getDatabases().size() > 0) {
+            try {
+                for (DatabaseConfiguration databaseConfiguration : bioNetDBConfiguration.getDatabases()) {
+                    bioNetDBManagers.put(databaseConfiguration.getId(),
+                            new BioNetDBManager(databaseConfiguration.getId(), bioNetDBConfiguration));
+                }
+            } catch (BioNetDBException e) {
                 e.printStackTrace();
             }
+        }
 
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
