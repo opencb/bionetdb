@@ -50,14 +50,14 @@
     </servlet-mapping>
 
 
-    <!--<filter>-->
-        <!--<filter-name>CorsFilter</filter-name>-->
-        <!--<filter-class>org.opencb.bionetdb.server.CorsFilter</filter-class>-->
-    <!--</filter>-->
-    <!--<filter-mapping>-->
-        <!--<filter-name>CorsFilter</filter-name>-->
-        <!--<url-pattern>*</url-pattern>-->
-    <!--</filter-mapping>-->
+    <filter>
+        <filter-name>CorsFilter</filter-name>
+        <filter-class>org.opencb.bionetdb.server.rest.CorsFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CorsFilter</filter-name>
+        <url-pattern>*</url-pattern>
+    </filter-mapping>
 
     <!--swagger-->
     <!--<servlet>-->
