@@ -121,8 +121,11 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
 
 
+    //-------------------------------------------------------------------------
+    // T E S T S
+    //-------------------------------------------------------------------------
 
-
+    void loadTest();
 
 
 

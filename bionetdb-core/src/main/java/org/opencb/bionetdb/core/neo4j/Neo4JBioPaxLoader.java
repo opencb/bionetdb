@@ -54,14 +54,17 @@ public class Neo4JBioPaxLoader {
 
         Session session = networkDBAdaptor.getDriver().session();
 
+        List<Node> nodes = new ArrayList<>();
+
         // First loop to create all physical entity nodes
-        for (BioPAXElement bioPAXElement: bioPAXElements) {
-            session.writeTransaction(tx -> {
+        try (Transaction tx = session.beginTransaction()) {
+            for (BioPAXElement bioPAXElement: bioPAXElements) {
                 switch (bioPAXElement.getModelInterface().getSimpleName()) {
                     // Physical Entities
                     case "PhysicalEntity": {
                         Node node = loadUndefinedEntity(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
@@ -69,6 +72,7 @@ public class Neo4JBioPaxLoader {
                     case "Dna": {
                         Node node = loadDna(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
@@ -76,6 +80,7 @@ public class Neo4JBioPaxLoader {
                     case "Rna": {
                         Node node = loadRna(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
@@ -83,6 +88,7 @@ public class Neo4JBioPaxLoader {
                     case "Protein": {
                         Node node = loadProtein(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
@@ -90,6 +96,7 @@ public class Neo4JBioPaxLoader {
                     case "Complex": {
                         Node node = loadComplex(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
@@ -97,6 +104,7 @@ public class Neo4JBioPaxLoader {
                     case "SmallMolecule": {
                         Node node = loadSmallMolecule(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
@@ -112,29 +120,29 @@ public class Neo4JBioPaxLoader {
                     case "TransportWithBiochemicalReaction": {
                         Node node = loadReaction(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
                         break;
                     }
                     case "Catalysis": {
                         Node node = loadCatalysis(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
                         break;
                     }
                     case "Modulation":
                     case "TemplateReactionRegulation": {
                         Node node = loadRegulation(bioPAXElement, tx);
                         rdfToUidMap.put(node.getId(), node.getUid());
+                        nodes.add(node);
                         break;
                     }
                     default:
                         break;
                 }
-                return 1;
-            });
-        }
+            }
 
-        // Second loop to create relationships between physical entity nodes
-        for (BioPAXElement bioPAXElement: bioPAXElements) {
-            session.writeTransaction(tx -> {
+            // Second loop to create relationships between physical entity nodes
+            for (BioPAXElement bioPAXElement: bioPAXElements) {
                 switch (bioPAXElement.getModelInterface().getSimpleName()) {
                     case "Complex": {
                         updateComplex(bioPAXElement, tx);
@@ -161,12 +169,11 @@ public class Neo4JBioPaxLoader {
                     default:
                         break;
                 }
-                return 1;
-            });
+            }
+            tx.success();
         }
 
         session.close();
-
         inputStream.close();
     }
 

@@ -57,6 +57,12 @@ public class Neo4JNetworkDBAdaptorTest {
     }
 
     @Test
+    public void testingLoad() {
+        networkDBAdaptor.loadTest();
+    }
+
+
+    @Test
     public void testInsert() throws Exception {
         BioPaxParser bioPaxParser = new BioPaxParser("L3");
         String reactomeBiopaxFilename = "~/jtarraga/data150/neo4j/pathway1.biopax3";

@@ -14,7 +14,6 @@ import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.PhysicalEntity;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
@@ -30,9 +29,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -97,20 +94,24 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Session session = this.driver.session();
         if (session != null) {
             try (Transaction tx = session.beginTransaction()) {
-                tx.run("CREATE INDEX ON :" + Node.Type.PHYSICAL_ENTITY + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.COMPLEX + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.SMALL_MOLECULE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.CATALYSIS + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.ONTOLOGY + "(uid)");
-                tx.run("CREATE INDEX ON :" + PhysicalEntity.Type.UNDEFINED + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CALL + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_FILE_INFO + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.SAMPLE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PHYSICAL_ENTITY + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.COMPLEX + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.SMALL_MOLECULE + "(id)");
+                //tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(uid)");
+                tx.run("CREATE CONSTRAINT ON (cl:" + Node.Type.CELLULAR_LOCATION + ") assert cl.uid is unique");
+                tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(name)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.CATALYSIS + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(id)");
+                //tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
+                tx.run("CREATE CONSTRAINT ON (x:" + Node.Type.XREF + ") assert x.uid is unique");
+                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(id,dbName)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.ONTOLOGY + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.UNDEFINED + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CALL + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_FILE_INFO + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.SAMPLE + "(id)");
                 tx.success();
             }
             session.close();
@@ -592,6 +593,149 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 parameters("origUid", relation.getOrigUid(), "destUid", relation.getDestUid()));
         relation.setUid(ret.peek().get("UID").asLong());
         return ret;
+    }
+
+
+    //-------------------------------------------------------------------------
+    // T E S T S
+    //-------------------------------------------------------------------------
+
+    public void loadTest() {
+        Session session = this.driver.session();
+
+        Long startUid = System.currentTimeMillis();
+        List<Node> nodes = new ArrayList<>();
+        for (int i = 0; i < 10000; i++) {
+            Node node = new Node(i, "id_" + i, "name_" + i, Node.Type.CELLULAR_LOCATION, "test");
+            node.getAttributes().put("uid", node.getUid());
+            node.getAttributes().put("id", node.getId());
+            node.getAttributes().put("name", node.getName());
+            node.getAttributes().put("source", node.getSource());
+            nodes.add(node);
+        }
+
+        long uid = startUid;
+        System.out.println("Inserting nodes:");
+        for (int j = 0; j < 10; j++) {
+            long start = System.currentTimeMillis();
+            try (Transaction tx = session.beginTransaction()) {
+//                String query = "CREATE (n:PROTEIN{id:{id}, name:{name}}) RETURN ID(n) as ID";
+                String cypher = "CREATE (n:CELLULAR_LOCATION) SET n = {map}";
+                Map<String, Object> params = new HashMap<>();
+                for (int i = 0; i < 1000; i++) {
+                    Node node = nodes.get(1000 * j + i);
+                    node.getAttributes().put("uid", uid++);
+                    params.put("map", node.getAttributes());
+                    StatementResult ret = tx.run(cypher, params);
+//                    node.setUid(ret.peek().get("ID").asLong());
+
+//                    String cypher = "CREATE (n:PROTEIN)";
+                    //String cypher = "CREATE (n:" + node.getType() + ") SET n.id = '" + node.getId() + "'";
+                    // SET n.uid = " + (node.getUid() + (nodes.size() * j)) + ", n.name = '" + node.getName() + "', n.id = '"
+                    // + node.getId() + "'";
+//                    String cypher = "CREATE (n:" + node.getType() + ") SET n.uid = " + (node.getUid() + (nodes.size() * j))
+// + ", n.name = '" + node.getName() + "', n.id = '" + node.getId() + "'";
+//                    String cypher = "CREATE (n:PROTEIN{id:'" + node.getId() + "', name:'" + node.getName() + "'}) RETURN ID(n)";
+//                    StatementResult ret = tx.run(cypher);
+
+//                    StatementResult ret = tx.run(query, Values.parameters("id", node.getId(), "name", node.getName()));
+//                    node.setUid(ret.peek().get("ID").asLong());
+
+//            session.writeTransaction(tx -> {
+//                String cypher = "CREATE (n:PROTEIN)"; // RETURN ID(n) as ID";
+//                StatementResult ret = tx.run(cypher);
+                    // long uid = ret.peek().get("ID").asLong();
+//                //addNode(node, tx);
+//                return 1;
+//            });
+                }
+                tx.success();
+            }
+//            System.out.println("Inserting " + nodes.size() + " nodes at " + (1000 * nodes.size() / (System.currentTimeMillis() - start))
+// + " nodes/sec");
+            System.out.println(1000 * 1000 / (System.currentTimeMillis() - start));
+        }
+
+        System.out.println("Update nodes:");
+        Random r = new Random();
+        for (int j = 0; j < 10; j++) {
+            long start = System.currentTimeMillis();
+            StringBuilder cypher = new StringBuilder();
+            Map<String, Object> params = new HashMap<>();
+            try (Transaction tx = session.beginTransaction()) {
+                for (int i = 0; i < 1000; i++) {
+                    Node node = nodes.get(r.nextInt(10000));
+
+                    cypher.setLength(0);
+                    cypher.append("merge (n:").append(Node.Type.CELLULAR_LOCATION);
+                    cypher.append("{name:'").append(node.getName());
+                    cypher.append("'})");
+                    cypher.append(" set n.toto={toto}");
+                    cypher.append(" return n.uid as uid");
+
+                    StatementResult ret = tx.run(cypher.toString(), Values.parameters("toto", "hello"));
+                    //long retUid = ret.peek().get("uid").asLong();
+                }
+                tx.success();
+            }
+            System.out.println(1000 * 1000 / (System.currentTimeMillis() - start));
+        }
+
+        System.out.println("Inserting relationships:");
+        for (int j = 0; j < 10; j++) {
+            long start = System.currentTimeMillis();
+            StringBuilder cypher = new StringBuilder();
+            try (Transaction tx = session.beginTransaction()) {
+                for (long i = startUid; i < (startUid + 1000); i++) {
+                    cypher.setLength(0);
+                    long sourceUid = i + (j * 1000);
+                    cypher.append("match (s:").append(Node.Type.CELLULAR_LOCATION);
+                    cypher.append("), (d:").append(Node.Type.CELLULAR_LOCATION);
+                    cypher.append(") where s.uid=").append(sourceUid).append(" AND d.uid=").append(sourceUid + 1000);
+
+//                    cypher.append(" match (d:").append(Node.Type.CELLULAR_LOCATION).append(") where d.uid=").append(sourceUid + 1000);
+//                    cypher.append("match (s:").append(Node.Type.CELLULAR_LOCATION).append(") where s.uid=").append(sourceUid);
+//                    cypher.append(" match (d:").append(Node.Type.CELLULAR_LOCATION).append(") where d.uid=").append(sourceUid + 1000);
+                    cypher.append(" create (s)-[r:").append(Node.Type.CELLULAR_LOCATION).append("{uid:").append(++uid).append("}]->(d)");
+//                    cypher.append(" return r.uid");
+                    StatementResult ret = tx.run(cypher.toString());
+
+//                String query = "CREATE (n:PROTEIN{id:{id}, name:{name}}) RETURN ID(n) as ID";
+//                String cypher = "CREATE (n:CELLULAR_LOCATION) SET n = {map}";
+//                Map<String, Object> params = new HashMap<>();
+//                for (Node node: nodes) {
+//                    node.getAttributes().put("uid", uid++);
+//                    params.put("map", node.getAttributes());
+//                    StatementResult ret = tx.run(cypher, params);
+////                    node.setUid(ret.peek().get("ID").asLong());
+//
+////                    String cypher = "CREATE (n:PROTEIN)";
+//                    //String cypher = "CREATE (n:" + node.getType() + ") SET n.id = '" + node.getId() + "'"; //SET n.uid = "
+// + (node.getUid() + (nodes.size() * j)) + ", n.name = '" + node.getName() + "', n.id = '" + node.getId() + "'";
+////                    String cypher = "CREATE (n:" + node.getType() + ") SET n.uid = " + (node.getUid() + (nodes.size() * j))
+// + ", n.name = '" + node.getName() + "', n.id = '" + node.getId() + "'";
+////                    String cypher = "CREATE (n:PROTEIN{id:'" + node.getId() + "', name:'" + node.getName() + "'}) RETURN ID(n)";
+////                    StatementResult ret = tx.run(cypher);
+//
+////                    StatementResult ret = tx.run(query, Values.parameters("id", node.getId(), "name", node.getName()));
+////                    node.setUid(ret.peek().get("ID").asLong());
+//
+////            session.writeTransaction(tx -> {
+////                String cypher = "CREATE (n:PROTEIN)"; // RETURN ID(n) as ID";
+////                StatementResult ret = tx.run(cypher);
+//                    // long uid = ret.peek().get("ID").asLong();
+////                //addNode(node, tx);
+////                return 1;
+////            });
+                }
+                tx.success();
+            }
+//            System.out.println("Inserting " + nodes.size() + " nodes at " + (1000 * nodes.size() / (System.currentTimeMillis() - start))
+// + " nodes/sec");
+            System.out.println(1000 * 1000 / (System.currentTimeMillis() - start));
+        }
+
+        session.close();
     }
 
     //-------------------------------------------------------------------------
