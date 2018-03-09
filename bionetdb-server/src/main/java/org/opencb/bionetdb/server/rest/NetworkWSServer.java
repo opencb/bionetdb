@@ -2,26 +2,25 @@ package org.opencb.bionetdb.server.rest;
 
 import io.swagger.annotations.*;
 import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 /**
  * Created by imedina on 06/10/15.
  */
-@Path("/{version}/network")
+@Path("/{apiVersion}/network")
 @Produces("application/json")
 @Api(value = "Network", position = 7, description = "Methods for working with 'samples' endpoint")
 public class NetworkWSServer extends GenericRestWSServer {
 
-    public NetworkWSServer(@PathParam("version") String version,  @Context UriInfo uriInfo,
-                           @Context HttpServletRequest hsr) throws VersionException, DatabaseException {
-        super(version, uriInfo, hsr);
+    public NetworkWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo,
+                           @Context HttpServletRequest hsr) throws VersionException {
+        super(apiVersion, uriInfo, hsr);
     }
 
     @GET
@@ -45,7 +44,6 @@ public class NetworkWSServer extends GenericRestWSServer {
     public Response infoSample(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
-            @ApiParam(value = "Sample apiVersion") @QueryParam("version") Integer version,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
             @QueryParam("silent") boolean silent) {
         try {

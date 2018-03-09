@@ -120,8 +120,8 @@ public class GenericRestWSServer {
     }
 
 
-    public GenericRestWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo,
-                               @Context HttpServletRequest hsr) throws VersionException {
+    public GenericRestWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest hsr)
+            throws VersionException {
         this.apiVersion = apiVersion;
         this.uriInfo = uriInfo;
         this.httpServletRequest = hsr;
@@ -185,7 +185,7 @@ public class GenericRestWSServer {
                     queryOptions.put(QueryOptions.SKIP_COUNT, Boolean.parseBoolean(value));
                     break;
                 case "database":
-                    this.database = database;
+                    this.database = value;
                     break;
                 default:
                     // Query

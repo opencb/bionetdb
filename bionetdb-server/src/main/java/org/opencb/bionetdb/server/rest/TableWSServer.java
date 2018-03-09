@@ -6,7 +6,6 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.RowIterator;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
-import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.QueryResult;
 
@@ -21,14 +20,14 @@ import java.util.List;
 /**
  * Created by imedina on 06/10/15.
  */
-@Path("/{version}/table")
+@Path("/{apiVersion}/table")
 @Produces("application/json")
 @Api(value = "Table", position = 1, description = "Methods for working with node attributes")
 public class TableWSServer extends GenericRestWSServer {
 
-    public TableWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                         @Context HttpServletRequest hsr) throws VersionException, DatabaseException {
-        super(version, uriInfo, hsr);
+    public TableWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo,
+                         @Context HttpServletRequest hsr) throws VersionException {
+        super(apiVersion, uriInfo, hsr);
     }
 
     @GET
