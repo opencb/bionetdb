@@ -317,9 +317,10 @@ public class BioPaxParser {
                 System.out.println("Stoichiometry Item ID " + id + " does not exist!!");
             } else {
                 long destUid = rdfToUidMap.get(id);
-                Relation relation = new Relation(uidCounter++, null, complex.getUid(), destUid, Relation.Type.STOICHIOMETRY);
-                relation.addAttribute("coefficient", stoichiometryItem.getStoichiometricCoefficient());
-                network.addRelation(relation);
+//                Relation relation = new Relation(uidCounter++, null, complex.getUid(), complex.getType(), destUid,
+// Relation.Type.STOICHIOMETRY);
+//                relation.addAttribute("coefficient", stoichiometryItem.getStoichiometricCoefficient());
+//                network.addRelation(relation);
             }
         }
 
@@ -327,43 +328,43 @@ public class BioPaxParser {
     }
 
     private void addXrefs(EntityReference entityReference, long origUid) {
-        // Alternate IDs
-        for (String name: entityReference.getName()) {
-            Node x = reuseXref(name);
-
-            Relation relation = new Relation(uidCounter++, null, origUid, x.getUid(), Relation.Type.XREF);
-            network.addRelation(relation);
-        }
-
-        // Xref
-        Set<Xref> xrefs = entityReference.getXref();
-        for (Xref xref : xrefs) {
-            Node x = reuseXref(xref);
-
-            Relation relation = new Relation(uidCounter++, null, origUid, x.getUid(), Relation.Type.XREF);
-            network.addRelation(relation);
-        }
+//        // Alternate IDs
+//        for (String name: entityReference.getName()) {
+//            Node x = reuseXref(name);
+//
+//            Relation relation = new Relation(uidCounter++, null, origUid, x.getUid(), Relation.Type.XREF);
+//            network.addRelation(relation);
+//        }
+//
+//        // Xref
+//        Set<Xref> xrefs = entityReference.getXref();
+//        for (Xref xref : xrefs) {
+//            Node x = reuseXref(xref);
+//
+//            Relation relation = new Relation(uidCounter++, null, origUid, x.getUid(), Relation.Type.XREF);
+//            network.addRelation(relation);
+//        }
     }
 
     public void addXrefs(Set<Xref> xrefs, long origUid) {
-        for (Xref xref : xrefs) {
-            if (xref.getDb() != null) {
-                String source = xref.getDb().toLowerCase();
-                if (source.equals("sbo") || source.equals("go") || source.equals("mi") || source.equals("ec")) {
-                    //physicalEntity.setOntology(new Ontology(xref.getDb(), xref.getDbVersion(), xref.getId(), xref.getIdVersion()));
-
-                    Node x = reuseOntology(xref);
-
-                    Relation relation = new Relation(uidCounter++, null, origUid, x.getUid(), Relation.Type.ONTOLOGY);
-                    network.addRelation(relation);
-                } else if (!source.equals("pubmed")) {
-                    Node x = reuseXref(xref);
-
-                    Relation relation = new Relation(uidCounter++, null, origUid, x.getUid(), Relation.Type.XREF);
-                    network.addRelation(relation);
-                }
-            }
-        }
+//        for (Xref xref : xrefs) {
+//            if (xref.getDb() != null) {
+//                String source = xref.getDb().toLowerCase();
+//                if (source.equals("sbo") || source.equals("go") || source.equals("mi") || source.equals("ec")) {
+//                    //physicalEntity.setOntology(new Ontology(xref.getDb(), xref.getDbVersion(), xref.getId(), xref.getIdVersion()));
+//
+//                    Node x = reuseOntology(xref);
+//
+//                    Relation relation = new Relation(uidCounter++, null, origUid, x.getUid(), Relation.Type.ONTOLOGY);
+//                    network.addRelation(relation);
+//                } else if (!source.equals("pubmed")) {
+//                    Node x = reuseXref(xref);
+//
+//                    Relation relation = new Relation(uidCounter++, null, origUid, x.getUid(), Relation.Type.XREF);
+//                    network.addRelation(relation);
+//                }
+//            }
+//        }
     }
 
     private Node setPhysicalEntityCommonProperties(PhysicalEntity physicalEntityBP) {
@@ -380,37 +381,37 @@ public class BioPaxParser {
         }
         Node physicalEntity = nodeMap.get(rdfToUidMap.get(id));
 
-        // name
-        if (physicalEntityBP.getDisplayName() != null) {
-            physicalEntity.setName(physicalEntityBP.getDisplayName());
+//        // name
+//        if (physicalEntityBP.getDisplayName() != null) {
+//            physicalEntity.setName(physicalEntityBP.getDisplayName());
+//
+//            Node x = reuseXref(physicalEntityBP.getDisplayName());
+//
+//            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(), Relation.Type.XREF);
+//            network.addRelation(relation);
+//        }
+//
+//        // altNames
+//        for (String name: physicalEntityBP.getName()) {
+//            Node x = reuseXref(name);
+//
+//            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(), Relation.Type.XREF);
+//            network.addRelation(relation);
+//        }
 
-            Node x = reuseXref(physicalEntityBP.getDisplayName());
-
-            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(), Relation.Type.XREF);
-            network.addRelation(relation);
-        }
-
-        // altNames
-        for (String name: physicalEntityBP.getName()) {
-            Node x = reuseXref(name);
-
-            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(), Relation.Type.XREF);
-            network.addRelation(relation);
-        }
-
-        // cellularLocation
-        for (String name: physicalEntityBP.getCellularLocation().getTerm()) {
-            Node x = reuseCellularLocation(name);
-
-            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(), Relation.Type.CELLULAR_LOCATION);
-            network.addRelation(relation);
-        }
-        for (Xref cellLocXref: physicalEntityBP.getCellularLocation().getXref()) {
-            Node x = reuseOntology(cellLocXref);
-
-            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(), Relation.Type.ONTOLOGY);
-            network.addRelation(relation);
-        }
+//        // cellularLocation
+//        for (String name: physicalEntityBP.getCellularLocation().getTerm()) {
+//            Node x = reuseCellularLocation(name);
+//
+//            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(), Relation.Type.CELLULAR_LOCATION);
+//            network.addRelation(relation);
+//        }
+//        for (Xref cellLocXref: physicalEntityBP.getCellularLocation().getXref()) {
+//            Node x = reuseOntology(cellLocXref);
+//
+//            Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), x.getUid(), Relation.Type.ONTOLOGY);
+//            network.addRelation(relation);
+//        }
 
         // source
 //        List<String> sources = new ArrayList<>();
@@ -435,17 +436,18 @@ public class BioPaxParser {
 //            physicalEntity.getMemberOfSet().add(peOf.getRDFId().split("#")[1]);
 //        }
 
-        // componentOfComplex
-        for (Complex complex: physicalEntityBP.getComponentOf()) {
-            String complexId = complex.getRDFId().split("#")[1];
-            if (!rdfToUidMap.containsKey(complexId)) {
-                System.out.println("Complex ID " + id + " does not exist, componentOfComplex!!");
-            } else {
-                long destUid = rdfToUidMap.get(complexId);
-                Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), destUid, Relation.Type.COMPONENT_OF_COMPLEX);
-                network.addRelation(relation);
-            }
-        }
+//        // componentOfComplex
+//        for (Complex complex: physicalEntityBP.getComponentOf()) {
+//            String complexId = complex.getRDFId().split("#")[1];
+//            if (!rdfToUidMap.containsKey(complexId)) {
+//                System.out.println("Complex ID " + id + " does not exist, componentOfComplex!!");
+//            } else {
+//                long destUid = rdfToUidMap.get(complexId);
+//                Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), destUid,
+// Relation.Type.COMPONENT_OF_COMPLEX);
+//                network.addRelation(relation);
+//            }
+//        }
 
         // participantOfInteraction
 //        for (Interaction interaction : physicalEntityBP.getParticipantOf()) {
@@ -507,24 +509,24 @@ public class BioPaxParser {
 
                 // TemplateReaction properties
 
-                // Reactants
-                if (templateReactBP.getTemplate() != null) {
-                    String reactantId = templateReactBP.getTemplate().getRDFId().split("#")[1];
-                    long reactantUid = rdfToUidMap.get(reactantId);
-
-                    Relation relation = new Relation(uidCounter++, null, reaction.getUid(), reactantUid, Relation.Type.REACTANT);
-                    network.addRelation(relation);
-                }
-
-                // Products
-                Set<PhysicalEntity> products = templateReactBP.getProduct();
-                for (PhysicalEntity product: products) {
-                    String productId = product.getRDFId().split("#")[1];
-                    long productUid = rdfToUidMap.get(productId);
-
-                    Relation relation = new Relation(uidCounter++, null, reaction.getUid(), productUid, Relation.Type.PRODUCT);
-                    network.addRelation(relation);
-                }
+//                // Reactants
+//                if (templateReactBP.getTemplate() != null) {
+//                    String reactantId = templateReactBP.getTemplate().getRDFId().split("#")[1];
+//                    long reactantUid = rdfToUidMap.get(reactantId);
+//
+//                    Relation relation = new Relation(uidCounter++, null, reaction.getUid(), reactantUid, Relation.Type.REACTANT);
+//                    network.addRelation(relation);
+//                }
+//
+//                // Products
+//                Set<PhysicalEntity> products = templateReactBP.getProduct();
+//                for (PhysicalEntity product: products) {
+//                    String productId = product.getRDFId().split("#")[1];
+//                    long productUid = rdfToUidMap.get(productId);
+//
+//                    Relation relation = new Relation(uidCounter++, null, reaction.getUid(), productUid, Relation.Type.PRODUCT);
+//                    network.addRelation(relation);
+//                }
                 break;
             case "BiochemicalReaction":
             case "Degradation":
@@ -643,24 +645,24 @@ public class BioPaxParser {
         // Catalysis properties
 
         // controllers
-        Set<Controller> controllers = catalysisBP.getController();
-        for (Controller controller: controllers) {
-            String controllerId = controller.getRDFId().split("#")[1];
-            long controllerUid = rdfToUidMap.get(controllerId);
-
-            Relation relation = new Relation(uidCounter++, null, catalysis.getUid(), controllerUid, Relation.Type.CONTROLLER);
-            network.addRelation(relation);
-        }
-
-        // controlled
-        Set<Process> controlledProcesses = catalysisBP.getControlled();
-        for (Process controlledProcess: controlledProcesses) {
-            String controlledId = controlledProcess.getRDFId().split("#")[1];
-            long controlledUid = rdfToUidMap.get(controlledId);
-
-            Relation relation = new Relation(uidCounter++, null, catalysis.getUid(), controlledUid, Relation.Type.CONTROLLED);
-            network.addRelation(relation);
-        }
+//        Set<Controller> controllers = catalysisBP.getController();
+//        for (Controller controller: controllers) {
+//            String controllerId = controller.getRDFId().split("#")[1];
+//            long controllerUid = rdfToUidMap.get(controllerId);
+//
+//            Relation relation = new Relation(uidCounter++, null, catalysis.getUid(), controllerUid, Relation.Type.CONTROLLER);
+//            network.addRelation(relation);
+//        }
+//
+//        // controlled
+//        Set<Process> controlledProcesses = catalysisBP.getControlled();
+//        for (Process controlledProcess: controlledProcesses) {
+//            String controlledId = controlledProcess.getRDFId().split("#")[1];
+//            long controlledUid = rdfToUidMap.get(controlledId);
+//
+//            Relation relation = new Relation(uidCounter++, null, catalysis.getUid(), controlledUid, Relation.Type.CONTROLLED);
+//            network.addRelation(relation);
+//        }
 
         // controlType
         catalysis.setType(Node.Type.CATALYSIS);
@@ -672,8 +674,8 @@ public class BioPaxParser {
             String cofactorId = cofactor.getRDFId().split("#")[1];
             long cofactorUid = rdfToUidMap.get(cofactorId);
 
-            Relation relation = new Relation(uidCounter++, null, catalysis.getUid(), cofactorUid, Relation.Type.COFACTOR);
-            network.addRelation(relation);
+//            Relation relation = new Relation(uidCounter++, null, catalysis.getUid(), cofactorUid, Relation.Type.COFACTOR);
+//            network.addRelation(relation);
         }
 
         network.addNode(catalysis);
@@ -696,8 +698,8 @@ public class BioPaxParser {
             String controllerId = controller.getRDFId().split("#")[1];
             long controllerUid = rdfToUidMap.get(controllerId);
 
-            Relation relation = new Relation(uidCounter++, null, regulation.getUid(), controllerUid, Relation.Type.CONTROLLER);
-            network.addRelation(relation);
+//            Relation relation = new Relation(uidCounter++, null, regulation.getUid(), controllerUid, Relation.Type.CONTROLLER);
+//            network.addRelation(relation);
         }
 
         // controlled
@@ -706,8 +708,8 @@ public class BioPaxParser {
             String controlledId = controlledProcess.getRDFId().split("#")[1];
             long controlledUid = rdfToUidMap.get(controlledId);
 
-            Relation relation = new Relation(uidCounter++, null, regulation.getUid(), controlledUid, Relation.Type.CONTROLLED);
-            network.addRelation(relation);
+//            Relation relation = new Relation(uidCounter++, null, regulation.getUid(), controlledUid, Relation.Type.CONTROLLED);
+//            network.addRelation(relation);
         }
 
         // controlType
@@ -748,8 +750,8 @@ public class BioPaxParser {
 
             Node x = reuseXref(interactionBP.getDisplayName());
 
-            Relation relation = new Relation(uidCounter++, null, interaction.getUid(), x.getUid(), Relation.Type.XREF);
-            network.addRelation(relation);
+//            Relation relation = new Relation(uidCounter++, null, interaction.getUid(), x.getUid(), Relation.Type.XREF);
+//            network.addRelation(relation);
         }
 
         // source
@@ -824,8 +826,8 @@ public class BioPaxParser {
             }
             long destUid = rdfToUidMap.get(destId);
 
-            Relation relation = new Relation(uidCounter++, null, origUid, destUid, type);
-            network.addRelation(relation);
+//            Relation relation = new Relation(uidCounter++, null, origUid, destUid, type);
+//            network.addRelation(relation);
         }
     }
 

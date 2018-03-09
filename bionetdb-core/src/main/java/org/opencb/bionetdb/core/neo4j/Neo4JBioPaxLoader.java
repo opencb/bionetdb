@@ -26,12 +26,20 @@ public class Neo4JBioPaxLoader {
     private String source;
 
     private Map<String, Long> rdfToUidMap;
+    private Map<Long, Node.Type> uidToTypeMap;
+
+    private long uidCounter;
 
     private static final String REACTOME_FEAT = "reactome.";
 
     public Neo4JBioPaxLoader(Neo4JNetworkDBAdaptor networkDBAdaptor) {
         this.networkDBAdaptor = networkDBAdaptor;
+
+        // Initialize uidCounter
+        uidCounter = 0;
+
         rdfToUidMap = new HashMap<>();
+        uidToTypeMap = new HashMap<>();
     }
 
     public void loadBioPaxFile(Path path) throws IOException {
@@ -54,8 +62,6 @@ public class Neo4JBioPaxLoader {
 
         Session session = networkDBAdaptor.getDriver().session();
 
-        List<Node> nodes = new ArrayList<>();
-
         // First loop to create all physical entity nodes
         try (Transaction tx = session.beginTransaction()) {
             for (BioPAXElement bioPAXElement: bioPAXElements) {
@@ -63,48 +69,42 @@ public class Neo4JBioPaxLoader {
                     // Physical Entities
                     case "PhysicalEntity": {
                         Node node = loadUndefinedEntity(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
                     }
                     case "Dna": {
                         Node node = loadDna(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
                     }
                     case "Rna": {
                         Node node = loadRna(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
                     }
                     case "Protein": {
                         Node node = loadProtein(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
                     }
                     case "Complex": {
                         Node node = loadComplex(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
                     }
                     case "SmallMolecule": {
                         Node node = loadSmallMolecule(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
 
                         updatePhysicalEntity(bioPAXElement, tx);
                         break;
@@ -119,21 +119,18 @@ public class Neo4JBioPaxLoader {
                     case "Transport":
                     case "TransportWithBiochemicalReaction": {
                         Node node = loadReaction(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
                         break;
                     }
                     case "Catalysis": {
                         Node node = loadCatalysis(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
                         break;
                     }
                     case "Modulation":
                     case "TemplateReactionRegulation": {
                         Node node = loadRegulation(bioPAXElement, tx);
-                        rdfToUidMap.put(node.getId(), node.getUid());
-                        nodes.add(node);
+                        updateMaps(node);
                         break;
                     }
                     default:
@@ -734,17 +731,18 @@ public class Neo4JBioPaxLoader {
 
         String physicalEntityId = getBioPaxId(physicalEntityBP.getRDFId());
         Long physicalEntityUid = rdfToUidMap.get(physicalEntityId);
+        Node.Type physicalEntityType = uidToTypeMap.get(physicalEntityUid);
 
         // = SPECIFIC PROPERTIES =
 
         // name
         if (physicalEntityBP.getDisplayName() != null) {
-            addXref(physicalEntityBP.getDisplayName(), REACTOME_FEAT + "biopax", physicalEntityUid, tx);
+            addXref(physicalEntityBP.getDisplayName(), REACTOME_FEAT + "biopax", physicalEntityUid, physicalEntityType, tx);
         }
 
         // altNames
         for (String name: physicalEntityBP.getName()) {
-            addXref(name, REACTOME_FEAT + "biopax", physicalEntityUid, tx);
+            addXref(name, REACTOME_FEAT + "biopax", physicalEntityUid, physicalEntityType, tx);
         }
 
         // cellularLocation
@@ -753,15 +751,15 @@ public class Neo4JBioPaxLoader {
             cellularLocNode = new Node(-1, null, name, Node.Type.CELLULAR_LOCATION, source);
             networkDBAdaptor.mergeNode(cellularLocNode, "name", tx);
 
-            Relation relation = new Relation(-1, null, physicalEntityUid, cellularLocNode.getUid(),
-                    Relation.Type.CELLULAR_LOCATION, source);
+            Relation relation = new Relation(-1, null, physicalEntityUid, uidToTypeMap.get(physicalEntityUid),
+                    cellularLocNode.getUid(), uidToTypeMap.get(cellularLocNode.getUid()), Relation.Type.CELLULAR_LOCATION, source);
             networkDBAdaptor.addRelation(relation, tx);
 
             // Get the first term
             break;
         }
         if (cellularLocNode != null) {
-            addSetXref(physicalEntityBP.getCellularLocation().getXref(), cellularLocNode.getUid(), tx);
+            addSetXref(physicalEntityBP.getCellularLocation().getXref(), cellularLocNode.getUid(), cellularLocNode.getType(), tx);
         }
 
 //        // source
@@ -780,7 +778,7 @@ public class Neo4JBioPaxLoader {
         // members, memberOfSet, componentOfComplex and participantOfInteraction relationships are added later
 
         // xrefs
-        addSetXref(physicalEntityBP.getXref(), physicalEntityUid, tx);
+        addSetXref(physicalEntityBP.getXref(), physicalEntityUid, physicalEntityType, tx);
 
         // publications
 //        for (Evidence evidence : physicalEntityBP.getEvidence()) {
@@ -821,6 +819,7 @@ public class Neo4JBioPaxLoader {
 
         String complexId = getBioPaxId(complexBP.getRDFId());
         Long complexUid = rdfToUidMap.get(complexId);
+        Node.Type complexType = uidToTypeMap.get(complexUid);
 
         // Stoichiometry
         Map<Long, Float> stoichiometryMap = new HashMap<>();
@@ -835,7 +834,9 @@ public class Neo4JBioPaxLoader {
         Set<PhysicalEntity> components = complexBP.getComponent();
         for (PhysicalEntity component: components) {
             Long componentUid = rdfToUidMap.get(getBioPaxId(component.getRDFId()));
-            Relation relation = new Relation(-1, null, componentUid, complexUid, Relation.Type.COMPONENT_OF_COMPLEX, source);
+            Node.Type componentType = uidToTypeMap.get(componentUid);
+            Relation relation = new Relation(-1, null, componentUid, componentType, complexUid, complexType,
+                    Relation.Type.COMPONENT_OF_COMPLEX, source);
             if (stoichiometryMap.containsKey(componentUid)) {
                 relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
             }
@@ -852,13 +853,16 @@ public class Neo4JBioPaxLoader {
 
                 String templateReactId = getBioPaxId(templateReactBP.getRDFId());
                 Long templateReactUid = rdfToUidMap.get(templateReactId);
+                Node.Type templateReactType = uidToTypeMap.get(templateReactUid);
 
                 // TemplateReaction properties
 
                 // Reactants
                 if (templateReactBP.getTemplate() != null) {
                     Long reactantUid = rdfToUidMap.get(getBioPaxId(templateReactBP.getTemplate().getRDFId()));
-                    Relation relation = new Relation(-1, null, templateReactUid, reactantUid, Relation.Type.REACTANT, source);
+                    Node.Type reactantType = uidToTypeMap.get(reactantUid);
+                    Relation relation = new Relation(-1, null, templateReactUid, templateReactType, reactantUid, reactantType,
+                            Relation.Type.REACTANT, source);
                     networkDBAdaptor.addRelation(relation, tx);
                 }
 
@@ -866,7 +870,9 @@ public class Neo4JBioPaxLoader {
                 Set<PhysicalEntity> products = templateReactBP.getProduct();
                 for (PhysicalEntity product: products) {
                     Long productUid = rdfToUidMap.get(getBioPaxId(product.getRDFId()));
-                    Relation relation = new Relation(-1, null, templateReactUid, productUid, Relation.Type.PRODUCT, source);
+                    Node.Type productType = uidToTypeMap.get(productUid);
+                    Relation relation = new Relation(-1, null, templateReactUid, templateReactType, productUid, productType,
+                            Relation.Type.PRODUCT, source);
                     networkDBAdaptor.addRelation(relation, tx);
                 }
                 break;
@@ -879,6 +885,7 @@ public class Neo4JBioPaxLoader {
 
                 String conversionId = getBioPaxId(conversionBP.getRDFId());
                 Long conversionUid = rdfToUidMap.get(conversionId);
+                Node.Type conversionType = uidToTypeMap.get(conversionUid);
 
                 // Left items
                 List<String> leftItems = new ArrayList<>();
@@ -928,7 +935,8 @@ public class Neo4JBioPaxLoader {
                     // Reactants
                     for (String id: leftItems) {
                         Long uid = rdfToUidMap.get(id);
-                        Relation relation = new Relation(-1, null, conversionUid, uid, type1, source);
+                        Node.Type type = uidToTypeMap.get(uid);
+                        Relation relation = new Relation(-1, null, conversionUid, conversionType, uid, type, type1, source);
                         if (stoichiometryMap.containsKey(id)) {
                             relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
                         }
@@ -938,7 +946,8 @@ public class Neo4JBioPaxLoader {
                     // Products
                     for (String id: rightItems) {
                         Long uid = rdfToUidMap.get(id);
-                        Relation relation = new Relation(-1, null, conversionUid, uid, type2, source);
+                        Node.Type type = uidToTypeMap.get(uid);
+                        Relation relation = new Relation(-1, null, conversionUid, conversionType, uid, type, type2, source);
                         if (stoichiometryMap.containsKey(id)) {
                             relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
                         }
@@ -968,12 +977,15 @@ public class Neo4JBioPaxLoader {
 
         String catalysisId = getBioPaxId(catalysisBP.getRDFId());
         Long catalysisUid = rdfToUidMap.get(catalysisId);
+        Node.Type catalysisType = uidToTypeMap.get(catalysisUid);
 
         // Controllers
         Set<Controller> controllers = catalysisBP.getController();
         for (Controller controller: controllers) {
             Long controllerUid = rdfToUidMap.get(getBioPaxId(controller.getRDFId()));
-            Relation relation = new Relation(-1, null, catalysisUid, controllerUid, Relation.Type.CONTROLLER, source);
+            Node.Type controllerType = uidToTypeMap.get(controllerUid);
+            Relation relation = new Relation(-1, null, catalysisUid, catalysisType, controllerUid, controllerType,
+                    Relation.Type.CONTROLLER, source);
             networkDBAdaptor.addRelation(relation, tx);
         }
 
@@ -981,7 +993,9 @@ public class Neo4JBioPaxLoader {
         Set<Process> controlledProcesses = catalysisBP.getControlled();
         for (Process controlledProcess: controlledProcesses) {
             Long controlledUid = rdfToUidMap.get(getBioPaxId(controlledProcess.getRDFId()));
-            Relation relation = new Relation(-1, null, catalysisUid, controlledUid, Relation.Type.CONTROLLED, source);
+            Node.Type controlledType = uidToTypeMap.get(controlledUid);
+            Relation relation = new Relation(-1, null, catalysisUid, catalysisType, controlledUid, controlledType,
+                    Relation.Type.CONTROLLED, source);
             networkDBAdaptor.addRelation(relation, tx);
         }
 
@@ -989,7 +1003,9 @@ public class Neo4JBioPaxLoader {
         Set<PhysicalEntity> cofactors = catalysisBP.getCofactor();
         for (PhysicalEntity cofactor: cofactors) {
             Long cofactorUid = rdfToUidMap.get(getBioPaxId(cofactor.getRDFId()));
-            Relation relation = new Relation(-1, null, catalysisUid, cofactorUid, Relation.Type.COFACTOR, source);
+            Node.Type cofactorType = uidToTypeMap.get(cofactorUid);
+            Relation relation = new Relation(-1, null, catalysisUid, catalysisType, cofactorUid, cofactorType,
+                    Relation.Type.COFACTOR, source);
             networkDBAdaptor.addRelation(relation, tx);
         }
     }
@@ -999,6 +1015,7 @@ public class Neo4JBioPaxLoader {
 
         String controlId = getBioPaxId(controlBP.getRDFId());
         Long controlUid = rdfToUidMap.get(controlId);
+        Node.Type controlType = uidToTypeMap.get(controlUid);
 
         // Regulation properties
 
@@ -1006,7 +1023,9 @@ public class Neo4JBioPaxLoader {
         Set<Controller> controllers = controlBP.getController();
         for (Controller controller: controllers) {
             Long controllerUid = rdfToUidMap.get(getBioPaxId(controller.getRDFId()));
-            Relation relation = new Relation(-1, null, controlUid, controllerUid, Relation.Type.CONTROLLER, source);
+            Node.Type controllerType = uidToTypeMap.get(controllerUid);
+            Relation relation = new Relation(-1, null, controlUid, controlType, controllerUid, controllerType,
+                    Relation.Type.CONTROLLER, source);
             networkDBAdaptor.addRelation(relation, tx);
         }
 
@@ -1014,7 +1033,9 @@ public class Neo4JBioPaxLoader {
         Set<Process> controlledProcesses = controlBP.getControlled();
         for (Process controlledProcess: controlledProcesses) {
             Long controlledUid = rdfToUidMap.get(getBioPaxId(controlledProcess.getRDFId()));
-            Relation relation = new Relation(-1, null, controlUid, controlledUid, Relation.Type.CONTROLLED, source);
+            Node.Type controlledType = uidToTypeMap.get(controlledUid);
+            Relation relation = new Relation(-1, null, controlUid, controlType, controlledUid, controlledType,
+                    Relation.Type.CONTROLLED, source);
             networkDBAdaptor.addRelation(relation, tx);
         }
     }
@@ -1039,7 +1060,7 @@ public class Neo4JBioPaxLoader {
         }
     }
 
-    private void addSetXref(Set<Xref> xrefs, Long uid, Transaction tx) {
+    private void addSetXref(Set<Xref> xrefs, Long uid, Node.Type type, Transaction tx) {
         for (Xref xref: xrefs) {
             String dbName = xref.getDb();
             String id = xref.getId();
@@ -1047,16 +1068,17 @@ public class Neo4JBioPaxLoader {
                 dbName = "go";
                 id = xref.getId().split(":")[1];
             }
-            addXref(id, dbName, uid, tx);
+            addXref(id, dbName, uid, type, tx);
         }
     }
 
-    private void addXref(String xrefId, String dbName, Long uid, Transaction tx) {
+    private void addXref(String xrefId, String dbName, Long uid, Node.Type type, Transaction tx) {
         Node xrefNode = new Node(-1, xrefId, xrefId, Node.Type.XREF, source);
         xrefNode.addAttribute("dbName", dbName);
         networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
 
-        Relation relation = new Relation(-1, null, uid, xrefNode.getUid(), Relation.Type.XREF, source);
+        Relation relation = new Relation(-1, null, uid, type, xrefNode.getUid(), uidToTypeMap.get(xrefNode.getUid()),
+                Relation.Type.XREF, source);
         networkDBAdaptor.addRelation(relation, tx);
     }
 
@@ -1080,5 +1102,10 @@ public class Neo4JBioPaxLoader {
 
     private String getBioPaxId(String rdfId) {
         return rdfId.split("#")[1];
+    }
+
+    private void updateMaps(Node node) {
+        rdfToUidMap.put(node.getId(), node.getUid());
+        uidToTypeMap.put(node.getUid(), node.getType());
     }
 }

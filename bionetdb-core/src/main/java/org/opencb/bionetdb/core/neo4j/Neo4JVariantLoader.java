@@ -136,17 +136,17 @@ public class Neo4JVariantLoader {
 
                         // Relation: sample - variant call
                         Relation sVCallRel = new Relation(-1, sampleNode.getId() + "_" + callNode.getId(), sampleNode.getUid(),
-                                callNode.getUid(), Relation.Type.VARIANT_CALL);
+                                sampleNode.getType(), callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_CALL);
                         networkDBAdaptor.mergeRelation(sVCallRel, tx);
 
                         // Relation: variant call - variant file info
                         Relation vFileInfoRel = new Relation(-1, callNode.getId() + "_" + fileEntryNode.getId(), callNode.getUid(),
-                                fileEntryNode.getUid(), Relation.Type.VARIANT_FILE_INFO);
+                                callNode.getType(), fileEntryNode.getUid(), fileEntryNode.getType(), Relation.Type.VARIANT_FILE_INFO);
                         networkDBAdaptor.mergeRelation(vFileInfoRel, tx);
 
                         // Relation: variant - variant call
-                        Relation vCallRel = new Relation(-1, null, variantNode.getUid(),
-                                callNode.getUid(), Relation.Type.VARIANT_CALL);
+                        Relation vCallRel = new Relation(-1, null, variantNode.getUid(), variantNode.getType(), callNode.getUid(),
+                                callNode.getType(), Relation.Type.VARIANT_CALL);
                         networkDBAdaptor.addRelation(vCallRel, tx);
                     }
                 }
@@ -162,8 +162,8 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.addNode(ctNode, tx);
 
                         // Relation: variant - consequence type
-                        Relation vCtRel = new Relation(-1, null, variantNode.getUid(), ctNode.getUid(),
-                                Relation.Type.CONSEQUENCE_TYPE);
+                        Relation vCtRel = new Relation(-1, null, variantNode.getUid(), variantNode.getType(), ctNode.getUid(),
+                                ctNode.getType(), Relation.Type.CONSEQUENCE_TYPE);
                         networkDBAdaptor.mergeRelation(vCtRel, tx);
 
 
@@ -174,8 +174,8 @@ public class Neo4JVariantLoader {
                                 networkDBAdaptor.mergeNode(soNode, "id", tx);
 
                                 // Relation: consequence type - so
-                                Relation ctSoRel = new Relation(-1, null, ctNode.getUid(), soNode.getUid(),
-                                        Relation.Type.SO);
+                                Relation ctSoRel = new Relation(-1, null, ctNode.getUid(), ctNode.getType(), soNode.getUid(),
+                                        soNode.getType(), Relation.Type.SO);
                                 networkDBAdaptor.mergeRelation(ctSoRel, tx);
                             }
                         }
@@ -187,8 +187,8 @@ public class Neo4JVariantLoader {
                             networkDBAdaptor.addNode(annotNode, tx);
 
                             // Relation: consequence type - protein variant annotation
-                            Relation ctAnnotRel = new Relation(-1, null, ctNode.getUid(), annotNode.getUid(),
-                                    Relation.Type.PROTEIN_VARIANT_ANNOTATION);
+                            Relation ctAnnotRel = new Relation(-1, null, ctNode.getUid(), ctNode.getType(), annotNode.getUid(),
+                                    annotNode.getType(), Relation.Type.PROTEIN_VARIANT_ANNOTATION);
                             networkDBAdaptor.mergeRelation(ctAnnotRel, tx);
 
                             // Protein relationship management
@@ -216,8 +216,8 @@ public class Neo4JVariantLoader {
                                 // Link protein nodes to the protein variant annotation
                                 for (Node proteinNode: proteinNodes) {
                                     // Relation: protein - protein variant annotation
-                                    Relation proteinAnnotRel = new Relation(-1, null, proteinNode.getUid(), annotNode.getUid(),
-                                            Relation.Type.PROTEIN_VARIANT_ANNOTATION);
+                                    Relation proteinAnnotRel = new Relation(-1, null, proteinNode.getUid(), proteinNode.getType(),
+                                            annotNode.getUid(), annotNode.getType(), Relation.Type.PROTEIN_VARIANT_ANNOTATION);
                                     networkDBAdaptor.mergeRelation(proteinAnnotRel, tx);
                                 }
                             }
@@ -229,8 +229,8 @@ public class Neo4JVariantLoader {
                                     networkDBAdaptor.addNode(subsNode, tx);
 
                                     // Relation: protein variant annotation - substitution score
-                                    Relation ctSubsRel = new Relation(-1, null, annotNode.getUid(), subsNode.getUid(),
-                                            Relation.Type.SUBSTITUTION_SCORE);
+                                    Relation ctSubsRel = new Relation(-1, null, annotNode.getUid(), annotNode.getType(), subsNode.getUid(),
+                                            subsNode.getType(), Relation.Type.SUBSTITUTION_SCORE);
                                     networkDBAdaptor.mergeRelation(ctSubsRel, tx);
                                 }
                             }
@@ -242,8 +242,8 @@ public class Neo4JVariantLoader {
                                     networkDBAdaptor.mergeNode(kwNode, "name", tx);
 
                                     // Relation: protein variant annotation - so
-                                    Relation ctKwRel = new Relation(-1, null, annotNode.getUid(), kwNode.getUid(),
-                                            Relation.Type.PROTEIN_KEYWORD);
+                                    Relation ctKwRel = new Relation(-1, null, annotNode.getUid(), annotNode.getType(), kwNode.getUid(),
+                                            kwNode.getType(), Relation.Type.PROTEIN_KEYWORD);
                                     networkDBAdaptor.mergeRelation(ctKwRel, tx);
                                 }
                             }
@@ -255,8 +255,8 @@ public class Neo4JVariantLoader {
                                     networkDBAdaptor.addNode(featureNode, tx);
 
                                     // Relation: protein variant annotation - protein feature
-                                    Relation ctFeatureRel = new Relation(-1, null, annotNode.getUid(), featureNode.getUid(),
-                                            Relation.Type.PROTEIN_FEATURE);
+                                    Relation ctFeatureRel = new Relation(-1, null, annotNode.getUid(), annotNode.getType(),
+                                            featureNode.getUid(), featureNode.getType(), Relation.Type.PROTEIN_FEATURE);
                                     networkDBAdaptor.mergeRelation(ctFeatureRel, tx);
                                 }
                             }
@@ -268,8 +268,8 @@ public class Neo4JVariantLoader {
                             networkDBAdaptor.mergeNode(geneNode, "id", tx);
 
                             // Relation: consequence type - gene
-                            Relation ctGeneRel = new Relation(-1, null, ctNode.getUid(), geneNode.getUid(),
-                                    Relation.Type.GENE);
+                            Relation ctGeneRel = new Relation(-1, null, ctNode.getUid(), ctNode.getType(), geneNode.getUid(),
+                                    geneNode.getType(), Relation.Type.GENE);
                             networkDBAdaptor.mergeRelation(ctGeneRel, tx);
                         }
 
@@ -279,8 +279,8 @@ public class Neo4JVariantLoader {
                             networkDBAdaptor.mergeNode(transcriptNode, "id", tx);
 
                             // Relation: consequence type - transcript
-                            Relation ctTranscriptRel = new Relation(-1, null, ctNode.getUid(), transcriptNode.getUid(),
-                                    Relation.Type.TRANSCRIPT);
+                            Relation ctTranscriptRel = new Relation(-1, null, ctNode.getUid(), ctNode.getType(), transcriptNode.getUid(),
+                                    transcriptNode.getType(), Relation.Type.TRANSCRIPT);
                             networkDBAdaptor.mergeRelation(ctTranscriptRel, tx);
                         }
                     }
@@ -293,8 +293,8 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.addNode(popFreqNode, tx);
 
                         // Relation: variant - population frequency
-                        Relation vPfRel = new Relation(-1, null, variantNode.getUid(), popFreqNode.getUid(),
-                                Relation.Type.POPULATION_FREQUENCY);
+                        Relation vPfRel = new Relation(-1, null, variantNode.getUid(), variantNode.getType(), popFreqNode.getUid(),
+                                popFreqNode.getType(), Relation.Type.POPULATION_FREQUENCY);
                         networkDBAdaptor.mergeRelation(vPfRel, tx);
                     }
                 }
@@ -306,8 +306,8 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.addNode(consNode, tx);
 
                         // Relation: variant - conservation
-                        Relation vConsRel = new Relation(-1, null, variantNode.getUid(), consNode.getUid(),
-                                Relation.Type.CONSERVATION);
+                        Relation vConsRel = new Relation(-1, null, variantNode.getUid(), variantNode.getType(), consNode.getUid(),
+                                consNode.getType(), Relation.Type.CONSERVATION);
                         networkDBAdaptor.mergeRelation(vConsRel, tx);
                     }
                 }
@@ -319,8 +319,8 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.addNode(evNode, tx);
 
                         // Relation: variant - conservation
-                        Relation vFuncRel = new Relation(-1, null, variantNode.getUid(), evNode.getUid(),
-                                Relation.Type.TRAIT_ASSOCIATION);
+                        Relation vFuncRel = new Relation(-1, null, variantNode.getUid(), variantNode.getType(), evNode.getUid(),
+                                evNode.getType(), Relation.Type.TRAIT_ASSOCIATION);
                         networkDBAdaptor.mergeRelation(vFuncRel, tx);
                     }
                 }
@@ -332,8 +332,8 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.addNode(funcNode, tx);
 
                         // Relation: variant - conservation
-                        Relation vFuncRel = new Relation(-1, null, variantNode.getUid(), funcNode.getUid(),
-                                Relation.Type.FUNCTIONAL_SCORE);
+                        Relation vFuncRel = new Relation(-1, null, variantNode.getUid(), variantNode.getType(), funcNode.getUid(),
+                                funcNode.getType(), Relation.Type.FUNCTIONAL_SCORE);
                         networkDBAdaptor.mergeRelation(vFuncRel, tx);
                     }
                 }
@@ -354,7 +354,7 @@ public class Neo4JVariantLoader {
                     networkDBAdaptor.mergeNode(tNode, "id", tx);
 
                     // Relation: gene - transcript
-                    Relation gTRel = new Relation(-1, null, geneNode.getUid(), tNode.getUid(),
+                    Relation gTRel = new Relation(-1, null, geneNode.getUid(), geneNode.getType(), tNode.getUid(), tNode.getType(),
                             Relation.Type.TRANSCRIPT);
                     networkDBAdaptor.mergeRelation(gTRel, tx);
 
@@ -365,8 +365,8 @@ public class Neo4JVariantLoader {
                             networkDBAdaptor.addNode(tfbsNode, tx);
 
                             // Relation: transcript - tfbs
-                            Relation tTfbsRel = new Relation(-1, null, tNode.getUid(), tfbsNode.getUid(),
-                                    Relation.Type.TFBS);
+                            Relation tTfbsRel = new Relation(-1, null, tNode.getUid(), tNode.getType(), tfbsNode.getUid(),
+                                    tfbsNode.getType(), Relation.Type.TFBS);
                             networkDBAdaptor.mergeRelation(tTfbsRel, tx);
                         }
                     }
@@ -378,8 +378,8 @@ public class Neo4JVariantLoader {
                             networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
 
                             // Relation: transcript - xref
-                            Relation tXrefRel = new Relation(-1, null, tNode.getUid(), xrefNode.getUid(),
-                                    Relation.Type.XREF);
+                            Relation tXrefRel = new Relation(-1, null, tNode.getUid(), tNode.getType(), xrefNode.getUid(),
+                                    xrefNode.getType(), Relation.Type.XREF);
                             networkDBAdaptor.mergeRelation(tXrefRel, tx);
                         }
                     }
@@ -394,8 +394,8 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.mergeNode(drugNode, "name", tx);
 
                         // Relation: gene - drug interaction
-                        Relation gDrugRel = new Relation(-1, null, geneNode.getUid(), drugNode.getUid(),
-                                Relation.Type.DRUG);
+                        Relation gDrugRel = new Relation(-1, null, geneNode.getUid(), geneNode.getType(), drugNode.getUid(),
+                                drugNode.getType(), Relation.Type.DRUG);
                         networkDBAdaptor.mergeRelation(gDrugRel, tx);
                     }
                 }
@@ -407,8 +407,8 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.mergeNode(diseaseNode, "id", tx);
 
                         // Relation: gene - disease (trait association)
-                        Relation gDiseaseRel = new Relation(-1, null, geneNode.getUid(), diseaseNode.getUid(),
-                                Relation.Type.DISEASE);
+                        Relation gDiseaseRel = new Relation(-1, null, geneNode.getUid(), geneNode.getType(), diseaseNode.getUid(),
+                                diseaseNode.getType(), Relation.Type.DISEASE);
                         networkDBAdaptor.mergeRelation(gDiseaseRel, tx);
                     }
                 }
@@ -428,7 +428,7 @@ public class Neo4JVariantLoader {
                     networkDBAdaptor.mergeNode(kwNode, "name", tx);
 
                     // Relation: protein variant annotation - so
-                    Relation pKwRel = new Relation(-1, null, proteinNode.getUid(), kwNode.getUid(),
+                    Relation pKwRel = new Relation(-1, null, proteinNode.getUid(), proteinNode.getType(), kwNode.getUid(), kwNode.getType(),
                             Relation.Type.PROTEIN_KEYWORD);
                     networkDBAdaptor.mergeRelation(pKwRel, tx);
                 }
@@ -441,8 +441,8 @@ public class Neo4JVariantLoader {
                     networkDBAdaptor.addNode(featureNode, tx);
 
                     // Relation: protein variant annotation - protein feature
-                    Relation pFeatureRel = new Relation(-1, null, proteinNode.getUid(), featureNode.getUid(),
-                            Relation.Type.PROTEIN_FEATURE);
+                    Relation pFeatureRel = new Relation(-1, null, proteinNode.getUid(), proteinNode.getType(), featureNode.getUid(),
+                            featureNode.getType(), Relation.Type.PROTEIN_FEATURE);
                     networkDBAdaptor.mergeRelation(pFeatureRel, tx);
                 }
             }
@@ -454,8 +454,8 @@ public class Neo4JVariantLoader {
                     networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
 
                     // Relation: protein variant annotation - protein feature
-                    Relation pFeatureRel = new Relation(-1, null, proteinNode.getUid(), xrefNode.getUid(),
-                            Relation.Type.XREF);
+                    Relation pFeatureRel = new Relation(-1, null, proteinNode.getUid(), proteinNode.getType(), xrefNode.getUid(),
+                            xrefNode.getType(), Relation.Type.XREF);
                     networkDBAdaptor.mergeRelation(pFeatureRel, tx);
                 }
             }

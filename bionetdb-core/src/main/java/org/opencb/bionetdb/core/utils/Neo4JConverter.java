@@ -89,7 +89,8 @@ public class Neo4JConverter {
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
             Relation relation = new Relation(neoRelation.id(), neoRelation.get("name").asString(),
-                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getUid(),
+                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
+                    nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
             network.addRelation(relation);
         }
@@ -165,7 +166,8 @@ public class Neo4JConverter {
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
             Relation relation = new Relation(neoRelation.id(), neoRelation.get("name").asString(),
-                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getUid(),
+                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
+                    nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
             path.addRelation(relation);
         }

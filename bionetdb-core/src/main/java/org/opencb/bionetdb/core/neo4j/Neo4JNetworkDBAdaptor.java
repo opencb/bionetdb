@@ -583,14 +583,15 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String propsJoined = "{" + String.join(",", props) + "}";
 
         StringBuilder statementTemplate = new StringBuilder();
-        statementTemplate.append("MATCH (o) WHERE ID(o) = $origUid")
-                .append(" MATCH (d) WHERE ID(d) = $destUid")
+        statementTemplate.append("MATCH (o:$origType) WHERE ID(o) = $origUid")
+                .append(" MATCH (d:$destType) WHERE ID(d) = $destUid")
                 .append(" MERGE (o)-[r:").append(StringUtils.join(relation.getTags(), ":")).append(propsJoined).append("]->(d)")
                 .append(" RETURN ID(r) AS UID");
 
         // Create the relationship
         StatementResult ret = tx.run(statementTemplate.toString(),
-                parameters("origUid", relation.getOrigUid(), "destUid", relation.getDestUid()));
+                parameters("origType", relation.getOrigType(), "origUid", relation.getOrigUid(),
+                        "destType", relation.getDestType(), "destUid", relation.getDestUid()));
         relation.setUid(ret.peek().get("UID").asLong());
         return ret;
     }

@@ -13,7 +13,10 @@ public class Relation {
     private String name;
 
     private long origUid;
+    private Node.Type origType;
+
     private long destUid;
+    private Node.Type destType;
 
     private Type type;
     private List<String> tags;
@@ -24,17 +27,20 @@ public class Relation {
 
     private static long counter = 0;
 
-    public Relation(long uid, String name, long origUid, long destUid, Type type) {
-        this (uid, name, origUid, destUid, type, null);
+    public Relation(long uid, String name, long origUid, Node.Type origType, long destUid, Node.Type destType, Type type) {
+        this (uid, name, origUid, origType, destUid, destType, type, null);
     }
 
-    public Relation(long uid, String name, long origUid, long destUid, Type type, String source) {
+    public Relation(long uid, String name, long origUid, Node.Type origType, long destUid, Node.Type destType, Type type, String source) {
         this.uid = uid;
 
         this.name = name;
 
         this.origUid = origUid;
+        this.origType = origType;
+
         this.destUid = destUid;
+        this.destType = destType;
 
         this.type = type;
         this.tags = new ArrayList<>(1);
@@ -162,8 +168,16 @@ public class Relation {
         return this;
     }
 
+    public Node.Type getOrigType() {
+        return origType;
+    }
+
     public long getDestUid() {
         return destUid;
+    }
+
+    public Node.Type getDestType() {
+        return destType;
     }
 
     public Relation setDestUid(long destUid) {

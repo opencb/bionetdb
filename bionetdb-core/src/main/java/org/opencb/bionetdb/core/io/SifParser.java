@@ -48,7 +48,8 @@ public class SifParser {
             Node pe2 = new Node((uid++), splitLine.get(2), null, Node.Type.PHYSICAL_ENTITY, source);
 
             // create relation
-            Relation relation = new Relation((uid++), splitLine.get(1), pe1.getUid(), pe2.getUid(), Relation.Type.INTERACTION, source);
+            Relation relation = new Relation((uid++), splitLine.get(1), pe1.getUid(), pe1.getType(), pe2.getUid(), pe2.getType(),
+                    Relation.Type.INTERACTION, source);
 
             // Add to network
             network.addNode(pe1);
