@@ -13,7 +13,6 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.server.exception.DatabaseException;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.*;
 import org.slf4j.Logger;
@@ -31,27 +30,26 @@ import java.util.*;
  * Created by imedina on 01/10/15.
  */
 @ApplicationPath("/")
-@Path("/{version}")
+@Path("/{apiVersion}")
 @Produces(MediaType.APPLICATION_JSON)
 public class GenericRestWSServer {
 
     @DefaultValue("")
-    @PathParam("version")
-    @ApiParam(name = "version", value = "Use 'latest' for last stable version", allowableValues = "v1", defaultValue = "v1")
-    protected String version;
+    @PathParam("apiVersion")
+    @ApiParam(name = "apiVersion", value = "Use 'latest' for last stable apiVersion", allowableValues = "v1", defaultValue = "v1")
+    protected String apiVersion;
 
     protected String database;
-
-    protected String exclude;
-    protected String include;
-
-    protected int limit;
-    protected int skip;
-    protected String count;
+//    protected String include;
+//    protected String exclude;
+//
+//    protected int limit;
+//    protected int skip;
+//    protected boolean count;
 
     protected Query query;
     protected QueryOptions queryOptions;
-    protected QueryResponse queryResponse;
+//    protected QueryResponse queryResponse;
 
     protected UriInfo uriInfo;
     protected HttpServletRequest httpServletRequest;
@@ -77,6 +75,8 @@ public class GenericRestWSServer {
 
     private static final int LIMIT_DEFAULT = 1000;
     private static final int LIMIT_MAX = 5000;
+    private static final int DEFAULT_LIMIT = 2000;
+    private static final int MAX_LIMIT = 5000;
 
     static {
         logger = LoggerFactory.getLogger("org.opencb.cellbase.server.ws.GenericRestWSServer");
@@ -105,8 +105,8 @@ public class GenericRestWSServer {
         if (bioNetDBConfiguration != null && bioNetDBConfiguration.getDatabases().size() > 0) {
             try {
                 for (DatabaseConfiguration databaseConfiguration : bioNetDBConfiguration.getDatabases()) {
-                    bioNetDBManagers.put(databaseConfiguration.getId(),
-                            new BioNetDBManager(databaseConfiguration.getId(), bioNetDBConfiguration));
+                    BioNetDBManager bioNetDBManager = new BioNetDBManager(databaseConfiguration.getId(), bioNetDBConfiguration);
+                    bioNetDBManagers.put(databaseConfiguration.getId(), bioNetDBManager);
                 }
             } catch (BioNetDBException e) {
                 e.printStackTrace();
@@ -120,94 +120,77 @@ public class GenericRestWSServer {
     }
 
 
-    public GenericRestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                               @Context HttpServletRequest hsr) throws VersionException, DatabaseException {
-        this.version = version;
+    public GenericRestWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo,
+                               @Context HttpServletRequest hsr) throws VersionException {
+        this.apiVersion = apiVersion;
         this.uriInfo = uriInfo;
         this.httpServletRequest = hsr;
 
         logger.debug("Executing GenericRestWSServer constructor with no Species");
-        init(false);
+        init();
     }
 
-    @Deprecated
-    public GenericRestWSServer(@PathParam("version") String version, @PathParam("database") String database, @Context UriInfo uriInfo,
-                               @Context HttpServletRequest hsr) throws VersionException, DatabaseException {
-        this.version = version;
-        this.database = database;
-        this.uriInfo = uriInfo;
-        this.httpServletRequest = hsr;
-
-        logger.debug("Executing GenericRestWSServer constructor");
-        init(true);
-    }
-
-
-    protected void init(boolean checkSpecies) throws VersionException, DatabaseException {
-        startTime = System.currentTimeMillis();
-
-        queryResponse = new QueryResponse();
+    protected void init() throws VersionException {
+        query = new Query();
         queryOptions = new QueryOptions();
 
-        checkPathParams(checkSpecies);
+        parseQueryParams();
+        startTime = System.currentTimeMillis();
     }
 
-    private void checkPathParams(boolean checkSpecies) throws VersionException, DatabaseException {
-//        if (version == null) {
-//            throw new VersionException("Version not valid: '" + version + "'");
-//        }
-//
-//        if (checkSpecies && database == null) {
-//            throw new DatabaseException("Species not valid: '" + database + "'");
-//        }
-
-        /**
-         * Check version parameter, must be: v1, v2, ... If 'latest' then is
-         * converted to appropriate version
-         */
-        if (version.equalsIgnoreCase("latest")) {
-//            version = bioNetDBConfiguration.getVersion();
-            logger.info("Version 'latest' detected, setting version parameter to '{}'", version);
+    private void parseQueryParams() throws VersionException {
+        // If by any reason 'apiVersion' is null we try to read it from the URI path, if not present an Exception is thrown
+        if (this.apiVersion == null) {
+            if (uriInfo.getPathParameters().containsKey("apiVersion")) {
+                logger.warn("Setting 'apiVersion' from UriInfo object");
+                this.apiVersion = uriInfo.getPathParameters().getFirst("apiVersion");
+            } else {
+                throw new VersionException("Version not valid: '" + apiVersion + "'");
+            }
         }
 
-//        if (!bioNetDBConfiguration.getVersion().equalsIgnoreCase(this.version)) {
-//            logger.error("Version '{}' does not match configuration '{}'", this.version, bioNetDBConfiguration.getVersion());
-//            throw new VersionException("Version not valid: '" + version + "'");
-//        }
-    }
+        // Default database is the first one in the configuration file
+        if (bioNetDBConfiguration != null && bioNetDBConfiguration.getDatabases().size() > 0) {
+            this.database = bioNetDBConfiguration.getDatabases().get(0).getId();
+        }
 
-    public void parseQueryParams() {
+        // We parse the rest of URL params
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
-        queryOptions.put("metadata", (multivaluedMap.get("metadata") != null)
-                ? multivaluedMap.get("metadata").get(0).equals("true")
-                : true);
-
-        if (exclude != null && !exclude.equals("")) {
-            queryOptions.put("exclude", new LinkedList<>(Splitter.on(",").splitToList(exclude)));
-        } else {
-            queryOptions.put("exclude", (multivaluedMap.get("exclude") != null)
-                    ? Splitter.on(",").splitToList(multivaluedMap.get("exclude").get(0))
-                    : null);
-        }
-
-        if (include != null && !include.equals("")) {
-            queryOptions.put("include", new LinkedList<>(Splitter.on(",").splitToList(include)));
-        } else {
-            queryOptions.put("include", (multivaluedMap.get("include") != null)
-                    ? Splitter.on(",").splitToList(multivaluedMap.get("include").get(0))
-                    : null);
-        }
-
-        queryOptions.put("limit", (limit > 0) ? Math.min(limit, LIMIT_MAX): LIMIT_DEFAULT);
-        queryOptions.put("skip", (skip > 0) ? skip : -1);
-        queryOptions.put("count", (count != null && !count.equals("")) ? Boolean.parseBoolean(count) : false);
-//        outputFormat = (outputFormat != null && !outputFormat.equals("")) ? outputFormat : "json";
-
-        // Now we add all the others QueryParams in the URL
         for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
-            if (!queryOptions.containsKey(entry.getKey())) {
-                logger.info("Adding '{}' to queryOptions", entry);
-                queryOptions.put(entry.getKey(), entry.getValue().get(0));
+            String value = entry.getValue().get(0);
+            switch (entry.getKey()) {
+                case QueryOptions.INCLUDE:
+                case QueryOptions.EXCLUDE:
+                    queryOptions.put(entry.getKey(), new LinkedList<>(Splitter.on(",").splitToList(value)));
+                    break;
+                case QueryOptions.LIMIT:
+                    int limit = Integer.parseInt(value);
+                    queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
+                    break;
+                case QueryOptions.SKIP:
+                    int skip = Integer.parseInt(value);
+                    queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
+                    break;
+                case QueryOptions.TIMEOUT:
+                    queryOptions.put(entry.getKey(), Integer.parseInt(value));
+                    break;
+                case QueryOptions.SORT:
+                case QueryOptions.ORDER:
+                    queryOptions.put(entry.getKey(), value);
+                    break;
+                case QueryOptions.COUNT:
+                    queryOptions.put(entry.getKey(), Boolean.parseBoolean(value));
+                    break;
+                case QueryOptions.SKIP_COUNT:
+                    queryOptions.put(QueryOptions.SKIP_COUNT, Boolean.parseBoolean(value));
+                    break;
+                case "database":
+                    this.database = database;
+                    break;
+                default:
+                    // Query
+                    query.put(entry.getKey(), value);
+                    break;
             }
         }
     }
@@ -249,16 +232,16 @@ public class GenericRestWSServer {
         e.printStackTrace();
 
         // Now we prepare the response to client
-        queryResponse = new QueryResponse();
+        QueryResponse queryResponse = new QueryResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
-        queryResponse.setApiVersion(version);
+        queryResponse.setApiVersion(apiVersion);
         queryResponse.setQueryOptions(queryOptions);
         queryResponse.setError(e.toString());
 
-        QueryResult<ObjectMap> result = new QueryResult();
+        QueryResult<ObjectMap> result = new QueryResult<>();
         result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
         result.setErrorMsg("DEPRECATED: " + e.toString());
-        queryResponse.setResponse(Arrays.asList(result));
+        queryResponse.setResponse(Collections.singletonList(result));
 
         return Response
                 .fromResponse(createJsonResponse(queryResponse))
@@ -276,9 +259,9 @@ public class GenericRestWSServer {
     }
 
     protected Response createOkResponse(Object obj) {
-        queryResponse = new QueryResponse();
+        QueryResponse queryResponse = new QueryResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
-        queryResponse.setApiVersion(version);
+        queryResponse.setApiVersion(apiVersion);
         queryResponse.setQueryOptions(queryOptions);
 
         // Guarantee that the QueryResponse object contains a list of results
@@ -319,7 +302,9 @@ public class GenericRestWSServer {
     private Response buildResponse(Response.ResponseBuilder responseBuilder) {
         return responseBuilder
                 .header("Access-Control-Allow-Origin", "*")
-                .header("Access-Control-Allow-Headers", "x-requested-with, content-type")
+                .header("Access-Control-Allow-Headers", "x-requested-with, content-type, authorization")
+                .header("Access-Control-Allow-Credentials", "true")
+                .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 .build();
     }
 

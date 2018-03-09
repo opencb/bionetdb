@@ -45,7 +45,7 @@ public class NetworkWSServer extends GenericRestWSServer {
     public Response infoSample(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
-            @ApiParam(value = "Sample version") @QueryParam("version") Integer version,
+            @ApiParam(value = "Sample apiVersion") @QueryParam("version") Integer version,
             @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
             @QueryParam("silent") boolean silent) {
         try {

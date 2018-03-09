@@ -70,7 +70,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-h", "--help"}, description = "Display this help and exit", help = true)
         public boolean help;
 
-        @Parameter(names = {"--version"}, description = "Display the version and exit")
+        @Parameter(names = {"--apiVersion"}, description = "Display the apiVersion and exit")
         public boolean version;
 
     }
@@ -262,7 +262,7 @@ public class CliOptionsParser {
             System.err.println("Version:     1.0.0");
             System.err.println("Description: BioNetDB implements a storage engine to work with biological networks using a NoQSL Graph database");
             System.err.println("");
-            System.err.println("Usage:       bionetdb.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("Usage:       bionetdb.sh [-h|--help] [--apiVersion] <command> [options]");
             System.err.println("");
             System.err.println("Commands:");
             printMainUsage();
