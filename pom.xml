@@ -86,6 +86,16 @@
                 <groupId>org.opencb.biodata</groupId>
                 <artifactId>biodata-models</artifactId>
                 <version>${biodata.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-lite</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.commons</groupId>
@@ -200,11 +210,14 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <BIONETDB.DATABASE>scerevisiae</BIONETDB.DATABASE>
-                <BIONETDB.CATALOG.DB.HOST>localhost</BIONETDB.CATALOG.DB.HOST>
-                <BIONETDB.CATALOG.DB.PORT>7687</BIONETDB.CATALOG.DB.PORT>
-                <BIONETDB.CATALOG.DB.USER>neo4j</BIONETDB.CATALOG.DB.USER>
-                <BIONETDB.CATALOG.DB.PASSWORD>neo4j;</BIONETDB.CATALOG.DB.PASSWORD>
+                <BIONETDB.INSTALLATION.DIR>/opt/bionetdb</BIONETDB.INSTALLATION.DIR>
+
+                <BIONETDB.DB.DATABASE>scerevisiae</BIONETDB.DB.DATABASE>
+                <BIONETDB.DB.SPECIES>scerevisiae</BIONETDB.DB.SPECIES>
+                <BIONETDB.DB.HOST>localhost</BIONETDB.DB.HOST>
+                <BIONETDB.DB.PORT>7687</BIONETDB.DB.PORT>
+                <BIONETDB.DB.USER>neo4j</BIONETDB.DB.USER>
+                <BIONETDB.DB.PASSWORD>neo4j</BIONETDB.DB.PASSWORD>
             </properties>
         </profile>
 

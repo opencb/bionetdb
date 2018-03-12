@@ -18,10 +18,10 @@ public class BioNetDBConfigurationTest {
 
         BioNetDBConfiguration bioNetDBConfiguration = new BioNetDBConfiguration();
 
-        bioNetDBConfiguration.setDefaultDatabase("testDB");
+//        bioNetDBConfiguration.setDefaultDatabase("testDB");
 
         List<DatabaseConfiguration> databases = new ArrayList<>();
-        databases.add(new DatabaseConfiguration("testDB", null));
+        databases.add(new DatabaseConfiguration("testDB",  null));
 
         bioNetDBConfiguration.setDatabases(databases);
 

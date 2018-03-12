@@ -72,22 +72,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     private void registerShutdownHook(final Driver driver) {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                driver.close();
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.close()));
     }
 
     private DatabaseConfiguration getDatabaseConfiguration(String database) {
-        DatabaseConfiguration databaseConfiguration;
-        if (database != null && !database.isEmpty()) {
-            databaseConfiguration = configuration.findDatabase(database);
-        } else {
-            databaseConfiguration = configuration.findDatabase();
-        }
-        return databaseConfiguration;
+        // configuration class checks if database is null or empty
+        return configuration.findDatabase(database);
     }
 
     private void createIndexes() {

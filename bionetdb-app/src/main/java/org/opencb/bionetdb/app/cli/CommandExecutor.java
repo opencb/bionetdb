@@ -115,6 +115,7 @@ public abstract class CommandExecutor {
         }
     }
 
+    @Deprecated
     protected DatabaseConfiguration createDatabaseConfigurationFromCLI(String id, String host, int port, String user, String password) {
         DatabaseConfiguration databaseConfiguration = new DatabaseConfiguration(id, null);
         databaseConfiguration.setHost(host);
