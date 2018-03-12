@@ -2,16 +2,13 @@
 defaultDatabase: "scerevisiae"
 logLevel: null
 logFile: null
+
+## You can define more than one database, you can pass the database id to BioNetDBManager.
+## If not passed the default database will always be the first one.
 databases:
-- id: "${BIONETDB.DATABASE}"
-  host: "${BIONETDB.CATALOG.DB.HOST}"
-  port: "${BIONETDB.CATALOG.DB.PORT}"
-  user: "${BIONETDB.CATALOG.DB.USER}"
-  password: "${BIONETDB.CATALOG.DB.PASSWORD}"
-  options: null
-- id: "hsapiens"
-  host: "localhost"
-  port: "7688"
-  user: "neo4j"
-  password: "neo4j;"
+- id: "${BIONETDB.DB.DATABASE}"
+  host: "${BIONETDB.DB.HOST}"
+  port: "${BIONETDB.DB.PORT}"
+  user: "${BIONETDB.DB.USER}"
+  password: "${BIONETDB.DB.PASSWORD}"
   options: null

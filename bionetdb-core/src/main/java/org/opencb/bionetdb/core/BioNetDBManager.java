@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.core;
 
 import htsjdk.variant.variantcontext.VariantContext;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -39,8 +40,8 @@ import java.util.*;
 public class BioNetDBManager {
 
     private String database;
-    private BioNetDBConfiguration bioNetDBConfiguration;
-    private ClientConfiguration clientConfiguration;
+    private BioNetDBConfiguration configuration;
+    private ClientConfiguration cellbaseClientConfiguration;
     private CellBaseClient cellBaseClient;
 
     private NetworkDBAdaptor networkDBAdaptor;
@@ -51,19 +52,43 @@ public class BioNetDBManager {
     private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
 
-    public BioNetDBManager(String database, BioNetDBConfiguration bioNetDBConfiguration) throws BioNetDBException {
-        this.database = database;
-        this.bioNetDBConfiguration = bioNetDBConfiguration;
-        networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration, true);
+    public BioNetDBManager(BioNetDBConfiguration configuration) throws BioNetDBException {
+        init(null, configuration);
+    }
 
-        clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        cellBaseClient = new CellBaseClient("hsapiens", clientConfiguration);
+    public BioNetDBManager(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
+        init(database, configuration);
+    }
+
+    private void init(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
+        // We first create te logger to debug next actions
+        logger = LoggerFactory.getLogger(BioNetDBManager.class);
+
+        // We check that the configuration exists and the databases are not empty
+        if (configuration == null || configuration.getDatabases() == null || configuration.getDatabases().size() == 0) {
+            logger.error("BioNetDB configuration is null or databases are empty");
+            throw new BioNetDBException("BioNetDBConfiguration is null or databases are empty");
+        }
+        this.configuration = configuration;
+
+        // If database parameter is empty then we use take the first database
+        if (StringUtils.isNotEmpty(database)) {
+            this.database = database;
+        } else {
+            logger.debug("Empty database parameter: {}, using the first instance of 'databases'", database);
+            this.database = this.configuration.getDatabases().get(0).getId();
+        }
+
+        // We can now create the default NetworkDBAdaptor
+        networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, this.configuration, true);
+
+        // We create CellBase client
+        cellbaseClientConfiguration = new ClientConfiguration();
+        cellbaseClientConfiguration.setVersion("v4");
+        cellbaseClientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+        cellBaseClient = new CellBaseClient("hsapiens", cellbaseClientConfiguration);
 
         idToUidMap = new HashMap<>();
-
-        logger = LoggerFactory.getLogger(BioNetDBManager.class);
     }
 
     public void loadBioPax(java.nio.file.Path path) throws IOException, BioNetDBException {
