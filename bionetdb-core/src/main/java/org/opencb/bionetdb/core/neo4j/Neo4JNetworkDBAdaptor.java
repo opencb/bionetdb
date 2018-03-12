@@ -94,20 +94,20 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Session session = this.driver.session();
         if (session != null) {
             try (Transaction tx = session.beginTransaction()) {
-//                tx.run("CREATE INDEX ON :" + Node.Type.PHYSICAL_ENTITY + "(id)");
-//                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(id)");
-//                tx.run("CREATE INDEX ON :" + Node.Type.COMPLEX + "(id)");
-//                tx.run("CREATE INDEX ON :" + Node.Type.SMALL_MOLECULE + "(id)");
-                //tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(uid)");
-                tx.run("CREATE CONSTRAINT ON (cl:" + Node.Type.CELLULAR_LOCATION + ") assert cl.uid is unique");
+                tx.run("CREATE INDEX ON :" + Node.Type.PHYSICAL_ENTITY + "(uid)");
+                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(uid)");
+                tx.run("CREATE INDEX ON :" + Node.Type.COMPLEX + "(uid)");
+                tx.run("CREATE INDEX ON :" + Node.Type.SMALL_MOLECULE + "(uid)");
+                tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(uid)");
+                //tx.run("CREATE CONSTRAINT ON (cl:" + Node.Type.CELLULAR_LOCATION + ") assert cl.uid is unique");
                 tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(name)");
-//                tx.run("CREATE INDEX ON :" + Node.Type.CATALYSIS + "(id)");
-//                tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(id)");
-                //tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
-                tx.run("CREATE CONSTRAINT ON (x:" + Node.Type.XREF + ") assert x.uid is unique");
+                tx.run("CREATE INDEX ON :" + Node.Type.CATALYSIS + "(uid)");
+                tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(uid)");
+                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
+                //tx.run("CREATE CONSTRAINT ON (x:" + Node.Type.XREF + ") assert x.uid is unique");
                 tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(id,dbName)");
-//                tx.run("CREATE INDEX ON :" + Node.Type.ONTOLOGY + "(id)");
-//                tx.run("CREATE INDEX ON :" + Node.Type.UNDEFINED + "(id)");
+                //tx.run("CREATE INDEX ON :" + Node.Type.ONTOLOGY + "(uid)");
+                tx.run("CREATE INDEX ON :" + Node.Type.UNDEFINED + "(uid)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(id)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CALL + "(id)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_FILE_INFO + "(id)");
@@ -379,8 +379,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public StatementResult addNode(Node node, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
-        boolean prefix = false;
         List<String> props = new ArrayList<>();
+        props.add("n.uid=" + node.getUid());
         if (StringUtils.isNotEmpty(node.getId())) {
             props.add("n.id=\"" + cleanValue(node.getId()) + "\"");
         }
@@ -408,11 +408,110 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (ListUtils.isNotEmpty(props)) {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
         }
-        cypher.append(" RETURN ID(n) AS UID");
+        //cypher.append(" RETURN ID(n) AS UID");
         StatementResult ret = tx.run(cypher.toString());
-        node.setUid(ret.peek().get("UID").asLong());
+        //node.setUid(ret.peek().get("UID").asLong());
         return ret;
     }
+
+    public void mergeNode(Node node, String byKey, Transaction tx) {
+        Object value;
+        switch (byKey) {
+            case "id":
+                value = node.getId();
+                break;
+            case "name":
+                value = node.getName();
+                break;
+            case "source":
+                value = node.getSource();
+                break;
+            default:
+                value = node.getAttributes().get(byKey);
+                break;
+        }
+        StringBuilder cypher = new StringBuilder("MATCH (n");
+        if (node.getType() != null) {
+            cypher.append(":").append(node.getType());
+        }
+        cypher.append(") WHERE n.").append(byKey);
+        if (value instanceof String) {
+            cypher.append("=\"").append(value).append("\"");
+        } else {
+            cypher.append("=").append(value);
+        }
+        cypher.append(" RETURN n");
+
+        StatementResult ret = tx.run(cypher.toString());
+        if (ret.hasNext()) {
+            node.setUid(ret.next().get(0).asNode().get("uid").asLong());
+        } else {
+            node.setUid(node.getUid() + 1);
+            addNode(node, tx);
+        }
+    }
+
+    public void mergeNode(Node node, String byKey1, String byKey2, Transaction tx) {
+        List<String> byKeys = new ArrayList<>(2);
+        byKeys.add(byKey1);
+        byKeys.add(byKey2);
+        List<Object> values = new ArrayList<>(2);
+        List<Boolean> prefix = new ArrayList<>(2);
+
+        for (int i = 0; i < 2; i++) {
+            switch (byKeys.get(i)) {
+                case "id":
+                    values.add(node.getId());
+                    prefix.add(false);
+                    break;
+                case "name":
+                    values.add(node.getName());
+                    prefix.add(false);
+                    break;
+                case "source":
+                    values.add(node.getSource());
+                    prefix.add(false);
+                    break;
+                default:
+                    values.add(node.getAttributes().get(byKeys.get(i)));
+                    prefix.add(true);
+                    break;
+            }
+        }
+        StringBuilder cypher = new StringBuilder("MATCH (n");
+        if (node.getType() != null) {
+            cypher.append(":").append(node.getType());
+        }
+        cypher.append(") WHERE ");
+        for (int i = 0; i < 2; i++) {
+            cypher.append("n.");
+            if (prefix.get(i)) {
+                cypher.append(PREFIX_ATTRIBUTES + byKeys.get(i));
+            } else {
+                cypher.append(byKeys.get(i));
+            }
+            if (values.get(i) instanceof String) {
+                cypher.append("=\"").append(values.get(i)).append("\"");
+            } else {
+                cypher.append("=").append(values.get(i));
+            }
+            if (i == 0) {
+                cypher.append(" AND ");
+            }
+        }
+        cypher.append(" RETURN n");
+
+        StatementResult ret = tx.run(cypher.toString());
+        if (ret.hasNext()) {
+            node.setUid(ret.next().get(0).asNode().get("uid").asLong());
+        } else {
+            node.setUid(node.getUid() + 1);
+            addNode(node, tx);
+        }
+    }
+
+
+/*
 
     public StatementResult mergeNode(Node node, String byKey, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
@@ -474,12 +573,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (ListUtils.isNotEmpty(props)) {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
         }
-        cypher.append(" RETURN ID(n) AS UID");
+        //cypher.append(" RETURN ID(n) AS UID");
         StatementResult ret = tx.run(cypher.toString());
-        node.setUid(ret.peek().get("UID").asLong());
+        //node.setUid(ret.peek().get("UID").asLong());
         return ret;
     }
-
+    */
+/*
     public StatementResult mergeNode(Node node, String byKey1, String byKey2, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
         boolean prefix1 = false;
@@ -559,40 +659,42 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (ListUtils.isNotEmpty(props)) {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
         }
-        cypher.append(" RETURN ID(n) AS UID");
+        //cypher.append(" RETURN ID(n) AS UID");
         StatementResult ret = tx.run(cypher.toString());
-        node.setUid(ret.peek().get("UID").asLong());
+        //node.setUid(ret.peek().get("UID").asLong());
         return ret;
     }
-
+*/
     public StatementResult mergeRelation(Relation relation, Transaction tx) {
         return addRelation(relation, tx);
     }
 
     public StatementResult addRelation(Relation relation, Transaction tx) {
         List<String> props = new ArrayList<>();
+        props.add("uid:" + relation.getUid());
         if (StringUtils.isNotEmpty(relation.getName())) {
             props.add("name:\"" + cleanValue(relation.getName()) + "\"");
         }
         if (StringUtils.isNotEmpty(relation.getSource())) {
             props.add("source:\"" + relation.getSource() + "\"");
         }
-        for (String key : relation.getAttributes().keySet()) {
+        for (String key: relation.getAttributes().keySet()) {
             props.add(PREFIX_ATTRIBUTES + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
         }
         String propsJoined = "{" + String.join(",", props) + "}";
 
         StringBuilder statementTemplate = new StringBuilder();
-        statementTemplate.append("MATCH (o:$origType) WHERE ID(o) = $origUid")
-                .append(" MATCH (d:$destType) WHERE ID(d) = $destUid")
-                .append(" MERGE (o)-[r:").append(StringUtils.join(relation.getTags(), ":")).append(propsJoined).append("]->(d)")
-                .append(" RETURN ID(r) AS UID");
+        statementTemplate.append("MATCH (o:").append(relation.getOrigType()).append(") WHERE o.uid = $origUid")
+                .append(" MATCH (d:").append(relation.getDestType()).append(") WHERE d.uid = $destUid")
+                .append(" MERGE (o)-[r:")
+                .append(StringUtils.join(relation.getTags(), ":"))
+                .append(propsJoined).append("]->(d)");
+        //.append(" RETURN ID(r) AS UID");
 
         // Create the relationship
         StatementResult ret = tx.run(statementTemplate.toString(),
-                parameters("origType", relation.getOrigType(), "origUid", relation.getOrigUid(),
-                        "destType", relation.getDestType(), "destUid", relation.getDestUid()));
-        relation.setUid(ret.peek().get("UID").asLong());
+                parameters("origUid", relation.getOrigUid(), "destUid", relation.getDestUid()));
+        //relation.setUid(ret.peek().get("UID").asLong());
         return ret;
     }
 
