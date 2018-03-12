@@ -7,6 +7,7 @@ logFile: null
 ## If not passed the default database will always be the first one.
 databases:
 - id: "${BIONETDB.DB.DATABASE}"
+  species: "${BIONETDB.DB.SPECIES}"     ## examples: hsapiens, mmusculus, ...
   host: "${BIONETDB.DB.HOST}"
   port: "${BIONETDB.DB.PORT}"
   user: "${BIONETDB.DB.USER}"
