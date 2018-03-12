@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +18,6 @@ import java.util.List;
  */
 public class BioNetDBConfiguration {
 
-    private String defaultDatabase;
     private String logLevel;
     private String logFile;
 
@@ -26,11 +26,10 @@ public class BioNetDBConfiguration {
     protected static Logger logger = LoggerFactory.getLogger(BioNetDBConfiguration.class);
 
     public BioNetDBConfiguration() {
-        this("", new ArrayList<>());
+        this(new ArrayList<>());
     }
 
-    public BioNetDBConfiguration(String defaultDatabase, List<DatabaseConfiguration> databaseConfigurations) {
-        this.defaultDatabase = defaultDatabase;
+    public BioNetDBConfiguration(List<DatabaseConfiguration> databaseConfigurations) {
         this.databases = databaseConfigurations;
 
     }
@@ -85,25 +84,17 @@ public class BioNetDBConfiguration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
     }
 
-    public DatabaseConfiguration findDatabase() {
-        if (defaultDatabase != null && !defaultDatabase.isEmpty()) {
-            return findDatabase(defaultDatabase);
-        } else {
-            if (databases.size() > 0) {
-                return databases.get(0);
-            } else {
-                return null;
-            }
-        }
-    }
-
     public DatabaseConfiguration findDatabase(String database) {
         DatabaseConfiguration databaseConfiguration = null;
-        for (DatabaseConfiguration databaseConf : databases) {
-            if (databaseConf.getId().equals(database)) {
-                databaseConfiguration = databaseConf;
-                break;
+        if (StringUtils.isNotEmpty(database)) {
+            for (DatabaseConfiguration databaseConf : databases) {
+                if (databaseConf.getId().equals(database)) {
+                    databaseConfiguration = databaseConf;
+                    break;
+                }
             }
+        } else {
+            databaseConfiguration = this.databases.get(0);
         }
 
         return databaseConfiguration;
@@ -137,7 +128,7 @@ public class BioNetDBConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BioNetDBConfiguration{");
-        sb.append("defaultDatabase='").append(defaultDatabase).append('\'');
+//        sb.append("defaultDatabase='").append(defaultDatabase).append('\'');
         sb.append(", logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", databases=").append(databases);
@@ -145,13 +136,13 @@ public class BioNetDBConfiguration {
         return sb.toString();
     }
 
-    public String getDefaultDatabase() {
-        return defaultDatabase;
-    }
-
-    public void setDefaultDatabase(String defaultDatabase) {
-        this.defaultDatabase = defaultDatabase;
-    }
+//    public String getDefaultDatabase() {
+//        return defaultDatabase;
+//    }
+//
+//    public void setDefaultDatabase(String defaultDatabase) {
+//        this.defaultDatabase = defaultDatabase;
+//    }
 
     public String getLogLevel() {
         return logLevel;
