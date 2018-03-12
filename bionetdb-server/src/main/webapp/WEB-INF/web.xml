@@ -1,4 +1,4 @@
-<?xml apiVersion="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ Copyright 2015 OpenCB
   ~
@@ -18,9 +18,14 @@
 <web-app version="2.5"
          xmlns="http://java.sun.com/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+         xsi:schemaLocation="http://jBIONETDB_HOMEava.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
 
     <display-name>BioNetDB Server</display-name>
+
+    <context-param>
+        <param-name>BIONETDB_HOME</param-name>
+        <param-value>${BIONETDB.INSTALLATION.DIR}</param-value>
+    </context-param>
 
     <servlet>
         <servlet-name>BioNetDBServer</servlet-name>
@@ -30,11 +35,6 @@
             <param-name>jersey.config.server.provider.packages</param-name>
             <param-value>io.swagger.jaxrs.listing;org.opencb.bionetdb.server.rest;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json</param-value>
         </init-param>
-
-        <!--<init-param>-->
-            <!--<param-name>jersey.config.server.provider.classnames</param-name>-->
-            <!--<param-value>org.glassfish.jersey.media.multipart.MultiPartFeature</param-value>-->
-        <!--</init-param>-->
 
         <init-param>
             <param-name>BIONETDB_HOME</param-name>
@@ -59,21 +59,6 @@
         <url-pattern>*</url-pattern>
     </filter-mapping>
 
-    <!--swagger-->
-    <!--<servlet>-->
-        <!--<servlet-name>JerseyJaxrsConfig</servlet-name>-->
-        <!--<servlet-class>io.swagger.jersey.config.JerseyJaxrsConfig</servlet-class>-->
-
-        <!--<init-param>-->
-            <!--<param-name>api.apiVersion</param-name>-->
-            <!--<param-value>1.0.0</param-value>-->
-        <!--</init-param>-->
-        <!--<init-param>-->
-            <!--<param-name>swagger.api.basepath</param-name>-->
-            <!--<param-value>/cellbase/webservices/rest</param-value>-->
-        <!--</init-param>-->
-        <!--<load-on-startup>2</load-on-startup>-->
-    <!--</servlet>-->
 
     <servlet>
         <servlet-name>Jersey2Config</servlet-name>

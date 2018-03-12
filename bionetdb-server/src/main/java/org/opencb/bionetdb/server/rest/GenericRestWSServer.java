@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.BioNetDBManager;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -18,6 +19,7 @@ import org.opencb.commons.datastore.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -25,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by imedina on 01/10/15.
@@ -73,29 +76,72 @@ public class GenericRestWSServer {
     protected static NetworkDBAdaptor networkDBAdaptor;
     protected static Map<String, BioNetDBManager> bioNetDBManagers;
 
+    protected static AtomicBoolean initialized;
+
     private static final int LIMIT_DEFAULT = 1000;
     private static final int LIMIT_MAX = 5000;
     private static final int DEFAULT_LIMIT = 2000;
     private static final int MAX_LIMIT = 5000;
 
     static {
-        logger = LoggerFactory.getLogger("org.opencb.cellbase.server.ws.GenericRestWSServer");
-        logger.info("Static block, creating Neo4JNetworkDBAdaptor");
+        initialized = new AtomicBoolean(false);
+
+        logger = LoggerFactory.getLogger("org.opencb.bionetdb.server.rest.GenericRestWSServer");
+
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        jsonObjectWriter = jsonObjectMapper.writer();
+        logger.info("End of Static block");
+    }
+
+
+    public GenericRestWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest hsr)
+            throws VersionException {
+        this.apiVersion = apiVersion;
+        this.uriInfo = uriInfo;
+        this.httpServletRequest = hsr;
+
+        init();
+    }
+
+    private void init() throws VersionException {
+        // This must be only executed once, this method loads the configuration and create the BioNetDBManagers
+        if (initialized.compareAndSet(false, true)) {
+            initBioNetDBObjects();
+        }
+
+        query = new Query();
+        queryOptions = new QueryOptions();
+
+        parseQueryParams();
+
+        startTime = System.currentTimeMillis();
+    }
+
+    /**
+     * This method loads the configuration and create the BioNetDB mangers, must be called once.
+     */
+    private void initBioNetDBObjects() {
         try {
             if (System.getenv("BIONETDB_HOME") != null) {
                 logger.info("Loading configuration from '{}'", System.getenv("BIONETDB_HOME") + "/configuration.yml");
                 bioNetDBConfiguration = BioNetDBConfiguration
                         .load(new FileInputStream(new File(System.getenv("BIONETDB_HOME") + "/configuration.yml")));
             } else {
-                logger.info("Loading configuration from '{}'",
-                        BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml").toString());
-                bioNetDBConfiguration = BioNetDBConfiguration
-                        .load(BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+                // We read 'BIONETDB_HOME' parameter from the web.xml file
+                ServletContext context = httpServletRequest.getServletContext();
+                String bionetdbHome = context.getInitParameter("BIONETDB_HOME");
+                if (StringUtils.isNotEmpty(bionetdbHome)) {
+                    logger.info("Loading configuration from '{}'", bionetdbHome + "/configuration.yml");
+                    bioNetDBConfiguration = BioNetDBConfiguration
+                            .load(new FileInputStream(new File(bionetdbHome + "/configuration.yml")));
+                } else {
+                    logger.info("Loading configuration from '{}'",
+                            BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml").toString());
+                    bioNetDBConfiguration = BioNetDBConfiguration
+                            .load(BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+                }
             }
-
-//            networkDBAdaptor = new Neo4JNetworkDBAdaptor("test1", bioNetDBConfiguration);
-//        } catch (BioNetDBException e) {
-//            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -112,30 +158,6 @@ public class GenericRestWSServer {
                 e.printStackTrace();
             }
         }
-
-        jsonObjectMapper = new ObjectMapper();
-        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        jsonObjectWriter = jsonObjectMapper.writer();
-        logger.info("End of Static block");
-    }
-
-
-    public GenericRestWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest hsr)
-            throws VersionException {
-        this.apiVersion = apiVersion;
-        this.uriInfo = uriInfo;
-        this.httpServletRequest = hsr;
-
-        logger.debug("Executing GenericRestWSServer constructor with no Species");
-        init();
-    }
-
-    protected void init() throws VersionException {
-        query = new Query();
-        queryOptions = new QueryOptions();
-
-        parseQueryParams();
-        startTime = System.currentTimeMillis();
     }
 
     private void parseQueryParams() throws VersionException {
