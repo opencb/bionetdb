@@ -8,6 +8,7 @@ import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.util.Pair;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.NetworkPath;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 
@@ -45,16 +46,16 @@ public class Neo4JConverter {
         return row;
     }
 
-    public static List<org.opencb.bionetdb.core.network.Path> toPathList(Record record) {
-        List<org.opencb.bionetdb.core.network.Path> paths = new ArrayList<>();
+    public static List<NetworkPath> toPathList(Record record) {
+        List<NetworkPath> networkPaths = new ArrayList<>();
 
         for (Pair<String, Value> pair: record.fields()) {
             if (pair.value().hasType(TYPE_SYSTEM.PATH())) {
-                paths.add(toPath(pair.value().asPath()));
+                networkPaths.add(toNetworkPath(pair.value().asPath()));
             }
         }
 
-        return paths;
+        return networkPaths;
     }
 
     public static Network toNetwork(StatementResult statementResult) {
@@ -138,15 +139,15 @@ public class Neo4JConverter {
         return node;
     }
 
-    private static org.opencb.bionetdb.core.network.Path toPath(Path neoPath) {
-        org.opencb.bionetdb.core.network.Path path = new org.opencb.bionetdb.core.network.Path();
+    private static NetworkPath toNetworkPath(Path neoPath) {
+        NetworkPath networkPath = new NetworkPath();
 
         // First, be sure to process nodes first
         Map<Long, Node> nodeMap = new HashMap<>();
         Map<Long, Relationship> relationshipMap = new HashMap<>();
         getPathContent(neoPath, nodeMap, relationshipMap);
 
-        // Now, we can add these nodes to the path and set the start and end node indices
+        // Now, we can add these nodes to the networkPath and set the start and end node indices
         int i = 0;
         int startIndex = 0, endIndex = 0;
         for (long key: nodeMap.keySet()) {
@@ -156,24 +157,24 @@ public class Neo4JConverter {
             if (neoPath.end().id() == key) {
                 endIndex = i;
             }
-            path.addNode(nodeMap.get(key));
+            networkPath.addNode(nodeMap.get(key));
             i++;
         }
-        path.setStartIndex(startIndex);
-        path.setEndIndex(endIndex);
+        networkPath.setStartIndex(startIndex);
+        networkPath.setEndIndex(endIndex);
 
-        // Then, we can process relationships and insert them into the path
+        // Then, we can process relationships and insert them into the networkPath
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
             Relation relation = new Relation(neoRelation.id(), neoRelation.get("name").asString(),
                     nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
                     nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
-            path.addRelation(relation);
+            networkPath.addRelation(relation);
         }
 
-        // Return path
-        return path;
+        // Return networkPath
+        return networkPath;
     }
 
     private static void getPathContent(Path neoPath, Map<Long, Node> nodeMap, Map<Long, Relationship> relationshipMap) {

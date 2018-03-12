@@ -1,7 +1,7 @@
 package org.opencb.bionetdb.core.api;
 
+import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
-import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
@@ -105,19 +105,20 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     RowIterator rowIterator(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
-    // P A T H S
-    //   - a path is modeled as a network
+    // N E T W O R K     P A T H S
+    //   - a network path is modeled as a 'lineal' network, it contains
+    //     the origin node and the destionation node
     //-------------------------------------------------------------------------
 
-    PathIterator pathIterator(PathQuery pathQuery, QueryOptions queryOptions) throws BioNetDBException;
-    PathIterator pathIterator(String cypher) throws BioNetDBException;
+    NetworkPathIterator networkPathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException;
+    NetworkPathIterator networkPathIterator(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
     // N E T W O R K S
     //-------------------------------------------------------------------------
 
     QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions) throws BioNetDBException;
-    QueryResult<Network> networkQueryByPaths(List<PathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
     QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
 
 
@@ -144,8 +145,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 //    RowIterator rowIterator(Query query, QueryOptions queryOptions);
 //    RowIterator rowIterator(String cypher);
 //
-//    PathIterator pathIterator(NodeQuery srcQuery, Query destQuery, QueryOptions queryOptions);
-//    PathIterator pathIterator(String cypher);
+//    NetworkPathIterator networkPathIterator(NodeQuery srcQuery, Query destQuery, QueryOptions queryOptions);
+//    NetworkPathIterator networkPathIterator(String cypher);
 
     //    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
 //

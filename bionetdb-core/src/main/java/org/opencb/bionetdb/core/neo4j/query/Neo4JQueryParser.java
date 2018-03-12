@@ -3,7 +3,7 @@ package org.opencb.bionetdb.core.neo4j.query;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
-import org.opencb.bionetdb.core.api.query.PathQuery;
+import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.commons.datastore.core.Query;
@@ -66,7 +66,7 @@ public class Neo4JQueryParser {
         return cypher.toString();
     }
 
-    public static String parsePath(PathQuery query, QueryOptions options) throws BioNetDBException {
+    public static String parsePath(NetworkPathQuery query, QueryOptions options) throws BioNetDBException {
         if (query.getSrcNodeQuery() == null || query.getDestNodeQuery() == null) {
             throw new BioNetDBException("Invalid path query: it is madatory to include source and destination nodes");
         }
@@ -107,19 +107,19 @@ public class Neo4JQueryParser {
     }
 
     public static String parseNodesForNetwork(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
-        List<PathQuery> pathQueries = new ArrayList<>();
+        List<NetworkPathQuery> pathQueries = new ArrayList<>();
         int size = nodeQueries.size();
         for (int i = 0; i < size; i++) {
             for (int j = i + 1; j < size; j++) {
-                PathQuery pathQuery = new PathQuery(nodeQueries.get(i), nodeQueries.get(j));
-                pathQueries.add(pathQuery);
+                NetworkPathQuery networkPathQuery = new NetworkPathQuery(nodeQueries.get(i), nodeQueries.get(j));
+                pathQueries.add(networkPathQuery);
             }
         }
 
         return parsePathsForNetwork(pathQueries, options);
     }
 
-    public static String parsePathsForNetwork(List<PathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
+    public static String parsePathsForNetwork(List<NetworkPathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
         StringBuilder cypher = new StringBuilder();
         if (ListUtils.isNotEmpty(pathQueries)) {
             cypher.append(parsePath(pathQueries.get(0), options));
@@ -356,7 +356,7 @@ public class Neo4JQueryParser {
 ////        }
 //    }
 //
-//    public static String parse(List<PathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
+//    public static String parse(List<NetworkPathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
 //        return null;
 //    }
 

@@ -7,10 +7,10 @@ import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
-import org.opencb.bionetdb.core.api.PathIterator;
+import org.opencb.bionetdb.core.api.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.RowIterator;
+import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
-import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -319,17 +319,18 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
 
     @Override
-    public PathIterator pathIterator(PathQuery pathQuery, QueryOptions queryOptions) throws BioNetDBException {
+    public NetworkPathIterator networkPathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions)
+            throws BioNetDBException {
 
-        String cypher = Neo4JQueryParser.parsePath(pathQuery, queryOptions);
-        return pathIterator(cypher);
+        String cypher = Neo4JQueryParser.parsePath(networkPathQuery, queryOptions);
+        return networkPathIterator(cypher);
     }
 
     @Override
-    public PathIterator pathIterator(String cypher) throws BioNetDBException {
+    public NetworkPathIterator networkPathIterator(String cypher) throws BioNetDBException {
         Session session = this.driver.session();
 //        System.out.println("Cypher query: " + cypher);
-        return new Neo4JPathIterator(session.run(cypher));
+        return new Neo4JNetworkPathIterator(session.run(cypher));
     }
 
     //-------------------------------------------------------------------------
@@ -344,7 +345,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public QueryResult<Network> networkQueryByPaths(List<PathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException {
+    public QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
+            throws BioNetDBException {
         String cypher = Neo4JQueryParser.parsePathsForNetwork(pathQueries, queryOptions);
         return networkQuery(cypher);
     }

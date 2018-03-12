@@ -2,17 +2,17 @@ package org.opencb.bionetdb.core.api.query;
 
 import org.opencb.commons.datastore.core.Query;
 
-public class PathQuery extends Query {
+public class NetworkPathQuery extends Query {
 
     private NodeQuery srcNodeQuery;
     private NodeQuery destNodeQuery;
     private NodeQuery intermediateNodeQuery;
 
-    public PathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery) {
+    public NetworkPathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery) {
         this(srcNodeQuery, destNodeQuery, null);
     }
 
-    public PathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery) {
+    public NetworkPathQuery(NodeQuery srcNodeQuery, NodeQuery destNodeQuery, NodeQuery intermediateNodeQuery) {
         this.srcNodeQuery = srcNodeQuery;
         this.destNodeQuery = destNodeQuery;
         this.intermediateNodeQuery = intermediateNodeQuery;
@@ -22,7 +22,7 @@ public class PathQuery extends Query {
         return srcNodeQuery;
     }
 
-    public PathQuery setSrcNodeQuery(NodeQuery srcNodeQuery) {
+    public NetworkPathQuery setSrcNodeQuery(NodeQuery srcNodeQuery) {
         this.srcNodeQuery = srcNodeQuery;
         return this;
     }
@@ -31,7 +31,7 @@ public class PathQuery extends Query {
         return destNodeQuery;
     }
 
-    public PathQuery setDestNodeQuery(NodeQuery destNodeQuery) {
+    public NetworkPathQuery setDestNodeQuery(NodeQuery destNodeQuery) {
         this.destNodeQuery = destNodeQuery;
         return this;
     }
@@ -40,7 +40,7 @@ public class PathQuery extends Query {
         return intermediateNodeQuery;
     }
 
-    public PathQuery setIntermediateNodeQuery(NodeQuery intermediateNodeQuery) {
+    public NetworkPathQuery setIntermediateNodeQuery(NodeQuery intermediateNodeQuery) {
         this.intermediateNodeQuery = intermediateNodeQuery;
         return this;
     }

@@ -5,12 +5,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.api.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.NodeIterator;
-import org.opencb.bionetdb.core.api.PathIterator;
 import org.opencb.bionetdb.core.api.RowIterator;
+import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.api.query.NodeQueryParam;
-import org.opencb.bionetdb.core.api.query.PathQuery;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
@@ -18,6 +18,7 @@ import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.NetworkManager;
+import org.opencb.bionetdb.core.network.NetworkPath;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
@@ -259,23 +260,23 @@ public class BioNetDBManager {
     // P A T H S
     //-------------------------------------------------------------------------
 
-    public QueryResult<org.opencb.bionetdb.core.network.Path> pathQuery(PathQuery pathQuery, QueryOptions queryOptions)
+    public QueryResult<NetworkPath> pathQuery(NetworkPathQuery networkPathQuery, QueryOptions queryOptions)
             throws BioNetDBException {
-        PathIterator pathIterator = pathIterator(pathQuery, queryOptions);
-        return getQueryResult(pathIterator);
+        NetworkPathIterator networkPathIterator = pathIterator(networkPathQuery, queryOptions);
+        return getQueryResult(networkPathIterator);
     }
 
-    public QueryResult<org.opencb.bionetdb.core.network.Path> pathQuery(String cypher) throws BioNetDBException {
-        PathIterator pathIterator = pathIterator(cypher);
-        return getQueryResult(pathIterator);
+    public QueryResult<NetworkPath> pathQuery(String cypher) throws BioNetDBException {
+        NetworkPathIterator networkPathIterator = pathIterator(cypher);
+        return getQueryResult(networkPathIterator);
     }
 
-    public PathIterator pathIterator(PathQuery pathQuery, QueryOptions queryOptions) throws BioNetDBException {
-        return networkDBAdaptor.pathIterator(pathQuery, queryOptions);
+    public NetworkPathIterator pathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException {
+        return networkDBAdaptor.networkPathIterator(networkPathQuery, queryOptions);
     }
 
-    public PathIterator pathIterator(String cypher) throws BioNetDBException {
-        return networkDBAdaptor.pathIterator(cypher);
+    public NetworkPathIterator pathIterator(String cypher) throws BioNetDBException {
+        return networkDBAdaptor.networkPathIterator(cypher);
     }
 
     //-------------------------------------------------------------------------
@@ -287,7 +288,7 @@ public class BioNetDBManager {
         return networkDBAdaptor.networkQuery(nodeQueries, queryOptions);
     }
 
-    public QueryResult<Network> networkQueryByPaths(List<PathQuery> pathQueries, QueryOptions queryOptions)
+    public QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
             throws BioNetDBException {
        return networkDBAdaptor.networkQueryByPaths(pathQueries, queryOptions);
     }
@@ -376,20 +377,20 @@ public class BioNetDBManager {
         return new QueryResult("table", time, rows.size(), rows.size(), null, null, rows);
     }
 
-    public QueryResult<org.opencb.bionetdb.core.network.Path> getQueryResult(PathIterator pathIterator)
+    public QueryResult<NetworkPath> getQueryResult(NetworkPathIterator networkPathIterator)
             throws BioNetDBException {
-        List<org.opencb.bionetdb.core.network.Path> paths = new ArrayList<>();
+        List<NetworkPath> networkPaths = new ArrayList<>();
 
         long startTime = System.currentTimeMillis();
-        while (pathIterator.hasNext()) {
-            if (paths.size() >= this.QUERY_MAX_RESULTS) {
+        while (networkPathIterator.hasNext()) {
+            if (networkPaths.size() >= this.QUERY_MAX_RESULTS) {
                 break;
             }
-            paths.add(pathIterator.next());
+            networkPaths.add(networkPathIterator.next());
         }
         long stopTime = System.currentTimeMillis();
 
         int time = (int) (stopTime - startTime) / 1000;
-        return new QueryResult("get", time, paths.size(), paths.size(), null, null, paths);
+        return new QueryResult("get", time, networkPaths.size(), networkPaths.size(), null, null, networkPaths);
     }
 }

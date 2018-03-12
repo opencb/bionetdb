@@ -3,11 +3,11 @@ package org.opencb.bionetdb.core.network;
 /**
  * Created by joaquin on 2/12/18.
  */
-public class Path extends Graph {
+public class NetworkPath extends Graph {
     private int startIndex;
     private int endIndex;
 
-    public Path() {
+    public NetworkPath() {
         super();
         startIndex = 0;
         endIndex = 0;
@@ -15,7 +15,7 @@ public class Path extends Graph {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Path{");
+        final StringBuilder sb = new StringBuilder("NetworkPath{");
         sb.append("startIndex=").append(startIndex);
         sb.append(", endIndex=").append(endIndex);
         sb.append(", nodes=").append(nodes);
@@ -28,7 +28,7 @@ public class Path extends Graph {
         return startIndex;
     }
 
-    public Path setStartIndex(int startIndex) {
+    public NetworkPath setStartIndex(int startIndex) {
         this.startIndex = startIndex;
         return this;
     }
@@ -37,7 +37,7 @@ public class Path extends Graph {
         return endIndex;
     }
 
-    public Path setEndIndex(int endIndex) {
+    public NetworkPath setEndIndex(int endIndex) {
         this.endIndex = endIndex;
         return this;
     }
