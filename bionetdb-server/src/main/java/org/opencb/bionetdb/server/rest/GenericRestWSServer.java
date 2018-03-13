@@ -94,6 +94,9 @@ public class GenericRestWSServer {
         logger.info("End of Static block");
     }
 
+    public GenericRestWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws VersionException {
+        this(uriInfo.getPathParameters().getFirst("apiVersion"), uriInfo, httpServletRequest);
+    }
 
     public GenericRestWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest hsr)
             throws VersionException {
@@ -218,11 +221,11 @@ public class GenericRestWSServer {
     }
 
 
-    @GET
-    @Path("/help")
-    public Response help() {
-        return createOkResponse("No help available");
-    }
+//    @GET
+//    @Path("/help")
+//    public Response help() {
+//        return createOkResponse("No help available");
+//    }
 
 //    @GET
 //    public Response defaultMethod() {
