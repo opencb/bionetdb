@@ -81,13 +81,13 @@ public class BioNetDBManager {
         }
 
         // We can now create the default NetworkDBAdaptor
-        networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, this.configuration, true);
+        networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, this.configuration, true);
 
         // We create CellBase client
         cellbaseClientConfiguration = new ClientConfiguration();
         cellbaseClientConfiguration.setVersion("v4");
         cellbaseClientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        cellBaseClient = new CellBaseClient("hsapiens", cellbaseClientConfiguration);
+        cellBaseClient = new CellBaseClient(this.configuration.findDatabase(database).getSpecies(), cellbaseClientConfiguration);
 
         idToUidMap = new HashMap<>();
     }

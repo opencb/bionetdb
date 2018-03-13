@@ -6,8 +6,8 @@ import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.api.NodeIterator;
 import org.opencb.bionetdb.core.api.NetworkPathIterator;
+import org.opencb.bionetdb.core.api.NodeIterator;
 import org.opencb.bionetdb.core.api.RowIterator;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
@@ -19,7 +19,6 @@ import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.Neo4JConverter;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
@@ -39,9 +38,7 @@ import static org.neo4j.driver.v1.Values.parameters;
 public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private Driver driver;
-
     private BioNetDBConfiguration configuration;
-    private CellBaseClient cellBaseClient;
 
     public static final String PREFIX_ATTRIBUTES = "attr_";
 
@@ -52,7 +49,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration, boolean createIndex) throws BioNetDBException {
         this.configuration = configuration;
 
-        DatabaseConfiguration databaseConfiguration = getDatabaseConfiguration(database);
+        // configuration class checks if database is null or empty
+        DatabaseConfiguration databaseConfiguration = configuration.findDatabase(database);
         if (databaseConfiguration == null) {
             throw new BioNetDBException("No database found with name: \"" + database + "\"");
         }
@@ -61,23 +59,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String password = databaseConfiguration.getPassword();
 
         driver = GraphDatabase.driver("bolt://" + databaseURI, AuthTokens.basic(user, password));
-//        session = driver.session();
-
-//        registerShutdownHook(this.driver, this.session);
-        registerShutdownHook(this.driver);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.close()));
 
         if (createIndex) {
             createIndexes();
         }
-    }
-
-    private void registerShutdownHook(final Driver driver) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.close()));
-    }
-
-    private DatabaseConfiguration getDatabaseConfiguration(String database) {
-        // configuration class checks if database is null or empty
-        return configuration.findDatabase(database);
     }
 
     private void createIndexes() {
