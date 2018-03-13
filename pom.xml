@@ -217,7 +217,7 @@
                 <BIONETDB.DB.HOST>localhost</BIONETDB.DB.HOST>
                 <BIONETDB.DB.PORT>7687</BIONETDB.DB.PORT>
                 <BIONETDB.DB.USER>neo4j</BIONETDB.DB.USER>
-                <BIONETDB.DB.PASSWORD>neo4j</BIONETDB.DB.PASSWORD>
+                <BIONETDB.DB.PASSWORD>neo4j;</BIONETDB.DB.PASSWORD>
             </properties>
         </profile>
 
