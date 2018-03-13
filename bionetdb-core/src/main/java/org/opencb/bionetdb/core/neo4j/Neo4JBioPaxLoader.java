@@ -35,14 +35,14 @@ public class Neo4JBioPaxLoader {
     public Neo4JBioPaxLoader(Neo4JNetworkDBAdaptor networkDBAdaptor) {
         this.networkDBAdaptor = networkDBAdaptor;
 
-        // Initialize uidCounter
-        uidCounter = 0;
-
         rdfToUidMap = new HashMap<>();
         uidToTypeMap = new HashMap<>();
     }
 
     public void loadBioPaxFile(Path path) throws IOException {
+        // First, initialize uidCounter
+        uidCounter = networkDBAdaptor.getUidCounter();
+
         // Reading GZip input stream
         InputStream inputStream;
         if (path.toFile().getName().endsWith(".gz")) {
@@ -176,6 +176,9 @@ public class Neo4JBioPaxLoader {
 
         session.close();
         inputStream.close();
+
+        // And finally, update uidCounter into the database (using the configuration node)
+        networkDBAdaptor.setUidCounter(uidCounter);
     }
 
     //-------------------------------------------------------------------------

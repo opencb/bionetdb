@@ -22,6 +22,7 @@ import org.opencb.bionetdb.core.utils.Neo4JConverter;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -61,8 +62,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         driver = GraphDatabase.driver("bolt://" + databaseURI, AuthTokens.basic(user, password));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.close()));
 
+        // Create indexes
         if (createIndex) {
             createIndexes();
+        }
+
+        // Add configuration node
+        if (!existConfigNode()) {
+        createConfigNode();
         }
     }
 
@@ -676,6 +683,73 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return ret;
     }
 
+    //-------------------------------------------------------------------------
+    // C O N F I G U R A T I O N     N O D E     M A N A G E M E N T
+    //-------------------------------------------------------------------------
+
+    private boolean existConfigNode() {
+        Session session = this.driver.session();
+        StatementResult statementResult = session.run("match (n:" + Node.Type.CONFIG + "{uid:0}) return count(n) as count");
+        session.close();
+
+        return (statementResult.peek().get(0).asInt() == 1);
+    }
+
+    public long getUidCounter() {
+        Session session = this.driver.session();
+        StatementResult statementResult = session.run("match (n{uid:0}) return n." + PREFIX_ATTRIBUTES + "uidCounter");
+        session.close();
+
+        return (statementResult.peek().get(0).asLong());
+    }
+
+    public void setUidCounter(long uidCounter) {
+        // Build Cypher statement
+        StringBuilder cypher = new StringBuilder();
+        cypher.append("merge (n{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=").append(uidCounter);
+
+        // Run cypher statement
+        Session session = this.driver.session();
+        session.run(cypher.toString());
+        session.close();
+    }
+
+    private void createConfigNode() {
+        // Create configuration node and set it uid = 0
+        Session session = this.driver.session();
+        Node node = new Node(0, "0", "config", Node.Type.CONFIG);
+        node.addAttribute("uidCounter", 1);
+        try (Transaction tx = session.beginTransaction()) {
+            addNode(node, tx);
+            tx.success();
+        }
+        session.close();
+    }
+
+    private void updateConfigNode(ObjectMap attrs) {
+        // Build Cypher statement
+        StringBuilder cypher = new StringBuilder();
+        cypher.append("merge (n{uid:0}) set ");
+        List<String> sets = new ArrayList<>();
+        for (String key: attrs.keySet()) {
+            StringBuilder strSet = new StringBuilder("n.").append(PREFIX_ATTRIBUTES).append(key).append("=");
+            if (attrs.get(key) instanceof String) {
+                strSet.append("'").append(attrs.get(key)).append("'");
+            } else {
+                strSet.append(attrs.get(key));
+            }
+            sets.add(strSet.toString());
+        }
+        cypher.append(StringUtils.join(sets, ","));
+
+        // Run cypher statement
+        Session session = this.driver.session();
+        try (Transaction tx = session.beginTransaction()) {
+            tx.run(cypher.toString());
+            tx.success();
+        }
+        session.close();
+    }
 
     //-------------------------------------------------------------------------
     // T E S T S

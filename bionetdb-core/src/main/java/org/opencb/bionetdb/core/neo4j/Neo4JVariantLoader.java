@@ -38,9 +38,6 @@ public class Neo4JVariantLoader {
 
     public Neo4JVariantLoader(Neo4JNetworkDBAdaptor networkDBAdaptor) {
         this.networkDBAdaptor = networkDBAdaptor;
-        // Initialize uidCounter
-        uidCounter = 0;
-
     }
 
     public void loadVCFFile(Path path) {
@@ -74,36 +71,54 @@ public class Neo4JVariantLoader {
     }
 
     public void loadVariants(List<Variant> variants) {
+        // First, initialize uidCounter
+        uidCounter = networkDBAdaptor.getUidCounter();
+
         Session session = networkDBAdaptor.getDriver().session();
-        for (Variant variant: variants) {
-            session.writeTransaction(tx -> {
+        try (Transaction tx = session.beginTransaction()) {
+            for (Variant variant: variants) {
                 loadVariant(variant, tx);
-                return 1;
-            });
+            }
+            tx.success();
         }
         session.close();
+
+        // And finally, update uidCounter into the database (using the configuration node)
+        networkDBAdaptor.setUidCounter(uidCounter);
     }
 
     public void loadGenes(List<Gene> genes) {
+        // First, initialize uidCounter
+        uidCounter = networkDBAdaptor.getUidCounter();
+
         Session session = networkDBAdaptor.getDriver().session();
-        for (Gene gene: genes) {
-            session.writeTransaction(tx -> {
+        try (Transaction tx = session.beginTransaction()) {
+            for (Gene gene : genes) {
                 loadGene(gene, tx);
-                return 1;
-            });
+            }
+            tx.success();
         }
         session.close();
+
+        // And finally, update uidCounter into the database (using the configuration node)
+        networkDBAdaptor.setUidCounter(uidCounter);
     }
 
     public void loadProteins(List<Entry> proteins) {
+        // First, initialize uidCounter
+        uidCounter = networkDBAdaptor.getUidCounter();
+
         Session session = networkDBAdaptor.getDriver().session();
-        for (Entry protein: proteins) {
-            session.writeTransaction(tx -> {
+        try (Transaction tx = session.beginTransaction()) {
+            for (Entry protein: proteins) {
                 loadProtein(protein, tx);
-                return 1;
-            });
+            }
+            tx.success();
         }
         session.close();
+
+        // And finally, update uidCounter into the database (using the configuration node)
+        networkDBAdaptor.setUidCounter(uidCounter);
     }
 
     //-------------------------------------------------------------------------
