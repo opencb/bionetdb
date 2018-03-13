@@ -54,16 +54,12 @@ public class BioNetDBManagerTest {
 
     @Test
     public void loadBioPax() throws BioNetDBException, IOException {
-//        try {
-        //bioNetDBManager.loadBioPax(Paths.get(getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").toURI()));
-        //String filename = "~/data150/neo4j/hsapiens.meiosis.biopax3";
-        String filename = "~/data150/neo4j/pathway1.biopax3";
+        String root = "~"; // ~/data150/neo4j
+        //String filename = getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").getPath();
+        //String filename = root + "/data150/neo4j/hsapiens.meiosis.biopax3";
+        //String filename = root + "/pathway1.biopax3";
+        String filename = root + "/vesicle.mediated.transport.biopax3";
         bioNetDBManager.loadBioPax(Paths.get(filename));
-//        } catch (URISyntaxException e) {
-//            e.printStackTrace();
-//            fail();
-//        }
-
     }
 
     @Test

@@ -414,7 +414,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         cypher.append(") WHERE n.").append(byKey);
         if (value instanceof String) {
-            cypher.append("=\"").append(value).append("\"");
+            cypher.append("=\"").append(cleanValue(value.toString())).append("\"");
         } else {
             cypher.append("=").append(value);
         }
@@ -469,7 +469,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 cypher.append(byKeys.get(i));
             }
             if (values.get(i) instanceof String) {
-                cypher.append("=\"").append(values.get(i)).append("\"");
+                cypher.append("=\"").append(cleanValue(values.get(i).toString())).append("\"");
             } else {
                 cypher.append("=").append(values.get(i));
             }

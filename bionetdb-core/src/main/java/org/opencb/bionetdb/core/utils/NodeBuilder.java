@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 public class NodeBuilder {
-    public static Node newNode(Variant variant) {
-        Node node = new Node(-1, variant.getId(), variant.toString(), Node.Type.VARIANT);
+    public static Node newNode(long uid, Variant variant) {
+        Node node = new Node(uid, variant.getId(), variant.toString(), Node.Type.VARIANT);
         node.addAttribute("chromosome", variant.getChromosome());
         node.addAttribute("start", variant.getStart());
         node.addAttribute("end", variant.getEnd());
@@ -43,8 +43,8 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(StudyEntry studyEntry, Node variantNode) {
-        Node node = new Node(-1, variantNode.getId() + "_" + variantNode.getSource(), "", Node.Type.VARIANT_FILE_INFO);
+    public static Node newNode(long uid, StudyEntry studyEntry, Node variantNode) {
+        Node node = new Node(uid, variantNode.getId() + "_" + variantNode.getSource(), "", Node.Type.VARIANT_FILE_INFO);
         Map<String, String> fileAttrs = studyEntry.getFiles().get(0).getAttributes();
         node.addAttribute("filename", studyEntry.getFiles().get(0).getFileId());
         for (String key: fileAttrs.keySet()) {
@@ -53,16 +53,16 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newCallNode(List<String> formatKeys, List<String> formatValues) {
-        Node node = new Node(-1, formatValues.get(0), formatValues.get(0), Node.Type.VARIANT_CALL);
+    public static Node newCallNode(long uid, List<String> formatKeys, List<String> formatValues) {
+        Node node = new Node(uid, formatValues.get(0), formatValues.get(0), Node.Type.VARIANT_CALL);
         for (int i = 0; i < formatKeys.size(); i++) {
             node.addAttribute(formatKeys.get(i), formatValues.get(i));
         }
         return node;
     }
 
-    public static Node newNode(PopulationFrequency popFreq) {
-        Node node = new Node(-1, popFreq.getPopulation(), popFreq.getPopulation(), Node.Type.POPULATION_FREQUENCY);
+    public static Node newNode(long uid, PopulationFrequency popFreq) {
+        Node node = new Node(uid, popFreq.getPopulation(), popFreq.getPopulation(), Node.Type.POPULATION_FREQUENCY);
         node.addAttribute("study", popFreq.getStudy());
         node.addAttribute("population", popFreq.getPopulation());
         node.addAttribute("refAlleleFreq", popFreq.getRefAlleleFreq());
@@ -70,16 +70,16 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(Score score, Node.Type nodeType) {
-        Node node = new Node(-1, score.getSource(), null, nodeType);
+    public static Node newNode(long uid, Score score, Node.Type nodeType) {
+        Node node = new Node(uid, score.getSource(), null, nodeType);
         node.addAttribute("score", score.getScore());
         node.addAttribute("source", score.getSource());
         node.addAttribute("description", score.getDescription());
         return node;
     }
 
-    public static Node newNode(EvidenceEntry evidence, Node.Type nodeType) {
-        Node node = new Node(-1, null, null, nodeType);
+    public static Node newNode(long uid, EvidenceEntry evidence, Node.Type nodeType) {
+        Node node = new Node(uid, null, null, nodeType);
         node.addAttribute("url", evidence.getUrl());
         if (ListUtils.isNotEmpty(evidence.getHeritableTraits())) {
             StringBuilder her = new StringBuilder();
@@ -107,8 +107,8 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(ConsequenceType ct) {
-        Node node = new Node(-1, ct.getBiotype(), null, Node.Type.CONSEQUENCE_TYPE);
+    public static Node newNode(long uid, ConsequenceType ct) {
+        Node node = new Node(uid, ct.getBiotype(), null, Node.Type.CONSEQUENCE_TYPE);
         node.addAttribute("biotype", ct.getBiotype());
         node.addAttribute("cdnaPosition", ct.getCdnaPosition());
         node.addAttribute("cdsPosition", ct.getCdsPosition());
@@ -136,8 +136,8 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(ProteinVariantAnnotation annotation) {
-        Node node = new Node(-1, annotation.getUniprotAccession(), annotation.getUniprotName(),
+    public static Node newNode(long uid, ProteinVariantAnnotation annotation) {
+        Node node = new Node(uid, annotation.getUniprotAccession(), annotation.getUniprotName(),
                 Node.Type.PROTEIN_VARIANT_ANNOTATION);
         node.addAttribute("position", annotation.getPosition());
         node.addAttribute("reference", annotation.getReference());
@@ -146,8 +146,8 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(ProteinFeature feature) {
-        Node node = new Node(-1, null, feature.getId(), Node.Type.PROTEIN_FEATURE);
+    public static Node newNode(long uid, ProteinFeature feature) {
+        Node node = new Node(uid, null, feature.getId(), Node.Type.PROTEIN_FEATURE);
         node.addAttribute("start", feature.getStart());
         node.addAttribute("end", feature.getEnd());
         node.addAttribute("type", feature.getType());
@@ -155,8 +155,8 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(Gene gene) {
-        Node node = new Node(-1, gene.getId(), gene.getName(), Node.Type.GENE);
+    public static Node newNode(long uid, Gene gene) {
+        Node node = new Node(uid, gene.getId(), gene.getName(), Node.Type.GENE);
         node.addAttribute("biotype", gene.getBiotype());
         node.addAttribute("chromosome", gene.getChromosome());
         node.addAttribute("start", gene.getStart());
@@ -168,16 +168,16 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(GeneDrugInteraction drug) {
-        Node node = new Node(-1, null, drug.getDrugName(), Node.Type.DRUG);
+    public static Node newNode(long uid, GeneDrugInteraction drug) {
+        Node node = new Node(uid, null, drug.getDrugName(), Node.Type.DRUG);
         node.addAttribute("source", drug.getSource());
         node.addAttribute("type", drug.getType());
         node.addAttribute("studyType", drug.getStudyType());
         return node;
     }
 
-    public static Node newNode(GeneTraitAssociation disease) {
-        Node node = new Node(-1, disease.getId(), disease.getName(), Node.Type.DISEASE);
+    public static Node newNode(long uid, GeneTraitAssociation disease) {
+        Node node = new Node(uid, disease.getId(), disease.getName(), Node.Type.DISEASE);
         node.addAttribute("hpo", disease.getHpo());
         node.addAttribute("numberOfPubmeds", disease.getNumberOfPubmeds());
         node.addAttribute("score", disease.getScore());
@@ -191,8 +191,8 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(Transcript transcript) {
-        Node node = new Node(-1, transcript.getId(), transcript.getName(), Node.Type.TRANSCRIPT);
+    public static Node newNode(long uid, Transcript transcript) {
+        Node node = new Node(uid, transcript.getId(), transcript.getName(), Node.Type.TRANSCRIPT);
         node.addAttribute("proteinId", transcript.getProteinID());
         node.addAttribute("biotype", transcript.getBiotype());
         node.addAttribute("chromosome", transcript.getChromosome());
@@ -212,8 +212,8 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(TranscriptTfbs tfbs) {
-        Node node = new Node(-1, null, tfbs.getTfName(), Node.Type.TFBS);
+    public static Node newNode(long uid, TranscriptTfbs tfbs) {
+        Node node = new Node(uid, null, tfbs.getTfName(), Node.Type.TFBS);
         node.addAttribute("chromosome", tfbs.getChromosome());
         node.addAttribute("start", tfbs.getStart());
         node.addAttribute("end", tfbs.getEnd());
@@ -225,18 +225,18 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(Xref xref) {
-        Node node = new Node(-1, xref.getId(), null, Node.Type.XREF);
+    public static Node newNode(long uid, Xref xref) {
+        Node node = new Node(uid, xref.getId(), null, Node.Type.XREF);
         node.addAttribute("dbName", xref.getDbName());
         node.addAttribute("dbDisplayName", xref.getDbDisplayName());
         node.addAttribute("description", xref.getDescription());
         return node;
     }
 
-    public static Node newNode(Entry protein) {
+    public static Node newNode(long uid, Entry protein) {
         String id = (ListUtils.isNotEmpty(protein.getAccession()) ? protein.getAccession().get(0) : null);
         String name = (ListUtils.isNotEmpty(protein.getName()) ? protein.getName().get(0) : null);
-        Node node = new Node(-1, id, name, Node.Type.PROTEIN);
+        Node node = new Node(uid, id, name, Node.Type.PROTEIN);
         if (ListUtils.isNotEmpty(protein.getAccession())) {
             node.addAttribute("accession", StringUtils.join(protein.getAccession(), ","));
         }
@@ -261,16 +261,16 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(KeywordType keyword) {
-        Node node = new Node(-1, keyword.getId(), keyword.getValue(), Node.Type.PROTEIN_KEYWORD);
+    public static Node newNode(long uid, KeywordType keyword) {
+        Node node = new Node(uid, keyword.getId(), keyword.getValue(), Node.Type.PROTEIN_KEYWORD);
         if (ListUtils.isNotEmpty(keyword.getEvidence())) {
             node.addAttribute("evidence", StringUtils.join(keyword.getEvidence(), ","));
         }
         return node;
     }
 
-    public static Node newNode(FeatureType feature) {
-        Node node = new Node(-1, feature.getId(), null, Node.Type.PROTEIN_FEATURE);
+    public static Node newNode(long uid, FeatureType feature) {
+        Node node = new Node(uid, feature.getId(), null, Node.Type.PROTEIN_FEATURE);
         if (ListUtils.isNotEmpty(feature.getEvidence())) {
             node.addAttribute("evidence", StringUtils.join(feature.getEvidence(), ","));
         }
@@ -283,8 +283,8 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(DbReferenceType xref) {
-        Node node = new Node(-1, xref.getId(), null, Node.Type.XREF);
+    public static Node newNode(long uid, DbReferenceType xref) {
+        Node node = new Node(uid, xref.getId(), null, Node.Type.XREF);
         node.addAttribute("dbName", xref.getType());
         return node;
     }
