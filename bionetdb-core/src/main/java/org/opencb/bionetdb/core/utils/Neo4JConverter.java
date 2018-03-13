@@ -89,7 +89,7 @@ public class Neo4JConverter {
         // Then, we can process relationships and insert them into the network
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
-            Relation relation = new Relation(neoRelation.id(), neoRelation.get("name").asString(),
+            Relation relation = new Relation(neoRelation.get("uid").asLong(), neoRelation.get("name").asString(),
                     nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
                     nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
@@ -106,7 +106,7 @@ public class Neo4JConverter {
 
     private static Node toNode(org.neo4j.driver.v1.types.Node neoNode) {
         // Set uid, id and name
-        Node node = new Node(neoNode.id());
+        Node node = new Node(neoNode.get("uid").asLong());
         if (neoNode.containsKey("id")) {
             node.setId(neoNode.get("id").asString());
         }
@@ -131,7 +131,7 @@ public class Neo4JConverter {
 
         // Set attributes
         int pos = Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES.length();
-        for (String k : neoNode.keys()) {
+        for (String k: neoNode.keys()) {
             if (k.startsWith(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES)) {
                     node.addAttribute(k.substring(pos), neoNode.get(k).asObject());
             }
@@ -166,7 +166,7 @@ public class Neo4JConverter {
         // Then, we can process relationships and insert them into the networkPath
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
-            Relation relation = new Relation(neoRelation.id(), neoRelation.get("name").asString(),
+            Relation relation = new Relation(neoRelation.get("uid").asLong(), neoRelation.get("name").asString(),
                     nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
                     nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
