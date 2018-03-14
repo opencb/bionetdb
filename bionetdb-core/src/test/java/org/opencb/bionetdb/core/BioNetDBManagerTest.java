@@ -55,10 +55,11 @@ public class BioNetDBManagerTest {
     @Test
     public void loadBioPax() throws BioNetDBException, IOException {
         String root = "~"; // ~/data150/neo4j
-        //String filename = getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").getPath();
+        String filename = getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").getPath();
         //String filename = root + "/data150/neo4j/hsapiens.meiosis.biopax3";
         //String filename = root + "/pathway1.biopax3";
-        String filename = root + "/vesicle.mediated.transport.biopax3";
+        //String filename = root + "/vesicle.mediated.transport.biopax3";
+        //String filename = root + "/Homo_sapiens.owl";
         bioNetDBManager.loadBioPax(Paths.get(filename));
     }
 

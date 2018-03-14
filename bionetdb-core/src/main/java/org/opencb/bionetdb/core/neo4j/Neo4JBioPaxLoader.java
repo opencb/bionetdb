@@ -11,6 +11,8 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -22,6 +24,9 @@ import java.util.zip.GZIPInputStream;
 
 public class Neo4JBioPaxLoader {
 
+    private static final String REACTOME_FEAT = "reactome.";
+    private static final int TRANSACTION_BATCH_SIZE = 1000;
+
     private Neo4JNetworkDBAdaptor networkDBAdaptor;
     private String source;
 
@@ -30,13 +35,15 @@ public class Neo4JBioPaxLoader {
 
     private long uidCounter;
 
-    private static final String REACTOME_FEAT = "reactome.";
+    protected static Logger logger;
 
     public Neo4JBioPaxLoader(Neo4JNetworkDBAdaptor networkDBAdaptor) {
         this.networkDBAdaptor = networkDBAdaptor;
 
         rdfToUidMap = new HashMap<>();
         uidToTypeMap = new HashMap<>();
+
+        logger = LoggerFactory.getLogger(this.getClass());
     }
 
     public void loadBioPaxFile(Path path) throws IOException {
@@ -62,120 +69,157 @@ public class Neo4JBioPaxLoader {
 
         Session session = networkDBAdaptor.getDriver().session();
 
+        Iterator<BioPAXElement> iterator = bioPAXElements.iterator();
+        long numItems = bioPAXElements.size();
+        long count, numProcessed = 0;
+
         // First loop to create all physical entity nodes
-        try (Transaction tx = session.beginTransaction()) {
-            for (BioPAXElement bioPAXElement : bioPAXElements) {
-                //System.out.println(uidCounter);
-                switch (bioPAXElement.getModelInterface().getSimpleName()) {
-                    // Physical Entities
-                    case "PhysicalEntity": {
-                        Node node = loadUndefinedEntity(bioPAXElement, tx);
-                        updateAuxMaps(node);
+        long batchStartTime, stopTime;
+        long startTime = System.currentTimeMillis();
+        while (iterator.hasNext()) {
+            batchStartTime = System.currentTimeMillis();
+            try (Transaction tx = session.beginTransaction()) {
+                count = 0;
+                while (iterator.hasNext()) {
+                    BioPAXElement bioPAXElement = iterator.next();
+                    //System.out.println(uidCounter);
+                    switch (bioPAXElement.getModelInterface().getSimpleName()) {
+                        // Physical Entities
+                        case "PhysicalEntity": {
+                            Node node = loadUndefinedEntity(bioPAXElement, tx);
+                            updateAuxMaps(node);
 
-                        updatePhysicalEntity(bioPAXElement, tx);
-                        break;
-                    }
-                    case "Dna": {
-                        Node node = loadDna(bioPAXElement, tx);
-                        updateAuxMaps(node);
+                            updatePhysicalEntity(bioPAXElement, tx);
+                            break;
+                        }
+                        case "Dna": {
+                            Node node = loadDna(bioPAXElement, tx);
+                            updateAuxMaps(node);
 
-                        updatePhysicalEntity(bioPAXElement, tx);
-                        break;
-                    }
-                    case "Rna": {
-                        Node node = loadRna(bioPAXElement, tx);
-                        updateAuxMaps(node);
+                            updatePhysicalEntity(bioPAXElement, tx);
+                            break;
+                        }
+                        case "Rna": {
+                            Node node = loadRna(bioPAXElement, tx);
+                            updateAuxMaps(node);
 
-                        updatePhysicalEntity(bioPAXElement, tx);
-                        break;
-                    }
-                    case "Protein": {
-                        Node node = loadProtein(bioPAXElement, tx);
-                        updateAuxMaps(node);
+                            updatePhysicalEntity(bioPAXElement, tx);
+                            break;
+                        }
+                        case "Protein": {
+                            Node node = loadProtein(bioPAXElement, tx);
+                            updateAuxMaps(node);
 
-                        updatePhysicalEntity(bioPAXElement, tx);
-                        break;
-                    }
-                    case "Complex": {
-                        Node node = loadComplex(bioPAXElement, tx);
-                        updateAuxMaps(node);
+                            updatePhysicalEntity(bioPAXElement, tx);
+                            break;
+                        }
+                        case "Complex": {
+                            Node node = loadComplex(bioPAXElement, tx);
+                            updateAuxMaps(node);
 
-                        updatePhysicalEntity(bioPAXElement, tx);
-                        break;
-                    }
-                    case "SmallMolecule": {
-                        Node node = loadSmallMolecule(bioPAXElement, tx);
-                        updateAuxMaps(node);
+                            updatePhysicalEntity(bioPAXElement, tx);
+                            break;
+                        }
+                        case "SmallMolecule": {
+                            Node node = loadSmallMolecule(bioPAXElement, tx);
+                            updateAuxMaps(node);
 
-                        updatePhysicalEntity(bioPAXElement, tx);
-                        break;
-                    }
+                            updatePhysicalEntity(bioPAXElement, tx);
+                            break;
+                        }
 
-                    // Interactions
-                    case "BiochemicalReaction":
-                    case "TemplateReaction":
-                    case "Degradation":
-                    case "ComplexAssembly":
-                    case "MolecularInteraction":
-                    case "Transport":
-                    case "TransportWithBiochemicalReaction": {
-                        Node node = loadReaction(bioPAXElement, tx);
-                        updateAuxMaps(node);
+                        // Interactions
+                        case "BiochemicalReaction":
+                        case "TemplateReaction":
+                        case "Degradation":
+                        case "ComplexAssembly":
+                        case "MolecularInteraction":
+                        case "Transport":
+                        case "TransportWithBiochemicalReaction": {
+                            Node node = loadReaction(bioPAXElement, tx);
+                            updateAuxMaps(node);
+                            break;
+                        }
+                        case "Catalysis": {
+                            Node node = loadCatalysis(bioPAXElement, tx);
+                            updateAuxMaps(node);
+                            break;
+                        }
+                        case "Modulation":
+                        case "TemplateReactionRegulation": {
+                            Node node = loadRegulation(bioPAXElement, tx);
+                            updateAuxMaps(node);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                    // Check batch size
+                    numProcessed++;
+                    if (++count >= TRANSACTION_BATCH_SIZE) {
                         break;
                     }
-                    case "Catalysis": {
-                        Node node = loadCatalysis(bioPAXElement, tx);
-                        updateAuxMaps(node);
-                        break;
-                    }
-                    case "Modulation":
-                    case "TemplateReactionRegulation": {
-                        Node node = loadRegulation(bioPAXElement, tx);
-                        updateAuxMaps(node);
-                        break;
-                    }
-                    default:
-                        break;
                 }
+                tx.success();
+                stopTime = System.currentTimeMillis();
+                logger.info("1: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
+                        numProcessed, numItems,  Math.round(100. * numProcessed / numItems), (numProcessed * 1000 / (stopTime - startTime)),
+                        TRANSACTION_BATCH_SIZE, (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
             }
-            tx.success();
         }
 
         // Second loop to create relationships between physical entity nodes
-        try (Transaction tx = session.beginTransaction()) {
-            for (BioPAXElement bioPAXElement: bioPAXElements) {
-                switch (bioPAXElement.getModelInterface().getSimpleName()) {
-                    case "Complex": {
-                        updateComplex(bioPAXElement, tx);
+        startTime = System.currentTimeMillis();
+        while (iterator.hasNext()) {
+            batchStartTime = System.currentTimeMillis();
+            try (Transaction tx = session.beginTransaction()) {
+                count = 0;
+                while (iterator.hasNext()) {
+                    BioPAXElement bioPAXElement = iterator.next();
+                    switch (bioPAXElement.getModelInterface().getSimpleName()) {
+                        case "Complex": {
+                            updateComplex(bioPAXElement, tx);
+                            break;
+                        }
+
+                        // Interactions
+                        case "BiochemicalReaction":
+                        case "TemplateReaction":
+                        case "Degradation":
+                        case "ComplexAssembly":
+                        case "MolecularInteraction":
+                        case "Transport":
+                        case "TransportWithBiochemicalReaction":
+                            updateReaction(bioPAXElement, tx);
+                            break;
+                        case "Catalysis":
+                            updateCatalysis(bioPAXElement, tx);
+                            break;
+                        case "Modulation":
+                        case "TemplateReactionRegulation":
+                            updateRegulation(bioPAXElement, tx);
+                            break;
+                        default:
+                            break;
+                    }
+                    // Check batch size
+                    numProcessed++;
+                    if (++count >= TRANSACTION_BATCH_SIZE) {
                         break;
                     }
-
-                    // Interactions
-                    case "BiochemicalReaction":
-                    case "TemplateReaction":
-                    case "Degradation":
-                    case "ComplexAssembly":
-                    case "MolecularInteraction":
-                    case "Transport":
-                    case "TransportWithBiochemicalReaction":
-                        updateReaction(bioPAXElement, tx);
-                        break;
-                    case "Catalysis":
-                        updateCatalysis(bioPAXElement, tx);
-                        break;
-                    case "Modulation":
-                    case "TemplateReactionRegulation":
-                        updateRegulation(bioPAXElement, tx);
-                        break;
-                    default:
-                        break;
                 }
+                tx.success();
+                stopTime = System.currentTimeMillis();
+                logger.info("2: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
+                        numProcessed, numItems,  Math.round(100. * numProcessed / numItems), (numProcessed * 1000 / (stopTime - startTime)),
+                        TRANSACTION_BATCH_SIZE, (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
             }
-            tx.success();
         }
 
         session.close();
         inputStream.close();
+
+        logger.info("Loading {} containing {} BioPax elements in {} s", path, numItems, 1000.0 / (System.currentTimeMillis() - startTime));
 
         // And finally, update uidCounter into the database (using the configuration node)
         networkDBAdaptor.setUidCounter(uidCounter);
