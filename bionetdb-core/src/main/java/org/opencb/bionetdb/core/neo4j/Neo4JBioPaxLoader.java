@@ -161,6 +161,7 @@ public class Neo4JBioPaxLoader {
                     }
                 }
                 tx.success();
+                tx.close();
                 stopTime = System.currentTimeMillis();
                 try {
                     logger.info("1: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
@@ -174,6 +175,8 @@ public class Neo4JBioPaxLoader {
         }
 
         // Second loop to create relationships between physical entity nodes
+        iterator = bioPAXElements.iterator();
+        numProcessed = 0;
         long startTime2 = System.currentTimeMillis();
         while (iterator.hasNext()) {
             batchStartTime = System.currentTimeMillis();
@@ -214,6 +217,7 @@ public class Neo4JBioPaxLoader {
                     }
                 }
                 tx.success();
+                tx.close();
                 stopTime = System.currentTimeMillis();
                 try {
                     logger.info("2: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",

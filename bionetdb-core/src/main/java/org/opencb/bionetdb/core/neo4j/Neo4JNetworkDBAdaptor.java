@@ -86,7 +86,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(uid)");
                 tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
                 //tx.run("CREATE CONSTRAINT ON (x:" + Node.Type.XREF + ") assert x.uid is unique");
-                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(id,dbName)");
+                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(id)");
+                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(" + PREFIX_ATTRIBUTES + "dbName)");
                 //tx.run("CREATE INDEX ON :" + Node.Type.ONTOLOGY + "(uid)");
                 tx.run("CREATE INDEX ON :" + Node.Type.UNDEFINED + "(uid)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(id)");
@@ -372,6 +373,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         if (StringUtils.isNotEmpty(node.getSource())) {
             props.add("n.source=\"" + node.getSource() + "\"");
+        }
+        if (node.getAttributes().containsKey("uidCounter")) {
+            props.add("n." + PREFIX_ATTRIBUTES + "uidCounter=" + node.getAttributes().get("uidCounter"));
         }
         for (String key: node.getAttributes().keySet()) {
             if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
