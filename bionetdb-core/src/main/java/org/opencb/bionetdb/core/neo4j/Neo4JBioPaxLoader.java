@@ -162,9 +162,14 @@ public class Neo4JBioPaxLoader {
                 }
                 tx.success();
                 stopTime = System.currentTimeMillis();
-                logger.info("1: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
-                        numProcessed, numItems,  Math.round(100. * numProcessed / numItems), (numProcessed * 1000 / (stopTime - startTime)),
-                        TRANSACTION_BATCH_SIZE, (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
+                try {
+                    logger.info("1: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
+                            numProcessed, numItems, Math.round(100. * numProcessed / numItems),
+                            (numProcessed * 1000 / (stopTime - startTime)), TRANSACTION_BATCH_SIZE,
+                            (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
+                } catch (Exception e) {
+                    logger.info(e.getMessage());
+                }
             }
         }
 
@@ -210,9 +215,14 @@ public class Neo4JBioPaxLoader {
                 }
                 tx.success();
                 stopTime = System.currentTimeMillis();
-                logger.info("2: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
-                        numProcessed, numItems,  Math.round(100. * numProcessed / numItems), (numProcessed * 1000 / (stopTime - startTime)),
-                        TRANSACTION_BATCH_SIZE, (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
+                try {
+                    logger.info("2: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
+                            numProcessed, numItems, Math.round(100. * numProcessed / numItems),
+                            (numProcessed * 1000 / (stopTime - startTime)), TRANSACTION_BATCH_SIZE,
+                            (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
+                } catch (Exception e) {
+                    logger.info(e.getMessage());
+                }
             }
         }
 
