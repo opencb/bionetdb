@@ -31,8 +31,6 @@ import org.opencb.commons.utils.ListUtils;
 import java.io.IOException;
 import java.util.*;
 
-import static org.neo4j.driver.v1.Values.parameters;
-
 /**
  * Created by imedina on 05/08/15.
  */
@@ -656,7 +654,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public StatementResult addRelation(Relation relation, Transaction tx) {
         List<String> props = new ArrayList<>();
-        props.add("uid:" + relation.getUid());
+        //props.add("uid:" + relation.getUid());
         if (StringUtils.isNotEmpty(relation.getName())) {
             props.add("name:\"" + cleanValue(relation.getName()) + "\"");
         }
@@ -669,16 +667,20 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String propsJoined = "{" + String.join(",", props) + "}";
 
         StringBuilder statementTemplate = new StringBuilder();
-        statementTemplate.append("MATCH (o:").append(relation.getOrigType()).append(") WHERE o.uid = $origUid")
-                .append(" MATCH (d:").append(relation.getDestType()).append(") WHERE d.uid = $destUid")
-                .append(" MERGE (o)-[r:")
-                .append(StringUtils.join(relation.getTags(), ":"))
-                .append(propsJoined).append("]->(d)");
+        statementTemplate.append("MATCH (o:").append(relation.getOrigType()).append("{uid:")
+                .append(relation.getOrigUid()).append("}) MATCH (d:").append(relation.getDestType()).append("{uid:")
+                .append(relation.getDestUid()).append("}) USING INDEX d:").append(relation.getDestType())
+                .append("(uid) MERGE (o)-[r:")
+                .append(StringUtils.join(relation.getTags(), ":"));
+        if (ListUtils.isNotEmpty(props)) {
+                statementTemplate.append(propsJoined);
+        }
+        statementTemplate.append("]->(d)");
+
         //.append(" RETURN ID(r) AS UID");
 
         // Create the relationship
-        StatementResult ret = tx.run(statementTemplate.toString(),
-                parameters("origUid", relation.getOrigUid(), "destUid", relation.getDestUid()));
+        StatementResult ret = tx.run(statementTemplate.toString());
         //relation.setUid(ret.peek().get("UID").asLong());
         return ret;
     }

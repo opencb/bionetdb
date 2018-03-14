@@ -75,7 +75,7 @@ public class Neo4JBioPaxLoader {
 
         // First loop to create all physical entity nodes
         long batchStartTime, stopTime;
-        long startTime = System.currentTimeMillis();
+        long startTime1 = System.currentTimeMillis();
         while (iterator.hasNext()) {
             batchStartTime = System.currentTimeMillis();
             try (Transaction tx = session.beginTransaction()) {
@@ -165,7 +165,7 @@ public class Neo4JBioPaxLoader {
                 try {
                     logger.info("1: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
                             numProcessed, numItems, Math.round(100. * numProcessed / numItems),
-                            (numProcessed * 1000 / (stopTime - startTime)), TRANSACTION_BATCH_SIZE,
+                            (numProcessed * 1000 / (stopTime - startTime1)), TRANSACTION_BATCH_SIZE,
                             (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
                 } catch (Exception e) {
                     logger.info(e.getMessage());
@@ -174,7 +174,7 @@ public class Neo4JBioPaxLoader {
         }
 
         // Second loop to create relationships between physical entity nodes
-        startTime = System.currentTimeMillis();
+        long startTime2 = System.currentTimeMillis();
         while (iterator.hasNext()) {
             batchStartTime = System.currentTimeMillis();
             try (Transaction tx = session.beginTransaction()) {
@@ -218,7 +218,7 @@ public class Neo4JBioPaxLoader {
                 try {
                     logger.info("2: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
                             numProcessed, numItems, Math.round(100. * numProcessed / numItems),
-                            (numProcessed * 1000 / (stopTime - startTime)), TRANSACTION_BATCH_SIZE,
+                            (numProcessed * 1000 / (stopTime - startTime2)), TRANSACTION_BATCH_SIZE,
                             (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
                 } catch (Exception e) {
                     logger.info(e.getMessage());
@@ -229,7 +229,9 @@ public class Neo4JBioPaxLoader {
         session.close();
         inputStream.close();
 
-        logger.info("Loading {} containing {} BioPax elements in {} s", path, numItems, 1000.0 / (System.currentTimeMillis() - startTime));
+        logger.info("Loading {} containing {} BioPax elements in {} s", path, numItems, (System.currentTimeMillis() - startTime1) / 1000);
+        logger.info("- First loop in {} s", (startTime2 - startTime1) / 1000);
+        logger.info("- Second loop in {} s", (System.currentTimeMillis() - startTime2) / 1000);
 
         // And finally, update uidCounter into the database (using the configuration node)
         networkDBAdaptor.setUidCounter(uidCounter);
