@@ -144,6 +144,13 @@ public class Neo4JBioPaxLoader {
                             break;
                         }
 
+                        // Pathways
+                        case "Pathway": {
+                            Node node = loadPathway(bioPAXElement, tx);
+                            updateAuxMaps(node);
+                            break;
+                        }
+
                         // Interactions
                         case "BiochemicalReaction":
                         case "TemplateReaction":
@@ -203,6 +210,12 @@ public class Neo4JBioPaxLoader {
                     switch (bioPAXElement.getModelInterface().getSimpleName()) {
                         case "Complex": {
                             updateComplex(bioPAXElement, tx);
+                            break;
+                        }
+
+                        // Pathways
+                        case "Pathway": {
+                            updatePathway(bioPAXElement, tx);
                             break;
                         }
 
@@ -573,6 +586,17 @@ public class Neo4JBioPaxLoader {
 //        physicalEntity.setFeatures(features);
     }
 
+    private Node loadPathway(BioPAXElement bioPAXElement, Transaction tx) {
+        Pathway pathwayBP = (Pathway) bioPAXElement;
+        Node node = new Node(++uidCounter, getBioPaxId(pathwayBP.getRDFId()), pathwayBP.getDisplayName(), Node.Type.PATHWAY, source);
+
+        // Common properties
+//        setPhysicalEntityCommonProperties(complexBP, node);
+
+        networkDBAdaptor.addNode(node, tx);
+        return node;
+    }
+
     private Node loadReaction(BioPAXElement bioPAXElement, Transaction tx) {
         String className = bioPAXElement.getModelInterface().getSimpleName();
         Node node = new Node(++uidCounter, null, null, Node.Type.REACTION, source);
@@ -925,6 +949,53 @@ public class Neo4JBioPaxLoader {
             }
             networkDBAdaptor.addRelation(relation, tx);
         }
+    }
+
+
+    private void updatePathway(BioPAXElement bioPAXElement, Transaction tx) {
+        Pathway pathwayBP = (Pathway) bioPAXElement;
+
+        String pathwayId = getBioPaxId(pathwayBP.getRDFId());
+        Long pathwayUid = rdfToUidMap.get(pathwayId);
+        Node.Type pathwayType = uidToTypeMap.get(pathwayUid);
+
+        // Components
+        Set<Process> components = pathwayBP.getPathwayComponent();
+        for (Process component: components) {
+            Long componentUid = rdfToUidMap.get(getBioPaxId(component.getRDFId()));
+            Node.Type componentType = uidToTypeMap.get(componentUid);
+            Relation relation = new Relation(++uidCounter, null, componentUid, componentType, pathwayUid, pathwayType,
+                    Relation.Type.COMPONENT_OF_PATHWAY, source);
+            networkDBAdaptor.addRelation(relation, tx);
+        }
+
+        //
+        Set<PathwayStep> pathwayOrder = pathwayBP.getPathwayOrder();
+        for (PathwayStep pathwayStep: pathwayOrder) {
+            for (Process currentStep: pathwayStep.getStepProcess()) {
+                Long currentStepUid = rdfToUidMap.get(getBioPaxId(currentStep.getRDFId()));
+                Node.Type currentStepType = uidToTypeMap.get(currentStepUid);
+
+                for (PathwayStep pathwayNextStep: pathwayStep.getNextStep()) {
+                    for (Process nextStep: pathwayNextStep.getStepProcess()) {
+                        if (rdfToUidMap.containsKey(getBioPaxId(nextStep.getRDFId()))) {
+                            Long nextStepUid = rdfToUidMap.get(getBioPaxId(nextStep.getRDFId()));
+                            Node.Type nextStepType = uidToTypeMap.get(nextStepUid);
+                            try {
+                                Relation relation = new Relation(++uidCounter, null, currentStepUid, currentStepType, nextStepUid,
+                                        nextStepType, Relation.Type.PATHWAY_NEXT_STEP, source);
+                                networkDBAdaptor.addRelation(relation, tx);
+                            } catch (Exception e) {
+                                logger.info("impossible create realtionship: " + e.getMessage());
+                                logger.info("current step: {}, uid {}, type {}", currentStep.getRDFId(), currentStepUid, currentStepType);
+                                logger.info("next step   : {}, uid {}, type {}", nextStep.getRDFId(), nextStepUid, nextStepType);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
     private void updateReaction(BioPAXElement bioPAXElement, Transaction tx) {

@@ -56,10 +56,13 @@ public class Relation {
     }
 
     public enum Type {
-        REACTION            ("reaction"),
-        CATALYSIS           ("catalysis"),
-        REGULATION          ("regulation"),
-        COLOCALIZATION      ("colocalization"),
+        COMPONENT_OF_PATHWAY("COMPONENT_OF_PATHWAY"),
+        PATHWAY_NEXT_STEP("PATHWAY_NEXT_STEP"),
+
+        REACTION            ("REACTION"),
+        CATALYSIS           ("CATALYSIS"),
+        REGULATION          ("REGULATION"),
+        COLOCALIZATION      ("COLOCALIZATION"),
         CONSEQUENCE_TYPE    ("CONSEQUENCE_TYPE"),
         TRANSCRIPT          ("TRANSCRIPT"),
         SO                  ("SO"),

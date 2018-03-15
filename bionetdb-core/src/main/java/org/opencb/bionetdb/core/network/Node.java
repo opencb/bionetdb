@@ -64,6 +64,7 @@ public class Node {
         EXPRESSION              ("EXPRESSION"),
         ONTOLOGY                ("ONTOLOGY"),
 
+        PATHWAY ("PATHWAY"),
 
         CELLULAR_LOCATION   ("CELLULAR_LOCATION"),
         REGULATION          ("REGULATION"),

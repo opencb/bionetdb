@@ -65,7 +65,7 @@ public class BioNetDBManagerTest {
 
     @Test
     public void filterAndloadBioPax() throws BioNetDBException, IOException {
-        String root = "~"; // ~/data150/neo4j
+        //String root = "~"; // ~/data150/neo4j
         String filename = getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").getPath();
         //String filename = root + "/hsapiens.meiosis.biopax3";
         //String filename = root + "/pathway1.biopax3";
