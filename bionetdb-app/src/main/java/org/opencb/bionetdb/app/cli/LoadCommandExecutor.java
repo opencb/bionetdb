@@ -2,9 +2,14 @@ package org.opencb.bionetdb.app.cli;
 
 import org.opencb.bionetdb.core.BioNetDBManager;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.commons.utils.ListUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by imedina on 12/08/15.
@@ -32,7 +37,21 @@ public class LoadCommandExecutor extends CommandExecutor {
 
             // BioNetDBManager checks if database parameter is empty
             BioNetDBManager bioNetDBManager = new BioNetDBManager(loadCommandOptions.database, configuration);
-            bioNetDBManager.loadBioPax(inputPath);
+
+            Map<String, Set<String>> filter = null;
+            if (ListUtils.isNotEmpty(loadCommandOptions.exclude)) {
+                filter = new HashMap<>();
+                for (String exclude: loadCommandOptions.exclude) {
+                    String split[] = exclude.split(":");
+                    if (split.length == 2) {
+                        if (!filter.containsKey(split[0])) {
+                            filter.put(split[0], new HashSet<>());
+                        }
+                        filter.get(split[0]).add(split[1]);
+                    }
+                }
+            }
+            bioNetDBManager.loadBioPax(inputPath, filter);
         } catch (Exception e) {
             e.printStackTrace();
         }
