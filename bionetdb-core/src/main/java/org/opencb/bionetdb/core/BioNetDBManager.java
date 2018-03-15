@@ -93,24 +93,13 @@ public class BioNetDBManager {
     }
 
     public void loadBioPax(java.nio.file.Path path) throws IOException, BioNetDBException {
-        // BioPax loader
-        Neo4JBioPaxLoader neo4JBioPaxLoader = new Neo4JBioPaxLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
-        neo4JBioPaxLoader.loadBioPaxFile(path);
+        loadBioPax(path, null);
+    }
 
-        //        // Parse a BioPax file and get the network
-//        BioPaxParser bioPaxParser = new BioPaxParser("L3");
-//        logger.info("Parsing BioPax file {}...", path);
-//        long startTime = System.currentTimeMillis();
-//        Network network = bioPaxParser.parse(path);
-//        long stopTime = System.currentTimeMillis();
-//        logger.info("Done. The file '{}' has been parsed in {} seconds.", path, (stopTime - startTime) / 1000);
-//
-//        // Inserting the network into the database
-//        logger.info("Inserting data...");
-//        startTime = System.currentTimeMillis();
-//        networkDBAdaptor.insert(network, QueryOptions.empty());
-//        stopTime = System.currentTimeMillis();
-//        logger.info("Done. Data insertion took " + (stopTime - startTime) / 1000 + " seconds.");
+    public void loadBioPax(java.nio.file.Path path, Map<String, Set<String>> filters) throws IOException, BioNetDBException {
+        // BioPax loader
+        Neo4JBioPaxLoader neo4JBioPaxLoader = new Neo4JBioPaxLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor, filters);
+        neo4JBioPaxLoader.loadBioPaxFile(path);
     }
 
     public void loadVcf(java.nio.file.Path path) throws BioNetDBException {

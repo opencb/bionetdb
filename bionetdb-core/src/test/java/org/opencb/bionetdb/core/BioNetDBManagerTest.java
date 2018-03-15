@@ -6,6 +6,7 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
@@ -17,8 +18,7 @@ import org.opencb.commons.utils.ListUtils;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.fail;
 
@@ -54,13 +54,29 @@ public class BioNetDBManagerTest {
 
     @Test
     public void loadBioPax() throws BioNetDBException, IOException {
-        String root = "/home/jtarraga/data150/neo4j"; // "~"; // ~/data150/neo4j
+        String root = "~"; // ~/data150/neo4j
         String filename = getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").getPath();
-        //String filename = root + "/data150/neo4j/hsapiens.meiosis.biopax3";
+        //String filename = root + "/hsapiens.meiosis.biopax3";
         //String filename = root + "/pathway1.biopax3";
         //String filename = root + "/vesicle.mediated.transport.biopax3";
         //String filename = root + "/Homo_sapiens.owl";
         bioNetDBManager.loadBioPax(Paths.get(filename));
+    }
+
+    @Test
+    public void filterAndloadBioPax() throws BioNetDBException, IOException {
+        String root = "~"; // ~/data150/neo4j
+        String filename = getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").getPath();
+        //String filename = root + "/hsapiens.meiosis.biopax3";
+        //String filename = root + "/pathway1.biopax3";
+        //String filename = root + "/vesicle.mediated.transport.biopax3";
+        //String filename = root + "/Homo_sapiens.owl";
+
+        Map<String, Set<String>> filters = new HashMap<>();
+        Set<String> set = new HashSet<>();
+        set.add("Reactome Database ID Release 53");
+        filters.put(Neo4JBioPaxLoader.FilterField.XREF_DBNAME.name(), set);
+        bioNetDBManager.loadBioPax(Paths.get(filename), filters);
     }
 
     @Test

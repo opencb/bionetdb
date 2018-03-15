@@ -29,6 +29,7 @@ public class Neo4JBioPaxLoader {
 
     private Neo4JNetworkDBAdaptor networkDBAdaptor;
     private String source;
+    private Map<String, Set<String>> filters;
 
     private Map<String, Long> rdfToUidMap;
     private Map<Long, Node.Type> uidToTypeMap;
@@ -37,8 +38,23 @@ public class Neo4JBioPaxLoader {
 
     protected static Logger logger;
 
+    public enum FilterField {
+        XREF_DBNAME ("XREF_DBNAME");
+
+        private final String filterField;
+
+        FilterField(String filterField) {
+            this.filterField = filterField;
+        }
+    }
+
     public Neo4JBioPaxLoader(Neo4JNetworkDBAdaptor networkDBAdaptor) {
+        this(networkDBAdaptor, null);
+    }
+
+    public Neo4JBioPaxLoader(Neo4JNetworkDBAdaptor networkDBAdaptor, Map<String, Set<String>> filters) {
         this.networkDBAdaptor = networkDBAdaptor;
+        this.filters = filters;
 
         rdfToUidMap = new HashMap<>();
         uidToTypeMap = new HashMap<>();
@@ -1140,6 +1156,11 @@ public class Neo4JBioPaxLoader {
     }
 
     private void addXref(String xrefId, String dbName, Long uid, Node.Type type, Transaction tx) {
+        if (filters != null && filters.containsKey(FilterField.XREF_DBNAME.name())
+                && filters.get(FilterField.XREF_DBNAME.name()).contains(dbName)) {
+            return;
+        }
+
         Node xrefNode = new Node(uidCounter, xrefId, xrefId, Node.Type.XREF, source);
         xrefNode.addAttribute("dbName", dbName);
         networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
