@@ -168,6 +168,7 @@ public class Neo4JBioPaxLoader {
                             updateAuxMaps(node);
                             break;
                         }
+                        case "Control":
                         case "Modulation":
                         case "TemplateReactionRegulation": {
                             Node node = loadRegulation(bioPAXElement, tx);
@@ -232,6 +233,7 @@ public class Neo4JBioPaxLoader {
                         case "Catalysis":
                             updateCatalysis(bioPAXElement, tx);
                             break;
+                        case "Control":
                         case "Modulation":
                         case "TemplateReactionRegulation":
                             updateRegulation(bioPAXElement, tx);
