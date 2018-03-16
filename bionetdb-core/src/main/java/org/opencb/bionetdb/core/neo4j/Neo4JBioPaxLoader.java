@@ -8,9 +8,11 @@ import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.commons.utils.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +36,12 @@ public class Neo4JBioPaxLoader {
     private Map<String, Long> rdfToUidMap;
     private Map<Long, Node.Type> uidToTypeMap;
 
+    private List<Node> nodes;
+    private List<Relation> relations;
+
+    private long nodeLoadingTime = 0;
+    private long relationLoadingTime = 0;
+
     private long uidCounter;
 
     protected static Logger logger;
@@ -56,10 +64,16 @@ public class Neo4JBioPaxLoader {
         this.networkDBAdaptor = networkDBAdaptor;
         this.filters = filters;
 
-        rdfToUidMap = new HashMap<>();
-        uidToTypeMap = new HashMap<>();
+        this.rdfToUidMap = new HashMap<>();
+        this.uidToTypeMap = new HashMap<>();
 
-        logger = LoggerFactory.getLogger(this.getClass());
+        this.nodes = new ArrayList<>();
+        this.relations = new ArrayList<>();
+
+        this.nodeLoadingTime = 0;
+        this.relationLoadingTime = 0;
+
+        this.logger = LoggerFactory.getLogger(this.getClass());
     }
 
     public void loadBioPaxFile(Path path) throws IOException {
@@ -84,192 +98,334 @@ public class Neo4JBioPaxLoader {
         Set<BioPAXElement> bioPAXElements = model.getObjects();
 
         Session session = networkDBAdaptor.getDriver().session();
+        Transaction tx = null;
 
         Iterator<BioPAXElement> iterator = bioPAXElements.iterator();
         long numItems = bioPAXElements.size();
-        long count, numProcessed = 0;
+        long numNodes = 0;
+        long numRelations = 0;
+
+        long startTime = System.currentTimeMillis();
 
         // First loop to create all physical entity nodes
-        long batchStartTime, stopTime;
-        long startTime1 = System.currentTimeMillis();
+        Node node;
         while (iterator.hasNext()) {
-            batchStartTime = System.currentTimeMillis();
-            try (Transaction tx = session.beginTransaction()) {
-                count = 0;
-                while (iterator.hasNext()) {
-                    BioPAXElement bioPAXElement = iterator.next();
-                    //System.out.println(uidCounter);
-                    switch (bioPAXElement.getModelInterface().getSimpleName()) {
-                        // Physical Entities
-                        case "PhysicalEntity": {
-                            Node node = loadUndefinedEntity(bioPAXElement, tx);
-                            updateAuxMaps(node);
+            BioPAXElement bioPAXElement = iterator.next();
+            //System.out.println(uidCounter);
+            node = null;
+            switch (bioPAXElement.getModelInterface().getSimpleName()) {
+                // Physical Entities
+                case "PhysicalEntity": {
+                    node = loadUndefinedEntity(bioPAXElement, tx);
+                    updateAuxMaps(node);
 
-                            updatePhysicalEntity(bioPAXElement, tx);
-                            break;
-                        }
-                        case "Dna": {
-                            Node node = loadDna(bioPAXElement, tx);
-                            updateAuxMaps(node);
-
-                            updatePhysicalEntity(bioPAXElement, tx);
-                            break;
-                        }
-                        case "Rna": {
-                            Node node = loadRna(bioPAXElement, tx);
-                            updateAuxMaps(node);
-
-                            updatePhysicalEntity(bioPAXElement, tx);
-                            break;
-                        }
-                        case "Protein": {
-                            Node node = loadProtein(bioPAXElement, tx);
-                            updateAuxMaps(node);
-
-                            updatePhysicalEntity(bioPAXElement, tx);
-                            break;
-                        }
-                        case "Complex": {
-                            Node node = loadComplex(bioPAXElement, tx);
-                            updateAuxMaps(node);
-
-                            updatePhysicalEntity(bioPAXElement, tx);
-                            break;
-                        }
-                        case "SmallMolecule": {
-                            Node node = loadSmallMolecule(bioPAXElement, tx);
-                            updateAuxMaps(node);
-
-                            updatePhysicalEntity(bioPAXElement, tx);
-                            break;
-                        }
-
-                        // Pathways
-                        case "Pathway": {
-                            Node node = loadPathway(bioPAXElement, tx);
-                            updateAuxMaps(node);
-                            break;
-                        }
-
-                        // Interactions
-                        case "BiochemicalReaction":
-                        case "TemplateReaction":
-                        case "Degradation":
-                        case "ComplexAssembly":
-                        case "MolecularInteraction":
-                        case "Transport":
-                        case "TransportWithBiochemicalReaction": {
-                            Node node = loadReaction(bioPAXElement, tx);
-                            updateAuxMaps(node);
-                            break;
-                        }
-                        case "Catalysis": {
-                            Node node = loadCatalysis(bioPAXElement, tx);
-                            updateAuxMaps(node);
-                            break;
-                        }
-                        case "Control":
-                        case "Modulation":
-                        case "TemplateReactionRegulation": {
-                            Node node = loadRegulation(bioPAXElement, tx);
-                            updateAuxMaps(node);
-                            break;
-                        }
-                        default:
-                            break;
-                    }
-                    // Check batch size
-                    numProcessed++;
-                    if (++count >= TRANSACTION_BATCH_SIZE) {
-                        break;
-                    }
+                    updatePhysicalEntity(bioPAXElement, tx);
+                    break;
                 }
-                tx.success();
-                tx.close();
-                stopTime = System.currentTimeMillis();
-                try {
-                    logger.info("1: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
-                            numProcessed, numItems, Math.round(100. * numProcessed / numItems),
-                            (numProcessed * 1000 / (stopTime - startTime1)), TRANSACTION_BATCH_SIZE,
-                            (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
-                } catch (Exception e) {
-                    logger.info(e.getMessage());
+                case "Dna": {
+                    node = loadDna(bioPAXElement, tx);
+                    updateAuxMaps(node);
+
+                    updatePhysicalEntity(bioPAXElement, tx);
+                    break;
+                }
+                case "Rna": {
+                    node = loadRna(bioPAXElement, tx);
+                    updateAuxMaps(node);
+
+                    updatePhysicalEntity(bioPAXElement, tx);
+                    break;
+                }
+                case "Protein": {
+                    node = loadProtein(bioPAXElement, tx);
+                    updateAuxMaps(node);
+
+                    updatePhysicalEntity(bioPAXElement, tx);
+                    break;
+                }
+                case "Complex": {
+                    node = loadComplex(bioPAXElement, tx);
+                    updateAuxMaps(node);
+
+                    updatePhysicalEntity(bioPAXElement, tx);
+                    break;
+                }
+                case "SmallMolecule": {
+                    node = loadSmallMolecule(bioPAXElement, tx);
+                    updateAuxMaps(node);
+
+                    updatePhysicalEntity(bioPAXElement, tx);
+                    break;
+                }
+
+                // Pathways
+                case "Pathway": {
+                    node = loadPathway(bioPAXElement, tx);
+                    updateAuxMaps(node);
+                    break;
+                }
+
+                // Interactions
+                case "BiochemicalReaction":
+                case "TemplateReaction":
+                case "Degradation":
+                case "ComplexAssembly":
+                case "MolecularInteraction":
+                case "Transport":
+                case "TransportWithBiochemicalReaction": {
+                    node = loadReaction(bioPAXElement, tx);
+                    updateAuxMaps(node);
+                    break;
+                }
+                case "Catalysis": {
+                    node = loadCatalysis(bioPAXElement, tx);
+                    updateAuxMaps(node);
+                    break;
+                }
+                case "Control":
+                case "Modulation":
+                case "TemplateReactionRegulation": {
+                    node = loadRegulation(bioPAXElement, tx);
+                    updateAuxMaps(node);
+                    break;
+                }
+                default:
+                    break;
+            }
+            if (node != null) {
+                nodes.add(node);
+                if (nodes.size() >= TRANSACTION_BATCH_SIZE) {
+                    numNodes += nodes.size();
+                    loadNodes(nodes);
+                    nodes.clear();
                 }
             }
+            if (relations.size() > TRANSACTION_BATCH_SIZE) {
+                numRelations += relations.size();
+                loadRelations(relations);
+                relations.clear();
+            }
+        }
+        if (nodes.size() > 0) {
+            numNodes += nodes.size();
+            loadNodes(nodes);
+        }
+
+        if (relations.size() > TRANSACTION_BATCH_SIZE) {
+            numRelations += relations.size();
+            loadRelations(relations);
+            relations.clear();
         }
 
         // Second loop to create relationships between physical entity nodes
         iterator = bioPAXElements.iterator();
-        numProcessed = 0;
-        long startTime2 = System.currentTimeMillis();
         while (iterator.hasNext()) {
-            batchStartTime = System.currentTimeMillis();
-            try (Transaction tx = session.beginTransaction()) {
-                count = 0;
-                while (iterator.hasNext()) {
-                    BioPAXElement bioPAXElement = iterator.next();
-                    switch (bioPAXElement.getModelInterface().getSimpleName()) {
-                        case "Complex": {
-                            updateComplex(bioPAXElement, tx);
-                            break;
-                        }
-
-                        // Pathways
-                        case "Pathway": {
-                            updatePathway(bioPAXElement, tx);
-                            break;
-                        }
-
-                        // Interactions
-                        case "BiochemicalReaction":
-                        case "TemplateReaction":
-                        case "Degradation":
-                        case "ComplexAssembly":
-                        case "MolecularInteraction":
-                        case "Transport":
-                        case "TransportWithBiochemicalReaction":
-                            updateReaction(bioPAXElement, tx);
-                            break;
-                        case "Catalysis":
-                            updateCatalysis(bioPAXElement, tx);
-                            break;
-                        case "Control":
-                        case "Modulation":
-                        case "TemplateReactionRegulation":
-                            updateRegulation(bioPAXElement, tx);
-                            break;
-                        default:
-                            break;
-                    }
-                    // Check batch size
-                    numProcessed++;
-                    if (++count >= TRANSACTION_BATCH_SIZE) {
-                        break;
-                    }
+            BioPAXElement bioPAXElement = iterator.next();
+            switch (bioPAXElement.getModelInterface().getSimpleName()) {
+                case "Complex": {
+                    updateComplex(bioPAXElement, tx);
+                    break;
                 }
-                tx.success();
-                tx.close();
-                stopTime = System.currentTimeMillis();
-                try {
-                    logger.info("2: Num. processed items: {} of {} ({}%) at {} items/s, last {}-item batch at {} items/s",
-                            numProcessed, numItems, Math.round(100. * numProcessed / numItems),
-                            (numProcessed * 1000 / (stopTime - startTime2)), TRANSACTION_BATCH_SIZE,
-                            (TRANSACTION_BATCH_SIZE * 1000 / (stopTime - batchStartTime)));
-                } catch (Exception e) {
-                    logger.info(e.getMessage());
+
+                // Pathways
+                case "Pathway": {
+                    updatePathway(bioPAXElement, tx);
+                    break;
                 }
+
+                // Interactions
+                case "BiochemicalReaction":
+                case "TemplateReaction":
+                case "Degradation":
+                case "ComplexAssembly":
+                case "MolecularInteraction":
+                case "Transport":
+                case "TransportWithBiochemicalReaction":
+                    updateReaction(bioPAXElement, tx);
+                    break;
+                case "Catalysis":
+                    updateCatalysis(bioPAXElement, tx);
+                    break;
+                case "Control":
+                case "Modulation":
+                case "TemplateReactionRegulation":
+                    updateRegulation(bioPAXElement, tx);
+                    break;
+                default:
+                    break;
+            }
+            // Check batch size
+            if (relations.size() > TRANSACTION_BATCH_SIZE) {
+                numRelations += relations.size();
+                loadRelations(relations);
+                relations.clear();
             }
         }
 
-        session.close();
+        if (relations.size() > TRANSACTION_BATCH_SIZE) {
+            numRelations += relations.size();
+            loadRelations(relations);
+        }
+
         inputStream.close();
 
-        logger.info("Loading {} containing {} BioPax elements in {} s", path, numItems, (System.currentTimeMillis() - startTime1) / 1000);
-        logger.info("- First loop in {} s", (startTime2 - startTime1) / 1000);
-        logger.info("- Second loop in {} s", (System.currentTimeMillis() - startTime2) / 1000);
+        logger.info("Loading {} containing {} BioPax elements in {} s", path, numItems, (System.currentTimeMillis() - startTime) / 1000);
+        logger.info("Loading {} nodes and at {} node/s", numNodes, Math.round(1000. * numNodes / nodeLoadingTime));
+        logger.info("Loading {} relations and at {} relation/s", numRelations, Math.round(1000. * numRelations / relationLoadingTime));
+//        logger.info("- First loop in {} s", (startTime2 - startTime1) / 1000);
+//        logger.info("- Second loop in {} s", (System.currentTimeMillis() - startTime2) / 1000);
 
         // And finally, update uidCounter into the database (using the configuration node)
         networkDBAdaptor.setUidCounter(uidCounter);
+    }
+
+    void loadNodes(List<Node> nodes) {
+        long startTime = System.currentTimeMillis();
+
+        Map<String, List<Map<String, Object>>> mapsByType = new HashMap<>();
+
+        for (Node node: nodes) {
+            Map<String, Object> n = new HashMap<>();
+            n.put("uid", node.getUid());
+            if (StringUtils.isNotEmpty(node.getId())) {
+                n.put("id", cleanValue(node.getId()));
+            }
+            if (StringUtils.isNotEmpty(node.getName())) {
+                n.put("name", cleanValue(node.getName()));
+            }
+            if (StringUtils.isNotEmpty(node.getSource())) {
+                n.put("source", node.getSource());
+            }
+            if (node.getAttributes().containsKey("uidCounter")) {
+                n.put(networkDBAdaptor.PREFIX_ATTRIBUTES + "uidCounter", node.getAttributes().get("uidCounter"));
+            }
+            for (String key: node.getAttributes().keySet()) {
+                if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
+                    n.put(networkDBAdaptor.PREFIX_ATTRIBUTES + key, node.getAttributes().get(key));
+                } else {
+                    n.put(networkDBAdaptor.PREFIX_ATTRIBUTES + key, cleanValue(node.getAttributes().getString(key)));
+                }
+            }
+
+            String type = node.getType().name();
+            if (!mapsByType.containsKey(type)) {
+                mapsByType.put(type, new ArrayList<>());
+            }
+            mapsByType.get(type).add(n);
+        }
+
+
+        Session session = networkDBAdaptor.getDriver().session();
+        try (Transaction tx = session.beginTransaction()) {
+            for (String key: mapsByType.keySet()) {
+                Map<String, Object> params = new HashMap<>();
+                params.put("props", mapsByType.get(key));
+                String cypher = "UNWIND $props AS properties CREATE (n:" + key + ") SET n = properties";
+                tx.run(cypher, params);
+            }
+            tx.success();
+            tx.close();
+        }
+        nodeLoadingTime += System.currentTimeMillis() - startTime;
+        logger.info("{}-node batch in {} s at {} node/s", nodes.size(), (System.currentTimeMillis() - startTime) / 1000.0,
+                Math.round(1000.0 * nodes.size() / ((System.currentTimeMillis() - startTime))));
+    }
+
+    void loadRelations(List<Relation> relations) {
+        long startTime = System.currentTimeMillis();
+
+        Map<String, List<Map<String, Object>>> mapsByType = new HashMap<>();
+
+        for (Relation relation: relations) {
+            Map<String, Object> r = new HashMap<>();
+            if (StringUtils.isNotEmpty(relation.getName())) {
+                r.put("name", cleanValue(relation.getName()));
+            }
+            if (StringUtils.isNotEmpty(relation.getSource())) {
+                r.put("source", relation.getSource());
+            }
+            for (String key : relation.getAttributes().keySet()) {
+                if (StringUtils.isNumeric(relation.getAttributes().getString(key))) {
+                    r.put(networkDBAdaptor.PREFIX_ATTRIBUTES + key, relation.getAttributes().get(key));
+                } else {
+                    r.put(networkDBAdaptor.PREFIX_ATTRIBUTES + key, cleanValue(relation.getAttributes().getString(key)));
+                }
+            }
+
+            String key = relation.getOrigType().name() + ":" + relation.getDestType().name() + ":" + relation.getType().name();
+            if (!mapsByType.containsKey(key)) {
+                mapsByType.put(key, new ArrayList<>());
+            }
+            Map<String, Object> map = new HashMap<>();
+            map.put("origUid", relation.getOrigUid());
+            map.put("destUid", relation.getDestUid());
+            map.put("properties", r);
+            mapsByType.get(key).add(map);
+        }
+
+        Session session = networkDBAdaptor.getDriver().session();
+        try (Transaction tx = session.beginTransaction()) {
+            for (String key: mapsByType.keySet()) {
+                Map<String, Object> params = new HashMap<>();
+                String[] split = key.split(":");
+                params.put("maps", mapsByType.get(key));
+                StringBuilder cypher = new StringBuilder("UNWIND $maps AS map MATCH (o:")
+                        .append(split[0]).append("{uid:map.origUid}) MATCH (d:")
+                        .append(split[1]).append("{uid:map.destUid}) USING INDEX d:")
+                        .append(split[1]).append("(uid) MERGE (o)-[r:")
+                        .append(split[2]).append("]->(d) SET r = map.properties");
+                tx.run(cypher.toString(), params);
+            }
+            tx.success();
+            tx.close();
+        }
+        relationLoadingTime += System.currentTimeMillis() - startTime;
+        logger.info("{}-relation batch in {} s at {} node/s", relations.size(), (System.currentTimeMillis() - startTime) / 1000.0,
+                Math.round(1000.0 * relations.size() / ((System.currentTimeMillis() - startTime))));
+    }
+
+    public StatementResult addNode(Node node, Transaction tx) {
+        // Gather properties of the node to create a cypher string with them
+        List<String> props = new ArrayList<>();
+        props.add("n.uid=" + node.getUid());
+        if (StringUtils.isNotEmpty(node.getId())) {
+            props.add("n.id=\"" + cleanValue(node.getId()) + "\"");
+        }
+        if (StringUtils.isNotEmpty(node.getName())) {
+            props.add("n.name=\"" + cleanValue(node.getName()) + "\"");
+        }
+        if (StringUtils.isNotEmpty(node.getSource())) {
+            props.add("n.source=\"" + node.getSource() + "\"");
+        }
+        if (node.getAttributes().containsKey("uidCounter")) {
+            props.add("n." + networkDBAdaptor.PREFIX_ATTRIBUTES + "uidCounter=" + node.getAttributes().get("uidCounter"));
+        }
+        for (String key: node.getAttributes().keySet()) {
+            if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
+                props.add("n." + networkDBAdaptor.PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
+            } else {
+                props.add("n." + networkDBAdaptor.PREFIX_ATTRIBUTES + key + "=\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
+            }
+        }
+        //String propsJoined = "{" + String.join(",", props) + "}";
+
+        // Create the desired node
+        StringBuilder cypher = new StringBuilder("CREATE (n");
+        if (ListUtils.isNotEmpty(node.getTags())) {
+            cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
+        }
+        cypher.append(")");
+        if (ListUtils.isNotEmpty(props)) {
+            cypher.append(" SET ").append(StringUtils.join(props, ","));
+        }
+        //cypher.append(" RETURN ID(n) AS UID");
+        StatementResult ret = tx.run(cypher.toString());
+        //node.setUid(ret.peek().get("UID").asLong());
+        return ret;
+    }
+
+    private String cleanValue(String value) {
+        return value.replace("\"", ",").replace("\\", "|");
     }
 
     //-------------------------------------------------------------------------
@@ -283,7 +439,7 @@ public class Neo4JBioPaxLoader {
         // Common properties
         setPhysicalEntityCommonProperties(physicalEntityBP, node);
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -321,7 +477,7 @@ public class Neo4JBioPaxLoader {
 //            }
         }
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -359,7 +515,7 @@ public class Neo4JBioPaxLoader {
 //            }
         }
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -397,7 +553,7 @@ public class Neo4JBioPaxLoader {
 //            }
         }
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -435,7 +591,7 @@ public class Neo4JBioPaxLoader {
 //            }
         }
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -450,7 +606,7 @@ public class Neo4JBioPaxLoader {
 
         // Component node and stoichiometry are added later
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -595,7 +751,7 @@ public class Neo4JBioPaxLoader {
         // Common properties
 //        setPhysicalEntityCommonProperties(complexBP, node);
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -683,7 +839,7 @@ public class Neo4JBioPaxLoader {
                 break;
         }
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -704,7 +860,7 @@ public class Neo4JBioPaxLoader {
 
         // Cofactor nodes/relationships are added later
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -723,7 +879,7 @@ public class Neo4JBioPaxLoader {
         // ControlType
         node.addAttribute("controlType", controlBP.getControlType().toString());
 
-        networkDBAdaptor.addNode(node, tx);
+        //networkDBAdaptor.addNode(node, tx);
         return node;
     }
 
@@ -858,11 +1014,14 @@ public class Neo4JBioPaxLoader {
         Node cellularLocNode = null;
         for (String name: physicalEntityBP.getCellularLocation().getTerm()) {
             cellularLocNode = new Node(uidCounter, null, name, Node.Type.CELLULAR_LOCATION, source);
-            networkDBAdaptor.mergeNode(cellularLocNode, "name", tx);
+            //networkDBAdaptor.mergeNode(cellularLocNode, "name", tx);
+            nodes.add(cellularLocNode);
+
 
             Relation relation = new Relation(++uidCounter, null, physicalEntityUid, uidToTypeMap.get(physicalEntityUid),
                     cellularLocNode.getUid(), cellularLocNode.getType(), Relation.Type.CELLULAR_LOCATION, source);
-            networkDBAdaptor.addRelation(relation, tx);
+            //networkDBAdaptor.addRelation(relation, tx);
+            relations.add(relation);
 
             // Get the first term
             break;
@@ -949,7 +1108,8 @@ public class Neo4JBioPaxLoader {
             if (stoichiometryMap.containsKey(componentUid)) {
                 relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
             }
-            networkDBAdaptor.addRelation(relation, tx);
+            //networkDBAdaptor.addRelation(relation, tx);
+            relations.add(relation);
         }
     }
 
@@ -968,7 +1128,8 @@ public class Neo4JBioPaxLoader {
             Node.Type componentType = uidToTypeMap.get(componentUid);
             Relation relation = new Relation(++uidCounter, null, componentUid, componentType, pathwayUid, pathwayType,
                     Relation.Type.COMPONENT_OF_PATHWAY, source);
-            networkDBAdaptor.addRelation(relation, tx);
+            //networkDBAdaptor.addRelation(relation, tx);
+            relations.add(relation);
         }
 
         //
@@ -986,7 +1147,8 @@ public class Neo4JBioPaxLoader {
                             try {
                                 Relation relation = new Relation(++uidCounter, null, currentStepUid, currentStepType, nextStepUid,
                                         nextStepType, Relation.Type.PATHWAY_NEXT_STEP, source);
-                                networkDBAdaptor.addRelation(relation, tx);
+//                                networkDBAdaptor.addRelation(relation, tx);
+                                relations.add(relation);
                             } catch (Exception e) {
                                 logger.info("impossible create realtionship: " + e.getMessage());
                                 logger.info("current step: {}, uid {}, type {}", currentStep.getRDFId(), currentStepUid, currentStepType);
@@ -1019,7 +1181,8 @@ public class Neo4JBioPaxLoader {
                     Node.Type reactantType = uidToTypeMap.get(reactantUid);
                     Relation relation = new Relation(++uidCounter, null, templateReactUid, templateReactType, reactantUid, reactantType,
                             Relation.Type.REACTANT, source);
-                    networkDBAdaptor.addRelation(relation, tx);
+//                    networkDBAdaptor.addRelation(relation, tx);
+                    relations.add(relation);
                 }
 
                 // Products
@@ -1029,7 +1192,8 @@ public class Neo4JBioPaxLoader {
                     Node.Type productType = uidToTypeMap.get(productUid);
                     Relation relation = new Relation(++uidCounter, null, templateReactUid, templateReactType, productUid, productType,
                             Relation.Type.PRODUCT, source);
-                    networkDBAdaptor.addRelation(relation, tx);
+//                    networkDBAdaptor.addRelation(relation, tx);
+                    relations.add(relation);
                 }
                 break;
             case "BiochemicalReaction":
@@ -1096,7 +1260,8 @@ public class Neo4JBioPaxLoader {
                         if (stoichiometryMap.containsKey(id)) {
                             relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
                         }
-                        networkDBAdaptor.addRelation(relation, tx);
+//                        networkDBAdaptor.addRelation(relation, tx);
+                        relations.add(relation);
                     }
 
                     // Products
@@ -1107,7 +1272,8 @@ public class Neo4JBioPaxLoader {
                         if (stoichiometryMap.containsKey(id)) {
                             relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
                         }
-                        networkDBAdaptor.addRelation(relation, tx);
+//                        networkDBAdaptor.addRelation(relation, tx);
+                        relations.add(relation);
                     }
                 }
 
@@ -1142,7 +1308,8 @@ public class Neo4JBioPaxLoader {
             Node.Type controllerType = uidToTypeMap.get(controllerUid);
             Relation relation = new Relation(++uidCounter, null, catalysisUid, catalysisType, controllerUid, controllerType,
                     Relation.Type.CONTROLLER, source);
-            networkDBAdaptor.addRelation(relation, tx);
+//            networkDBAdaptor.addRelation(relation, tx);
+            relations.add(relation);
         }
 
         // Controlled
@@ -1152,7 +1319,8 @@ public class Neo4JBioPaxLoader {
             Node.Type controlledType = uidToTypeMap.get(controlledUid);
             Relation relation = new Relation(++uidCounter, null, catalysisUid, catalysisType, controlledUid, controlledType,
                     Relation.Type.CONTROLLED, source);
-            networkDBAdaptor.addRelation(relation, tx);
+//            networkDBAdaptor.addRelation(relation, tx);
+            relations.add(relation);
         }
 
         // Cofactor
@@ -1162,7 +1330,8 @@ public class Neo4JBioPaxLoader {
             Node.Type cofactorType = uidToTypeMap.get(cofactorUid);
             Relation relation = new Relation(++uidCounter, null, catalysisUid, catalysisType, cofactorUid, cofactorType,
                     Relation.Type.COFACTOR, source);
-            networkDBAdaptor.addRelation(relation, tx);
+//            networkDBAdaptor.addRelation(relation, tx);
+            relations.add(relation);
         }
     }
 
@@ -1182,7 +1351,8 @@ public class Neo4JBioPaxLoader {
             Node.Type controllerType = uidToTypeMap.get(controllerUid);
             Relation relation = new Relation(++uidCounter, null, controlUid, controlType, controllerUid, controllerType,
                     Relation.Type.CONTROLLER, source);
-            networkDBAdaptor.addRelation(relation, tx);
+//            networkDBAdaptor.addRelation(relation, tx);
+            relations.add(relation);
         }
 
         // Controlled
@@ -1192,7 +1362,8 @@ public class Neo4JBioPaxLoader {
             Node.Type controlledType = uidToTypeMap.get(controlledUid);
             Relation relation = new Relation(++uidCounter, null, controlUid, controlType, controlledUid, controlledType,
                     Relation.Type.CONTROLLED, source);
-            networkDBAdaptor.addRelation(relation, tx);
+//            networkDBAdaptor.addRelation(relation, tx);
+            relations.add(relation);
         }
     }
 
@@ -1236,11 +1407,14 @@ public class Neo4JBioPaxLoader {
 
         Node xrefNode = new Node(uidCounter, xrefId, xrefId, Node.Type.XREF, source);
         xrefNode.addAttribute("dbName", dbName);
-        networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
-
+        nodes.add(xrefNode);
+        //networkDBAdaptor.addNode(xrefNode, tx);
+//        networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
+//
         Relation relation = new Relation(++uidCounter, null, uid, type, xrefNode.getUid(), xrefNode.getType(),
                 Relation.Type.XREF, source);
-        networkDBAdaptor.addRelation(relation, tx);
+//        networkDBAdaptor.addRelation(relation, tx);
+        relations.add(relation);
     }
 
 /*
