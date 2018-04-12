@@ -7,6 +7,7 @@ import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
@@ -102,6 +103,8 @@ public class Neo4JBioPaxLoader {
 
         Iterator<BioPAXElement> iterator = bioPAXElements.iterator();
         long numItems = bioPAXElements.size();
+        long numProcessedItems = 0;
+
         long numNodes = 0;
         long numRelations = 0;
 
@@ -192,6 +195,9 @@ public class Neo4JBioPaxLoader {
                 default:
                     break;
             }
+            if (++numProcessedItems % 10000 == 0) {
+                logger.info("1: " + Math.round(100. * numProcessedItems / numItems) + "%");
+            }
             if (node != null) {
                 nodes.add(node);
                 if (nodes.size() >= TRANSACTION_BATCH_SIZE) {
@@ -218,6 +224,7 @@ public class Neo4JBioPaxLoader {
         }
 
         // Second loop to create relationships between physical entity nodes
+        numProcessedItems = 0;
         iterator = bioPAXElements.iterator();
         while (iterator.hasNext()) {
             BioPAXElement bioPAXElement = iterator.next();
@@ -254,6 +261,9 @@ public class Neo4JBioPaxLoader {
                 default:
                     break;
             }
+            if (++numProcessedItems % 10000 == 0) {
+                logger.info("2: " + Math.round(100. * numProcessedItems / numItems) + "%");
+            }
             // Check batch size
             if (relations.size() > TRANSACTION_BATCH_SIZE) {
                 numRelations += relations.size();
@@ -283,7 +293,6 @@ public class Neo4JBioPaxLoader {
         long startTime = System.currentTimeMillis();
 
         Map<String, List<Map<String, Object>>> mapsByType = new HashMap<>();
-
         for (Node node: nodes) {
             Map<String, Object> n = new HashMap<>();
             n.put("uid", node.getUid());
@@ -320,8 +329,13 @@ public class Neo4JBioPaxLoader {
             for (String key: mapsByType.keySet()) {
                 Map<String, Object> params = new HashMap<>();
                 params.put("props", mapsByType.get(key));
-                String cypher = "UNWIND $props AS properties CREATE (n:" + key + ") SET n = properties";
-                tx.run(cypher, params);
+                String cypher = "UNWIND $props AS properties CREATE (n:" + key + ") SET n = properties RETURN ID(n)";
+                StatementResult ret = tx.run(cypher, params);
+                while (ret.hasNext()) {
+                    Record record = ret.next();
+                    long uid = record.get(0).asLong();
+                }
+                //System.out.println("in size = " + mapsByType.get(key).size() + ", out size = " + ret.list().size());
             }
             tx.success();
             tx.close();
@@ -380,7 +394,7 @@ public class Neo4JBioPaxLoader {
             tx.close();
         }
         relationLoadingTime += System.currentTimeMillis() - startTime;
-        logger.info("{}-relation batch in {} s at {} node/s", relations.size(), (System.currentTimeMillis() - startTime) / 1000.0,
+        logger.info("{}-relation batch in {} s at {} relation/s", relations.size(), (System.currentTimeMillis() - startTime) / 1000.0,
                 Math.round(1000.0 * relations.size() / ((System.currentTimeMillis() - startTime))));
     }
 
