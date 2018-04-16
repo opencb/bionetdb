@@ -79,7 +79,6 @@ public class Neo4JVariantLoader {
     public void loadClinivalVariants(ClinicalVariantClient clinicalClient) throws IOException {
         int batchSize = 200;
         int skip = 0;
-        int numVariants;
 
         Query query = new Query();
         query.put(ClinicalDBAdaptor.QueryParams.SOURCE.key(), "clinvar");
@@ -87,14 +86,10 @@ public class Neo4JVariantLoader {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(QueryOptions.LIMIT, batchSize);
 
+        QueryResponse<Variant> search;
         do {
             queryOptions.put(QueryOptions.SKIP, skip);
-
-            QueryResponse<Variant> search = clinicalClient.search(query, queryOptions);
-            numVariants = search.allResultsSize();
-
-            System.out.println("skip = " + skip + ", search = " + numVariants);
-//            System.out.println("num. total results = " + search.getResponse().get(0).getNumTotalResults());
+            search = clinicalClient.search(query, queryOptions);
 
             for (QueryResult<Variant> queryResult : search.getResponse()) {
                 if (ListUtils.isNotEmpty(queryResult.getResult())) {
@@ -102,10 +97,7 @@ public class Neo4JVariantLoader {
                 }
             }
             skip += batchSize;
-
-            if (skip > 1000) break;
-
-        } while (batchSize == numVariants);
+        } while (batchSize == search.allResultsSize());
     }
 
     public void loadVariants(List<Variant> variants) {
