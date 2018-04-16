@@ -27,7 +27,6 @@ public class BioNetDBManagerTest {
     private String database = "scerevisiae";
     private BioNetDBManager bioNetDBManager;
 
-
     @Before
     public void initialize () {
         try {
@@ -87,6 +86,11 @@ public class BioNetDBManagerTest {
             e.printStackTrace();
             fail();
         }
+    }
+
+    @Test
+    public void loadClinicalVariant() throws IOException, BioNetDBException {
+        bioNetDBManager.loadClinicalVariant();
     }
 
     //-------------------------------------------------------------------------

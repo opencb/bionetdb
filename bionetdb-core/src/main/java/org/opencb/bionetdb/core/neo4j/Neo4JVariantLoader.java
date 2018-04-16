@@ -2,7 +2,6 @@ package org.opencb.bionetdb.core.neo4j;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
-import org.apache.commons.lang.StringUtils;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
@@ -23,7 +22,10 @@ import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.cellbase.client.rest.ClinicalVariantClient;
 import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
@@ -75,14 +77,35 @@ public class Neo4JVariantLoader {
     }
 
     public void loadClinivalVariants(ClinicalVariantClient clinicalClient) throws IOException {
+        int batchSize = 200;
+        int skip = 0;
+        int numVariants;
+
         Query query = new Query();
         query.put(ClinicalDBAdaptor.QueryParams.SOURCE.key(), "clinvar");
-        QueryResponse<Variant> search = clinicalClient.search(query, QueryOptions.empty());
-        for (QueryResult<Variant> queryResult: search.getResponse()) {
-            if (ListUtils.isNotEmpty(queryResult.getResult())) {
-                loadVariants(queryResult.getResult());
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.LIMIT, batchSize);
+
+        do {
+            queryOptions.put(QueryOptions.SKIP, skip);
+
+            QueryResponse<Variant> search = clinicalClient.search(query, queryOptions);
+            numVariants = search.allResultsSize();
+
+            System.out.println("skip = " + skip + ", search = " + numVariants);
+//            System.out.println("num. total results = " + search.getResponse().get(0).getNumTotalResults());
+
+            for (QueryResult<Variant> queryResult : search.getResponse()) {
+                if (ListUtils.isNotEmpty(queryResult.getResult())) {
+                    loadVariants(queryResult.getResult());
+                }
             }
-        }
+            skip += batchSize;
+
+            if (skip > 1000) break;
+
+        } while (batchSize == numVariants);
     }
 
     public void loadVariants(List<Variant> variants) {
@@ -142,13 +165,13 @@ public class Neo4JVariantLoader {
 
     private void loadVariant(Variant variant, Transaction tx) {
         if (variant != null) {
-            if (StringUtils.isEmpty(variant.getId()) || ".".equals(variant.getId())) {
-                return;
-            }
+//            if (StringUtils.isEmpty(variant.getId()) || ".".equals(variant.getId())) {
+//                return;
+//            }
 
             // Variant node
             Node variantNode = NodeBuilder.newNode(uidCounter, variant);
-            networkDBAdaptor.mergeNode(variantNode, "id", tx);
+            networkDBAdaptor.mergeNode(variantNode, "name", tx);
 
             // Sample management
             if (ListUtils.isNotEmpty(variant.getStudies())) {

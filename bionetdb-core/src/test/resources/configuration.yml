@@ -3,12 +3,14 @@ logLevel: null
 logFile: null
 databases:
 - id: "scerevisiae"
+  species: "hsapiens"
   host: "localhost"
   port: "7687"
   user: "neo4j"
   password: "neo4j;"
   options: null
 - id: "hsapiens"
+  species: "hsapiens"
   host: "localhost"
   port: "7688"
   user: "neo4j"
