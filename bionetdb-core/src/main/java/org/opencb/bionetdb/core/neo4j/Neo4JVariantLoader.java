@@ -21,8 +21,12 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
+import org.opencb.cellbase.client.rest.ClinicalVariantClient;
+import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +72,17 @@ public class Neo4JVariantLoader {
 
         // close VCF file reader
         vcfFileReader.close();
+    }
+
+    public void loadClinivalVariants(ClinicalVariantClient clinicalClient) throws IOException {
+        Query query = new Query();
+        query.put(ClinicalDBAdaptor.QueryParams.SOURCE.key(), "clinvar");
+        QueryResponse<Variant> search = clinicalClient.search(query, QueryOptions.empty());
+        for (QueryResult<Variant> queryResult: search.getResponse()) {
+            if (ListUtils.isNotEmpty(queryResult.getResult())) {
+                loadVariants(queryResult.getResult());
+            }
+        }
     }
 
     public void loadVariants(List<Variant> variants) {

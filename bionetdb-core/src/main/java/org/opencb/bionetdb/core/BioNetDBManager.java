@@ -108,6 +108,11 @@ public class BioNetDBManager {
         neo4JVariantLoader.loadVCFFile(path);
     }
 
+    public void loadClinicalVariant() throws IOException, BioNetDBException {
+        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
+        neo4JVariantLoader.loadClinivalVariants(cellBaseClient.getClinicalClient());
+    }
+
     public void annotate() {
 
     }
