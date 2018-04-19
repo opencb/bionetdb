@@ -1,11 +1,14 @@
 package org.opencb.bionetdb.core.utils;
 
+import htsjdk.variant.variantcontext.VariantContext;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.util.Pair;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.NetworkPath;
@@ -98,6 +101,16 @@ public class Neo4JConverter {
 
         // Create network from node and relation maps
         return network;
+    }
+
+    public static List<Variant> convert(List<VariantContext> variantContexts, VariantContextToVariantConverter converter) {
+        // Iterate over variant context and convert to variant
+        List<Variant> variants = new ArrayList<>(variantContexts.size());
+        for (VariantContext variantContext: variantContexts) {
+            Variant variant = converter.convert(variantContext);
+            variants.add(variant);
+        }
+        return variants;
     }
 
     //-------------------------------------------------------------------------

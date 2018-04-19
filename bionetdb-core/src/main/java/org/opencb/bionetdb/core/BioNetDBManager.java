@@ -108,6 +108,13 @@ public class BioNetDBManager {
         neo4JVariantLoader.loadVCFFile(path);
     }
 
+    public void importVcf(java.nio.file.Path vcfPath, java.nio.file.Path neo4jHome) throws BioNetDBException, IOException,
+            InterruptedException {
+        // VCF loader
+        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
+        neo4JVariantLoader.importVCFFile(vcfPath, neo4jHome);
+    }
+
     public void loadClinicalVariant() throws IOException, BioNetDBException {
         Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
         neo4JVariantLoader.loadClinivalVariants(cellBaseClient.getClinicalClient());

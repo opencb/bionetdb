@@ -80,11 +80,27 @@ public class BioNetDBManagerTest {
 
     @Test
     public void loadVCF() throws BioNetDBException {
+//        bioNetDBManager.loadVcf(Paths.get("/home/jtarraga/data150/vcf/5k.vcf"));
         try {
             bioNetDBManager.loadVcf(Paths.get(getClass().getResource("/3.vcf").toURI()));
         } catch (URISyntaxException e) {
             e.printStackTrace();
             fail();
+        }
+    }
+
+    @Test
+    public void importVCF() throws BioNetDBException {
+//        bioNetDBManager.loadVcf(Paths.get("/home/jtarraga/data150/vcf/5k.vcf"));
+        try {
+            bioNetDBManager.importVcf(Paths.get(getClass().getResource("/3.vcf").toURI()), null);
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            fail();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

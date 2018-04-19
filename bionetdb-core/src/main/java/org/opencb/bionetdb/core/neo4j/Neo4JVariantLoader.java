@@ -19,6 +19,8 @@ import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantC
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.bionetdb.core.utils.Neo4JConverter;
+import org.opencb.bionetdb.core.utils.Neo4JImporter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.cellbase.client.rest.ClinicalVariantClient;
 import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
@@ -30,7 +32,7 @@ import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class Neo4JVariantLoader {
@@ -40,7 +42,7 @@ public class Neo4JVariantLoader {
 
     private long uidCounter;
 
-    private static final int VARIANT_BATCH_SIZE = 10000;
+    private static final int VARIANT_BATCH_SIZE = 200;
 
     public Neo4JVariantLoader(Neo4JNetworkDBAdaptor networkDBAdaptor) {
         this.networkDBAdaptor = networkDBAdaptor;
@@ -58,10 +60,17 @@ public class Neo4JVariantLoader {
         VariantContextToVariantConverter converter = new VariantContextToVariantConverter("dataset",
                 path.toFile().getName(), vcfFileReader.getVcfHeader().getSampleNamesInOrder());
 
+        long totalTime = 0;
+
         List<VariantContext> variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
         while (variantContexts.size() == VARIANT_BATCH_SIZE) {
             // Convert to variants and load them into the network database
-            loadVariants(convert(variantContexts, converter));
+            System.out.println("Loading " + variantContexts.size() + " variants in...");
+            long start = System.currentTimeMillis();
+            loadVariants(Neo4JConverter.convert(variantContexts, converter));
+            long elapsed = ((System.currentTimeMillis() - start) / 1000);
+            totalTime += elapsed;
+            System.out.println("\t... " + elapsed + " s");
 
             // Read next batch
             variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
@@ -69,35 +78,62 @@ public class Neo4JVariantLoader {
         // Process the remaining variants
         if (variantContexts.size() > 0) {
             // Convert to variants and load them into the network database
-            loadVariants(convert(variantContexts, converter));
+            System.out.println("Loading " + variantContexts.size() + " variants in...");
+            long start = System.currentTimeMillis();
+            loadVariants(Neo4JConverter.convert(variantContexts, converter));
+            long elapsed = ((System.currentTimeMillis() - start) / 1000);
+            totalTime += elapsed;
+            System.out.println("\t... " + elapsed + " s");
         }
+        System.out.println(">>>> total loading time: " + totalTime + " s");
 
         // close VCF file reader
         vcfFileReader.close();
     }
 
+    public void importVCFFile(Path path, Path neo4jHome) throws IOException, InterruptedException {
+        Path tmpDir = Paths.get("/tmp/");
+        Neo4JImporter importer = new Neo4JImporter();
+        importer.generateCSVFromVCF(path, tmpDir);
+        importer.importCSV(neo4jHome);
+    }
+
+
     public void loadClinivalVariants(ClinicalVariantClient clinicalClient) throws IOException {
-        int batchSize = 200;
         int skip = 0;
 
         Query query = new Query();
         query.put(ClinicalDBAdaptor.QueryParams.SOURCE.key(), "clinvar");
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.LIMIT, batchSize);
+        queryOptions.put(QueryOptions.LIMIT, VARIANT_BATCH_SIZE);
+
+        long cellbaseTime = 0;
+        long neoTime = 0;
+        long tic, tac;
 
         QueryResponse<Variant> search;
         do {
             queryOptions.put(QueryOptions.SKIP, skip);
+            tic = System.currentTimeMillis();
             search = clinicalClient.search(query, queryOptions);
+            tac = (System.currentTimeMillis() - tic) / 1000;
+            cellbaseTime += tac;
+            System.out.println("Cellbase batch: " + tac + " s, total: " + cellbaseTime + " s");
 
+            tic = System.currentTimeMillis();
             for (QueryResult<Variant> queryResult : search.getResponse()) {
                 if (ListUtils.isNotEmpty(queryResult.getResult())) {
                     loadVariants(queryResult.getResult());
                 }
             }
-            skip += batchSize;
-        } while (batchSize == search.allResultsSize());
+            tac = (System.currentTimeMillis() - tic) / 1000;
+            neoTime += tac;
+            System.out.println("Neo4J batch: " + tac + " s, total: " + neoTime + " s");
+            skip += VARIANT_BATCH_SIZE;
+            System.out.println("");
+            if (skip > 1000) break;
+        } while (VARIANT_BATCH_SIZE == search.allResultsSize());
     }
 
     public void loadVariants(List<Variant> variants) {
@@ -512,15 +548,5 @@ public class Neo4JVariantLoader {
                 }
             }
         }
-    }
-
-    private List<Variant> convert(List<VariantContext> variantContexts, VariantContextToVariantConverter converter) {
-        // Iterate over variant context and convert to variant
-        List<Variant> variants = new ArrayList<>(variantContexts.size());
-        for (VariantContext variantContext: variantContexts) {
-            Variant variant = converter.convert(variantContext);
-            variants.add(variant);
-        }
-        return variants;
     }
 }
