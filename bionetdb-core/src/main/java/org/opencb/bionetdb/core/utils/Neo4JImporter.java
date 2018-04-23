@@ -20,30 +20,30 @@ public class Neo4JImporter {
     private CSVForVCF csvForVCF;
 
     private class CSVForVCF {
-        public String variantCSV;
-        public String variantcallCSV;
-        public String variantfileinfoCSV;
-        public String sampleCSV;
-        public String variant_variantcallCSV;
-        public String sample_variantcallCSV;
-        public String variantcall_variantfileinfoCSV;
+        private String variantCSV;
+        private String variantcallCSV;
+        private String variantfileinfoCSV;
+        private String sampleCSV;
+        private String variant_variantcallCSV;
+        private String sample_variantcallCSV;
+        private String variantcall_variantfileinfoCSV;
 
-        public PrintWriter variantPW;
-        public PrintWriter variantcallPW;
-        public PrintWriter variantfileinfoPW;
-        public PrintWriter samplePW;
-        public PrintWriter variant_variantcallPW;
-        public PrintWriter sample_variantcallPW;
-        public PrintWriter variantcall_variantfileinfoPW;
+        private PrintWriter variantPW;
+        private PrintWriter variantcallPW;
+        private PrintWriter variantfileinfoPW;
+        private PrintWriter samplePW;
+        private PrintWriter variant_variantcallPW;
+        private PrintWriter sample_variantcallPW;
+        private PrintWriter variantcall_variantfileinfoPW;
 
-        public Set<String> formatSet;
-        public Set<String> infoSet;
+        private Set<String> formatSet;
+        private Set<String> infoSet;
 
         private Path vcfPath;
         private Path outPath;
         private VCFHeader vcfHeader;
 
-        public CSVForVCF(Path vcfPath) throws FileNotFoundException {
+        CSVForVCF(Path vcfPath) throws FileNotFoundException {
             this.vcfPath = vcfPath;
 
             String name = vcfPath.toFile().getName();

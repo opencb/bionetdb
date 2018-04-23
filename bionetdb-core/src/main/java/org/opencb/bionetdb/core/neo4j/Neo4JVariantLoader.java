@@ -132,7 +132,7 @@ public class Neo4JVariantLoader {
             System.out.println("Neo4J batch: " + tac + " s, total: " + neoTime + " s");
             skip += VARIANT_BATCH_SIZE;
             System.out.println("");
-            if (skip > 1000) break;
+            //if (skip > 1000) break;
         } while (VARIANT_BATCH_SIZE == search.allResultsSize());
     }
 
