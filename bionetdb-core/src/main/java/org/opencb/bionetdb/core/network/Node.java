@@ -49,7 +49,7 @@ public class Node {
 
         VARIANT_ANNOTATION          ("VARIANT_ANNOTATION"),
         CONSEQUENCE_TYPE            ("CONSEQUENCE_TYPE"),
-        SO                          ("SEQUENCE_ONTOLOGY_TERM"),
+        SO                          ("SO"),
         POPULATION_FREQUENCY        ("POPULATION_FREQUENCY"),
         CONSERVATION                ("CONSERVATION"),
         FUNCTIONAL_SCORE            ("FUNCTIONAL_SCORE"),
@@ -92,6 +92,11 @@ public class Node {
         Type(String type, String parentType) {
             this.type = type;
             this.parentType = parentType;
+        }
+
+        public List<Type> getAll() {
+            List<Type> list = new ArrayList<>();
+            return list;
         }
     }
 

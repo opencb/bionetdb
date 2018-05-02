@@ -79,7 +79,7 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, EvidenceEntry evidence, Node.Type nodeType) {
-        Node node = new Node(uid, null, null, nodeType);
+        Node node = new Node(uid, evidence.getId(), null, nodeType);
         node.addAttribute("url", evidence.getUrl());
         if (ListUtils.isNotEmpty(evidence.getHeritableTraits())) {
             StringBuilder her = new StringBuilder();

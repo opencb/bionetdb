@@ -92,12 +92,20 @@ public class Neo4JVariantLoader {
     }
 
     public void importVCFFile(Path path, Path neo4jHome) throws IOException, InterruptedException {
-        Path tmpDir = Paths.get("/tmp/");
+        Path tmpDir = Paths.get("/tmp/neo");
+        tmpDir.toFile().mkdir();
         Neo4JImporter importer = new Neo4JImporter();
         importer.generateCSVFromVCF(path, tmpDir);
         importer.importCSV(neo4jHome);
     }
 
+    public void importJSONFile(Path path, Path neo4jHome) throws IOException, InterruptedException {
+        Path tmpDir = Paths.get("/home/jtarraga/test/neo");
+        tmpDir.toFile().mkdir();
+        Neo4JImporter importer = new Neo4JImporter();
+        importer.generateCSVFromJSON(path, tmpDir);
+//        importer.importCSV(neo4jHome);
+    }
 
     public void loadClinivalVariants(ClinicalVariantClient clinicalClient) throws IOException {
         int skip = 0;
@@ -212,8 +220,9 @@ public class Neo4JVariantLoader {
                     networkDBAdaptor.addNode(fileEntryNode, tx);
 
                     for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
+                        String sampleName = sampleNames == null ? "sample_" + i : sampleNames.get(i);
                         // Create the sample node
-                        Node sampleNode = new Node(uidCounter, sampleNames.get(i), sampleNames.get(i), Node.Type.SAMPLE);
+                        Node sampleNode = new Node(uidCounter, sampleName, sampleName, Node.Type.SAMPLE);
                         networkDBAdaptor.mergeNode(sampleNode, "id", tx);
 
                         // And the call node for that sample adding the format attributes

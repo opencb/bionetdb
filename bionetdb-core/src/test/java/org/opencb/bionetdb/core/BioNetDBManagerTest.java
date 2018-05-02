@@ -17,6 +17,7 @@ import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -93,10 +94,38 @@ public class BioNetDBManagerTest {
     public void importVCF() throws BioNetDBException {
 //        bioNetDBManager.loadVcf(Paths.get("/home/jtarraga/data150/vcf/5k.vcf"));
         try {
-            bioNetDBManager.importVcf(Paths.get(getClass().getResource("/3.vcf").toURI()), null);
+            Path neo4jHome = Paths.get("/home/jtarraga/soft/neo4j/packaging/standalone/target/neo4j-community-3.2.8-SNAPSHOT/");
+            bioNetDBManager.importVcf(Paths.get(getClass().getResource("/3.vcf").toURI()), neo4jHome);
         } catch (URISyntaxException e) {
             e.printStackTrace();
             fail();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void importJSON() throws BioNetDBException {
+//        bioNetDBManager.loadVcf(Paths.get("/home/jtarraga/data150/vcf/5k.vcf"));
+        try {
+            Path neo4jHome = Paths.get("/home/jtarraga/soft/neo4j/packaging/standalone/target/neo4j-community-3.2.8-SNAPSHOT/");
+            //Path input = Paths.get(getClass().getResource("/bionetdb_variants.json").toURI());
+//            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr21.full.json");
+            //Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr22.json");
+            //Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr1.json");
+            //Path input = Paths.get("/home/jtarraga/data150/cellbase/clinical_variants.full.json");
+//            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr20.json");
+//            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr15.json.gz");
+            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr1.json.gz");
+//            Path input = Paths.get("/home/jtarraga/data150/cellbase/test.variants.10.json");
+//            Path input = Paths.get("/home/jtarraga/data150/cellbase/clinical_variants.1k.json");
+
+            bioNetDBManager.importJSON(input, neo4jHome);
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//            fail();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (IOException e) {

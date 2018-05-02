@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -108,11 +109,18 @@ public class BioNetDBManager {
         neo4JVariantLoader.loadVCFFile(path);
     }
 
-    public void importVcf(java.nio.file.Path vcfPath, java.nio.file.Path neo4jHome) throws BioNetDBException, IOException,
+    public void importVcf(Path vcfPath, Path neo4jHome) throws BioNetDBException, IOException,
             InterruptedException {
-        // VCF loader
+        // Import VCF
         Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
         neo4JVariantLoader.importVCFFile(vcfPath, neo4jHome);
+    }
+
+    public void importJSON(Path jsonPath, Path neo4jHome) throws BioNetDBException, IOException,
+            InterruptedException {
+        // Import JSON
+        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
+        neo4JVariantLoader.importJSONFile(jsonPath, neo4jHome);
     }
 
     public void loadClinicalVariant() throws IOException, BioNetDBException {
