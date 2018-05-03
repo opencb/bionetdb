@@ -32,7 +32,6 @@ import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 public class Neo4JVariantLoader {
@@ -91,20 +90,14 @@ public class Neo4JVariantLoader {
         vcfFileReader.close();
     }
 
-    public void importVCFFile(Path path, Path neo4jHome) throws IOException, InterruptedException {
-        Path tmpDir = Paths.get("/tmp/neo");
-        tmpDir.toFile().mkdir();
+    public void importFiles(Path inputPath, Path outputPath, Path neo4jHome) throws IOException, InterruptedException {
         Neo4JImporter importer = new Neo4JImporter();
-        importer.generateCSVFromVCF(path, tmpDir);
-        importer.importCSV(neo4jHome);
-    }
 
-    public void importJSONFile(Path path, Path neo4jHome) throws IOException, InterruptedException {
-        Path tmpDir = Paths.get("/home/jtarraga/test/neo");
-        tmpDir.toFile().mkdir();
-        Neo4JImporter importer = new Neo4JImporter();
-        importer.generateCSVFromJSON(path, tmpDir);
-//        importer.importCSV(neo4jHome);
+        // Generate CSV files from input files
+        importer.generateCSV(inputPath, outputPath);
+
+        // Excute the script "neo4j-admin import"
+        //importer.importCSV(neo4jHome);
     }
 
     public void loadClinivalVariants(ClinicalVariantClient clinicalClient) throws IOException {

@@ -29,7 +29,7 @@ public class Neo4JImporter {
 //    private final String NODE_PREFIX = "n.";
 //    private final String RELATION_PREFIX = "r.";
 
-    private long uid = 0;
+    private long uid;
     private CSVforVariant csvforVariant;
     private Map<String, List<String>> nodeAttributes;
 
@@ -40,18 +40,20 @@ public class Neo4JImporter {
         private Set<String> formatSet;
         private Set<String> infoSet;
 
-        private Path vcfPath;
-        private Path outPath;
+        private Path inputPath;
+        private Path outputPath;
         private VCFHeader vcfHeader;
+        private boolean headersCreated;
 
         private RocksDBManager rocksDBManager;
         private RocksDB rocksDB;
 
-        CSVforVariant(Path vcfPath) throws FileNotFoundException {
-            this.vcfPath = vcfPath;
+        CSVforVariant(Path inputPath) throws FileNotFoundException {
+            this.inputPath = inputPath;
 
-            String name = vcfPath.toFile().getName();
+            String name = inputPath.toFile().getName();
 
+            headersCreated = false;
             csvFilenameMap = new HashMap<>();
             csvWriterMap = new HashMap<>();
 
@@ -74,16 +76,23 @@ public class Neo4JImporter {
         }
 
         public void open(Path outPath) throws FileNotFoundException {
-            this.outPath = outPath;
-            this.rocksDBManager = new RocksDBManager();
-            this.rocksDB = this.rocksDBManager.getDBConnection(outPath.toString() + "/rocksdb", true);
+            if (!headersCreated) {
+                this.outputPath = outPath;
+                this.rocksDBManager = new RocksDBManager();
+                this.rocksDB = this.rocksDBManager.getDBConnection(outPath.toString() + "/rocksdb", true);
 
-            for (String key: csvFilenameMap.keySet()) {
-                csvWriterMap.put(key, new PrintWriter(outPath + "/" + csvFilenameMap.get(key)));
+                for (String key : csvFilenameMap.keySet()) {
+                    csvWriterMap.put(key, new PrintWriter(outPath + "/" + csvFilenameMap.get(key)));
+                }
             }
         }
 
         public void writeHeaders(VCFHeader vcfHeader) {
+            if (headersCreated) {
+                return;
+            }
+            headersCreated = true;
+
             this.vcfHeader = vcfHeader;
 
             PrintWriter pw;
@@ -147,7 +156,10 @@ public class Neo4JImporter {
         }
 
         public void writeHeaders() {
-            this.vcfHeader = vcfHeader;
+            if (headersCreated) {
+                return;
+            }
+            headersCreated = true;
 
             PrintWriter pw;
 
@@ -184,9 +196,11 @@ public class Neo4JImporter {
     }
 
     public Neo4JImporter() {
-        List<String> attrs;
 
+        uid = 0;
         nodeAttributes = new HashMap<>();
+
+        List<String> attrs;
 
         //variant: (uid:ID(variantId),id,name,chromosome,start,end,reference,alternate,strand,type)
         attrs = Arrays.asList("variantId", "id", "name", "chromosome", "start", "end", "strand", "reference",
@@ -289,9 +303,41 @@ public class Neo4JImporter {
         nodeAttributes.put(Node.Type.SUBSTITUTION_SCORE.toString(), new ArrayList<>(attrs));
     }
 
-    public void generateCSVFromVCF(Path vcfPath, Path outDir) throws FileNotFoundException {
-        this.csvforVariant = new CSVforVariant(vcfPath);
+    public void generateCSV(Path inputPath, Path outPath) throws IOException {
+        if (!inputPath.toFile().exists()) {
+            return;
+        }
 
+        // Prepare the auxiliary CSV object to generate the CSV files
+        csvforVariant = new CSVforVariant(inputPath);
+
+        // Generate the CSV variant files from...
+        if (inputPath.toFile().isFile()) {
+            // ...from a single file
+            generateCSVFromFile(inputPath, outPath);
+        } else if (inputPath.toFile().isDirectory()) {
+            // ...from a directory
+            for (File file: inputPath.toFile().listFiles()) {
+                if (file.isFile()) {
+                    generateCSVFromFile(file.toPath(), outPath);
+                }
+            }
+        }
+
+        // Finalize all stuff about the auxiliary CSV object
+        csvforVariant.close();
+    }
+
+    private void generateCSVFromFile(Path path, Path outDir) throws IOException {
+        String filename = path.toFile().getName();
+        if (filename.endsWith(".vcf")) {
+            generateCSVFromVCF(path, outDir);
+        } else if (filename.endsWith(".json") || filename.endsWith(".json.gz")) {
+            generateCSVFromJSON(path, outDir);
+        }
+    }
+
+    private void generateCSVFromVCF(Path vcfPath, Path outDir) throws FileNotFoundException {
         // VCF File reader management
         VcfFileReader vcfFileReader = new VcfFileReader(vcfPath.toString(), false);
         vcfFileReader.open();
@@ -323,16 +369,11 @@ public class Neo4JImporter {
             updateCSVVariantFiles(Neo4JConverter.convert(variantContexts, converter), csvforVariant);
         }
 
-        // Close CSV files
-        csvforVariant.close();
-
         // close VCF file reader
         vcfFileReader.close();
     }
 
-    public void generateCSVFromJSON(Path inputPath, Path outDir) throws IOException {
-        this.csvforVariant = new CSVforVariant(inputPath);
-
+    private void generateCSVFromJSON(Path inputPath, Path outDir) throws IOException {
         // Create and open CSV files
         csvforVariant.open(outDir);
         csvforVariant.writeHeaders();
@@ -359,9 +400,6 @@ public class Neo4JImporter {
             updateCSVVariantFiles(variants, csvforVariant);
             variants.clear();
         }
-
-        // Close CSV files
-        csvforVariant.close();
     }
 
     public void importCSV(Path neo4jHome) throws IOException, InterruptedException {
@@ -382,7 +420,7 @@ public class Neo4JImporter {
 
         StringBuilder sb = new StringBuilder();
         sb.append(neo4jAdmin).append(" import");
-        String outDir = csvforVariant.outPath.toString();
+        String outDir = csvforVariant.outputPath.toString();
         for (String key: csvforVariant.csvFilenameMap.keySet()) {
             if (key.contains("__")) {
                 sb.append(" --relationships:").append(key).append(" ").append(outDir).append("/")

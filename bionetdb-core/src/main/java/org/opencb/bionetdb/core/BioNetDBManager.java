@@ -109,18 +109,10 @@ public class BioNetDBManager {
         neo4JVariantLoader.loadVCFFile(path);
     }
 
-    public void importVcf(Path vcfPath, Path neo4jHome) throws BioNetDBException, IOException,
-            InterruptedException {
-        // Import VCF
+    public void importFiles(Path inputPath, Path outputPath, Path neo4jHome) throws BioNetDBException, IOException, InterruptedException {
+        // Import
         Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
-        neo4JVariantLoader.importVCFFile(vcfPath, neo4jHome);
-    }
-
-    public void importJSON(Path jsonPath, Path neo4jHome) throws BioNetDBException, IOException,
-            InterruptedException {
-        // Import JSON
-        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
-        neo4JVariantLoader.importJSONFile(jsonPath, neo4jHome);
+        neo4JVariantLoader.importFiles(inputPath, outputPath, neo4jHome);
     }
 
     public void loadClinicalVariant() throws IOException, BioNetDBException {
