@@ -117,8 +117,8 @@ public class BioNetDBManagerTest {
             //Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr1.json");
             //Path input = Paths.get("/home/jtarraga/data150/cellbase/clinical_variants.full.json");
 //            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr20.json");
-//            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr15.json.gz");
-            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr1.json.gz");
+            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr15.json.gz");
+//            Path input = Paths.get("/home/jtarraga/data150/cellbase/variation_chr1.json.gz");
 //            Path input = Paths.get("/home/jtarraga/data150/cellbase/test.variants.10.json");
 //            Path input = Paths.get("/home/jtarraga/data150/cellbase/clinical_variants.1k.json");
 

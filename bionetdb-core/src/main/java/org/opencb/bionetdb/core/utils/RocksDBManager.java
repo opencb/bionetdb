@@ -11,6 +11,10 @@ public class RocksDBManager {
 
     private int maxOpenFiles = -1;
 
+    public RocksDBManager() {
+        this(1000);
+    }
+
     public RocksDBManager(int maxOpenFiles) {
         this.maxOpenFiles = maxOpenFiles;
     }

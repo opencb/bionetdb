@@ -15,6 +15,7 @@ import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
+import org.rocksdb.RocksDB;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -32,14 +33,6 @@ public class Neo4JImporter {
     private CSVforVariant csvforVariant;
     private Map<String, List<String>> nodeAttributes;
 
-    private Set<String> geneSet;
-    private Set<String> transcriptSet;
-    private Set<String> soSet;
-    private Set<String> kwSet;
-    private Set<String> featureSet;
-    private Set<String> proteinSet;
-    private Set<String> drugSet;
-
     private class CSVforVariant {
         private Map<String, String> csvFilenameMap;
         private Map<String, PrintWriter> csvWriterMap;
@@ -50,6 +43,9 @@ public class Neo4JImporter {
         private Path vcfPath;
         private Path outPath;
         private VCFHeader vcfHeader;
+
+        private RocksDBManager rocksDBManager;
+        private RocksDB rocksDB;
 
         CSVforVariant(Path vcfPath) throws FileNotFoundException {
             this.vcfPath = vcfPath;
@@ -79,6 +75,8 @@ public class Neo4JImporter {
 
         public void open(Path outPath) throws FileNotFoundException {
             this.outPath = outPath;
+            this.rocksDBManager = new RocksDBManager();
+            this.rocksDB = this.rocksDBManager.getDBConnection(outPath.toString() + "/rocksdb", true);
 
             for (String key: csvFilenameMap.keySet()) {
                 csvWriterMap.put(key, new PrintWriter(outPath + "/" + csvFilenameMap.get(key)));
@@ -175,20 +173,20 @@ public class Neo4JImporter {
                 csvWriterMap.get(key).close();
             }
         }
+
+        public boolean containsId(String id) {
+            return (rocksDBManager.getString(id, rocksDB) != null);
+        }
+
+        public boolean addId(String id) {
+            return rocksDBManager.putString(id, "1", rocksDB);
+        }
     }
 
     public Neo4JImporter() {
         List<String> attrs;
 
         nodeAttributes = new HashMap<>();
-
-        geneSet = new HashSet<>();
-        transcriptSet = new HashSet<>();
-        soSet = new HashSet<>();
-        kwSet = new HashSet<>();
-        featureSet = new HashSet<>();
-        proteinSet = new HashSet();
-        drugSet = new HashSet<>();
 
         //variant: (uid:ID(variantId),id,name,chromosome,start,end,reference,alternate,strand,type)
         attrs = Arrays.asList("variantId", "id", "name", "chromosome", "start", "end", "strand", "reference",
@@ -394,20 +392,6 @@ public class Neo4JImporter {
                         .append(csvforVariant.csvFilenameMap.get(key));
             }
         }
-//                .append(" --nodes:SAMPLE ").append(csvforVariant.outPath).append("/")
-// .append(csvforVariant.sampleCSV)
-//                .append(" --nodes:VARIANT ").append(csvforVariant.outPath).append("/")
-// .append(csvforVariant.variantCSV)
-//                .append(" --nodes:VARIANT_CALL ").append(csvforVariant.outPath).append("/")
-// .append(csvforVariant.variantcallCSV)
-//                .append(" --nodes:VARIANT_FILE_INFO ").append(csvforVariant.outPath).append("/")
-// .append(csvforVariant.variantfileinfoCSV)
-//                .append(" --relationships:VARIANT_CALL ").append(csvforVariant.outPath).append("/")
-// .append(csvforVariant.variant_variantcallCSV)
-//                .append(" --relationships:VARIANT_CALL ").append(csvforVariant.outPath).append("/")
-// .append(csvforVariant.sample_variantcallCSV)
-//                .append(" --relationships:VARIANT_FILE_INFO ").append(csvforVariant.outPath).append("/")
-//                .append(csvforVariant.variantcall_variantfileinfoCSV);
 
         rt = Runtime.getRuntime();
         System.out.println("Executing:\n\t" + sb.toString());
@@ -455,6 +439,7 @@ public class Neo4JImporter {
             csv.vcfHeader.getSampleNamesInOrder();
         }
 
+        String prefix;
         for (Variant variant : variants) {
             // Variant management
             String variantId = variant.toString();
@@ -558,14 +543,15 @@ public class Neo4JImporter {
 
                         // SO
                         if (ListUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
+                            prefix = "s";
                             for (SequenceOntologyTerm so : ct.getSequenceOntologyTerms()) {
-                                if (!soSet.contains(so.getAccession())) {
+                                if (!csv.containsId(prefix + so.getAccession())) {
                                     node = new Node(0, so.getAccession(), so.getName(), Node.Type.SO);
                                     pw = csv.csvWriterMap.get(Node.Type.SO.toString());
                                     pw.println(importNodeLine(so.getAccession(), node,
                                             nodeAttributes.get(Node.Type.SO.toString())));
 
-                                    soSet.add(so.getAccession());
+                                    csv.addId(prefix + so.getAccession());
                                 }
 
                                 // Relation: consequence type - so
@@ -595,14 +581,15 @@ public class Neo4JImporter {
                             // Protein relationship management
                             String proteinId = ct.getProteinVariantAnnotation().getUniprotAccession();
                             if (proteinId != null) {
-                                if (!proteinSet.contains(proteinId)) {
+                                prefix = "p";
+                                if (!csv.containsId(prefix + proteinId)) {
                                     String uniprotName = ct.getProteinVariantAnnotation().getUniprotName();
                                     node = new Node(0, proteinId, uniprotName, Node.Type.PROTEIN);
                                     pw = csv.csvWriterMap.get(Node.Type.PROTEIN.toString());
                                     pw.println(importNodeLine(proteinId, node,
                                             nodeAttributes.get(Node.Type.PROTEIN.toString())));
 
-                                    proteinSet.add(proteinId);
+                                    csv.addId(prefix + proteinId);
                                 }
 
                                 // Relation: protein - protein variant annotation
@@ -633,14 +620,15 @@ public class Neo4JImporter {
 
                             // Protein keywords
                             if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getKeywords())) {
+                                prefix = "k";
                                 for (String keyword : ct.getProteinVariantAnnotation().getKeywords()) {
-                                    if (!kwSet.contains(keyword)) {
+                                    if (!csv.containsId(prefix + keyword)) {
                                         node = new Node(0, keyword, keyword, Node.Type.PROTEIN_KEYWORD);
                                         pw = csv.csvWriterMap.get(Node.Type.PROTEIN_KEYWORD.toString());
                                         pw.println(importNodeLine(keyword, node,
                                                 nodeAttributes.get(Node.Type.PROTEIN_KEYWORD.toString())));
 
-                                        kwSet.add(keyword);
+                                        csv.addId(prefix + keyword);
                                     }
 
                                     // Relation: protein variant annotation - keyword
@@ -654,6 +642,7 @@ public class Neo4JImporter {
 
                             // Protein features
                             if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getFeatures())) {
+                                prefix = "f";
                                 for (ProteinFeature feature : ct.getProteinVariantAnnotation().getFeatures()) {
                                     String featId = null;
                                     if (feature.getId() != null) {
@@ -665,13 +654,13 @@ public class Neo4JImporter {
                                         }
                                     }
                                     if (featId != null) {
-                                        if (!featureSet.contains(featId)) {
+                                        if (!csv.containsId(prefix + featId)) {
                                             node = NodeBuilder.newNode(0, feature);
                                             pw = csv.csvWriterMap.get(Node.Type.PROTEIN_FEATURE.toString());
                                             pw.println(importNodeLine(featId, node,
                                                     nodeAttributes.get(Node.Type.PROTEIN_FEATURE.toString())));
 
-                                            featureSet.add(featId);
+                                            csv.addId(prefix + featId);
                                         }
 
                                         // Relation: protein variant annotation - keyword
@@ -688,13 +677,14 @@ public class Neo4JImporter {
                         // Transcript
                         String transcriptId = ct.getEnsemblTranscriptId();
                         if (transcriptId != null) {
-                            if (!transcriptSet.contains(transcriptId)) {
+                            prefix = "t";
+                            if (!csv.containsId(prefix + transcriptId)) {
                                 node = new Node(0, transcriptId, null, Node.Type.TRANSCRIPT);
                                 pw = csv.csvWriterMap.get(Node.Type.TRANSCRIPT.toString());
                                 pw.println(importNodeLine(transcriptId, node,
                                         nodeAttributes.get(Node.Type.TRANSCRIPT.toString())));
 
-                                transcriptSet.add(transcriptId);
+                                csv.addId(prefix + transcriptId);
                             }
 
                             // Relation: consequence type - transcript
@@ -707,13 +697,14 @@ public class Neo4JImporter {
                         // Gene
                         String geneId = ct.getGeneName();
                         if (geneId != null) {
-                            if (!geneSet.contains(geneId)) {
+                            prefix = "g";
+                            if (!csv.containsId(prefix + geneId)) {
                                 node = new Node(0, ct.getEnsemblGeneId(), ct.getGeneName(), Node.Type.GENE);
                                 pw = csv.csvWriterMap.get(Node.Type.GENE.toString());
                                 pw.println(importNodeLine(geneId, node,
                                         nodeAttributes.get(Node.Type.GENE.toString())));
 
-                                geneSet.add(geneId);
+                                csv.addId(prefix + geneId);
                             }
 
                             // Relation: consequence type - gene
@@ -764,23 +755,25 @@ public class Neo4JImporter {
                     for (GeneDrugInteraction drug : variant.getAnnotation().getGeneDrugInteraction()) {
                         String drugId = cleanString(drug.getDrugName());
                         if (drugId != null) {
-                            if (!drugSet.contains(drugId)) {
+                            prefix = "d";
+                            if (!csv.containsId(prefix + drugId)) {
                                 node = NodeBuilder.newNode(0, drug);
                                 pw = csv.csvWriterMap.get(Node.Type.DRUG.toString());
                                 pw.println(importNodeLine(drugId, node,
                                         nodeAttributes.get(Node.Type.DRUG.toString())));
 
-                                drugSet.add(drugId);
+                                csv.addId(prefix + drugId);
                             }
 
                             if (drug.getGeneName() != null) {
-                                if (!geneSet.contains(drug.getGeneName())) {
+                                prefix = "g";
+                                if (!csv.containsId(prefix + drug.getGeneName())) {
                                     node = new Node(0, null, drug.getGeneName(), Node.Type.GENE);
                                     pw = csv.csvWriterMap.get(Node.Type.GENE.toString());
                                     pw.println(importNodeLine(drug.getGeneName(), node,
                                             nodeAttributes.get(Node.Type.GENE.toString())));
 
-                                    geneSet.add(drug.getGeneName());
+                                    csv.addId(prefix + drug.getGeneName());
                                 }
 
                                 // Relation: gene - drug interaction
@@ -790,28 +783,7 @@ public class Neo4JImporter {
                         }
                     }
                 }
-//                    // Disease
-//                    if (ListUtils.isNotEmpty(variant.getAnnotation().getGeneTraitAssociation())) {
-//                        for (GeneTraitAssociation disease: variant.getAnnotation().getGeneTraitAssociation()) {
-//                            String diseaseId = disease.getId() + "_" + disease.getName();
-//                            if (diseaseId != null) {
-//                                diseaseId = cleanString(diseaseId);
-//                                if (!diseaseSet.contains(diseaseId)) {
-//                                    node = NodeBuilder.newNode(0, disease);
-//                                    pw = csv.csvWriterMap.get(Node.Type.DISEASE.toString());
-//                                    pw.println(importNodeLine(diseaseId, node,
-//                                            nodeAttributes.get(Node.Type.DISEASE.toString())));
-//
-//                                    diseaseSet.add(diseaseId);
-//                                }
-//
-//                                // Relation: gene - disease (trait association)
-//                                pw = csv.csvWriterMap.get(Relation.Type.GENE__DISEASE.toString());
-//                                pw.println(importRelationNode(drug.getGeneName(), drugId));
-//                            }
-//                        }
-//                    }
-//                }
+
                 // Trait associations
                 if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
                     for (EvidenceEntry evidence : variant.getAnnotation().getTraitAssociation()) {
@@ -847,6 +819,28 @@ public class Neo4JImporter {
         }
     }
 
+    //                    // Disease
+//                    if (ListUtils.isNotEmpty(variant.getAnnotation().getGeneTraitAssociation())) {
+//                        for (GeneTraitAssociation disease: variant.getAnnotation().getGeneTraitAssociation()) {
+//                            String diseaseId = disease.getId() + "_" + disease.getName();
+//                            if (diseaseId != null) {
+//                                diseaseId = cleanString(diseaseId);
+//                                if (!diseaseSet.contains(diseaseId)) {
+//                                    node = NodeBuilder.newNode(0, disease);
+//                                    pw = csv.csvWriterMap.get(Node.Type.DISEASE.toString());
+//                                    pw.println(importNodeLine(diseaseId, node,
+//                                            nodeAttributes.get(Node.Type.DISEASE.toString())));
+//
+//                                    diseaseSet.add(diseaseId);
+//                                }
+//
+//                                // Relation: gene - disease (trait association)
+//                                pw = csv.csvWriterMap.get(Relation.Type.GENE__DISEASE.toString());
+//                                pw.println(importRelationNode(drug.getGeneName(), drugId));
+//                            }
+//                        }
+//                    }
+//                }
     private String getNodeHeaderLine(List<String> attrs) {
         StringBuilder sb = new StringBuilder();
         sb.append("uid:ID(").append(attrs.get(0)).append(")");
@@ -893,68 +887,5 @@ public class Neo4JImporter {
         } else {
             return null;
         }
-    }
-
-    public Set<String> getGeneSet() {
-        return geneSet;
-    }
-
-    public Neo4JImporter setGeneSet(Set<String> geneSet) {
-        this.geneSet = geneSet;
-        return this;
-    }
-
-    public Set<String> getTranscriptSet() {
-        return transcriptSet;
-    }
-
-    public Neo4JImporter setTranscriptSet(Set<String> transcriptSet) {
-        this.transcriptSet = transcriptSet;
-        return this;
-    }
-
-    public Set<String> getSoSet() {
-        return soSet;
-    }
-
-    public Neo4JImporter setSoSet(Set<String> soSet) {
-        this.soSet = soSet;
-        return this;
-    }
-
-    public Set<String> getKwSet() {
-        return kwSet;
-    }
-
-    public Neo4JImporter setKwSet(Set<String> kwSet) {
-        this.kwSet = kwSet;
-        return this;
-    }
-
-    public Set<String> getFeatureSet() {
-        return featureSet;
-    }
-
-    public Neo4JImporter setFeatureSet(Set<String> featureSet) {
-        this.featureSet = featureSet;
-        return this;
-    }
-
-    public Set<String> getProteinSet() {
-        return proteinSet;
-    }
-
-    public Neo4JImporter setProteinSet(Set<String> proteinSet) {
-        this.proteinSet = proteinSet;
-        return this;
-    }
-
-    public Set<String> getDrugSet() {
-        return drugSet;
-    }
-
-    public Neo4JImporter setDrugSet(Set<String> drugSet) {
-        this.drugSet = drugSet;
-        return this;
     }
 }
