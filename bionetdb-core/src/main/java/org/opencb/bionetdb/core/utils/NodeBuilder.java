@@ -14,6 +14,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.models.OntologyTerm;
+import org.opencb.opencga.core.models.Panel;
 
 import java.util.List;
 import java.util.Map;
@@ -286,6 +288,25 @@ public class NodeBuilder {
     public static Node newNode(long uid, DbReferenceType xref) {
         Node node = new Node(uid, xref.getId(), null, Node.Type.XREF);
         node.addAttribute("dbName", xref.getType());
+        return node;
+    }
+
+    public static Node newNode(long uid, Panel panel) {
+        Node node = new Node(uid, panel.getId(), panel.getName(), Node.Type.PANEL);
+        node.addAttribute("author", panel.getAuthor());
+        node.addAttribute("version", panel.getVersion());
+        node.addAttribute("date", panel.getDate());
+        if (panel.getSource() != null) {
+            node.addAttribute("sourceProject", panel.getSource().getProject());
+            node.addAttribute("sourceId", panel.getSource().getId());
+            node.addAttribute("sourceVersion", panel.getSource().getVersion());
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, OntologyTerm term) {
+        Node node = new Node(uid, term.getId(), term.getName(), Node.Type.ONTOLOGY);
+        node.addAttribute("source", term.getSource());
         return node;
     }
 }

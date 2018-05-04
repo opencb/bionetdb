@@ -117,8 +117,8 @@ public class BioNetDBManagerTest {
 //            Path input = Paths.get("/home/jtarraga/data150/cellbase/test.variants.10.json");
 //            Path input = Paths.get("/home/jtarraga/data150/cellbase/clinical_variants.1k.json");
 
-//        Path input = Paths.get("/home/jtarraga/data150/cellbase/head.10.json");
-        Path input = Paths.get("/home/jtarraga/data150/cellbase/");
+        Path input = Paths.get("/home/jtarraga/data150/cellbase/head.10.json");
+        //Path input = Paths.get("/home/jtarraga/data150/cellbase/");
 
         Path output = Paths.get("/tmp/neo");
         if (!output.toFile().exists()) {

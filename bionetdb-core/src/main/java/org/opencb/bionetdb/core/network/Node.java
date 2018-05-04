@@ -80,7 +80,11 @@ public class Node {
 
         TRANSCRIPT_ANNOTATION_FLAG("TRANSCRIPT_ANNOTATION_FLAG"),
         EXON_OVERLAP("EXON_OVERLAP"),
-        PROTEIN_KEYWORD("PROTEIN_KEYWORD");
+        PROTEIN_KEYWORD("PROTEIN_KEYWORD"),
+
+        PANEL("PANEL"),
+        DISEASE_GROUP("DISEASE_GROUP"),
+        DISEASE_SUBGROUP("DISEASE_SUBGROUP");
 
         private final String type;
         private final String parentType;
