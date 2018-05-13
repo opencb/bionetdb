@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.utils;
 
+import com.google.common.primitives.Longs;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -60,6 +61,18 @@ public class RocksDBManager {
         }
     }
 
+    public boolean putLong(String key, Long value, RocksDB db) {
+        try {
+            // Add boolean value into the database
+            db.put(key.getBytes(), Longs.toByteArray(value));
+            return true;
+        } catch (RocksDBException e) {
+            // Do some error handling
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean putBoolean(String key, Boolean value, RocksDB db) {
         try {
             // Add boolean value into the database
@@ -86,6 +99,22 @@ public class RocksDBManager {
             return null;
         }
     }
+
+    public Long getLong(String key, RocksDB db) {
+        try {
+            // Get string value from the database
+            byte[] value = db.get(key.getBytes());
+            if (value == null) {
+                return null;
+            }
+            return Longs.fromByteArray(value);
+        } catch (RocksDBException e) {
+            // Do some error handling
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     public Boolean getBoolean(String key, RocksDB db) {
         try {

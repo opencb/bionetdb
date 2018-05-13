@@ -632,9 +632,9 @@ public class Neo4JImporter {
 
                                 // Relation: protein - protein variant annotation
                                 sb.setLength(0);
-                                sb.append(proteinId).append(SEPARATOR).append(protVarAnnoId);
+                                sb.append(protVarAnnoId).append(SEPARATOR).append(proteinId);
                                 pw = csv.csvWriterMap.get(
-                                        Relation.Type.PROTEIN__PROTEIN_VARIANT_ANNOTATION.toString());
+                                        Relation.Type.PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString());
                                 pw.println(sb.toString());
                             }
 

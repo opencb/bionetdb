@@ -20,7 +20,10 @@ import java.util.Map;
 
 public class NodeBuilder {
     public static Node newNode(long uid, Variant variant) {
-        Node node = new Node(uid, variant.getId(), variant.toString(), Node.Type.VARIANT);
+        Node node = new Node(uid, variant.toString(), variant.getId(), Node.Type.VARIANT);
+        if (ListUtils.isNotEmpty(variant.getNames())) {
+            node.addAttribute("alternativeNames", StringUtils.join(variant.getNames(), ";"));
+        }
         node.addAttribute("chromosome", variant.getChromosome());
         node.addAttribute("start", variant.getStart());
         node.addAttribute("end", variant.getEnd());

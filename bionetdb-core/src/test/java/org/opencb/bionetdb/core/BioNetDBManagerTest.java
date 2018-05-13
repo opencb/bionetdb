@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core;
 
+import org.apache.velocity.util.ArrayListWrapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -10,11 +11,16 @@ import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.utils.Neo4JCSVImporter;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -54,9 +60,12 @@ public class BioNetDBManagerTest {
 
     @Test
     public void loadBioPax() throws BioNetDBException, IOException {
-        String root = "~"; // ~/data150/neo4j
-        String filename = getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").getPath();
+        //String root = "~"; // ~/data150/neo4j
+        String root = "/home/jtarraga/data150/load.neo/";
+
+        //String filename = getClass().getResource("/Saccharomyces_cerevisiae.owl.gz").getPath();
         //String filename = root + "/hsapiens.meiosis.biopax3";
+        String filename = root + "hsapiens.metabolism.biopax3";
         //String filename = root + "/pathway1.biopax3";
         //String filename = root + "/vesicle.mediated.transport.biopax3";
         //String filename = root + "/Homo_sapiens.owl";
@@ -103,6 +112,29 @@ public class BioNetDBManagerTest {
     }
 
     @Test
+    public void createCSVFiles() throws BioNetDBException, URISyntaxException, IOException, InterruptedException {
+        Path output = Paths.get("/home/jtarraga/data150/load.neo/csv");
+        Neo4JCSVImporter importer = new Neo4JCSVImporter(output);
+
+        List<File> variantFiles = new ArrayList();
+        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.1k.json"));
+        //variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json"));
+        importer.addVariantFiles(variantFiles);
+
+//        List<File> reactomeFiles = new ArrayList();
+//        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/Homo_sapiens.owl"));
+//        importer.addReactomeFiles(reactomeFiles);
+
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setVersion("v4");
+        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh37", clientConfiguration);
+        importer.annotate(cellBaseClient);
+
+        importer.close();
+    }
+
+    @Test
     public void importJSON() throws BioNetDBException, URISyntaxException, IOException, InterruptedException {
 //        bioNetDBManager.loadVcf(Paths.get("/home/jtarraga/data150/vcf/5k.vcf"));
         Path neo4jHome = Paths.get("/home/jtarraga/soft/neo4j/packaging/standalone/target/neo4j-community-3.2.8-SNAPSHOT/");
@@ -118,9 +150,11 @@ public class BioNetDBManagerTest {
 //            Path input = Paths.get("/home/jtarraga/data150/cellbase/clinical_variants.1k.json");
 
 //        Path input = Paths.get("/home/jtarraga/data150/cellbase/head.10.json");
-        Path input = Paths.get("/home/jtarraga/data150/cellbase/");
+        //Path input = Paths.get("/home/jtarraga/data150/cellbase/");
+        Path input = Paths.get("/home/jtarraga/data150/load.neo/clinvar.json");
 
-        Path output = Paths.get("/tmp/neo");
+        Path output = Paths.get("/home/jtarraga/data150/load.neo/csv");
+//        Path output = Paths.get("/tmp/neo");
         if (!output.toFile().exists()) {
             output.toFile().mkdirs();
         }
@@ -159,18 +193,18 @@ public class BioNetDBManagerTest {
 
     @Test
     public void annotateGenes() throws BioNetDBException, IOException {
-        annotateVariants();
+       // annotateVariants();
         List<String> ids = new ArrayList<>();
 
-//        geneIds.add("ENSG00000227232");
-//        geneIds.add("ENSG00000223972");
+        ids.add("SDF4");//ENSG00000227232");
+        ids.add("TNFRSF4");//ENSG00000223972");
 
-        QueryResult<Node> queryResult = bioNetDBManager.nodeQuery("MATCH (n:GENE) return n");
-        if (queryResult != null && ListUtils.isNotEmpty(queryResult.getResult())) {
-            for (Node node: queryResult.getResult()) {
-                ids.add(node.getId());
-            }
-        }
+//        QueryResult<Node> queryResult = bioNetDBManager.nodeQuery("MATCH (n:GENE) return n");
+//        if (queryResult != null && ListUtils.isNotEmpty(queryResult.getResult())) {
+//            for (Node node: queryResult.getResult()) {
+//                ids.add(node.getId());
+//            }
+//        }
 
         bioNetDBManager.annotateGenes(ids);
     }
