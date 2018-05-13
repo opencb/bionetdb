@@ -91,21 +91,16 @@ public class Neo4JImporter {
             if (headersCreated) {
                 return;
             }
-            headersCreated = true;
 
             this.vcfHeader = vcfHeader;
 
             PrintWriter pw;
 
             // Node headers
-            for (Node.Type type: Node.Type.values()) {
-                if (nodeAttributes.containsKey(type)) {
-                    if (type != Node.Type.VARIANT_CALL && type != Node.Type.VARIANT_FILE_INFO) {
-                        pw = csvWriterMap.get(type.toString());
-                        pw.println(getNodeHeaderLine(nodeAttributes.get(type.toString())));
-                    }
-                }
-            }
+            Set<Node.Type> exclude = new HashSet<>();
+            exclude.add(Node.Type.VARIANT_CALL);
+            exclude.add(Node.Type.VARIANT_FILE_INFO);
+            createNodeHeaders(exclude);
 
             // VARIANT_CALL nodes
             StringBuilder sb = new StringBuilder();
@@ -147,37 +142,23 @@ public class Neo4JImporter {
             }
 
             // Relation headers
-            for (Relation.Type type: Relation.Type.values()) {
-                if (type.toString().contains("__")) {
-                    pw = csvWriterMap.get(type.toString());
-                    pw.println(getRelationHeaderLine(type.toString()));
-                }
-            }
+            createRelationHeaders();
+
+            headersCreated = true;
         }
 
         public void writeHeaders() {
             if (headersCreated) {
                 return;
             }
-            headersCreated = true;
-
-            PrintWriter pw;
 
             // Nodes
-            for (Node.Type type: Node.Type.values()) {
-                if (nodeAttributes.containsKey(type.toString())) {
-                    pw = csvWriterMap.get(type.toString());
-                    pw.println(getNodeHeaderLine(nodeAttributes.get(type.toString())));
-                }
-            }
+            createNodeHeaders(null);
 
             // Relation headers
-            for (Relation.Type type: Relation.Type.values()) {
-                if (type.toString().contains("__")) {
-                    pw = csvWriterMap.get(type.toString());
-                    pw.println(getRelationHeaderLine(type.toString()));
-                }
-            }
+            createRelationHeaders();
+
+            headersCreated = true;
         }
 
         public void close() {
@@ -187,11 +168,38 @@ public class Neo4JImporter {
         }
 
         public boolean containsId(String id) {
-            return (rocksDBManager.getString(id, rocksDB) != null);
+            String value = rocksDBManager.getString(id, rocksDB);
+            return (value != null);
         }
 
         public boolean addId(String id) {
             return rocksDBManager.putString(id, "1", rocksDB);
+        }
+
+        private void createNodeHeaders(Set<Node.Type> exclude) {
+            PrintWriter pw;
+            for (Node.Type type: Node.Type.values()) {
+                if (nodeAttributes.containsKey(type.toString())) {
+                    boolean create = true;
+                    if (exclude != null && exclude.size() > 0) {
+                        create = !exclude.contains(type);
+                    }
+                    if (create) {
+                        pw = csvWriterMap.get(type.toString());
+                        pw.println(getNodeHeaderLine(nodeAttributes.get(type.toString())));
+                    }
+                }
+            }
+        }
+
+        private void createRelationHeaders() {
+            PrintWriter pw;
+            for (Relation.Type type: Relation.Type.values()) {
+                if (type.toString().contains("__")) {
+                    pw = csvWriterMap.get(type.toString());
+                    pw.println(getRelationHeaderLine(type));
+                }
+            }
         }
     }
 
@@ -301,6 +309,22 @@ public class Neo4JImporter {
         //substitutionScore: (uid:ID(substScoreId),id,name)
         attrs = Arrays.asList("substScoreId", "id", "name", "score");
         nodeAttributes.put(Node.Type.SUBSTITUTION_SCORE.toString(), new ArrayList<>(attrs));
+
+        // Panel
+        attrs = Arrays.asList("panelId", "id", "name", "author", "version", "date", "sourceProject", "sourceId", "sourceVersion");
+        nodeAttributes.put(Node.Type.PANEL.toString(), new ArrayList<>(attrs));
+
+        // Disease group
+        attrs = Arrays.asList("diseaseGroupId", "id", "name");
+        nodeAttributes.put(Node.Type.DISEASE_GROUP.toString(), new ArrayList<>(attrs));
+
+        // Disease subgroup
+        attrs = Arrays.asList("diseaseSubGroupId", "id", "name");
+        nodeAttributes.put(Node.Type.DISEASE_SUBGROUP.toString(), new ArrayList<>(attrs));
+
+        // Ontology
+        attrs = Arrays.asList("ontologyId", "id", "name", "source");
+        nodeAttributes.put(Node.Type.ONTOLOGY.toString(), new ArrayList<>(attrs));
     }
 
     public void generateCSV(Path inputPath, Path outPath) throws IOException {
@@ -311,95 +335,42 @@ public class Neo4JImporter {
         // Prepare the auxiliary CSV object to generate the CSV files
         csvforVariant = new CSVforVariant(inputPath);
 
-        // Generate the CSV variant files from...
+        // Generate the CSV variant files, order to process:
+        // 1) VCF files
+        // 2) JSON variants files
+        // 3) BioPAX files
+
         if (inputPath.toFile().isFile()) {
             // ...from a single file
             generateCSVFromFile(inputPath, outPath);
         } else if (inputPath.toFile().isDirectory()) {
             // ...from a directory
+            List<File> jsonFiles = new ArrayList<>();
+            List<File> biopaxFiles = new ArrayList<>();
             for (File file: inputPath.toFile().listFiles()) {
                 if (file.isFile()) {
-                    generateCSVFromFile(file.toPath(), outPath);
+                    String filename = file.getName();
+                    if (filename.endsWith(".vcf")) {
+                        generateCSVFromVCF(file.toPath(), outPath);
+                    } else if (filename.endsWith(".biopax")) {
+                        biopaxFiles.add(file);
+                    } else if (filename.endsWith(".json") || filename.endsWith(".json.gz")) {
+                        jsonFiles.add(file);
+                    }
                 }
+            }
+            // JSON files (they contain variants)
+            for (File file: jsonFiles) {
+                generateCSVFromJSON(file.toPath(), outPath);
+            }
+            // And finally, BioPAX files
+            for (File file: biopaxFiles) {
+                generateCSVFromBioPAX(file.toPath(), outPath);
             }
         }
 
         // Finalize all stuff about the auxiliary CSV object
         csvforVariant.close();
-    }
-
-    private void generateCSVFromFile(Path path, Path outDir) throws IOException {
-        String filename = path.toFile().getName();
-        if (filename.endsWith(".vcf")) {
-            generateCSVFromVCF(path, outDir);
-        } else if (filename.endsWith(".json") || filename.endsWith(".json.gz")) {
-            generateCSVFromJSON(path, outDir);
-        }
-    }
-
-    private void generateCSVFromVCF(Path vcfPath, Path outDir) throws FileNotFoundException {
-        // VCF File reader management
-        VcfFileReader vcfFileReader = new VcfFileReader(vcfPath.toString(), false);
-        vcfFileReader.open();
-        VCFHeader vcfHeader = vcfFileReader.getVcfHeader();
-
-        csvforVariant.open(outDir);
-        csvforVariant.writeHeaders(vcfHeader);
-
-        // sample.cvs for SAMPLE nodes
-        List<String> sampleNames = vcfHeader.getSampleNamesInOrder();
-        PrintWriter pw = csvforVariant.csvWriterMap.get(Node.Type.SAMPLE.toString());
-        for (String sampleName: sampleNames) {
-            pw.println(sampleName + "," + sampleName);
-        }
-        pw.close();
-
-        // VariantContext-to-Variant converter
-        VariantContextToVariantConverter converter = new VariantContextToVariantConverter("dataset",
-                vcfPath.toFile().getName(), vcfFileReader.getVcfHeader().getSampleNamesInOrder());
-
-        List<VariantContext> variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
-        while (variantContexts.size() == VARIANT_BATCH_SIZE) {
-            updateCSVVariantFiles(Neo4JConverter.convert(variantContexts, converter), csvforVariant);
-
-            // Read next batch
-            variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
-        }
-        if (variantContexts.size() > 0) {
-            updateCSVVariantFiles(Neo4JConverter.convert(variantContexts, converter), csvforVariant);
-        }
-
-        // close VCF file reader
-        vcfFileReader.close();
-    }
-
-    private void generateCSVFromJSON(Path inputPath, Path outDir) throws IOException {
-        // Create and open CSV files
-        csvforVariant.open(outDir);
-        csvforVariant.writeHeaders();
-
-        // Reading file line by line, each line a JSON object
-        BufferedReader reader;
-        ObjectMapper mapper = new ObjectMapper();
-
-        reader = FileUtils.newBufferedReader(inputPath); //new BufferedReader(new FileReader(inputPath.toString()));
-        String line = reader.readLine();
-        List<Variant> variants = new ArrayList<>();
-        while (line != null) {
-            Variant variant = mapper.readValue(line, Variant.class);
-            variants.add(variant);
-            if (variants.size() > 100) {
-                updateCSVVariantFiles(variants, csvforVariant);
-                variants.clear();
-            }
-            // read next line
-            line = reader.readLine();
-        }
-        reader.close();
-        if (variants.size() > 0) {
-            updateCSVVariantFiles(variants, csvforVariant);
-            variants.clear();
-        }
     }
 
     public void importCSV(Path neo4jHome) throws IOException, InterruptedException {
@@ -466,6 +437,86 @@ public class Neo4JImporter {
         // --relationships:VARIANT_CALL /tmp/3.vcf.sample_variantcall.cvs
         // --relationships:VARIANT_FILE_INFO /tmp/3.vcf.variantcall_variantfileinfo.cvs  -h ; ./neo4j start
 
+    }
+
+    private void generateCSVFromFile(Path path, Path outDir) throws IOException {
+        String filename = path.toFile().getName();
+        if (filename.endsWith(".vcf")) {
+            generateCSVFromVCF(path, outDir);
+        } else if (filename.endsWith(".biopax")) {
+            generateCSVFromBioPAX(path, outDir);
+        } else if (filename.endsWith(".json") || filename.endsWith(".json.gz")) {
+            generateCSVFromJSON(path, outDir);
+        }
+    }
+
+    public void generateCSVFromVCF(Path vcfPath, Path outDir) throws FileNotFoundException {
+        // VCF File reader management
+        VcfFileReader vcfFileReader = new VcfFileReader(vcfPath.toString(), false);
+        vcfFileReader.open();
+        VCFHeader vcfHeader = vcfFileReader.getVcfHeader();
+
+        csvforVariant.open(outDir);
+        csvforVariant.writeHeaders(vcfHeader);
+
+        // sample.cvs for SAMPLE nodes
+        List<String> sampleNames = vcfHeader.getSampleNamesInOrder();
+        PrintWriter pw = csvforVariant.csvWriterMap.get(Node.Type.SAMPLE.toString());
+        for (String sampleName: sampleNames) {
+            pw.println(sampleName + "," + sampleName);
+        }
+        pw.close();
+
+        // VariantContext-to-Variant converter
+        VariantContextToVariantConverter converter = new VariantContextToVariantConverter("dataset",
+                vcfPath.toFile().getName(), vcfFileReader.getVcfHeader().getSampleNamesInOrder());
+
+        List<VariantContext> variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
+        while (variantContexts.size() == VARIANT_BATCH_SIZE) {
+            updateCSVVariantFiles(Neo4JConverter.convert(variantContexts, converter), csvforVariant);
+
+            // Read next batch
+            variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
+        }
+        if (variantContexts.size() > 0) {
+            updateCSVVariantFiles(Neo4JConverter.convert(variantContexts, converter), csvforVariant);
+        }
+
+        // close VCF file reader
+        vcfFileReader.close();
+    }
+
+    public void generateCSVFromJSON(Path inputPath, Path outDir) throws IOException {
+        // Create and open CSV files
+        csvforVariant.open(outDir);
+        csvforVariant.writeHeaders();
+
+        // Reading file line by line, each line a JSON object
+        BufferedReader reader;
+        ObjectMapper mapper = new ObjectMapper();
+
+        reader = FileUtils.newBufferedReader(inputPath); //new BufferedReader(new FileReader(inputPath.toString()));
+        String line = reader.readLine();
+        List<Variant> variants = new ArrayList<>();
+        while (line != null) {
+            Variant variant = mapper.readValue(line, Variant.class);
+            variants.add(variant);
+            if (variants.size() > 100) {
+                updateCSVVariantFiles(variants, csvforVariant);
+                variants.clear();
+            }
+            // read next line
+            line = reader.readLine();
+        }
+        reader.close();
+        if (variants.size() > 0) {
+            updateCSVVariantFiles(variants, csvforVariant);
+            variants.clear();
+        }
+    }
+
+    public void generateCSVFromBioPAX(Path inputPath, Path outDir) throws IOException {
+        // TODO
     }
 
     private void updateCSVVariantFiles(List<Variant> variants, CSVforVariant csv) {
@@ -887,11 +938,14 @@ public class Neo4JImporter {
         }
         return sb.toString();
     }
-    private String getRelationHeaderLine(String type) {
+    private String getRelationHeaderLine(Relation.Type type) {
         StringBuilder sb = new StringBuilder();
-        String[] split = type.split("__");
+        String[] split = type.toString().split("__");
         sb.append(":START_ID(").append(nodeAttributes.get(split[0]).get(0)).append("),:END_ID(")
                 .append(nodeAttributes.get(split[1]).get(0)).append(")");
+        if (type == Relation.Type.PANEL__GENE) {
+            sb.append(",confidence");
+        }
         return sb.toString();
     }
 
@@ -915,7 +969,7 @@ public class Neo4JImporter {
 
     private String importRelationNode(String startId, String endId) {
         StringBuilder sb = new StringBuilder();
-        sb.append(startId).append(SEPARATOR).append(endId);
+        sb.append(cleanString(startId)).append(SEPARATOR).append(cleanString(endId));
         return sb.toString();
     }
 
@@ -925,5 +979,9 @@ public class Neo4JImporter {
         } else {
             return null;
         }
+    }
+
+    public CSVforVariant getCsvforVariant() {
+        return csvforVariant;
     }
 }

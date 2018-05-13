@@ -291,4 +291,24 @@ public class NodeBuilder {
         node.addAttribute("dbName", xref.getType());
         return node;
     }
+/*
+    public static Node newNode(long uid, Panel panel) {
+        Node node = new Node(uid, panel.getId(), panel.getName(), Node.Type.PANEL);
+        node.addAttribute("author", panel.getAuthor());
+        node.addAttribute("version", panel.getVersion());
+        node.addAttribute("date", panel.getDate());
+        if (panel.getSource() != null) {
+            node.addAttribute("sourceProject", panel.getSource().getProject());
+            node.addAttribute("sourceId", panel.getSource().getId());
+            node.addAttribute("sourceVersion", panel.getSource().getVersion());
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, OntologyTerm term) {
+        Node node = new Node(uid, term.getId(), term.getName(), Node.Type.ONTOLOGY);
+        node.addAttribute("source", term.getSource());
+        return node;
+    }
+    */
 }
