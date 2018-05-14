@@ -943,9 +943,9 @@ public class Neo4JImporter {
         String[] split = type.toString().split("__");
         sb.append(":START_ID(").append(nodeAttributes.get(split[0]).get(0)).append("),:END_ID(")
                 .append(nodeAttributes.get(split[1]).get(0)).append(")");
-        if (type == Relation.Type.PANEL__GENE) {
-            sb.append(",confidence");
-        }
+//        if (type == Relation.Type.PANEL__GENE) {
+//            sb.append(",confidence");
+//        }
         return sb.toString();
     }
 

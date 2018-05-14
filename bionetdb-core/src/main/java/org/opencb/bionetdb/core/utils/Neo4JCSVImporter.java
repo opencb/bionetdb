@@ -1,8 +1,6 @@
 package org.opencb.bionetdb.core.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
@@ -16,76 +14,33 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Neo4JCSVImporter {
-    private static final String SEPARATOR = ",";
-    private static final String MISSING_VALUE = "-";
     private static final String GENE_PREFIX = "g-";
-    private static final String PROTEIN_PREFIX = "p-";
 
-    private Path outputPath;
-
-    private Map<String, PrintWriter> csvWriters;
-    private Map<String, PrintWriter> csvAnnotatedWriters;
-    private Map<String, List<String>> nodeAttributes;
-
-    private Set<String> formatFields;
-    private Set<String> infoFields;
-
-    private RocksDBManager rocksDBManager;
-    private RocksDB rocksDB;
-
-    private long uid;
+    private CSVInfo csv;
+    private Neo4JBioPAXImporter bioPAXImporter;
 
     protected static Logger logger;
 
-    public Neo4JCSVImporter(Path outputPath) {
-        this.uid = 0;
-
-        this.outputPath = outputPath;
+    public Neo4JCSVImporter(CSVInfo csv) {
+        this.csv = csv;
         this.logger = LoggerFactory.getLogger(this.getClass());
-
-        this.csvWriters = new HashMap<>();
-        this.csvAnnotatedWriters = new HashMap<>();
-        this.nodeAttributes = createNodeAttributes();
-
-        this.rocksDBManager = new RocksDBManager();
-        this.rocksDB = this.rocksDBManager.getDBConnection(outputPath.toString() + "/rocksdb", true);
-
-        try {
-            openCSVFiles();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void close() throws FileNotFoundException {
-        List<Map<String, PrintWriter>> writerMaps = new ArrayList<>();
-        writerMaps.add(csvWriters);
-        writerMaps.add(csvAnnotatedWriters);
-
-        for (Map<String, PrintWriter> writerMap: writerMaps) {
-            if (MapUtils.isNotEmpty(writerMap)) {
-                Iterator<PrintWriter> iterator = writerMap.values().iterator();
-                while (iterator.hasNext()) {
-                    iterator.next().close();
-                }
-            }
-        }
     }
 
     public void addVariantFiles(List<File> files) throws IOException {
-        //openCSVFiles(files, true);
-
         for (int i = 0; i < files.size(); i++) {
             File file = files.get(i);
             if (file.getName().endsWith("vcf") || file.getName().endsWith("vcf.gz")) {
@@ -100,24 +55,20 @@ public class Neo4JCSVImporter {
         }
     }
 
-    public void addReactomeFiles(List<File> files) {
-
-    }
-
     public void annotate(CellBaseClient cellBaseClient) throws IOException {
         // Annotate genes
         List<String> ids = new ArrayList();
-        csvWriters.get(Node.Type.GENE.toString()).close();
+        csv.getCsvWriters().get(Node.Type.GENE.toString()).close();
         logger.info("Annotating genes...");
-        Path oldPath = Paths.get(outputPath + "/GENE.csv");
-        Path newPath = Paths.get(outputPath + "/GENE.csv.annotated");
+        Path oldPath = Paths.get(csv.getOutputPath() + "/GENE.csv");
+        Path newPath = Paths.get(csv.getOutputPath() + "/GENE.csv.annotated");
         BufferedReader reader = FileUtils.newBufferedReader(oldPath);
         // Skip the header line to the new CSV file
         String line = reader.readLine();
         line = reader.readLine();
         int numGenes = 0;
         while (line != null) {
-            ids.add(line.split(SEPARATOR)[1]);
+            ids.add(line.split(csv.SEPARATOR)[1]);
             if (ids.size() > 200) {
                 annotateGenes(ids, cellBaseClient);
                 numGenes += ids.size();
@@ -152,49 +103,6 @@ public class Neo4JCSVImporter {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private void openCSVFiles() throws IOException {
-        PrintWriter pw;
-        String filename;
-
-        // CSV files for nodes
-        for (Node.Type type: Node.Type.values()) {
-            filename = type.toString() + ".csv";
-
-//            pw = new PrintWriter(new BufferedWriter(new FileWriter(outputPath + "/" + filename, !header)));
-            pw = new PrintWriter(outputPath + "/" + filename);
-            csvWriters.put(type.toString(), pw);
-
-            if (ListUtils.isNotEmpty(nodeAttributes.get(type.toString()))) {
-                pw.println(getNodeHeaderLine(nodeAttributes.get(type.toString())));
-            }
-        }
-
-        // For annotating purpose
-        List<String> types = new ArrayList<>();
-        types.add(Node.Type.GENE.toString());
-        types.add(Node.Type.TRANSCRIPT.toString());
-        for (String type: types) {
-            filename = type + ".csv.annotated";
-            pw = new PrintWriter(outputPath + "/" + filename);
-            csvAnnotatedWriters.put(type, pw);
-            if (ListUtils.isNotEmpty(nodeAttributes.get(type))) {
-                pw.println(getNodeHeaderLine(nodeAttributes.get(type)));
-            }
-        }
-
-        // CSV files for relationships
-        for (Relation.Type type: Relation.Type.values()) {
-            if (type.toString().contains("__")) {
-                filename = type.toString() + ".csv";
-//                pw = new PrintWriter(new BufferedWriter(new FileWriter(outputPath + "/" + filename, !header)));
-                pw = new PrintWriter(outputPath + "/" + filename);
-                csvWriters.put(type.toString(), pw);
-
-                pw.println(getRelationHeaderLine(type.toString()));
-            }
-        }
-    }
-
     private void addJSONFile(File file, boolean save) throws IOException {
         // Reading file line by line, each line a JSON object
         BufferedReader reader;
@@ -217,17 +125,17 @@ public class Neo4JCSVImporter {
         // Variant management
         String variantId = variant.toString();
 
-        Long variantUid = rocksDBManager.getLong(variantId, rocksDB);
+        Long variantUid = csv.getLong(variantId);
         if (variantUid != null && !save) {
             return;
         }
 
-        variantUid = ++uid;
-        rocksDBManager.putLong(variantId, variantUid, rocksDB);
+        variantUid = csv.getAndIncUid();
+        csv.putLong(variantId, variantUid);
 
         Node node = NodeBuilder.newNode(variantUid, variant);
-        PrintWriter pw = csvWriters.get(Node.Type.VARIANT.toString());
-        pw.println(nodeLine(node));
+        PrintWriter pw = csv.getCsvWriters().get(Node.Type.VARIANT.toString());
+        pw.println(csv.nodeLine(node));
 
 //        if (ListUtils.isNotEmpty(variant.getStudies())) {
 //            // Only one single study is supported
@@ -311,36 +219,36 @@ public class Neo4JCSVImporter {
             if (ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
                 // Consequence type nodes
                 for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
-                    Node ctNode = NodeBuilder.newNode(++uid, ct);
+                    Node ctNode = NodeBuilder.newNode(csv.getAndIncUid(), ct);
                     updateCSVFiles(variantUid, ctNode, Relation.Type.VARIANT__CONSEQUENCE_TYPE.toString());
 
                     // Gene
                     String geneName = ct.getEnsemblGeneId(); //getGeneName();
                     if (geneName != null) {
-                        Long geneUid = rocksDBManager.getLong(GENE_PREFIX + geneName, rocksDB);
+                        Long geneUid = csv.getLong(GENE_PREFIX + geneName);
                         if (geneUid == null) {
-                            node = new Node(++uid, ct.getEnsemblGeneId(), ct.getGeneName(), Node.Type.GENE);
+                            node = new Node(csv.getAndIncUid(), ct.getEnsemblGeneId(), ct.getGeneName(), Node.Type.GENE);
                             updateCSVFiles(ctNode.getUid(), node, Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
-                            rocksDBManager.putLong(GENE_PREFIX + geneName, node.getUid(), rocksDB);
+                            csv.putLong(GENE_PREFIX + geneName, node.getUid());
                         } else {
                             // Relation: consequence type - gene
-                            pw = csvWriters.get(Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
-                            pw.println(relationLine(ctNode.getUid(), geneUid));
+                            pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
+                            pw.println(csv.relationLine(ctNode.getUid(), geneUid));
                         }
                     }
 
                     // Transcript
                     String transcriptId = ct.getEnsemblTranscriptId();
                     if (transcriptId != null) {
-                        Long transcriptUid = rocksDBManager.getLong(transcriptId, rocksDB);
+                        Long transcriptUid = csv.getLong(transcriptId);
                         if (transcriptUid == null) {
-                            node = new Node(++uid, transcriptId, transcriptId, Node.Type.TRANSCRIPT);
+                            node = new Node(csv.getAndIncUid(), transcriptId, transcriptId, Node.Type.TRANSCRIPT);
                             updateCSVFiles(ctNode.getUid(), node, Relation.Type.CONSEQUENCE_TYPE__TRANSCRIPT.toString());
-                            rocksDBManager.putLong(transcriptId, node.getUid(), rocksDB);
+                            csv.putLong(transcriptId, node.getUid());
                         } else {
                             // Relation: consequence type - transcript
-                            pw = csvWriters.get(Relation.Type.CONSEQUENCE_TYPE__TRANSCRIPT.toString());
-                            pw.println(relationLine(ctNode.getUid(), transcriptUid));
+                            pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__TRANSCRIPT.toString());
+                            pw.println(csv.relationLine(ctNode.getUid(), transcriptUid));
                         }
                     }
 
@@ -349,15 +257,15 @@ public class Neo4JCSVImporter {
                         for (SequenceOntologyTerm so : ct.getSequenceOntologyTerms()) {
                             String soId = so.getAccession();
                             if (soId != null) {
-                                Long soUid = rocksDBManager.getLong(soId, rocksDB);
+                                Long soUid = csv.getLong(soId);
                                 if (soUid == null) {
-                                    node = new Node(++uid, so.getAccession(), so.getName(), Node.Type.SO);
+                                    node = new Node(csv.getAndIncUid(), so.getAccession(), so.getName(), Node.Type.SO);
                                     updateCSVFiles(ctNode.getUid(), node, Relation.Type.CONSEQUENCE_TYPE__SO.toString());
-                                    rocksDBManager.putLong(soId, node.getUid(), rocksDB);
+                                    csv.putLong(soId, node.getUid());
                                 } else {
                                     // Relation: consequence type - so
-                                    pw = csvWriters.get(Relation.Type.CONSEQUENCE_TYPE__SO.toString());
-                                    pw.println(relationLine(ctNode.getUid(), soUid));
+                                    pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__SO.toString());
+                                    pw.println(csv.relationLine(ctNode.getUid(), soUid));
                                 }
                             }
                         }
@@ -366,25 +274,25 @@ public class Neo4JCSVImporter {
                     // Protein variant annotation: substitution scores, keywords and features
                     if (ct.getProteinVariantAnnotation() != null) {
                         // Protein variant annotation node
-                        Node pVANode = NodeBuilder.newNode(++uid, ct.getProteinVariantAnnotation());
+                        Node pVANode = NodeBuilder.newNode(csv.getAndIncUid(), ct.getProteinVariantAnnotation());
                         updateCSVFiles(ctNode.getUid(), pVANode,
                                 Relation.Type.CONSEQUENCE_TYPE__PROTEIN_VARIANT_ANNOTATION.toString());
 
                         // Protein relationship management
                         String protAcc = ct.getProteinVariantAnnotation().getUniprotAccession();
                         if (protAcc != null) {
-                            Long protUid = rocksDBManager.getLong(protAcc, rocksDB);
+                            Long protUid = csv.getLong(protAcc);
                             if (protUid == null) {
                                 String protName = ct.getProteinVariantAnnotation().getUniprotName();
-                                node = new Node(++uid, protAcc, protName, Node.Type.PROTEIN);
+                                node = new Node(csv.getAndIncUid(), protAcc, protName, Node.Type.PROTEIN);
                                 updateCSVFiles(pVANode.getUid(), node,
                                         Relation.Type.PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString());
-                                rocksDBManager.putLong(protAcc, node.getUid(), rocksDB);
+                                csv.putLong(protAcc, node.getUid());
                             } else {
                                 // Relation: protein variant annotation - protein
-                                pw = csvWriters.get(Relation.Type
+                                pw = csv.getCsvWriters().get(Relation.Type
                                         .PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString());
-                                pw.println(relationLine(pVANode.getUid(), protUid));
+                                pw.println(csv.relationLine(pVANode.getUid(), protUid));
                             }
 
                         }
@@ -392,7 +300,7 @@ public class Neo4JCSVImporter {
                         // Protein substitution scores
                         if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getSubstitutionScores())) {
                             for (Score score: ct.getProteinVariantAnnotation().getSubstitutionScores()) {
-                                node = NodeBuilder.newNode(++uid, score, Node.Type.SUBSTITUTION_SCORE);
+                                node = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Type.SUBSTITUTION_SCORE);
                                 updateCSVFiles(pVANode.getUid(), node,
                                         Relation.Type.PROTEIN_VARIANT_ANNOTATION__SUBSTITUTION_SCORE.toString());
                             }
@@ -401,17 +309,17 @@ public class Neo4JCSVImporter {
                         // Protein keywords
                         if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getKeywords())) {
                             for (String keyword: ct.getProteinVariantAnnotation().getKeywords()) {
-                                Long kwUid = rocksDBManager.getLong(keyword, rocksDB);
+                                Long kwUid = csv.getLong(keyword);
                                 if (kwUid == null) {
-                                    node = new Node(++uid, keyword, keyword, Node.Type.PROTEIN_KEYWORD);
+                                    node = new Node(csv.getAndIncUid(), keyword, keyword, Node.Type.PROTEIN_KEYWORD);
                                     updateCSVFiles(pVANode.getUid(), node,
                                             Relation.Type.PROTEIN_VARIANT_ANNOTATION__PROTEIN_KEYWORD.toString());
-                                    rocksDBManager.putLong(keyword, node.getUid(), rocksDB);
+                                    csv.putLong(keyword, node.getUid());
                                 } else {
                                     // Relation: protein variant annotation - keyword
-                                    pw = csvWriters.get(Relation.Type
+                                    pw = csv.getCsvWriters().get(Relation.Type
                                             .PROTEIN_VARIANT_ANNOTATION__PROTEIN_KEYWORD.toString());
-                                    pw.println(relationLine(pVANode.getUid(), kwUid));
+                                    pw.println(csv.relationLine(pVANode.getUid(), kwUid));
                                 }
                             }
                         }
@@ -419,7 +327,7 @@ public class Neo4JCSVImporter {
                         // Protein features
                         if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getFeatures())) {
                             for (ProteinFeature feature: ct.getProteinVariantAnnotation().getFeatures()) {
-                                node = NodeBuilder.newNode(++uid, feature);
+                                node = NodeBuilder.newNode(csv.getAndIncUid(), feature);
                                 updateCSVFiles(pVANode.getUid(), node,
                                         Relation.Type.PROTEIN_VARIANT_ANNOTATION__PROTEIN_FEATURE.toString());
                             }
@@ -432,7 +340,7 @@ public class Neo4JCSVImporter {
             if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
                 for (PopulationFrequency popFreq : variant.getAnnotation().getPopulationFrequencies()) {
                     // Population frequency node
-                    node = NodeBuilder.newNode(++uid, popFreq);
+                    node = NodeBuilder.newNode(csv.getAndIncUid(), popFreq);
                     updateCSVFiles(variantUid, node, Relation.Type.VARIANT__POPULATION_FREQUENCY.toString());
                 }
             }
@@ -441,7 +349,7 @@ public class Neo4JCSVImporter {
             if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
                 for (Score score: variant.getAnnotation().getConservation()) {
                     // Conservation node
-                    node = NodeBuilder.newNode(++uid, score, Node.Type.CONSERVATION);
+                    node = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Type.CONSERVATION);
                     updateCSVFiles(variantUid, node, Relation.Type.VARIANT__CONSERVATION.toString());
                 }
             }
@@ -450,7 +358,7 @@ public class Neo4JCSVImporter {
             if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
                 for (EvidenceEntry evidence: variant.getAnnotation().getTraitAssociation()) {
                     // Trait association node
-                    node = NodeBuilder.newNode(++uid, evidence, Node.Type.TRAIT_ASSOCIATION);
+                    node = NodeBuilder.newNode(csv.getAndIncUid(), evidence, Node.Type.TRAIT_ASSOCIATION);
                     updateCSVFiles(variantUid, node, Relation.Type.VARIANT__TRAIT_ASSOCIATION.toString());
                 }
             }
@@ -459,7 +367,7 @@ public class Neo4JCSVImporter {
             if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
                 for (Score score: variant.getAnnotation().getFunctionalScore()) {
                     // Functional score node
-                    node = NodeBuilder.newNode(++uid, score, Node.Type.FUNCTIONAL_SCORE);
+                    node = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Type.FUNCTIONAL_SCORE);
                     updateCSVFiles(variantUid, node, Relation.Type.VARIANT__FUNCTIONAL_SCORE.toString());
                 }
             }
@@ -473,13 +381,13 @@ public class Neo4JCSVImporter {
     private void updateCSVFiles(long startUid, Node node, String relationType, boolean annotated) {
         // Update node CSV file
         PrintWriter pw = annotated
-                ? csvAnnotatedWriters.get(node.getType().toString())
-                : csvWriters.get(node.getType().toString());
-        pw.println(nodeLine(node));
+                ? csv.getCsvAnnotatedWriters().get(node.getType().toString())
+                : csv.getCsvWriters().get(node.getType().toString());
+        pw.println(csv.nodeLine(node));
 
         // Update relation CSV file
-        pw = csvWriters.get(relationType);
-        pw.println(relationLine(startUid, node.getUid()));
+        pw = csv.getCsvWriters().get(relationType);
+        pw.println(csv.relationLine(startUid, node.getUid()));
     }
 
     private void annotateGenes(List<String> ids, CellBaseClient cellBaseClient) throws IOException {
@@ -493,9 +401,9 @@ public class Neo4JCSVImporter {
             } else {
                 // This should not happen, but...
                 logger.error("CellBase does not found results for query {}", queryResult.toString());
-                Long geneUid = rocksDBManager.getLong(GENE_PREFIX + queryResult.getId(), rocksDB);
+                Long geneUid = csv.getLong(GENE_PREFIX + queryResult.getId());
                 Node node = new Node(geneUid, queryResult.getId(), null, Node.Type.GENE);
-                csvAnnotatedWriters.get(Node.Type.GENE.toString()).println(nodeLine(node));
+                csv.getCsvAnnotatedWriters().get(Node.Type.GENE.toString()).println(csv.nodeLine(node));
             }
         }
     }
@@ -505,11 +413,11 @@ public class Neo4JCSVImporter {
         // Gene node
         long geneUid;
         try {
-            geneUid = rocksDBManager.getLong(GENE_PREFIX + gene.getId(), rocksDB);
+            geneUid = csv.getLong(GENE_PREFIX + gene.getId());
 //          geneUid = rocksDBManager.getLong(GENE_PREFIX + gene.getName(), rocksDB);
             Node node = NodeBuilder.newNode(geneUid, gene);
-            pw = csvAnnotatedWriters.get(node.getType().toString());
-            pw.println(nodeLine(node));
+            pw = csv.getCsvAnnotatedWriters().get(node.getType().toString());
+            pw.println(csv.nodeLine(node));
         } catch (Exception e) {
             logger.warn("Internal error gene {}, {} is missing in database", gene.getId(), gene.getName());
             return;
@@ -518,25 +426,28 @@ public class Neo4JCSVImporter {
 
         // Transcripts
         if (ListUtils.isNotEmpty(gene.getTranscripts())) {
+//            System.out.println(gene.getId());
             for (Transcript transcript: gene.getTranscripts()) {
-                Long transcriptUid = rocksDBManager.getLong(transcript.getId(), rocksDB);
-                Long aTranscriptUid = rocksDBManager.getLong("a" + transcript.getId(), rocksDB);
+//                System.out.println("\t" + transcript.getId() + ", " + transcript.getName());
+                Long transcriptUid = csv.getLong(transcript.getId());
+                Long aTranscriptUid = csv.getLong("a" + transcript.getId());
                 if (aTranscriptUid == null) {
                     // Create new UID for the transcript and insert it into the rocksdb as annotated transcript
                     // Take the valid UID and insert it into the rocksdb as annotated transcript
-                    aTranscriptUid = transcriptUid == null ? ++uid : transcriptUid;
+                    aTranscriptUid = transcriptUid == null ? csv.getAndIncUid() : transcriptUid;
                     Node node = NodeBuilder.newNode(aTranscriptUid, transcript);
                     updateCSVFiles(geneUid, node, Relation.Type.GENE__TRANSCRIPT.toString(), true);
-                    rocksDBManager.putLong("a" + transcript.getId(), node.getUid(), rocksDB);
+                    csv.putLong("a" + transcript.getId(), node.getUid());
+                    csv.putString(geneUid + "." + aTranscriptUid, "1");
                 }
 
                 // Check gene-transcript relation and create it if it does not exist
-                String relGeneTrans = rocksDBManager.getString(geneUid + "." + aTranscriptUid, rocksDB);
+                String relGeneTrans = csv.getString(geneUid + "." + aTranscriptUid);
                 if (relGeneTrans == null) {
                     // Relation: gene - transcript
-                    pw = csvWriters.get(Relation.Type.GENE__TRANSCRIPT.toString());
-                    pw.println(relationLine(geneUid, aTranscriptUid));
-                    rocksDBManager.putString(geneUid + "." + aTranscriptUid, "1", rocksDB);
+                    pw = csv.getCsvWriters().get(Relation.Type.GENE__TRANSCRIPT.toString());
+                    pw.println(csv.relationLine(geneUid, aTranscriptUid));
+                    csv.putString(geneUid + "." + aTranscriptUid, "1");
                 }
 
 //                // Protein
@@ -547,7 +458,7 @@ public class Neo4JCSVImporter {
                 // Tfbs
                 if (ListUtils.isNotEmpty(transcript.getTfbs())) {
                     for (TranscriptTfbs tfbs: transcript.getTfbs()) {
-                        Node node = NodeBuilder.newNode(++uid, tfbs);
+                        Node node = NodeBuilder.newNode(csv.getAndIncUid(), tfbs);
                         updateCSVFiles(aTranscriptUid, node, Relation.Type.TRANSCRIPT__TFBS.toString());
                     }
                 }
@@ -571,16 +482,16 @@ public class Neo4JCSVImporter {
             // Drug
             if (ListUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
                 for (GeneDrugInteraction drug : gene.getAnnotation().getDrugs()) {
-                    Long drugUid = rocksDBManager.getLong(drug.getDrugName(), rocksDB);
+                    Long drugUid = csv.getLong(drug.getDrugName());
                     if (drugUid == null) {
-                        Node node = NodeBuilder.newNode(++uid, drug);
+                        Node node = NodeBuilder.newNode(csv.getAndIncUid(), drug);
                         updateCSVFiles(geneUid, node, Relation.Type.GENE__DRUG.toString());
 
-                        rocksDBManager.putLong(drug.getDrugName(), node.getUid(), rocksDB);
+                        csv.putLong(drug.getDrugName(), node.getUid());
                     } else {
                         // Relation: gene - drug
-                        pw = csvWriters.get(Relation.Type.GENE__DRUG.toString());
-                        pw.println(relationLine(geneUid, drugUid));
+                        pw = csv.getCsvWriters().get(Relation.Type.GENE__DRUG.toString());
+                        pw.println(csv.relationLine(geneUid, drugUid));
                     }
                 }
 
@@ -588,16 +499,16 @@ public class Neo4JCSVImporter {
                 if (ListUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
                     for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
                         String diseaseId = disease.getId() + "_" + (disease.getHpo() != null ? disease.getHpo() : "");
-                        Long diseaseUid = rocksDBManager.getLong(diseaseId, rocksDB);
+                        Long diseaseUid = csv.getLong(diseaseId);
                         if (diseaseUid == null) {
-                            Node node = NodeBuilder.newNode(++uid, disease);
+                            Node node = NodeBuilder.newNode(csv.getAndIncUid(), disease);
                             updateCSVFiles(geneUid, node, Relation.Type.GENE__DISEASE.toString());
 
-                            rocksDBManager.putLong(diseaseId, node.getUid(), rocksDB);
+                            csv.putLong(diseaseId, node.getUid());
                         } else {
                             // Relation: gene - disease
-                            pw = csvWriters.get(Relation.Type.GENE__DISEASE.toString());
-                            pw.println(relationLine(geneUid, diseaseUid));
+                            pw = csv.getCsvWriters().get(Relation.Type.GENE__DISEASE.toString());
+                            pw.println(csv.relationLine(geneUid, diseaseUid));
                         }
                     }
                 }
@@ -606,9 +517,9 @@ public class Neo4JCSVImporter {
     }
 
     private void checkTranscripts() throws IOException {
-        csvWriters.get(Node.Type.TRANSCRIPT.toString()).close();
+        csv.getCsvWriters().get(Node.Type.TRANSCRIPT.toString()).close();
 
-        Path oldPath = Paths.get(outputPath + "/TRANSCRIPT.csv");
+        Path oldPath = Paths.get(csv.getOutputPath() + "/TRANSCRIPT.csv");
         BufferedReader reader = FileUtils.newBufferedReader(oldPath);
         String line = reader.readLine();
         int numLine = 1;
@@ -616,170 +527,15 @@ public class Neo4JCSVImporter {
         ++numLine;
         while (line != null) {
             String id = line.split(",")[1];
-            if (rocksDBManager.getLong("a" + id, rocksDB) == null) {
-                csvAnnotatedWriters.get(Node.Type.TRANSCRIPT.toString()).println(line);
+            if (csv.getLong("a" + id) == null) {
+                csv.getCsvAnnotatedWriters().get(Node.Type.TRANSCRIPT.toString()).println(line);
             }
             line = reader.readLine();
         }
         reader.close();
 
-        Path newPath = Paths.get(outputPath + "/TRANSCRIPT.csv.annotated");
+        Path newPath = Paths.get(csv.getOutputPath() + "/TRANSCRIPT.csv.annotated");
         oldPath.toFile().delete();
         Files.move(newPath, oldPath);
-    }
-
-
-    private String getNodeHeaderLine(List<String> attrs) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("uid:ID(").append(attrs.get(0)).append(")");
-        for (int i = 1; i < attrs.size(); i++) {
-            sb.append(SEPARATOR).append(attrs.get(i));
-        }
-        return sb.toString();
-    }
-    private String getRelationHeaderLine(String type) {
-        StringBuilder sb = new StringBuilder();
-        String[] split = type.split("__");
-        sb.append(":START_ID(").append(nodeAttributes.get(split[0]).get(0)).append("),:END_ID(")
-                .append(nodeAttributes.get(split[1]).get(0)).append(")");
-        return sb.toString();
-    }
-
-    private String nodeLine(Node node) {
-        List<String> attrs = nodeAttributes.get(node.getType().toString());
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(node.getUid()).append(SEPARATOR);
-        String value = cleanString(node.getId());
-        sb.append(StringUtils.isEmpty(value) ? MISSING_VALUE : value).append(SEPARATOR);
-        value = cleanString(node.getName());
-        sb.append(StringUtils.isEmpty(value) ? MISSING_VALUE : value);
-        for (int i = 3; i < attrs.size(); i++) {
-            value = cleanString(node.getAttributes().getString(attrs.get(i)));
-            sb.append(SEPARATOR).append(StringUtils.isEmpty(value) ? MISSING_VALUE : value);
-        }
-
-        return sb.toString();
-    }
-
-    private String relationLine(long startUid, long endUid) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(startUid).append(SEPARATOR).append(endUid);
-        return sb.toString();
-    }
-
-    private String cleanString(String input) {
-        if (StringUtils.isNotEmpty(input)) {
-            return input.replace(",", ";").replace("\"", "");
-        } else {
-            return null;
-        }
-    }
-
-    private Map<String, List<String>> createNodeAttributes() {
-        List<String> attrs;
-        Map<String, List<String>> nodeAttributes = new HashMap<>();
-
-        //variant: (uid:ID(variantId),id,name,chromosome,start,end,reference,alternate,strand,type)
-        attrs = Arrays.asList("variantId", "id", "name", "alternativeNames", "chromosome", "start", "end", "strand",
-                "reference", "alternate", "type");
-        nodeAttributes.put(Node.Type.VARIANT.toString(), new ArrayList<>(attrs));
-
-        //population frequency: (uid:ID(popFreqId),id,name,study,population,refAlleleFreq,altAlleleFreq)
-        attrs = Arrays.asList("popFreqId", "id", "name", "study", "population", "refAlleleFreq", "altAlleleFreq");
-        nodeAttributes.put(Node.Type.POPULATION_FREQUENCY.toString(), new ArrayList<>(attrs));
-
-        //conservation: (uid:ID(consId),id,name,score,source,description)
-        attrs = Arrays.asList("consId", "id", "name", "score", "source", "description");
-        nodeAttributes.put(Node.Type.CONSERVATION.toString(), new ArrayList<>(attrs));
-
-        //functional score: (uid:ID(consId),id,name,score,source,description)
-        attrs = Arrays.asList("funcScoreId", "id", "name", "score", "source", "description");
-        nodeAttributes.put(Node.Type.FUNCTIONAL_SCORE.toString(), new ArrayList<>(attrs));
-
-        //trait association: (uid:ID(traitId),name,url,heritableTraits,source,alleleOrigin)
-        attrs = Arrays.asList("traitId", "id", "name", "url", "heritableTraits", "source", "alleleOrigin");
-        nodeAttributes.put(Node.Type.TRAIT_ASSOCIATION.toString(), new ArrayList<>(attrs));
-
-        //consequence type: (uid:ID(ctId),id,name,biotype,cdnaPosition,cdsPosition,codon,strand,gene,transcript,
-        // transcriptAnnotationFlags,exonOverlap)
-        attrs = Arrays.asList("consTypeId", "id", "name", "study", "biotype", "cdnaPosition", "cdsPosition", "codon",
-                "strand", "gene", "transcript", "transcriptAnnotationFlags", "exonOverlap");
-        nodeAttributes.put(Node.Type.CONSEQUENCE_TYPE.toString(), new ArrayList<>(attrs));
-
-        //protein variant annotation: (uid:ID(protAnnId),id,name,position,reference,alternate,functionalDescription)
-        attrs = Arrays.asList("protVarAnnoId", "id", "name", "position", "reference", "alternate",
-                "functionalDescription");
-        nodeAttributes.put(Node.Type.PROTEIN_VARIANT_ANNOTATION.toString(), new ArrayList<>(attrs));
-
-        //gene: (uid:ID(geneId),id,name,biotype,chromosome,start,end,strand,description,source,status)
-        attrs = Arrays.asList("geneId", "id", "name", "biotype", "chromosome", "start", "end", "strand", "description",
-                "source", "status");
-        nodeAttributes.put(Node.Type.GENE.toString(), new ArrayList<>(attrs));
-
-        //drug: (uid:ID(drugId),id,name,source,type,studyType)
-        attrs = Arrays.asList("drugId", "id", "name", "source", "type", "studyType");
-        nodeAttributes.put(Node.Type.DRUG.toString(), new ArrayList<>(attrs));
-
-        //disease: (uid:ID(diseaseId),id,name,hpo,numberOfPubmeds,score,source,sources,associationType)
-        attrs = Arrays.asList("diseaseId", "id", "name", "hpo", "numberOfPubmeds", "score", "source", "sources",
-                "associationType");
-        nodeAttributes.put(Node.Type.DISEASE.toString(), new ArrayList<>(attrs));
-
-        //transcript: (uid:ID(transcriptId),id,name,proteinId,biotype,chromosome,start,end,strand,status,
-        // cdnaCodingStart,cdnaCodingEnd,genomicCodingStart,genomicCodingEnd,cdsLength,description,annotationFlags
-        attrs = Arrays.asList("transcriptId", "id", "name", "proteinId", "biotype", "chromosome", "start", "end",
-                "strand", "status", "cdnaCodingStart", "cdnaCodingEnd", "genomicCodingStart", "genomicCodingEnd",
-                "cdsLength", "description", "annotationFlags");
-        nodeAttributes.put(Node.Type.TRANSCRIPT.toString(), new ArrayList<>(attrs));
-
-        //tfbs: (uid:ID(tfbsId),id,name,chromosome,start,end,strand,relativeStart,relativEnd,score,pwm)
-        attrs = Arrays.asList("tfbsId", "id", "name", "chromosome", "start", "end", "strand", "relativeStart",
-                "relativeEnd", "score", "pwm");
-        nodeAttributes.put(Node.Type.TFBS.toString(), new ArrayList<>(attrs));
-
-        //xref: (uid:ID(xrefId),id,name,dbName,dbDisplayName,description)
-        attrs = Arrays.asList("xrefId", "id", "name", "dbName", "dbDisplayName", "description");
-        nodeAttributes.put(Node.Type.XREF.toString(), new ArrayList<>(attrs));
-
-        //protein: (uid:ID(proteinId),id,name,accession,dataset,dbReference,proteinExistence,evidence
-        attrs = Arrays.asList("protId", "id", "name", "accession", "dataset", "dbReference", "proteinExistence",
-                "evidence");
-        nodeAttributes.put(Node.Type.PROTEIN.toString(), new ArrayList<>(attrs));
-
-        //keyword: (uid:ID(kwId),id,name,evidence)
-        attrs = Arrays.asList("kwId", "id", "name", "evidence");
-        nodeAttributes.put(Node.Type.PROTEIN_KEYWORD.toString(), new ArrayList<>(attrs));
-
-        //feature: (uid:ID(featureId),id,name,evidence,location_position,location_begin,location_end,description)
-        attrs = Arrays.asList("protFeatureId", "id", "name", "evidence", "location_position", "location_begin",
-                "location_end", "description");
-        nodeAttributes.put(Node.Type.PROTEIN_FEATURE.toString(), new ArrayList<>(attrs));
-
-        //sample: (uid:ID(sampleId),id,name)
-        attrs = Arrays.asList("sampleId", "id", "name");
-        nodeAttributes.put(Node.Type.SAMPLE.toString(), new ArrayList<>(attrs));
-
-        //variantCall: (uid:ID(variantCallId),id,name)
-        attrs = Arrays.asList("variantCallId", "id", "name");
-        nodeAttributes.put(Node.Type.VARIANT_CALL.toString(), new ArrayList<>(attrs));
-
-        //variantFileInfo: (uid:ID(variantFileInfoId),id,name)
-        attrs = Arrays.asList("variantFileInfoId", "id", "name");
-        nodeAttributes.put(Node.Type.VARIANT_FILE_INFO.toString(), new ArrayList<>(attrs));
-
-        //so: (uid:ID(soId),id,name)
-        attrs = Arrays.asList("soId", "id", "name");
-        nodeAttributes.put(Node.Type.SO.toString(), new ArrayList<>(attrs));
-
-        //proteinVariantAnnotation: (uid:ID(protVarAnnoId),id,name)
-        attrs = Arrays.asList("protVarAnnoId", "id", "name");
-        nodeAttributes.put(Node.Type.PROTEIN_VARIANT_ANNOTATION.toString(), new ArrayList<>(attrs));
-
-        //substitutionScore: (uid:ID(substScoreId),id,name)
-        attrs = Arrays.asList("substScoreId", "id", "name", "score");
-        nodeAttributes.put(Node.Type.SUBSTITUTION_SCORE.toString(), new ArrayList<>(attrs));
-
-        return nodeAttributes;
     }
 }

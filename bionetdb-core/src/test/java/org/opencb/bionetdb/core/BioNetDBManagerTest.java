@@ -11,6 +11,9 @@ import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.bionetdb.core.utils.CSVInfo;
+import org.opencb.bionetdb.core.utils.Neo4JBioPAXImporter;
 import org.opencb.bionetdb.core.utils.Neo4JCSVImporter;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
@@ -22,6 +25,7 @@ import org.opencb.commons.utils.ListUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -112,29 +116,6 @@ public class BioNetDBManagerTest {
     }
 
     @Test
-    public void createCSVFiles() throws BioNetDBException, URISyntaxException, IOException, InterruptedException {
-        Path output = Paths.get("/home/jtarraga/data150/load.neo/csv");
-        Neo4JCSVImporter importer = new Neo4JCSVImporter(output);
-
-        List<File> variantFiles = new ArrayList();
-        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.1k.json"));
-        //variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json"));
-        importer.addVariantFiles(variantFiles);
-
-//        List<File> reactomeFiles = new ArrayList();
-//        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/Homo_sapiens.owl"));
-//        importer.addReactomeFiles(reactomeFiles);
-
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh37", clientConfiguration);
-        importer.annotate(cellBaseClient);
-
-        importer.close();
-    }
-
-    @Test
     public void importJSON() throws BioNetDBException, URISyntaxException, IOException, InterruptedException {
 //        bioNetDBManager.loadVcf(Paths.get("/home/jtarraga/data150/vcf/5k.vcf"));
         Path neo4jHome = Paths.get("/home/jtarraga/soft/neo4j/packaging/standalone/target/neo4j-community-3.2.8-SNAPSHOT/");
@@ -193,7 +174,7 @@ public class BioNetDBManagerTest {
 
     @Test
     public void annotateGenes() throws BioNetDBException, IOException {
-       // annotateVariants();
+        // annotateVariants();
         List<String> ids = new ArrayList<>();
 
         ids.add("SDF4");//ENSG00000227232");
@@ -316,7 +297,92 @@ public class BioNetDBManagerTest {
             for (Object item: list) {
                 System.out.print(item + ", ");
             }
-            System.out.println();
         }
     }
+
+
+    //////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
+    @Test
+    public void createCSVFiles() throws BioNetDBException, URISyntaxException, IOException, InterruptedException {
+        Path output = Paths.get("/home/jtarraga/data150/load.neo/csv");
+        CSVInfo csv = new CSVInfo(output);
+        // Open CSV files
+        csv.openCSVFiles();
+
+        Neo4JCSVImporter importer = new Neo4JCSVImporter(csv);
+        Neo4JBioPAXImporter bioPAXImporter = new Neo4JBioPAXImporter(csv, new BPAXProcessing(csv));
+
+        // JSON variant files
+        List<File> variantFiles = new ArrayList();
+        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.1k.json"));
+        //variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json"));
+        importer.addVariantFiles(variantFiles);
+
+        // Import BioPAX files
+        List<File> reactomeFiles = new ArrayList();
+        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/Homo_sapiens.owl"));
+//        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/hsapiens.metabolism.biopax3"));
+        bioPAXImporter.addReactomeFiles(reactomeFiles);
+
+        // Annotate genes and proteins
+//        ClientConfiguration clientConfiguration = new ClientConfiguration();
+//        clientConfiguration.setVersion("v4");
+//        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+//        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh37", clientConfiguration);
+//        importer.annotate(cellBaseClient);
+
+        // Close CSV files
+        csv.close();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+
+    public class BPAXProcessing implements Neo4JBioPAXImporter.BioPAXProcessing {
+        private CSVInfo csv;
+
+        public BPAXProcessing(CSVInfo csv) {
+            this.csv = csv;
+        }
+
+        @Override
+        public void processNodes(List<Node> nodes) {
+            PrintWriter pw;
+            for (Node node: nodes) {
+                pw = csv.getCsvWriters().get(node.getType().toString());
+                pw.println(csv.nodeLine(node));
+            }
+        }
+
+        // Debug purposes
+        private Set<String> notdefined = new HashSet<>();
+
+
+        @Override
+        public void processRelations(List<Relation> relations) {
+            PrintWriter pw;
+            for (Relation relation: relations) {
+//                if (relation.getType() == Relation.Type.COMPONENT_OF_PATHWAY) {
+                String id = relation.getType()
+                        + "___" + relation.getOrigType()
+                        + "___" + relation.getDestType();
+                pw = csv.getCsvWriters().get(id);
+                if (pw == null) {
+                    if (!notdefined.contains(id)) {
+                        System.out.println("\t\t >>> " + id);
+                        notdefined.add(id);
+                    }
+                } else {
+                    pw.println(csv.relationLine(relation.getOrigUid(), relation.getDestUid()));
+                }
+
+//                }
+                //System.out.println(relation);
+            }
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
+
+
 }
