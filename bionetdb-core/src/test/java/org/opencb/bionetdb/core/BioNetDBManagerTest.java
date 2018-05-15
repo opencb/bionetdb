@@ -311,15 +311,19 @@ public class BioNetDBManagerTest {
         csv.openCSVFiles();
 
         Neo4JCSVImporter importer = new Neo4JCSVImporter(csv);
-        Neo4JBioPAXImporter bioPAXImporter = new Neo4JBioPAXImporter(csv, new BPAXProcessing(csv));
 
         // JSON variant files
-        List<File> variantFiles = new ArrayList();
-        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.1k.json"));
-        //variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json"));
-        importer.addVariantFiles(variantFiles);
+//        List<File> variantFiles = new ArrayList();
+//        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.1k.json"));
+//        //variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json"));
+//        importer.addVariantFiles(variantFiles);
 
         // Import BioPAX files
+        Map<String, Set<String>> filters = new HashMap<>();
+        Set<String> set = new HashSet<>();
+        set.add("Reactome Database ID Release 63");
+        filters.put(Neo4JBioPAXImporter.FilterField.XREF_DBNAME.toString(), set);
+        Neo4JBioPAXImporter bioPAXImporter = new Neo4JBioPAXImporter(csv, filters, new BPAXProcessing(csv));
         List<File> reactomeFiles = new ArrayList();
         reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/Homo_sapiens.owl"));
 //        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/hsapiens.metabolism.biopax3"));

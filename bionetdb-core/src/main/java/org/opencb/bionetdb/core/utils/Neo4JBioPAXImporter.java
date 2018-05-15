@@ -29,8 +29,10 @@ public class Neo4JBioPAXImporter {
     private String source;
     private Map<String, Set<String>> filters;
 
-    private Map<String, Long> rdfToUidMap;
-    private Map<Long, Node.Type> uidToTypeMap;
+    private Map<String, Long> rdfToUid;
+    private Map<Long, Node.Type> uidToType;
+    private Map<String, Long> protRdfIdToCelLocUid;
+    private Set<String> celLocUidSet;
 
     private List<Node> nodes;
     private List<Relation> relations;
@@ -68,8 +70,10 @@ public class Neo4JBioPAXImporter {
         this.filters = filters;
         this.bioPAXProcessing = bioPAXProcessing;
 
-        this.rdfToUidMap = new HashMap<>();
-        this.uidToTypeMap = new HashMap<>();
+        this.rdfToUid = new HashMap<>();
+        this.uidToType = new HashMap<>();
+        this.protRdfIdToCelLocUid = new HashMap<>();
+        this.celLocUidSet = new HashSet<>();
 
         this.nodes = new ArrayList<>();
         this.relations = new ArrayList<>();
@@ -143,10 +147,47 @@ public class Neo4JBioPAXImporter {
                     break;
                 }
                 case "Protein": {
-                    node = loadProtein(bioPAXElement);
-                    updateAuxMaps(node);
+                    String protName = ((Protein) bioPAXElement).getDisplayName();
+                    Long protUid = (protName == null ? null : csv.getLong(protName));
+                    if (protUid == null) {
+                        node = loadProtein(bioPAXElement);
+                        updateAuxMaps(node);
 
-                    updatePhysicalEntity(bioPAXElement);
+                        updatePhysicalEntity(bioPAXElement);
+                        if (protName != null) {
+                            csv.putLong(node.getName(), node.getUid());
+                        }
+                    } else {
+                        // The protein node exists, then it is not created but the RDF ID has to be save to be
+                        // referenced later for the possible relationships (interaction, complex,...)
+                        String protRDFId = getBioPaxId(bioPAXElement.getRDFId());
+                        rdfToUid.put(protRDFId, protUid);
+                        uidToType.put(protUid, Node.Type.PROTEIN);
+
+                        // And create the cellular location node and relationship if necessary
+                        Long celLocUid;
+                        Node cellularLocNode;
+                        for (String name: ((PhysicalEntity) bioPAXElement).getCellularLocation().getTerm()) {
+                            celLocUid = csv.getLong("cl." + name);
+                            if (celLocUid == null) {
+                                cellularLocNode = new Node(csv.getAndIncUid(), null, name, Node.Type.CELLULAR_LOCATION,
+                                        source);
+                                nodes.add(cellularLocNode);
+                                celLocUid = cellularLocNode.getUid();
+                                csv.putLong("cl." + name, celLocUid);
+                            }
+                            protRdfIdToCelLocUid.put(protRDFId, celLocUid);
+
+                            Relation relation = new Relation(csv.getAndIncUid(), null, protUid,
+                                    Node.Type.PROTEIN, celLocUid, Node.Type.CELLULAR_LOCATION,
+                                    Relation.Type.CELLULAR_LOCATION, source);
+                            relations.add(relation);
+                            celLocUidSet.add(protUid + "." + celLocUid);
+
+                            // Get the first term
+                            break;
+                        }
+                    }
                     break;
                 }
                 case "Complex": {
@@ -387,12 +428,6 @@ public class Neo4JBioPAXImporter {
 
         // Common properties
         setPhysicalEntityCommonProperties(proteinBP, node);
-
-//        Long protUid = csv.getLong(node.getName());
-//        if (protUid == null) {
-//            node.setUid(csv.getAndIncUid());
-//            csv.putLong(node.getName(), protUid);
-//        }
 
         // Protein properties
         if (proteinBP.getEntityReference() != null) {
@@ -857,8 +892,8 @@ public class Neo4JBioPAXImporter {
         PhysicalEntity physicalEntityBP = (PhysicalEntity) bioPAXElement;
 
         String physicalEntityId = getBioPaxId(physicalEntityBP.getRDFId());
-        Long physicalEntityUid = rdfToUidMap.get(physicalEntityId);
-        Node.Type physicalEntityType = uidToTypeMap.get(physicalEntityUid);
+        Long physicalEntityUid = rdfToUid.get(physicalEntityId);
+        Node.Type physicalEntityType = uidToType.get(physicalEntityUid);
 
         // = SPECIFIC PROPERTIES =
 
@@ -882,11 +917,15 @@ public class Neo4JBioPAXImporter {
                 celLocUid = cellularLocNode.getUid();
                 csv.putLong("cl." + name, celLocUid);
             }
+            if (physicalEntityType == Node.Type.PROTEIN) {
+                protRdfIdToCelLocUid.put(physicalEntityId, celLocUid);
+            }
 
             Relation relation = new Relation(csv.getAndIncUid(), null, physicalEntityUid,
-                    uidToTypeMap.get(physicalEntityUid), celLocUid, Node.Type.CELLULAR_LOCATION,
+                    uidToType.get(physicalEntityUid), celLocUid, Node.Type.CELLULAR_LOCATION,
                     Relation.Type.CELLULAR_LOCATION, source);
             relations.add(relation);
+            celLocUidSet.add(physicalEntityUid + "." + celLocUid);
 
             // Get the first term
             break;
@@ -952,29 +991,32 @@ public class Neo4JBioPAXImporter {
         Complex complexBP = (Complex) bioPAXElement;
 
         String complexId = getBioPaxId(complexBP.getRDFId());
-        Long complexUid = rdfToUidMap.get(complexId);
-        Node.Type complexType = uidToTypeMap.get(complexUid);
+        Long complexUid = rdfToUid.get(complexId);
+        Node.Type complexType = uidToType.get(complexUid);
 
         // Stoichiometry
         Map<Long, Float> stoichiometryMap = new HashMap<>();
         Set<Stoichiometry> stoichiometryItems = complexBP.getComponentStoichiometry();
         for (Stoichiometry stoichiometryItem: stoichiometryItems) {
             String peId = getBioPaxId(stoichiometryItem.getPhysicalEntity().getRDFId());
-            Long peUid = rdfToUidMap.get(peId);
+            Long peUid = rdfToUid.get(peId);
             stoichiometryMap.put(peUid, stoichiometryItem.getStoichiometricCoefficient());
         }
 
         // Components
         Set<PhysicalEntity> components = complexBP.getComponent();
         for (PhysicalEntity component: components) {
-            Long componentUid = rdfToUidMap.get(getBioPaxId(component.getRDFId()));
-            Node.Type componentType = uidToTypeMap.get(componentUid);
+            Long componentUid = rdfToUid.get(getBioPaxId(component.getRDFId()));
+            Node.Type componentType = uidToType.get(componentUid);
             Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, complexUid,
                     complexType, Relation.Type.COMPONENT_OF_COMPLEX, source);
             if (stoichiometryMap.containsKey(componentUid)) {
                 relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
             }
             relations.add(relation);
+
+            // Check to add cellular location
+            checkProteinCellularLoc(getBioPaxId(component.getRDFId()), componentType, complexUid, complexType);
         }
     }
 
@@ -983,14 +1025,14 @@ public class Neo4JBioPAXImporter {
         Pathway pathwayBP = (Pathway) bioPAXElement;
 
         String pathwayId = getBioPaxId(pathwayBP.getRDFId());
-        Long pathwayUid = rdfToUidMap.get(pathwayId);
-        Node.Type pathwayType = uidToTypeMap.get(pathwayUid);
+        Long pathwayUid = rdfToUid.get(pathwayId);
+        Node.Type pathwayType = uidToType.get(pathwayUid);
 
         // Components
         Set<Process> components = pathwayBP.getPathwayComponent();
         for (Process component: components) {
-            Long componentUid = rdfToUidMap.get(getBioPaxId(component.getRDFId()));
-            Node.Type componentType = uidToTypeMap.get(componentUid);
+            Long componentUid = rdfToUid.get(getBioPaxId(component.getRDFId()));
+            Node.Type componentType = uidToType.get(componentUid);
             Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, pathwayUid,
                     pathwayType, Relation.Type.COMPONENT_OF_PATHWAY, source);
             relations.add(relation);
@@ -1000,14 +1042,14 @@ public class Neo4JBioPAXImporter {
         Set<PathwayStep> pathwayOrder = pathwayBP.getPathwayOrder();
         for (PathwayStep pathwayStep: pathwayOrder) {
             for (Process currentStep: pathwayStep.getStepProcess()) {
-                Long currentStepUid = rdfToUidMap.get(getBioPaxId(currentStep.getRDFId()));
-                Node.Type currentStepType = uidToTypeMap.get(currentStepUid);
+                Long currentStepUid = rdfToUid.get(getBioPaxId(currentStep.getRDFId()));
+                Node.Type currentStepType = uidToType.get(currentStepUid);
 
                 for (PathwayStep pathwayNextStep: pathwayStep.getNextStep()) {
                     for (Process nextStep: pathwayNextStep.getStepProcess()) {
-                        if (rdfToUidMap.containsKey(getBioPaxId(nextStep.getRDFId()))) {
-                            Long nextStepUid = rdfToUidMap.get(getBioPaxId(nextStep.getRDFId()));
-                            Node.Type nextStepType = uidToTypeMap.get(nextStepUid);
+                        if (rdfToUid.containsKey(getBioPaxId(nextStep.getRDFId()))) {
+                            Long nextStepUid = rdfToUid.get(getBioPaxId(nextStep.getRDFId()));
+                            Node.Type nextStepType = uidToType.get(nextStepUid);
                             try {
                                 Relation relation = new Relation(csv.getAndIncUid(), null, currentStepUid,
                                         currentStepType, nextStepUid, nextStepType, Relation.Type.PATHWAY_NEXT_STEP,
@@ -1035,28 +1077,36 @@ public class Neo4JBioPAXImporter {
                 TemplateReaction templateReactBP = (TemplateReaction) bioPAXElement;
 
                 String templateReactId = getBioPaxId(templateReactBP.getRDFId());
-                Long templateReactUid = rdfToUidMap.get(templateReactId);
-                Node.Type templateReactType = uidToTypeMap.get(templateReactUid);
+                Long templateReactUid = rdfToUid.get(templateReactId);
+                Node.Type templateReactType = uidToType.get(templateReactUid);
 
                 // TemplateReaction properties
 
                 // Reactants
                 if (templateReactBP.getTemplate() != null) {
-                    Long reactantUid = rdfToUidMap.get(getBioPaxId(templateReactBP.getTemplate().getRDFId()));
-                    Node.Type reactantType = uidToTypeMap.get(reactantUid);
+                    Long reactantUid = rdfToUid.get(getBioPaxId(templateReactBP.getTemplate().getRDFId()));
+                    Node.Type reactantType = uidToType.get(reactantUid);
                     Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid,
                             templateReactType, reactantUid, reactantType, Relation.Type.REACTANT, source);
                     relations.add(relation);
+
+                    // Check to add cellular location
+                    checkProteinCellularLoc(getBioPaxId(templateReactBP.getTemplate().getRDFId()), reactantType,
+                            templateReactUid, templateReactType);
                 }
 
                 // Products
                 Set<PhysicalEntity> products = templateReactBP.getProduct();
                 for (PhysicalEntity product: products) {
-                    Long productUid = rdfToUidMap.get(getBioPaxId(product.getRDFId()));
-                    Node.Type productType = uidToTypeMap.get(productUid);
+                    Long productUid = rdfToUid.get(getBioPaxId(product.getRDFId()));
+                    Node.Type productType = uidToType.get(productUid);
                     Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid,
                             templateReactType, productUid, productType, Relation.Type.PRODUCT, source);
                     relations.add(relation);
+
+                    // Check to add cellular location
+                    checkProteinCellularLoc(getBioPaxId(product.getRDFId()), productType, templateReactUid,
+                            templateReactType);
                 }
                 break;
             case "BiochemicalReaction":
@@ -1067,8 +1117,8 @@ public class Neo4JBioPAXImporter {
                 Conversion conversionBP = (Conversion) bioPAXElement;
 
                 String conversionId = getBioPaxId(conversionBP.getRDFId());
-                Long conversionUid = rdfToUidMap.get(conversionId);
-                Node.Type conversionType = uidToTypeMap.get(conversionUid);
+                Long conversionUid = rdfToUid.get(conversionId);
+                Node.Type conversionType = uidToType.get(conversionUid);
 
                 // Left items
                 List<String> leftItems = new ArrayList<>();
@@ -1117,25 +1167,31 @@ public class Neo4JBioPAXImporter {
                 if (type1 != null && type2 != null) {
                     // Reactants
                     for (String id: leftItems) {
-                        Long uid = rdfToUidMap.get(id);
-                        Node.Type type = uidToTypeMap.get(uid);
+                        Long uid = rdfToUid.get(id);
+                        Node.Type type = uidToType.get(uid);
                         Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionType,
                                 uid, type, type1, source);
                         if (stoichiometryMap.containsKey(id)) {
                             relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
                         }
                         relations.add(relation);
+
+                        // Check to add cellular location
+                        checkProteinCellularLoc(id, type, conversionUid, conversionType);
                     }
 
                     // Products
                     for (String id: rightItems) {
-                        Long uid = rdfToUidMap.get(id);
-                        Node.Type type = uidToTypeMap.get(uid);
+                        Long uid = rdfToUid.get(id);
+                        Node.Type type = uidToType.get(uid);
                         Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionType, uid, type, type2, source);
                         if (stoichiometryMap.containsKey(id)) {
                             relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
                         }
                         relations.add(relation);
+
+                        // Check to add cellular location
+                        checkProteinCellularLoc(id, type, conversionUid, conversionType);
                     }
                 }
 
@@ -1160,37 +1216,47 @@ public class Neo4JBioPAXImporter {
         Catalysis catalysisBP = (Catalysis) bioPAXElement;
 
         String catalysisId = getBioPaxId(catalysisBP.getRDFId());
-        Long catalysisUid = rdfToUidMap.get(catalysisId);
-        Node.Type catalysisType = uidToTypeMap.get(catalysisUid);
+        Long catalysisUid = rdfToUid.get(catalysisId);
+        Node.Type catalysisType = uidToType.get(catalysisUid);
 
         // Controllers
         Set<Controller> controllers = catalysisBP.getController();
         for (Controller controller: controllers) {
-            Long controllerUid = rdfToUidMap.get(getBioPaxId(controller.getRDFId()));
-            Node.Type controllerType = uidToTypeMap.get(controllerUid);
+            Long controllerUid = rdfToUid.get(getBioPaxId(controller.getRDFId()));
+            Node.Type controllerType = uidToType.get(controllerUid);
             Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, controllerUid,
                     controllerType, Relation.Type.CONTROLLER, source);
             relations.add(relation);
+
+            // Check to add cellular location
+            checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerType, catalysisUid, catalysisType);
         }
 
         // Controlled
         Set<Process> controlledProcesses = catalysisBP.getControlled();
         for (Process controlledProcess: controlledProcesses) {
-            Long controlledUid = rdfToUidMap.get(getBioPaxId(controlledProcess.getRDFId()));
-            Node.Type controlledType = uidToTypeMap.get(controlledUid);
+            Long controlledUid = rdfToUid.get(getBioPaxId(controlledProcess.getRDFId()));
+            Node.Type controlledType = uidToType.get(controlledUid);
             Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, controlledUid,
                     controlledType, Relation.Type.CONTROLLED, source);
             relations.add(relation);
+
+            // Check to add cellular location
+            checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledType, catalysisUid,
+                    catalysisType);
         }
 
         // Cofactor
         Set<PhysicalEntity> cofactors = catalysisBP.getCofactor();
         for (PhysicalEntity cofactor: cofactors) {
-            Long cofactorUid = rdfToUidMap.get(getBioPaxId(cofactor.getRDFId()));
-            Node.Type cofactorType = uidToTypeMap.get(cofactorUid);
+            Long cofactorUid = rdfToUid.get(getBioPaxId(cofactor.getRDFId()));
+            Node.Type cofactorType = uidToType.get(cofactorUid);
             Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, cofactorUid,
                     cofactorType, Relation.Type.COFACTOR, source);
             relations.add(relation);
+
+            // Check to add cellular location
+            checkProteinCellularLoc(getBioPaxId(cofactor.getRDFId()), cofactorType, catalysisUid, catalysisType);
         }
     }
 
@@ -1198,29 +1264,49 @@ public class Neo4JBioPAXImporter {
         Control controlBP = (Control) bioPAXElement;
 
         String controlId = getBioPaxId(controlBP.getRDFId());
-        Long controlUid = rdfToUidMap.get(controlId);
-        Node.Type controlType = uidToTypeMap.get(controlUid);
+        Long controlUid = rdfToUid.get(controlId);
+        Node.Type controlType = uidToType.get(controlUid);
 
         // Regulation properties
 
         // Controllers
         Set<Controller> controllers = controlBP.getController();
         for (Controller controller: controllers) {
-            Long controllerUid = rdfToUidMap.get(getBioPaxId(controller.getRDFId()));
-            Node.Type controllerType = uidToTypeMap.get(controllerUid);
+            Long controllerUid = rdfToUid.get(getBioPaxId(controller.getRDFId()));
+            Node.Type controllerType = uidToType.get(controllerUid);
             Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlType, controllerUid,
                     controllerType, Relation.Type.CONTROLLER, source);
             relations.add(relation);
+
+            // Check to add cellular location
+            checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerType, controlUid, controlType);
         }
 
         // Controlled
         Set<Process> controlledProcesses = controlBP.getControlled();
         for (Process controlledProcess: controlledProcesses) {
-            Long controlledUid = rdfToUidMap.get(getBioPaxId(controlledProcess.getRDFId()));
-            Node.Type controlledType = uidToTypeMap.get(controlledUid);
+            Long controlledUid = rdfToUid.get(getBioPaxId(controlledProcess.getRDFId()));
+            Node.Type controlledType = uidToType.get(controlledUid);
             Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlType, controlledUid,
                     controlledType, Relation.Type.CONTROLLED, source);
             relations.add(relation);
+
+            // Check to add cellular location
+            checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledType, controlUid, controlType);
+        }
+    }
+
+    private void checkProteinCellularLoc(String proteinRdfId, Node.Type proteinType, long targetUid, Node.Type targetType) {
+        if (proteinType == Node.Type.PROTEIN) {
+            if (protRdfIdToCelLocUid.containsKey(proteinRdfId)) {
+                long celLocUid = protRdfIdToCelLocUid.get(proteinRdfId);
+                if (!celLocUidSet.contains(targetUid + "." + celLocUid)) {
+                    Relation relation = new Relation(csv.getAndIncUid(), null, targetUid, targetType, celLocUid,
+                            Node.Type.CELLULAR_LOCATION, Relation.Type.CELLULAR_LOCATION, source);
+                    relations.add(relation);
+                    celLocUidSet.add(targetUid + "." + celLocUid);
+                }
+            }
         }
     }
 
@@ -1294,7 +1380,7 @@ public class Neo4JBioPAXImporter {
     }
 
     private void updateAuxMaps(Node node) {
-        rdfToUidMap.put(node.getId(), node.getUid());
-        uidToTypeMap.put(node.getUid(), node.getType());
+        rdfToUid.put(node.getId(), node.getUid());
+        uidToType.put(node.getUid(), node.getType());
     }
 }

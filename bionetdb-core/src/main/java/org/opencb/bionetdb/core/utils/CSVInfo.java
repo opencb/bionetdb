@@ -89,7 +89,9 @@ public class CSVInfo {
         PATHWAY_NEXT_STEP___CATALYSIS___PATHWAY("PATHWAY_NEXT_STEP___CATALYSIS___PATHWAY"),
         PATHWAY_NEXT_STEP___PATHWAY___CATALYSIS("PATHWAY_NEXT_STEP___PATHWAY___CATALYSIS"),
         PATHWAY_NEXT_STEP___PATHWAY___REACTION("PATHWAY_NEXT_STEP___PATHWAY___REACTION"),
-        PATHWAY_NEXT_STEP___PATHWAY___REGULATION("PATHWAY_NEXT_STEP___PATHWAY___REGULATION");
+        PATHWAY_NEXT_STEP___PATHWAY___REGULATION("PATHWAY_NEXT_STEP___PATHWAY___REGULATION"),
+
+        XREF___PROTEIN___XREF("XREF___PROTEIN___XREF");
 
         private final String relation;
 
@@ -226,10 +228,8 @@ public class CSVInfo {
     private String getBioPAXRelationHeaderLine(String type) {
         StringBuilder sb = new StringBuilder();
         String[] split = type.split("___");
-        System.out.println("--------------> " + type);
         sb.append(":START_ID(").append(nodeAttributes.get(split[1]).get(0)).append("),:END_ID(")
                 .append(nodeAttributes.get(split[2]).get(0)).append(")");
-        System.out.println("\t" + sb.toString());
         return sb.toString();
     }
 

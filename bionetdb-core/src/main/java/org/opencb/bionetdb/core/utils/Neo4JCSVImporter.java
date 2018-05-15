@@ -450,6 +450,7 @@ public class Neo4JCSVImporter {
                     csv.putString(geneUid + "." + aTranscriptUid, "1");
                 }
 
+
 //                // Protein
 //                if (transcript.getProteinID() != null) {
 //                    Node node =  new Node();
