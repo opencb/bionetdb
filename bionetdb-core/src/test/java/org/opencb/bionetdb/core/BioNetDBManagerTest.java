@@ -312,29 +312,38 @@ public class BioNetDBManagerTest {
 
         Neo4JCSVImporter importer = new Neo4JCSVImporter(csv);
 
-        // JSON variant files
-//        List<File> variantFiles = new ArrayList();
-//        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.1k.json"));
-//        //variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json"));
-//        importer.addVariantFiles(variantFiles);
+        // CellBase client
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setVersion("v4");
+        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh38", clientConfiguration);
 
         // Import BioPAX files
-        Map<String, Set<String>> filters = new HashMap<>();
-        Set<String> set = new HashSet<>();
-        set.add("Reactome Database ID Release 63");
-        filters.put(Neo4JBioPAXImporter.FilterField.XREF_DBNAME.toString(), set);
-        Neo4JBioPAXImporter bioPAXImporter = new Neo4JBioPAXImporter(csv, filters, new BPAXProcessing(csv));
-        List<File> reactomeFiles = new ArrayList();
-        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/Homo_sapiens.owl"));
-//        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/hsapiens.metabolism.biopax3"));
-        bioPAXImporter.addReactomeFiles(reactomeFiles);
+//        Map<String, Set<String>> filters = new HashMap<>();
+//        Set<String> set = new HashSet<>();
+//        set.add("Reactome Database ID Release 63");
+//        filters.put(Neo4JBioPAXImporter.FilterField.XREF_DBNAME.toString(), set);
+//        Neo4JBioPAXImporter bioPAXImporter = new Neo4JBioPAXImporter(csv, filters, new BPAXProcessing(csv));
+//        List<File> reactomeFiles = new ArrayList();
+//        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/Homo_sapiens.owl"));
+////        reactomeFiles.add(new File("/home/jtarraga/data150/load.neo/hsapiens.metabolism.biopax3"));
+//        bioPAXImporter.addReactomeFiles(reactomeFiles);
 
-        // Annotate genes and proteins
-//        ClientConfiguration clientConfiguration = new ClientConfiguration();
-//        clientConfiguration.setVersion("v4");
-//        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-//        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh37", clientConfiguration);
-//        importer.annotate(cellBaseClient);
+        // Annotate proteins
+//        importer.annotateProteins(cellBaseClient);
+
+        // JSON variant files
+        List<File> variantFiles = new ArrayList();
+//        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.100k.json"));
+//        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.json"));
+//        variantFiles.add(new File("/home/jtarraga/data150/load.neo/clinvar.1k.json"));
+        variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json"));
+//        variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.1m.json"));
+//        variantFiles.add(new File("/home/jtarraga/data150/load.neo/illumina_platinum.export.json.gz"));
+        importer.addVariantFiles(variantFiles);
+
+        // Annotate genes
+//        importer.annotateGenes(cellBaseClient);
 
         // Close CSV files
         csv.close();

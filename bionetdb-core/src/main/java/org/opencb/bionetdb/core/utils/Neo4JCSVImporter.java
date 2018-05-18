@@ -1,9 +1,11 @@
 package org.opencb.bionetdb.core.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.network.Node;
@@ -55,7 +57,7 @@ public class Neo4JCSVImporter {
         }
     }
 
-    public void annotate(CellBaseClient cellBaseClient) throws IOException {
+    public void annotateGenes(CellBaseClient cellBaseClient) throws IOException {
         // Annotate genes
         List<String> ids = new ArrayList();
         csv.getCsvWriters().get(Node.Type.GENE.toString()).close();
@@ -93,7 +95,57 @@ public class Neo4JCSVImporter {
         Files.move(newPath, oldPath);
 
         // Sanity check for TRANSCRIPTS, annotated and not!
-        checkTranscripts();
+        checkTranscripts(cellBaseClient);
+
+        // Process trancripts in order to create transcript-protein relationships
+        //linkTranscriptProtein(cellBaseClient);
+    }
+
+    public void annotateProteins(CellBaseClient cellBaseClient) throws IOException {
+        // Annotate proteins
+        List<String> ids = new ArrayList();
+        csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).close();
+        logger.info("Annotating proteins...");
+        Path oldPath = Paths.get(csv.getOutputPath() + "/PROTEIN.csv");
+        Path newPath = Paths.get(csv.getOutputPath() + "/PROTEIN.csv.annotated");
+        BufferedReader reader = FileUtils.newBufferedReader(oldPath);
+        // Skip the header line to the new CSV file
+        String id, line = reader.readLine();
+        line = reader.readLine();
+        int numProteins = 0;
+        int numSkip = 0;
+        int numAnnotatedProteins = 0;
+        while (line != null) {
+            id = line.split(csv.SEPARATOR)[2];
+            numProteins++;
+            if (id.contains("(") || id.contains("/")) {
+                numSkip++;
+                //logger.info("=======> skip id: " + id);
+            } else {
+                ids.add(id);
+                if (ids.size() > 200) {
+                    numAnnotatedProteins += annotateProteins(ids, cellBaseClient);
+                    ids.clear();
+                }
+            }
+
+            // Read next line
+            line = reader.readLine();
+        }
+        if (ids.size() > 0) {
+            numAnnotatedProteins += annotateProteins(ids, cellBaseClient);
+        }
+        reader.close();
+        logger.info("Annotating proteins done!");
+        logger.info("Total annotated proteins {} of {}", numAnnotatedProteins, numProteins);
+        logger.info("Skipping {} proteins for invalid", numSkip);
+
+//        // Rename GENE files
+//        oldPath.toFile().delete();
+//        Files.move(newPath, oldPath);
+//
+//        // Sanity check for TRANSCRIPTS, annotated and not!
+//        checkTranscripts();
     }
 
     public void importCSVFiles() {
@@ -103,17 +155,22 @@ public class Neo4JCSVImporter {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private void addJSONFile(File file, boolean save) throws IOException {
+    private void addJSONFile(File file, boolean first) throws IOException {
         // Reading file line by line, each line a JSON object
         BufferedReader reader;
         ObjectMapper mapper = new ObjectMapper();
+
+        File metaFile = new File(file.getAbsoluteFile() + ".meta.json");
+        if (metaFile.exists()) {
+            csv.openMetadataFile(metaFile);
+        }
 
         logger.info("Processing JSON file {}", file.getPath());
         reader = FileUtils.newBufferedReader(file.toPath());
         String line = reader.readLine();
         while (line != null) {
             Variant variant = mapper.readValue(line, Variant.class);
-            processVariant(variant, save);
+            processVariant(variant, first);
 
             // read next line
             line = reader.readLine();
@@ -121,12 +178,13 @@ public class Neo4JCSVImporter {
         reader.close();
     }
 
-    private void processVariant(Variant variant, boolean save) {
+    private void processVariant(Variant variant, boolean first) {
         // Variant management
         String variantId = variant.toString();
 
         Long variantUid = csv.getLong(variantId);
-        if (variantUid != null && !save) {
+        if (variantUid != null && !first) {
+            processSampleInfo(variant);
             return;
         }
 
@@ -137,81 +195,7 @@ public class Neo4JCSVImporter {
         PrintWriter pw = csv.getCsvWriters().get(Node.Type.VARIANT.toString());
         pw.println(csv.nodeLine(node));
 
-//        if (ListUtils.isNotEmpty(variant.getStudies())) {
-//            // Only one single study is supported
-//            StudyEntry studyEntry = variant.getStudies().get(0);
-//
-//            if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
-//                // INFO management: FILTER, QUAL and info fields
-//                String filename = studyEntry.getFiles().get(0).getFileId();
-//                String infoId = variantId + "_" + filename;
-//                Map<String, String> fileAttrs = studyEntry.getFiles().get(0).getAttributes();
-//
-//                sb.setLength(0);
-//                Iterator<String> iterator = csv.infoSet.iterator();
-//                while (iterator.hasNext()) {
-//                    String infoName = iterator.next();
-//                    if (sb.length() > 0) {
-//                        sb.append(",");
-//                    }
-//                    if (fileAttrs.containsKey(infoName)) {
-//                        sb.append(fileAttrs.get(infoName).replace(",", ";"));
-//                    } else {
-//                        sb.append("-");
-//                    }
-//                }
-//                pw = csv.csvWriterMap.get(Node.Type.VARIANT_FILE_INFO.toString());
-//                pw.print(infoId + "," + infoId + "," + filename);
-//                if (sb.length() > 0) {
-//                    pw.print(",");
-//                    pw.println(sb.toString());
-//                } else {
-//                    pw.println();
-//                }
-//
-//                // FORMAT: GT and format attributes
-//                for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
-//                    sb.setLength(0);
-//                    String sampleName = sampleNames == null ? "sample_" + i : sampleNames.get(i);
-//                    String formatId = variantId + "_" + sampleName;
-//
-//                    sb.setLength(0);
-//                    iterator = csv.formatSet.iterator();
-//                    while (iterator.hasNext()) {
-//                        String formatName = iterator.next();
-//                        if (sb.length() > 0) {
-//                            sb.append(",");
-//                        }
-//                        if (studyEntry.getFormatPositions().containsKey(formatName)) {
-//                            sb.append(studyEntry.getSampleData(i).get(studyEntry.getFormatPositions()
-//                                    .get(formatName)).replace(",", ";"));
-//                        } else {
-//                            sb.append("-");
-//                        }
-//                    }
-//                    pw = csv.csvWriterMap.get(Node.Type.VARIANT_CALL.toString());
-//                    pw.print(formatId + "," + formatId);
-//                    if (sb.length() > 0) {
-//                        pw.print(",");
-//                        pw.println(sb.toString());
-//                    } else {
-//                        pw.println();
-//                    }
-//
-//                    // Relation: variant - variant call
-//                    pw = csv.csvWriterMap.get(Relation.Type.VARIANT__VARIANT_CALL.toString());
-//                    pw.println(importRelationNode(variantId, formatId));
-//
-//                    // Relation: sample - variant call
-//                    pw = csv.csvWriterMap.get(Relation.Type.SAMPLE__VARIANT_CALL.toString());
-//                    pw.println(importRelationNode(sampleName, formatId));
-//
-//                    // Relation: variant call - variant file info
-//                    pw = csv.csvWriterMap.get(Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString());
-//                    pw.println(importRelationNode(formatId, infoId));
-//                }
-//            }
-//        }
+        processSampleInfo(variant);
 
         // Annotation management
         if (variant.getAnnotation() != null) {
@@ -228,12 +212,16 @@ public class Neo4JCSVImporter {
                         Long geneUid = csv.getLong(GENE_PREFIX + geneName);
                         if (geneUid == null) {
                             node = new Node(csv.getAndIncUid(), ct.getEnsemblGeneId(), ct.getGeneName(), Node.Type.GENE);
-                            updateCSVFiles(ctNode.getUid(), node, Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
+                            // Update node CSV file
+//                            updateCSVFiles(ctNode.getUid(), node, Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
+                            pw = csv.getCsvWriters().get(node.getType().toString());
+                            pw.println(csv.nodeLine(node));
+
                             csv.putLong(GENE_PREFIX + geneName, node.getUid());
-                        } else {
-                            // Relation: consequence type - gene
-                            pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
-                            pw.println(csv.relationLine(ctNode.getUid(), geneUid));
+//                        } else {
+//                            // Relation: consequence type - gene
+//                            pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
+//                            pw.println(csv.relationLine(ctNode.getUid(), geneUid));
                         }
                     }
 
@@ -283,18 +271,26 @@ public class Neo4JCSVImporter {
                         if (protAcc != null) {
                             Long protUid = csv.getLong(protAcc);
                             if (protUid == null) {
-                                String protName = ct.getProteinVariantAnnotation().getUniprotName();
-                                node = new Node(csv.getAndIncUid(), protAcc, protName, Node.Type.PROTEIN);
-                                updateCSVFiles(pVANode.getUid(), node,
-                                        Relation.Type.PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString());
-                                csv.putLong(protAcc, node.getUid());
+                                Long xrefUid = csv.getLong("x0." + protAcc);
+                                if (xrefUid != null) {
+//                                    logger.info("PVA, accession {} found as xref {}", protAcc, xrefUid);
+                                    // Relation: protein variant annotation - protein
+                                    Long xrefTargetUid = csv.getLong("x1." + protAcc);
+                                    pw = csv.getCsvWriters().get(Relation.Type
+                                            .PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString());
+                                    pw.println(csv.relationLine(pVANode.getUid(), xrefTargetUid));
+                                }
+//                                String protName = ct.getProteinVariantAnnotation().getUniprotName();
+//                                node = new Node(csv.getAndIncUid(), protAcc, protName, Node.Type.PROTEIN);
+//                                updateCSVFiles(pVANode.getUid(), node,
+//                                        Relation.Type.PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString());
+//                                csv.putLong(protAcc, node.getUid());
                             } else {
                                 // Relation: protein variant annotation - protein
                                 pw = csv.getCsvWriters().get(Relation.Type
                                         .PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString());
                                 pw.println(csv.relationLine(pVANode.getUid(), protUid));
                             }
-
                         }
 
                         // Protein substitution scores
@@ -374,6 +370,112 @@ public class Neo4JCSVImporter {
         }
     }
 
+    private void processSampleInfo(Variant variant) {
+        String variantId = variant.toString();
+        Long variantUid = csv.getLong(variantId);
+
+        if (ListUtils.isNotEmpty(variant.getStudies())) {
+            PrintWriter pw;
+
+            // Only one single study is supported
+            StudyEntry studyEntry = variant.getStudies().get(0);
+
+            if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
+                // INFO management: FILTER, QUAL and info fields
+                String filename = studyEntry.getFiles().get(0).getFileId();
+                String infoId = variantId + "_" + filename;
+                Long infoUid = csv.getLong(infoId);
+                if (infoUid == null) {
+                    infoUid = csv.getAndIncUid();
+                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_FILE_INFO.toString());
+                    pw.print(variantInfoLine(infoUid, studyEntry));
+                }
+
+                // FORMAT: GT and format attributes
+                for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
+                    String sampleName = csv.getSampleNames() == null ? "sample" + (i + 1) : csv.getSampleNames().get(i);
+                    Long sampleUid = csv.getLong(sampleName);
+                    if (sampleUid == null) {
+                        sampleUid = csv.getAndIncUid();
+                        pw = csv.getCsvWriters().get(Node.Type.SAMPLE.toString());
+                        pw.println(sampleUid + "," + sampleName + "," + sampleName);
+                        csv.putLong(sampleName, sampleUid);
+                    }
+                    Long formatUid = csv.getAndIncUid();
+                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_CALL.toString());
+                    pw.println(variantFormatLine(formatUid, studyEntry, i));
+
+                    // Relation: variant - variant call
+                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT__VARIANT_CALL.toString());
+                    pw.println(csv.relationLine(variantUid, formatUid));
+
+                    // Relation: sample - variant call
+                    pw = csv.getCsvWriters().get(Relation.Type.SAMPLE__VARIANT_CALL.toString());
+                    pw.println(csv.relationLine(sampleUid, formatUid));
+
+                    // Relation: variant call - variant file info
+                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString());
+                    pw.println(csv.relationLine(formatUid, infoUid));
+                }
+            }
+        }
+    }
+
+    private String variantInfoLine(long infoUid, StudyEntry studyEntry) {
+        StringBuilder sb = new StringBuilder();
+//                Map<String, String> fileAttrs = studyEntry.getFiles().get(0).getAttributes();
+//
+//                sb.setLength(0);
+//                Iterator<String> iterator = csv.infoSet.iterator();
+//                while (iterator.hasNext()) {
+//                    String infoName = iterator.next();
+//                    if (sb.length() > 0) {
+//                        sb.append(",");
+//                    }
+//                    if (fileAttrs.containsKey(infoName)) {
+//                        sb.append(fileAttrs.get(infoName).replace(",", ";"));
+//                    } else {
+//                        sb.append("-");
+//                    }
+//                }
+//                    if (sb.length() > 0) {
+//                        pw.print(",");
+//                        pw.println(sb.toString());
+//                    } else {
+//                        pw.println();
+//                    }
+//        pw.println();
+//        pw.print(infoUid + "," + infoUid + "," + filename);
+        return sb.toString();
+    }
+
+    private String variantFormatLine(long formatUid, StudyEntry studyEntry, int index) {
+        StringBuilder sb = new StringBuilder();
+
+//                    sb.setLength(0);
+//                    iterator = csv.formatSet.iterator();
+//                    while (iterator.hasNext()) {
+//                        String formatName = iterator.next();
+//                        if (sb.length() > 0) {
+//                            sb.append(",");
+//                        }
+//                        if (studyEntry.getFormatPositions().containsKey(formatName)) {
+//                            sb.append(studyEntry.getSampleData(i).get(studyEntry.getFormatPositions()
+//                                    .get(formatName)).replace(",", ";"));
+//                        } else {
+//                            sb.append("-");
+//                        }
+//                    }
+//                    if (sb.length() > 0) {
+//                        pw.print(",");
+//                        pw.println(sb.toString());
+//                    } else {
+//                        pw.println();
+//                    }
+        //formatUid + "," + formatId + "," + studyEntry.getSampleData(i).get(0)
+        return sb.toString();
+    }
+
     private void updateCSVFiles(long startUid, Node node, String relationType) {
         updateCSVFiles(startUid, node, relationType, false);
     }
@@ -401,9 +503,9 @@ public class Neo4JCSVImporter {
             } else {
                 // This should not happen, but...
                 logger.error("CellBase does not found results for query {}", queryResult.toString());
-                Long geneUid = csv.getLong(GENE_PREFIX + queryResult.getId());
-                Node node = new Node(geneUid, queryResult.getId(), null, Node.Type.GENE);
-                csv.getCsvAnnotatedWriters().get(Node.Type.GENE.toString()).println(csv.nodeLine(node));
+//                Long geneUid = csv.getLong(GENE_PREFIX + queryResult.getId());
+//                Node node = new Node(geneUid, queryResult.getId(), null, Node.Type.GENE);
+//                csv.getCsvAnnotatedWriters().get(Node.Type.GENE.toString()).println(csv.nodeLine(node));
             }
         }
     }
@@ -517,8 +619,131 @@ public class Neo4JCSVImporter {
         }
     }
 
-    private void checkTranscripts() throws IOException {
+    private int annotateProteins(List<String> ids, CellBaseClient cellBaseClient) throws IOException {
+        int counter = 0;
+        List<String> notFound = new ArrayList<>();
+        QueryOptions options = new QueryOptions("EXCLUDE", "reference,comment,sequence,evidence");
+        QueryResponse<Entry> response = cellBaseClient.getProteinClient().get(ids, options);
+        for (QueryResult<Entry> result: response.getResponse()) {
+            if (ListUtils.isNotEmpty(result.getResult())) {
+                counter += result.getResult().size();
+                for (Entry protein: result.getResult()) {
+                    processProtein(protein, result.getId());
+                }
+//            } else {
+                // This should not happen, but...
+//                notFound.add(result.getId());
+                //Query query = new Query(ProteinDBAdaptor.QueryParams.XREFS.toString(), "");
+
+//                QueryResponse<Entry> response = cellBaseClient.getProteinClient().search(query, options);
+//                logger.info("CellBase does not found results for query {}, try later", result.getId());
+//                Long geneUid = csv.getLong(GENE_PREFIX + result.getId());
+//                Node node = new Node(geneUid, queryResult.getId(), null, Node.Type.GENE);
+//                csv.getCsvAnnotatedWriters().get(Node.Type.GENE.toString()).println(csv.nodeLine(node));
+            }
+        }
+//        Query query = new Query(ProteinDBAdaptor.QueryParams.XREFS.toString(),
+//                StringUtils.join(notFound, ","));
+//        response = cellBaseClient.getProteinClient().search(query, options);
+//        for (QueryResult<Entry> result: response.getResponse()) {
+//            if (ListUtils.isNotEmpty(result.getResult())) {
+//                counter += result.getResult().size();
+//                for (Entry protein: result.getResult()) {
+//                    logger.info("!!!! Second chance and successfull for query {}", result.getId());
+//                    processProtein(protein, result.getId());
+//                }
+//            } else {
+//                // This should not happen, but...
+//                logger.info("Second chance, and CellBase does not found results for query {}", result.getId());
+//            }
+//        }
+
+        return counter;
+    }
+
+    private void processProtein(Entry protein, String id) {
+        PrintWriter pw;
+        Long protUid = csv.getLong(id);
+        if (protUid != null) {
+            for (String acc: protein.getAccession()) {
+                Long xrefUid = csv.getLong("x0." + acc);
+                if (xrefUid == null) {
+                    Node node = new Node(csv.getAndIncUid(), acc, acc, Node.Type.XREF);
+                    node.addAttribute("dbName", "uniprot");
+                    pw = csv.getCsvWriters().get(node.getType().toString());
+                    pw.println(csv.nodeLine(node));
+
+                    xrefUid = node.getUid();
+                    csv.putLong("x0." + acc, xrefUid);
+                }
+                Long xrefTargetUid = csv.getLong("x1." + acc);
+                if (xrefTargetUid == null) {
+                    pw = csv.getCsvWriters().get(CSVInfo.BioPAXRelation.XREF___PROTEIN___XREF.toString());
+                    pw.println(csv.relationLine(protUid, xrefUid));
+                    csv.putLong("x1." + acc, protUid);
+                } else {
+                    if (xrefTargetUid != protUid) {
+                        logger.info("!!!! XREF {} points these proteins {}, {}", acc, protUid, xrefTargetUid);
+                    }
+                }
+
+            }
+        } else {
+            logger.error("Protein {} is not stored in database", id);
+        }
+    }
+
+    private int processTranscripts(List<String> ids, CellBaseClient cellBaseClient) throws IOException {
+        int counter = 0;
+        PrintWriter pw;
+        //Query query = new Query(ProteinDBAdaptor.QueryParams.XREFS.toString(), ids);
+        QueryOptions options = new QueryOptions("exclude", "reference,comment,sequence,evidence");
+        logger.info("Calling CellBase to get protein IDs from {} transcripts...", ids.size());
+        QueryResponse<Entry> response = cellBaseClient.getProteinClient().get(ids, options);
+        logger.info("\t...done!");
+        for (QueryResult<Entry> result : response.getResponse()) {
+            if (ListUtils.isNotEmpty(result.getResult())) {
+                counter += result.getResult().size();
+                String transcriptId = result.getId();
+                Long transcriptUid = csv.getLong(transcriptId);
+                if (transcriptUid != null) {
+                    for (Entry protein : result.getResult()) {
+                        if (ListUtils.isNotEmpty(protein.getAccession())) {
+                            for (String acc : protein.getAccession()) {
+                                Long uid = csv.getLong(acc);
+                                if (uid != null) {
+                                    // This is the protein itself
+                                    if (csv.getLong(transcriptUid + "." + uid) == null) {
+                                        pw = csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__PROTEIN.toString());
+                                        pw.println(csv.relationLine(transcriptUid, uid));
+                                        csv.putLong(transcriptUid + "." + uid, 1);
+                                    }
+                                } else {
+                                    uid = csv.getLong("x1." + acc);
+                                    if (uid != null) {
+                                        if (csv.getLong(transcriptUid + "." + uid) == null) {
+                                            // This is a XREF to the protein
+                                            pw = csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__PROTEIN.toString());
+                                            pw.println(csv.relationLine(transcriptUid, uid));
+                                            csv.putLong(transcriptUid + "." + uid, 1);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    logger.info("Transcript {} is not stored in the datahase", transcriptId);
+                }
+            }
+        }
+        return counter;
+    }
+
+    private void checkTranscripts(CellBaseClient cellBaseClient) throws IOException {
         csv.getCsvWriters().get(Node.Type.TRANSCRIPT.toString()).close();
+
+        List<String> ids = new ArrayList<>();
 
         Path oldPath = Paths.get(csv.getOutputPath() + "/TRANSCRIPT.csv");
         BufferedReader reader = FileUtils.newBufferedReader(oldPath);
@@ -531,9 +756,22 @@ public class Neo4JCSVImporter {
             if (csv.getLong("a" + id) == null) {
                 csv.getCsvAnnotatedWriters().get(Node.Type.TRANSCRIPT.toString()).println(line);
             }
+
+            // Process ids
+            ids.add(id);
+            if (ids.size() > 200) {
+                processTranscripts(ids, cellBaseClient);
+                ids.clear();
+            }
+
             line = reader.readLine();
         }
         reader.close();
+
+        // Remaining ids to process
+        if (ids.size() > 0) {
+            processTranscripts(ids, cellBaseClient);
+        }
 
         Path newPath = Paths.get(csv.getOutputPath() + "/TRANSCRIPT.csv.annotated");
         oldPath.toFile().delete();

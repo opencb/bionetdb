@@ -1348,13 +1348,23 @@ public class Neo4JBioPAXImporter {
             return;
         }
 
-        Node xrefNode = new Node(csv.getAndIncUid(), xrefId, xrefId, Node.Type.XREF, source);
-        xrefNode.addAttribute("dbName", dbName);
-        nodes.add(xrefNode);
+        // Only process XREF for proteins
+        if (type == Node.Type.PROTEIN) {
+            Long xrefUid = csv.getLong("x0." + xrefId);
+            if (xrefUid == null) {
+                Node xrefNode = new Node(csv.getAndIncUid(), xrefId, xrefId, Node.Type.XREF, source);
+                xrefNode.addAttribute("dbName", dbName);
+                nodes.add(xrefNode);
 
-        Relation relation = new Relation(csv.getAndIncUid(), null, uid, type, xrefNode.getUid(), xrefNode.getType(),
-                Relation.Type.XREF, source);
-        relations.add(relation);
+                xrefUid = xrefNode.getUid();
+                csv.putLong("x0." + xrefId, xrefUid);
+                csv.putLong("x1." + xrefId, uid);
+            }
+
+            Relation relation = new Relation(csv.getAndIncUid(), null, uid, type, xrefUid, Node.Type.XREF,
+                    Relation.Type.XREF, source);
+            relations.add(relation);
+        }
     }
 
 /*

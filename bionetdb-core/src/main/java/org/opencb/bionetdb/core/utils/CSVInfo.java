@@ -1,15 +1,20 @@
 package org.opencb.bionetdb.core.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tools.ant.util.FileUtils;
+import org.opencb.biodata.models.metadata.Individual;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.commons.utils.ListUtils;
 import org.rocksdb.RocksDB;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -19,6 +24,8 @@ public class CSVInfo {
 
     private long uid;
     private Path outputPath;
+
+    private List<String> sampleNames;
 
     private Map<String, PrintWriter> csvWriters;
     private Map<String, PrintWriter> csvAnnotatedWriters;
@@ -111,6 +118,8 @@ public class CSVInfo {
 
         this.outputPath = outputPath;
 
+        this.sampleNames = null;
+
         this.csvWriters = new HashMap<>();
         this.csvAnnotatedWriters = new HashMap<>();
         this.nodeAttributes = createNodeAttributes();
@@ -146,6 +155,7 @@ public class CSVInfo {
         List<String> types = new ArrayList<>();
         types.add(Node.Type.GENE.toString());
         types.add(Node.Type.TRANSCRIPT.toString());
+        types.add(Node.Type.PROTEIN.toString());
         for (String type : types) {
             filename = type + ".csv.annotated";
             pw = new PrintWriter(outputPath + "/" + filename);
@@ -190,6 +200,43 @@ public class CSVInfo {
                 }
             }
         }
+    }
+
+    public void openMetadataFile(File metafile) throws IOException {
+        String metadata = FileUtils.readFully(new BufferedReader(new FileReader(metafile.getAbsolutePath())));
+        ObjectMapper mapper = new ObjectMapper();
+        VariantMetadata variantMetadata = mapper.readValue(metadata, VariantMetadata.class);
+        sampleNames = new ArrayList<>();
+        if (ListUtils.isNotEmpty(variantMetadata.getStudies())) {
+            VariantStudyMetadata variantStudyMetadata = variantMetadata.getStudies().get(0);
+            for (Individual individual: variantStudyMetadata.getIndividuals()) {
+                sampleNames.add(individual.getSamples().get(0).getId());
+            }
+
+            if (ListUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
+                for (VariantFileMetadata variantFileMetadata: variantStudyMetadata.getFiles()) {
+                    putString(variantFileMetadata.getId(), variantFileMetadata.getPath());
+                    if (variantFileMetadata.getHeader() != null) {
+                        for (VariantFileHeaderComplexLine line: variantFileMetadata.getHeader().getComplexLines()) {
+                            if ("INFO".equals(line.getKey())) {
+                                infoFields.add(line.getId());
+                            } else if ("FORMAT".equals(line.getKey())) {
+                                formatFields.add(line.getId());
+                            }
+                        }
+                    }
+
+                }
+//                VariantFileMetadata variantFileMetadata = variantStudyMetadata.getFiles().get(0);
+//                for (String key: variantFileMetadata.getAttributes().keySet()) {
+//                    System.out.println(key);
+//                }
+            }
+        }
+
+
+
+        System.out.println(sampleNames);
     }
 
     public Long getLong(String key) {
@@ -446,6 +493,15 @@ public class CSVInfo {
 
     public CSVInfo setOutputPath(Path outputPath) {
         this.outputPath = outputPath;
+        return this;
+    }
+
+    public List<String> getSampleNames() {
+        return sampleNames;
+    }
+
+    public CSVInfo setSampleNames(List<String> sampleNames) {
+        this.sampleNames = sampleNames;
         return this;
     }
 
