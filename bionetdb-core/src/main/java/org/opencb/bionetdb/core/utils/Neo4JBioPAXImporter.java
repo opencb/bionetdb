@@ -56,6 +56,7 @@ public class Neo4JBioPAXImporter {
     }
 
     public interface BioPAXProcessing {
+        String SEPARATOR = "___";
         void processNodes(List<Node> nodes);
         void processRelations(List<Relation> relations);
     }

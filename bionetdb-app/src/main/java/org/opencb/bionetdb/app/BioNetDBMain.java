@@ -51,6 +51,9 @@ public class BioNetDBMain {
                     case "load":
                         commandExecutor = new LoadCommandExecutor(cliOptionsParser.getLoadCommandOptions());
                         break;
+                    case "import":
+                        commandExecutor = new ImportCommandExecutor(cliOptionsParser.getImportCommandOptions());
+                        break;
                     case "query":
                         commandExecutor = new QueryCommandExecutor(cliOptionsParser.getQueryCommandOptions());
                         break;

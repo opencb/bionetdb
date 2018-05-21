@@ -18,6 +18,7 @@ public class CliOptionsParser {
 
     private BuildCommandOptions buildCommandOptions;
     private LoadCommandOptions loadCommandOptions;
+    private ImportCommandOptions importCommandOptions;
     private QueryCommandOptions queryCommandOptions;
     private VariantAnnotationCommandOptions variantAnnotationCommandOptions;
     private ExpressionCommandOptions expressionCommandOptions;
@@ -33,12 +34,14 @@ public class CliOptionsParser {
 
         buildCommandOptions = new BuildCommandOptions();
         loadCommandOptions = new LoadCommandOptions();
+        importCommandOptions = new ImportCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
         variantAnnotationCommandOptions = new VariantAnnotationCommandOptions();
         expressionCommandOptions = new ExpressionCommandOptions();
 
         jcommander.addCommand("build", buildCommandOptions);
         jcommander.addCommand("load", loadCommandOptions);
+        jcommander.addCommand("import", importCommandOptions);
         jcommander.addCommand("query", queryCommandOptions);
         jcommander.addCommand("annotation", variantAnnotationCommandOptions);
         jcommander.addCommand("expression",expressionCommandOptions);
@@ -114,7 +117,7 @@ public class CliOptionsParser {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-i", "--input"}, description = "Input directory with the JSON data models to be loaded", required = true, arity = 1)
+        @Parameter(names = {"-i", "--input"}, description = "Input directory", required = true, arity = 1)
         public String input;
 
         @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", arity = 1)
@@ -128,6 +131,31 @@ public class CliOptionsParser {
 
     }
 
+    @Parameters(commandNames = {"import"}, commandDescription = "Import the built data models in format CSV files into the database")
+    public class ImportCommandOptions {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-i", "--input"}, description = "Input directory where the CSV files are located (when used with --create-csv-files parameter, it contains the biological files to convert to CSV files)", required = true, arity = 1)
+        public String input;
+
+        @Parameter(names = {"-o", "--output"}, description = "Output directory where to save the CSV files to import (used with the --create-csv-files parameter)", arity = 1)
+        public String output;
+
+        @Parameter(names = {"--create-csv-files"}, description = "Create the CSV files from the input biological files", arity = 0)
+        public boolean createCsvFiles = false;
+
+        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", arity = 1)
+        public String database;
+
+        @Parameter(names = {"--exclude"}, description = "Exclude information separated by comma, e.g.:'XREF_DBNAME:Reactome Database ID Release 63'", arity = 1)
+        public List<String> exclude;
+
+        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+        public Map<String, String> loaderParams = new HashMap<>();
+
+    }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Query and fetch data from CellBase database using this command line")
     public class QueryCommandOptions {
@@ -311,6 +339,10 @@ public class CliOptionsParser {
 
     public LoadCommandOptions getLoadCommandOptions() {
         return loadCommandOptions;
+    }
+
+    public ImportCommandOptions getImportCommandOptions() {
+        return importCommandOptions;
     }
 
     public QueryCommandOptions getQueryCommandOptions() {
