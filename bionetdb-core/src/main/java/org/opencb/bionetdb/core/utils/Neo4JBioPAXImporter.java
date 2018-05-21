@@ -1364,6 +1364,14 @@ public class Neo4JBioPAXImporter {
             Relation relation = new Relation(csv.getAndIncUid(), null, uid, type, xrefUid, Node.Type.XREF,
                     Relation.Type.XREF, source);
             relations.add(relation);
+        } else if (type == Node.Type.RNA) {
+            Node xrefNode = new Node(csv.getAndIncUid(), xrefId, xrefId, Node.Type.XREF, source);
+            xrefNode.addAttribute("dbName", dbName);
+            nodes.add(xrefNode);
+
+            Relation relation = new Relation(csv.getAndIncUid(), null, uid, type, xrefNode.getUid(),
+                    Node.Type.XREF, Relation.Type.XREF, source);
+            relations.add(relation);
         }
     }
 

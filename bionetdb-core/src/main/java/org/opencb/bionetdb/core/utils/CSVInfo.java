@@ -98,7 +98,8 @@ public class CSVInfo {
         PATHWAY_NEXT_STEP___PATHWAY___REACTION("PATHWAY_NEXT_STEP___PATHWAY___REACTION"),
         PATHWAY_NEXT_STEP___PATHWAY___REGULATION("PATHWAY_NEXT_STEP___PATHWAY___REGULATION"),
 
-        XREF___PROTEIN___XREF("XREF___PROTEIN___XREF");
+        XREF___PROTEIN___XREF("XREF___PROTEIN___XREF"),
+        XREF___RNA___XREF("XREF___RNA___XREF");
 
         private final String relation;
 
