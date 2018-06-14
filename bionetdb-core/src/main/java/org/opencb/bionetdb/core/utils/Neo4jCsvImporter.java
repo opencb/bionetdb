@@ -66,7 +66,7 @@ public class Neo4jCsvImporter {
                 // VCF file
                 logger.info("VCF not supported yet!!");
             } else if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
-                if (!file.getName().contains("clinvar")) {
+                if (!file.getName().contains("clinvar") && !file.getName().contains("meta.json")) {
                     // JSON file
                     addJSONFile(file);
                 }
@@ -498,8 +498,8 @@ public class Neo4jCsvImporter {
         if (metaFile.exists()) {
             csv.openMetadataFile(metaFile);
         } else {
+            metaFile = new File(file.getAbsoluteFile() + ".meta.json.gz");
             if (metaFile.exists()) {
-                metaFile = new File(file.getAbsoluteFile() + ".meta.json.gz");
                 csv.openMetadataFile(metaFile);
             }
         }
