@@ -1,19 +1,22 @@
 package org.opencb.bionetdb.app.cli;
 
+import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
-import org.opencb.bionetdb.core.utils.CSVInfo;
-import org.opencb.bionetdb.core.utils.Neo4JBioPAXImporter;
-import org.opencb.bionetdb.core.utils.Neo4JCSVImporter;
+import org.opencb.bionetdb.core.utils.CsvInfo;
+import org.opencb.bionetdb.core.utils.Neo4jBioPaxImporter;
+import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.exec.Command;
-import org.opencb.commons.exec.SingleProcess;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -42,6 +45,8 @@ public class ImportCommandExecutor extends CommandExecutor {
 
     private void createCsvFiles() {
         try {
+            long start;
+
             // Check input and output directories
             Path inputPath = Paths.get(importCommandOptions.input);
             if (!inputPath.toFile().isDirectory()) {
@@ -56,11 +61,11 @@ public class ImportCommandExecutor extends CommandExecutor {
             }
 
             // Prepare CSV object
-            CSVInfo csv = new CSVInfo(outputPath);
+            CsvInfo csv = new CsvInfo(inputPath, outputPath);
 
             // Open CSV files
             csv.openCSVFiles();
-            Neo4JCSVImporter importer = new Neo4JCSVImporter(csv);
+            Neo4jCsvImporter importer = new Neo4jCsvImporter(csv);
 
             // CellBase client
             // TODO: maybe it should be created from the configuration file
@@ -72,48 +77,75 @@ public class ImportCommandExecutor extends CommandExecutor {
             // Retrieving files from the input directory
             List<File> reactomeFiles = new ArrayList<>();
             List<File> jsonFiles = new ArrayList<>();
-            File firstFile = null;
             long minSize = Long.MAX_VALUE;
             for (File file: inputPath.toFile().listFiles()) {
                 if (file.isFile()) {
                     String filename = file.getName();
+                    if (filename.equals(Neo4jCsvImporter.GENE_FILENAME)
+                            || filename.equals(Neo4jCsvImporter.PROTEIN_FILENAME)) {
+                        continue;
+                    }
                     if (filename.contains("biopax") || filename.contains("owl")) {
                         reactomeFiles.add(file);
+                    } else if (filename.endsWith("meta.json")) {
+                        continue;
                     } else if (filename.endsWith(".json") || filename.endsWith(".json.gz")) {
                         jsonFiles.add(file);
-                        if (file.length() < minSize) {
-                            minSize = file.length();
-                            firstFile = file;
-                        }
                     } else {
                         logger.info("Skipping file {}", file.getAbsolutePath());
                     }
                 }
             }
 
-            if (firstFile != null) {
-                // The first variant file to process is the smaller one
-                jsonFiles.remove(firstFile);
-                jsonFiles.add(0, firstFile);
-                logger.info("Setting first JSON file to process: {}", firstFile.getAbsolutePath());
-            }
+            long geneIndexingTime, proteinIndexingTime, miRnaIndexingTime, bioPaxTime;
 
-            // Import BioPAX files
+            // Indexing genes
+            logger.info("Starting gene indexing...");
+            start = System.currentTimeMillis();
+            importer.indexingGenes(Paths.get(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME),
+                    Paths.get(outputPath + "/" + Neo4jCsvImporter.GENE_DBNAME));
+            geneIndexingTime = (System.currentTimeMillis() - start) / 1000;
+            logger.info("Gene indexing done in {} s", geneIndexingTime);
+
+            // Indexing proteins
+            logger.info("Starting protein indexing...");
+            start = System.currentTimeMillis();
+            importer.indexingProteins(Paths.get(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME),
+                    Paths.get(outputPath + "/" + Neo4jCsvImporter.PROTEIN_DBNAME));
+            proteinIndexingTime = (System.currentTimeMillis() - start) / 1000;
+            logger.info("Protein indexing done in {} s", proteinIndexingTime);
+
+            // Indexing miRNA
+            logger.info("Starting miRNA indexing...");
+            start = System.currentTimeMillis();
+            importer.indexingMiRnas(Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME),
+                    Paths.get(outputPath + "/" + Neo4jCsvImporter.MIRNA_DBNAME));
+            miRnaIndexingTime = (System.currentTimeMillis() - start) / 1000;
+            logger.info("miRNA indexing done in {} s", miRnaIndexingTime);
+
+            // Parse BioPAX files
             Map<String, Set<String>> filters = parseFilters(importCommandOptions.exclude);
-            Neo4JBioPAXImporter bioPAXImporter = new Neo4JBioPAXImporter(csv, filters, new BPAXProcessing(csv));
+            BPAXProcessing bpaxProcessing = new BPAXProcessing(importer);
+            Neo4jBioPaxImporter bioPAXImporter = new Neo4jBioPaxImporter(csv, filters, bpaxProcessing);
+            start = System.currentTimeMillis();
             bioPAXImporter.addReactomeFiles(reactomeFiles);
+            bpaxProcessing.post();
+            bioPaxTime = (System.currentTimeMillis() - start) / 1000;
 
-            // Annotate proteins
-            importer.annotateProteins(cellBaseClient);
 
-            // JSON variant files
+            // Parse JSON variant files
+            start =  System.currentTimeMillis();
             importer.addVariantFiles(jsonFiles);
-
-            // Annotate genes
-            importer.annotateGenes(cellBaseClient);
+            long variantTime = (System.currentTimeMillis() - start) / 1000;
 
             // Close CSV files
             csv.close();
+
+            logger.info("Gene indexing in {} s", geneIndexingTime);
+            logger.info("Protein indexing in {} s", proteinIndexingTime);
+            logger.info("miRNA indexing in {} s", miRnaIndexingTime);
+            logger.info("BioPAX processing in {} s", bioPaxTime);
+            logger.info("Variant processing in {} s", variantTime);
         } catch (IOException e) {
             logger.error("Error generation CSV files: {}", e.getMessage());
             e.printStackTrace();
@@ -171,6 +203,7 @@ public class ImportCommandExecutor extends CommandExecutor {
 
         // Now, relationhsip files
         for (File file: relationFiles) {
+            System.out.println("checking file: " + file.getName());
             if (isValidRelationCsvFile(file, validNodes)) {
                 name = getRelationName(file);
                 sb.append(" --relationships:").append(name).append(" ").append(file.getAbsolutePath());
@@ -216,9 +249,9 @@ public class ImportCommandExecutor extends CommandExecutor {
         boolean isValid = false;
         if (!isEmptyCsvFile(file)) {
             String name = file.getName();
-            if (name.contains(Neo4JBioPAXImporter.BioPAXProcessing.SEPARATOR)) {
-                name = name.split(Neo4JBioPAXImporter.BioPAXProcessing.SEPARATOR)[0];
-                isValid = nodeNames.contains(name);
+            if (name.contains(Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR)) {
+                String fields[] = removeCsvExt(name).split(Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR);
+                isValid = nodeNames.contains(fields[1]) && nodeNames.contains(fields[2]);
             } else {
                 String fields[] = removeCsvExt(name).split("__");
                 isValid = nodeNames.contains(fields[0]) && nodeNames.contains(fields[1]);
@@ -233,8 +266,8 @@ public class ImportCommandExecutor extends CommandExecutor {
 
     private String getRelationName(File file) {
         String name = file.getName();
-        if (name.contains(Neo4JBioPAXImporter.BioPAXProcessing.SEPARATOR)) {
-            return name.split(Neo4JBioPAXImporter.BioPAXProcessing.SEPARATOR)[0];
+        if (name.contains(Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR)) {
+            return name.split(Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR)[0];
         } else {
             return removeCsvExt(name);
         }
@@ -252,42 +285,154 @@ public class ImportCommandExecutor extends CommandExecutor {
     //  BioPAX importer callback object
     //-------------------------------------------------------------------------
 
-    public class BPAXProcessing implements Neo4JBioPAXImporter.BioPAXProcessing {
-        private CSVInfo csv;
+    public class BPAXProcessing implements Neo4jBioPaxImporter.BioPAXProcessing {
+        private Neo4jCsvImporter importer;
 
-        public BPAXProcessing(CSVInfo csv) {
-            this.csv = csv;
+        private List<Node> dnaNodes;
+        private List<Node> rnaNodes;
+
+
+        public BPAXProcessing(Neo4jCsvImporter importer) {
+            this.importer = importer;
+            dnaNodes = new ArrayList<>();
+            rnaNodes = new ArrayList<>();
+        }
+
+        public void post() {
+            CsvInfo csv = importer.getCsvInfo();
+            PrintWriter pwNode, pwRel;
+
+            // Post-process gene nodes
+            logger.info("Post-processing {} dna nodes", dnaNodes.size());
+            pwNode = csv.getCsvWriters().get(Node.Type.DNA.toString());
+            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___DNA___GENE.toString());
+            for (Node node: dnaNodes) {
+                List<String> geneIds = getGeneIds(node.getName());
+                for (String geneId: geneIds) {
+                    Long geneUid = importer.processGene(geneId, geneId);
+                    if (geneUid != null) {
+                        // Write dna-gene relation
+                        pwRel.println(node.getUid() + "," + geneUid);
+                    }
+                }
+                // Write DNA node
+                pwNode.println(csv.nodeLine(node));
+            }
+
+            // Post-process miRNA nodes
+            logger.info("Post-processing {} miRNA nodes", rnaNodes.size());
+            pwNode = csv.getCsvWriters().get(Node.Type.RNA.toString());
+            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
+            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(
+                    CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString());
+            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___RNA___MIRNA.toString());
+            for (Node node: rnaNodes) {
+                List<String> miRnaInfo = getMiRnaInfo(node.getName());
+                for (String info: miRnaInfo) {
+                    String[] fields = info.split(":");
+                    String miRnaId = fields[0];
+                    String targetGene = fields[1];
+                    String evidence = fields[2];
+
+                    Long miRnaUid = csv.getLong(miRnaId);
+                    if (miRnaUid == null) {
+                        Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
+                        pwMiRna.println(csv.nodeLine(miRnaNode));
+
+                        // Save the miRNA node uid
+                        miRnaUid = miRnaNode.getUid();
+                        csv.putLong(miRnaId, miRnaUid);
+                    }
+
+                    // Process target gene
+                    Long geneUid = importer.processGene(targetGene, targetGene);
+                    if (geneUid != null) {
+                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
+                            // Write mirna-target gene relation
+                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + evidence);
+                            csv.putLong(miRnaUid + "." + geneUid, 1);
+                        }
+                    }
+
+                    // Write rna-mirna relation
+                    pwRel.println(node.getUid() + "," + miRnaUid);
+                }
+                // Write RNA node
+                pwNode.println(importer.getCsvInfo().nodeLine(node));
+            }
         }
 
         @Override
         public void processNodes(List<Node> nodes) {
             PrintWriter pw;
             for (Node node: nodes) {
-                pw = csv.getCsvWriters().get(node.getType().toString());
-                pw.println(csv.nodeLine(node));
+                pw = importer.getCsvInfo().getCsvWriters().get(node.getType().toString());
+
+                if (StringUtils.isNotEmpty(node.getName())) {
+                    if (node.getType() == Node.Type.PROTEIN) {
+                        // Complete node proteins
+                        node = importer.completeProteinNode(node);
+                    } else if (node.getType() == Node.Type.DNA) {
+                        // Save save gene nodes to process further, in the post-processing phase
+                        dnaNodes.add(node);
+                        continue;
+                    } else if (node.getType() == Node.Type.RNA) {
+                        // Save save miRNA nodes to process further, in the post-processing phase
+                        rnaNodes.add(node);
+                        continue;
+                    }
+                }
+
+                // Write node to CSV file
+                pw.println(importer.getCsvInfo().nodeLine(node));
             }
         }
-
-        // Debug purposes
-        private Set<String> notdefined = new HashSet<>();
 
         @Override
         public void processRelations(List<Relation> relations) {
             PrintWriter pw;
             for (Relation relation: relations) {
                 String id = relation.getType()
-                        + Neo4JBioPAXImporter.BioPAXProcessing.SEPARATOR + relation.getOrigType()
-                        + Neo4JBioPAXImporter.BioPAXProcessing.SEPARATOR + relation.getDestType();
-                pw = csv.getCsvWriters().get(id);
+                        + Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR + relation.getOrigType()
+                        + Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR + relation.getDestType();
+                pw = importer.getCsvInfo().getCsvWriters().get(id);
                 if (pw == null) {
-                    if (!notdefined.contains(id)) {
-                        logger.info("BioPAX relationship not yet supported {}", id);
-                        notdefined.add(id);
-                    }
+                    logger.info("BioPAX relationship not yet supported {}", id);
                 } else {
-                    pw.println(csv.relationLine(relation.getOrigUid(), relation.getDestUid()));
+                    // Write relation to CSV file
+                    pw.println(importer.getCsvInfo().relationLine(relation.getOrigUid(), relation.getDestUid()));
                 }
             }
+        }
+
+        private List<String> getGeneIds(String nodeName) {
+            List<String> ids = new ArrayList<>();
+            if (nodeName.toLowerCase().contains("genes") || nodeName.contains("(") || nodeName.contains(",")
+                    || nodeName.contains(";")) {
+                return ids;
+            } else {
+                String name = nodeName.replace("gene", "").replace("Gene", "").trim();
+                ids.add(name);
+                return ids;
+            }
+        }
+
+        private List<String> getMiRnaInfo(String nodeName) {
+            String[] sufixes0 = {"", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"};
+            String[] sufixes1 = {"-3p", "-5p"};
+            List<String> list = new ArrayList<>();
+            if (nodeName.contains("miR")) {
+                for (String s0: sufixes0) {
+                    for (String s1: sufixes1) {
+                        String id = "hsa-" + nodeName + s0 + s1;
+                        String info = importer.getCsvInfo().getMiRnaInfo(id);
+                        if (info != null) {
+                            list.add(info);
+                        }
+                    }
+                }
+            }
+            return list;
         }
     }
     //-------------------------------------------------------------------------
@@ -304,8 +449,8 @@ public class ImportCommandExecutor extends CommandExecutor {
 //            Path inputPath = Paths.get(importCommandOptions.input);
 //            FileUtils.checkFile(inputPath);
 //
-//            // BioNetDBManager checks if database parameter is empty
-//            BioNetDBManager bioNetDBManager = new BioNetDBManager(importCommandOptions.database, configuration);
+//            // BioNetDbManager checks if database parameter is empty
+//            BioNetDbManager bioNetDBManager = new BioNetDbManager(importCommandOptions.database, configuration);
 //
 //
 //

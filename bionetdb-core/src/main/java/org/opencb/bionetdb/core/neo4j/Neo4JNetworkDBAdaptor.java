@@ -18,7 +18,7 @@ import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
-import org.opencb.bionetdb.core.utils.Neo4JConverter;
+import org.opencb.bionetdb.core.utils.Neo4jConverter;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
@@ -380,7 +380,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         long startTime = System.currentTimeMillis();
         StatementResult run = session.run(cypher);
-        Network network = Neo4JConverter.toNetwork(run);
+        Network network = Neo4jConverter.toNetwork(run);
         long stopTime = System.currentTimeMillis();
 
         // Close session

@@ -3,7 +3,7 @@ package org.opencb.bionetdb.core.neo4j;
 import org.neo4j.driver.v1.StatementResult;
 import org.opencb.bionetdb.core.api.NetworkPathIterator;
 import org.opencb.bionetdb.core.network.NetworkPath;
-import org.opencb.bionetdb.core.utils.Neo4JConverter;
+import org.opencb.bionetdb.core.utils.Neo4jConverter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +23,7 @@ public class Neo4JNetworkPathIterator implements NetworkPathIterator {
             return true;
         } else {
             if (statementResult.hasNext()) {
-                buffer = Neo4JConverter.toPathList(statementResult.next());
+                buffer = Neo4jConverter.toPathList(statementResult.next());
             }
             return !buffer.isEmpty();
         }

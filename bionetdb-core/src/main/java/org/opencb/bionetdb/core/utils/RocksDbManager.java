@@ -8,15 +8,15 @@ import org.rocksdb.RocksDBException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class RocksDBManager {
+public class RocksDbManager {
 
     private int maxOpenFiles = -1;
 
-    public RocksDBManager() {
+    public RocksDbManager() {
         this(1000);
     }
 
-    public RocksDBManager(int maxOpenFiles) {
+    public RocksDbManager(int maxOpenFiles) {
         this.maxOpenFiles = maxOpenFiles;
     }
 

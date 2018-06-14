@@ -3,7 +3,7 @@ package org.opencb.bionetdb.core.neo4j;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.opencb.bionetdb.core.api.RowIterator;
-import org.opencb.bionetdb.core.utils.Neo4JConverter;
+import org.opencb.bionetdb.core.utils.Neo4jConverter;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ public class Neo4JRowIterator implements RowIterator {
     @Override
     public List<Object> next() {
         Record record = statementResult.next();
-        return Neo4JConverter.toObjectList(record);
+        return Neo4jConverter.toObjectList(record);
     }
 
 }

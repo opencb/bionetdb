@@ -35,6 +35,8 @@ public class Node {
         RNA                 ("RNA", "PHYSICAL_ENTITY"),
         SMALL_MOLECULE      ("SMALL_MOLECULE", "PHYSICAL_ENTITY"),
 
+        MIRNA               ("MIRNA"),
+        TARGET_TRANSCRIPT   ("TARGET_TRANSCRIPT"),
 
         DNA                 ("DNA"),    // ~= GENOMIC_FEATURE
         GENE                ("GENE"),
@@ -74,6 +76,7 @@ public class Node {
         TRANSPORT           ("TRANSPORT"),
         INTERACTION         ("INTERACTION"),
 
+        FILE("FILE"),
         SAMPLE("SAMPLE"),
         VARIANT_CALL("VARIANT_CALL"),
         VARIANT_FILE_INFO("VARIANT_FILE_INFO"),

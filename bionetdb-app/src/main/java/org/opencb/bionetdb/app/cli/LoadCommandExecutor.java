@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.app.cli;
 
-import org.opencb.bionetdb.core.BioNetDBManager;
+import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 
@@ -35,8 +35,8 @@ public class LoadCommandExecutor extends CommandExecutor {
             Path inputPath = Paths.get(loadCommandOptions.input);
             FileUtils.checkFile(inputPath);
 
-            // BioNetDBManager checks if database parameter is empty
-            BioNetDBManager bioNetDBManager = new BioNetDBManager(loadCommandOptions.database, configuration);
+            // BioNetDbManager checks if database parameter is empty
+            BioNetDbManager bioNetDbManager = new BioNetDbManager(loadCommandOptions.database, configuration);
 
             Map<String, Set<String>> filter = null;
             if (ListUtils.isNotEmpty(loadCommandOptions.exclude)) {
@@ -51,7 +51,7 @@ public class LoadCommandExecutor extends CommandExecutor {
                     }
                 }
             }
-            bioNetDBManager.loadBioPax(inputPath, filter);
+            bioNetDbManager.loadBioPax(inputPath, filter);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.bionetdb.core.BioNetDBManager;
+import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -74,7 +74,7 @@ public class GenericRestWSServer {
 
     @Deprecated
     protected static NetworkDBAdaptor networkDBAdaptor;
-    protected static Map<String, BioNetDBManager> bioNetDBManagers;
+    protected static Map<String, BioNetDbManager> bioNetDBManagers;
 
     protected static AtomicBoolean initialized;
 
@@ -154,8 +154,8 @@ public class GenericRestWSServer {
         if (bioNetDBConfiguration != null && bioNetDBConfiguration.getDatabases().size() > 0) {
             try {
                 for (DatabaseConfiguration databaseConfiguration : bioNetDBConfiguration.getDatabases()) {
-                    BioNetDBManager bioNetDBManager = new BioNetDBManager(databaseConfiguration.getId(), bioNetDBConfiguration);
-                    bioNetDBManagers.put(databaseConfiguration.getId(), bioNetDBManager);
+                    BioNetDbManager bioNetDbManager = new BioNetDbManager(databaseConfiguration.getId(), bioNetDBConfiguration);
+                    bioNetDBManagers.put(databaseConfiguration.getId(), bioNetDbManager);
                 }
             } catch (BioNetDBException e) {
                 e.printStackTrace();

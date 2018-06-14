@@ -39,7 +39,7 @@ import java.util.*;
 /**
  * Created by joaquin on 1/29/18.
  */
-public class BioNetDBManager {
+public class BioNetDbManager {
 
     private String database;
     private BioNetDBConfiguration configuration;
@@ -54,17 +54,17 @@ public class BioNetDBManager {
     private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
 
-    public BioNetDBManager(BioNetDBConfiguration configuration) throws BioNetDBException {
+    public BioNetDbManager(BioNetDBConfiguration configuration) throws BioNetDBException {
         init(null, configuration);
     }
 
-    public BioNetDBManager(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
+    public BioNetDbManager(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
         init(database, configuration);
     }
 
     private void init(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
         // We first create te logger to debug next actions
-        logger = LoggerFactory.getLogger(BioNetDBManager.class);
+        logger = LoggerFactory.getLogger(BioNetDbManager.class);
 
         // We check that the configuration exists and the databases are not empty
         if (configuration == null || configuration.getDatabases() == null || configuration.getDatabases().size() == 0) {

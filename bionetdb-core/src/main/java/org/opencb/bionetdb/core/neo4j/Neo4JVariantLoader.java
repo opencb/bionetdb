@@ -19,8 +19,8 @@ import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantC
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
-import org.opencb.bionetdb.core.utils.Neo4JConverter;
-import org.opencb.bionetdb.core.utils.Neo4JImporter;
+import org.opencb.bionetdb.core.utils.Neo4jConverter;
+import org.opencb.bionetdb.core.utils.Neo4jImporter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.cellbase.client.rest.ClinicalVariantClient;
 import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
@@ -66,7 +66,7 @@ public class Neo4JVariantLoader {
             // Convert to variants and load them into the network database
             System.out.println("Loading " + variantContexts.size() + " variants in...");
             long start = System.currentTimeMillis();
-            loadVariants(Neo4JConverter.convert(variantContexts, converter));
+            loadVariants(Neo4jConverter.convert(variantContexts, converter));
             long elapsed = ((System.currentTimeMillis() - start) / 1000);
             totalTime += elapsed;
             System.out.println("\t... " + elapsed + " s");
@@ -79,7 +79,7 @@ public class Neo4JVariantLoader {
             // Convert to variants and load them into the network database
             System.out.println("Loading " + variantContexts.size() + " variants in...");
             long start = System.currentTimeMillis();
-            loadVariants(Neo4JConverter.convert(variantContexts, converter));
+            loadVariants(Neo4jConverter.convert(variantContexts, converter));
             long elapsed = ((System.currentTimeMillis() - start) / 1000);
             totalTime += elapsed;
             System.out.println("\t... " + elapsed + " s");
@@ -91,7 +91,7 @@ public class Neo4JVariantLoader {
     }
 
     public void importFiles(Path inputPath, Path outputPath, Path neo4jHome) throws IOException, InterruptedException {
-        Neo4JImporter importer = new Neo4JImporter();
+        Neo4jImporter importer = new Neo4jImporter();
 
         // Generate CSV files from input files
         importer.generateCSV(inputPath, outputPath);

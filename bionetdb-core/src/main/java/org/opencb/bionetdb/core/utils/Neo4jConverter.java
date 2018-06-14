@@ -19,7 +19,7 @@ import java.util.*;
 
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
-public class Neo4JConverter {
+public class Neo4jConverter {
 
     public static List<Node> toNodeList(Record record) {
         List<Node> nodes = new ArrayList<>();

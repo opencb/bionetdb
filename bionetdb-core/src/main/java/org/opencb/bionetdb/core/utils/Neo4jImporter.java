@@ -21,7 +21,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
-public class Neo4JImporter {
+public class Neo4jImporter {
 
     private final int VARIANT_BATCH_SIZE = 200;
 
@@ -45,7 +45,7 @@ public class Neo4JImporter {
         private VCFHeader vcfHeader;
         private boolean headersCreated;
 
-        private RocksDBManager rocksDBManager;
+        private RocksDbManager rocksDbManager;
         private RocksDB rocksDB;
 
         CSVforVariant(Path inputPath) throws FileNotFoundException {
@@ -78,8 +78,8 @@ public class Neo4JImporter {
         public void open(Path outPath) throws FileNotFoundException {
             if (!headersCreated) {
                 this.outputPath = outPath;
-                this.rocksDBManager = new RocksDBManager();
-                this.rocksDB = this.rocksDBManager.getDBConnection(outPath.toString() + "/rocksdb", true);
+                this.rocksDbManager = new RocksDbManager();
+                this.rocksDB = this.rocksDbManager.getDBConnection(outPath.toString() + "/rocksdb", true);
 
                 for (String key : csvFilenameMap.keySet()) {
                     csvWriterMap.put(key, new PrintWriter(outPath + "/" + csvFilenameMap.get(key)));
@@ -168,12 +168,12 @@ public class Neo4JImporter {
         }
 
         public boolean containsId(String id) {
-            String value = rocksDBManager.getString(id, rocksDB);
+            String value = rocksDbManager.getString(id, rocksDB);
             return (value != null);
         }
 
         public boolean addId(String id) {
-            return rocksDBManager.putString(id, "1", rocksDB);
+            return rocksDbManager.putString(id, "1", rocksDB);
         }
 
         private void createNodeHeaders(Set<Node.Type> exclude) {
@@ -203,7 +203,7 @@ public class Neo4JImporter {
         }
     }
 
-    public Neo4JImporter() {
+    public Neo4jImporter() {
 
         uid = 0;
         nodeAttributes = new HashMap<>();
@@ -473,13 +473,13 @@ public class Neo4JImporter {
 
         List<VariantContext> variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
         while (variantContexts.size() == VARIANT_BATCH_SIZE) {
-            updateCSVVariantFiles(Neo4JConverter.convert(variantContexts, converter), csvforVariant);
+            updateCSVVariantFiles(Neo4jConverter.convert(variantContexts, converter), csvforVariant);
 
             // Read next batch
             variantContexts = vcfFileReader.read(VARIANT_BATCH_SIZE);
         }
         if (variantContexts.size() > 0) {
-            updateCSVVariantFiles(Neo4JConverter.convert(variantContexts, converter), csvforVariant);
+            updateCSVVariantFiles(Neo4jConverter.convert(variantContexts, converter), csvforVariant);
         }
 
         // close VCF file reader

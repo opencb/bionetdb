@@ -2,7 +2,7 @@
 logLevel: null
 logFile: null
 
-## More than one database can be defined, you can pass the database id to BioNetDBManager.
+## More than one database can be defined, you can pass the database id to BioNetDbManager.
 ## If not passed the default database will always be the first one.
 databases:
 - id: "${BIONETDB.DB.DATABASE}"

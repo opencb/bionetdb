@@ -243,11 +243,11 @@ public class NodeBuilder {
         if (ListUtils.isNotEmpty(protein.getAccession())) {
             node.addAttribute("accession", StringUtils.join(protein.getAccession(), ","));
         }
-        if (ListUtils.isNotEmpty(protein.getAccession())) {
-            node.addAttribute("name", StringUtils.join(protein.getName(), ","));
-        }
+//        if (ListUtils.isNotEmpty(protein.getAccession())) {
+//            node.addAttribute("name", StringUtils.join(protein.getName(), ","));
+//        }
         node.addAttribute("dataset", protein.getDataset());
-        node.addAttribute("dbReference", protein.getDbReference());
+//        node.addAttribute("dbReference", protein.getDbReference());
         node.addAttribute("proteinExistence", protein.getProteinExistence());
         if (ListUtils.isNotEmpty(protein.getEvidence())) {
             node.addAttribute("evidence", StringUtils.join(protein.getEvidence(), ","));
