@@ -89,9 +89,6 @@ public class Neo4jCsvImporter {
                 Node node = createGeneNode(gene);
                 csv.getCsvWriters().get(Node.Type.GENE.toString()).println(csv.nodeLine(node));
                 geneUid = node.getUid();
-
-                // Save gene UID
-                saveGeneUid(gene, geneUid);
             }
         }
         return geneUid;
@@ -143,8 +140,9 @@ public class Neo4jCsvImporter {
     public Node createGeneNode(Gene gene, Long uid) {
         PrintWriter pwRel;
 
-        // Create gene node
+        // Create gene node and save gene UID
         Node node = NodeBuilder.newNode(uid, gene);
+        saveGeneUid(gene, uid);
 
         // Model transcripts
         if (ListUtils.isNotEmpty(gene.getTranscripts())) {
@@ -179,10 +177,17 @@ public class Neo4jCsvImporter {
                     if (drugUid == null) {
                         n = NodeBuilder.newNode(csv.getAndIncUid(), drug);
                         updateCSVFiles(uid, n, Relation.Type.GENE__DRUG.toString());
+                        // Save drug and gene-drug UIDs
                         csv.putLong(drug.getDrugName(), n.getUid());
+                        csv.putLong(uid + "." + n.getUid(), 1);
                     } else {
-                        // Create gene-drug relation
-                        pwRel.println(csv.relationLine(uid, drugUid));
+                        String key = uid + "." + drugUid;
+                        if (csv.getLong(key) == null) {
+                            // Create gene-drug relation
+                            pwRel.println(csv.relationLine(uid, drugUid));
+                            // Save relation to avoid duplicated ones
+                            csv.putLong(key, 1);
+                        }
                     }
                 }
 
