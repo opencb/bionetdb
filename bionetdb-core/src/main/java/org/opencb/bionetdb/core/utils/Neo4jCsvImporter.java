@@ -153,11 +153,8 @@ public class Neo4jCsvImporter {
                 if (transcrUid == null) {
                     // Create gene node and write the CSV file
                     Node transcrNode = createTranscriptNode(transcript);
-                    pwTranscr.println(csv.nodeLine(transcrNode));
-
-                    // Save the gene node uid
                     transcrUid = transcrNode.getUid();
-                    csv.putLong(transcript.getId(), transcrUid);
+                    pwTranscr.println(csv.nodeLine(transcrNode));
                 }
 
                 // Write gene-transcript relation
@@ -199,7 +196,7 @@ public class Neo4jCsvImporter {
                         Long diseaseUid = csv.getLong(diseaseId);
                         if (diseaseUid == null) {
                             n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
-                            updateCSVFiles(uid, node, Relation.Type.GENE__DISEASE.toString());
+                            updateCSVFiles(uid, n, Relation.Type.GENE__DISEASE.toString());
 
                             csv.putLong(diseaseId, n.getUid());
                         } else {
@@ -236,8 +233,9 @@ public class Neo4jCsvImporter {
         Node n;
         PrintWriter pw;
 
-        // Create protein node
+        // Create protein node and save protein UID
         Node node = NodeBuilder.newNode(uid, protein);
+        saveProteinUid(protein, uid);
 
         // Model protein keywords
         if (ListUtils.isNotEmpty(protein.getKeyword())) {
@@ -274,9 +272,6 @@ public class Neo4jCsvImporter {
             }
         }
 
-        // Save protein UID
-        saveProteinUid(protein, uid);
-
         // Return node
         return node;
     }
@@ -286,8 +281,9 @@ public class Neo4jCsvImporter {
     }
 
     public Node createTranscriptNode(Transcript transcript, Long uid) {
-        // Create transcript node
+        // Create transcript node and save transcript UId
         Node node = NodeBuilder.newNode(uid, transcript);
+        csv.putLong(transcript.getId(), uid);
 
         // Get protein
         Node n;
