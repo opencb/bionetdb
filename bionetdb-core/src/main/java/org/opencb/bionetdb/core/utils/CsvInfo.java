@@ -588,7 +588,7 @@ public class CsvInfo {
         while (line != null) {
                 miRnaCounter++;
                 if (miRnaCounter % 5000 == 0) {
-                    logger.info("Indexing {} proteins...", miRnaCounter);
+                    logger.info("Indexing {} miRNAs...", miRnaCounter);
                 }
             fields = line.split(",");
             miRna = fields[indexMiRnaId];

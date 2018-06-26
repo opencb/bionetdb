@@ -49,16 +49,10 @@ public class ImportCommandExecutor extends CommandExecutor {
 
             // Check input and output directories
             Path inputPath = Paths.get(importCommandOptions.input);
-            if (!inputPath.toFile().isDirectory()) {
-                logger.error("Input directory {} is invalid", inputPath);
-                return;
-            }
+            FileUtils.checkDirectory(inputPath);
 
             Path outputPath = Paths.get(importCommandOptions.output);
-            if (!outputPath.toFile().isDirectory()) {
-                logger.error("Output directory {} is invalid", inputPath);
-                return;
-            }
+            FileUtils.checkDirectory(outputPath);
 
             // Prepare CSV object
             CsvInfo csv = new CsvInfo(inputPath, outputPath);
@@ -77,12 +71,13 @@ public class ImportCommandExecutor extends CommandExecutor {
             // Retrieving files from the input directory
             List<File> reactomeFiles = new ArrayList<>();
             List<File> jsonFiles = new ArrayList<>();
-            long minSize = Long.MAX_VALUE;
             for (File file: inputPath.toFile().listFiles()) {
                 if (file.isFile()) {
                     String filename = file.getName();
                     if (filename.equals(Neo4jCsvImporter.GENE_FILENAME)
-                            || filename.equals(Neo4jCsvImporter.PROTEIN_FILENAME)) {
+                            || filename.equals(Neo4jCsvImporter.GENE_FILENAME + ".gz")
+                            || filename.equals(Neo4jCsvImporter.PROTEIN_FILENAME)
+                            || filename.equals(Neo4jCsvImporter.PROTEIN_FILENAME + ".gz")) {
                         continue;
                     }
                     if (filename.contains("biopax") || filename.contains("owl")) {
@@ -101,17 +96,27 @@ public class ImportCommandExecutor extends CommandExecutor {
 
             // Indexing genes
             logger.info("Starting gene indexing...");
+            File geneFile = new File(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME);
+            File geneDbFile = new File(outputPath + "/" + Neo4jCsvImporter.GENE_DBNAME);
+            if (!geneFile.exists()) {
+                geneFile = new File(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME + ".gz");
+                FileUtils.checkFile(geneFile.toPath());
+            }
             start = System.currentTimeMillis();
-            importer.indexingGenes(Paths.get(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME),
-                    Paths.get(outputPath + "/" + Neo4jCsvImporter.GENE_DBNAME));
+            importer.indexingGenes(geneFile.toPath(), geneDbFile.toPath());
             geneIndexingTime = (System.currentTimeMillis() - start) / 1000;
             logger.info("Gene indexing done in {} s", geneIndexingTime);
 
             // Indexing proteins
             logger.info("Starting protein indexing...");
+            File proteinFile = new File(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME);
+            File proteinDbFile = new File(outputPath + "/" + Neo4jCsvImporter.PROTEIN_DBNAME);
+            if (!proteinFile.exists()) {
+                proteinFile = new File(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME + ".gz");
+                FileUtils.checkFile(proteinFile.toPath());
+            }
             start = System.currentTimeMillis();
-            importer.indexingProteins(Paths.get(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME),
-                    Paths.get(outputPath + "/" + Neo4jCsvImporter.PROTEIN_DBNAME));
+            importer.indexingProteins(proteinFile.toPath(),proteinDbFile.toPath());
             proteinIndexingTime = (System.currentTimeMillis() - start) / 1000;
             logger.info("Protein indexing done in {} s", proteinIndexingTime);
 

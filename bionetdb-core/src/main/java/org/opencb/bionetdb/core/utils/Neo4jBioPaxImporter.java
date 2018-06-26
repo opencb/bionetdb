@@ -345,10 +345,8 @@ public class Neo4jBioPaxImporter {
         inputStream.close();
 
         logger.info("Processing {} containing {} BioPax elements in {} s", path, numItems, (System.currentTimeMillis() - startTime) / 1000);
-        logger.info("Processing {} nodes and at {} node/s", numNodes, Math.round(1000. * numNodes / nodeLoadingTime));
-        logger.info("Processing {} relations and at {} relation/s", numRelations, Math.round(1000. * numRelations / relationLoadingTime));
-//        logger.info("- First loop in {} s", (startTime2 - startTime1) / 1000);
-//        logger.info("- Second loop in {} s", (System.currentTimeMillis() - startTime2) / 1000);
+        logger.info("Processing {} nodes", numNodes);
+        logger.info("Processing {} relations", numRelations);
     }
 
     private String cleanValue(String value) {
