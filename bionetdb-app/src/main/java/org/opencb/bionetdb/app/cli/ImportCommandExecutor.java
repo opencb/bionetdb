@@ -183,7 +183,7 @@ public class ImportCommandExecutor extends CommandExecutor {
 
         sb.setLength(0);
         sb.append(neo4jHome);
-        sb.append("/bin/neo4j-admin import --ignore-duplicate-nodes --ignore-missing-nodes");
+        sb.append("/bin/neo4j-admin import --id-type INTEGER --ignore-duplicate-nodes --ignore-missing-nodes");
 
         // Retrieving files from the input directory
         List<File> relationFiles = new ArrayList<>();
