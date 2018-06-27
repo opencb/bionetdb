@@ -25,9 +25,9 @@ import java.util.List;
 @Api(value = "Path", position = 1, description = "Methods for working with network paths")
 public class PathWSServer extends GenericRestWSServer {
 
-    public PathWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo,
+    public PathWSServer(@Context UriInfo uriInfo,
                         @Context HttpServletRequest hsr) throws VersionException {
-        super(apiVersion, uriInfo, hsr);
+        super(uriInfo, hsr);
     }
 
     @GET

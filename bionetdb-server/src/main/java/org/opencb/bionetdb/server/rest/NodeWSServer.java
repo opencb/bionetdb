@@ -23,9 +23,9 @@ import java.util.List;
 @Api(value = "Node", position = 1, description = "Methods for working with 'nodes'")
 public class NodeWSServer extends GenericRestWSServer {
 
-    public NodeWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo,
+    public NodeWSServer(@Context UriInfo uriInfo,
                         @Context HttpServletRequest hsr) throws VersionException {
-        super(apiVersion, uriInfo, hsr);
+        super(uriInfo, hsr);
     }
 
     @GET

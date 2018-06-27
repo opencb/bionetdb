@@ -25,9 +25,9 @@ import java.util.List;
 @Api(value = "Table", position = 1, description = "Methods for working with node attributes")
 public class TableWSServer extends GenericRestWSServer {
 
-    public TableWSServer(@PathParam("apiVersion") String apiVersion, @Context UriInfo uriInfo,
+    public TableWSServer(@Context UriInfo uriInfo,
                          @Context HttpServletRequest hsr) throws VersionException {
-        super(apiVersion, uriInfo, hsr);
+        super(uriInfo, hsr);
     }
 
     @GET
