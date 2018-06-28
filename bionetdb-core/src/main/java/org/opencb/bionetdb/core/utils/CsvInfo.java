@@ -17,6 +17,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
+import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.commons.utils.FileUtils;
@@ -44,6 +45,7 @@ public class CsvInfo {
     private Map<String, PrintWriter> csvWriters;
     private Map<String, PrintWriter> csvAnnotatedWriters;
     private Map<String, List<String>> nodeAttributes;
+    private Set<String> noAttributes;
 
     private RocksDbManager rocksDbManager;
     private RocksDB rocksDB;
@@ -159,6 +161,7 @@ public class CsvInfo {
         csvWriters = new HashMap<>();
         csvAnnotatedWriters = new HashMap<>();
         nodeAttributes = createNodeAttributes();
+        noAttributes = createNoAttributes();
 
         rocksDbManager = new RocksDbManager();
         rocksDB = this.rocksDbManager.getDBConnection(outputPath.toString() + "/rocksdb", true);
@@ -371,7 +374,11 @@ public class CsvInfo {
         StringBuilder sb = new StringBuilder();
         sb.append("uid:ID(").append(attrs.get(0)).append(")");
         for (int i = 1; i < attrs.size(); i++) {
-            sb.append(SEPARATOR).append(attrs.get(i));
+            sb.append(SEPARATOR);
+            if (!noAttributes.contains(attrs.get(i))) {
+              sb.append(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES);
+            }
+            sb.append(attrs.get(i));
         }
         return sb.toString();
     }
@@ -390,7 +397,7 @@ public class CsvInfo {
         sb.append(":START_ID(").append(nodeAttributes.get(split[1]).get(0)).append("),:END_ID(")
                 .append(nodeAttributes.get(split[2]).get(0)).append(")");
         if (type.equals(BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString())) {
-            sb.append(",evidence");
+            sb.append("," + Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES + "evidence");
         }
         return sb.toString();
     }
@@ -757,6 +764,14 @@ public class CsvInfo {
 
         return nodeAttributes;
     }
+    private Set<String> createNoAttributes() {
+        Set<String> noAttributes = new HashSet<>();
+        noAttributes.add("id");
+        noAttributes.add("name");
+        noAttributes.add("source");
+        return noAttributes;
+    }
+
 
     public long getUid() {
         return uid;
