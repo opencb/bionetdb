@@ -7,11 +7,8 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.core.Transcript;
-import org.opencb.biodata.models.core.Xref;
 import org.opencb.biodata.models.metadata.Individual;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
@@ -20,6 +17,8 @@ import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.bionetdb.core.utils.cache.GeneCache;
+import org.opencb.bionetdb.core.utils.cache.ProteinCache;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.rocksdb.RocksDB;
@@ -33,6 +32,8 @@ import java.util.*;
 public class CsvInfo {
     public static final String SEPARATOR = ",";
     private static final String MISSING_VALUE = "-";
+
+    private static final String MIRNA_ROCKSDB = "mirnas.rocksdb";
 
     private long uid;
     private Path inputPath;
@@ -48,11 +49,12 @@ public class CsvInfo {
     private Set<String> noAttributes;
 
     private RocksDbManager rocksDbManager;
-    private RocksDB rocksDB;
+    private RocksDB uidRocksDb;
 
-    private RocksDB geneRocksDB;
-    private RocksDB proteinRocksDB;
-    private RocksDB miRnaRocksDB;
+    private GeneCache geneCache;
+    private ProteinCache proteinCache;
+
+    private RocksDB miRnaRocksDb;
 
     private ObjectMapper mapper;
     private ObjectReader geneReader;
@@ -164,7 +166,10 @@ public class CsvInfo {
         noAttributes = createNoAttributes();
 
         rocksDbManager = new RocksDbManager();
-        rocksDB = this.rocksDbManager.getDBConnection(outputPath.toString() + "/rocksdb", true);
+        uidRocksDb = this.rocksDbManager.getDBConnection(outputPath.toString() + "/uidRocksDB", true);
+
+        geneCache = new GeneCache();
+        proteinCache = new ProteinCache();
 
         mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -314,39 +319,75 @@ public class CsvInfo {
         csvWriters.get(strType).println(getRelationHeaderLine(strType));
     }
 
-    public Gene getGene(String id) {
-        Gene gene = null;
-        String internalId = rocksDbManager.getString(id, geneRocksDB);
-        if (StringUtils.isNotEmpty(internalId)) {
-            try {
-                gene = geneReader.readValue(rocksDbManager.getString(internalId, geneRocksDB));
-            } catch (IOException e) {
-                logger.info("Error parsing gene {}: {}", id, e.getMessage());
-                gene = null;
-            }
+    public Long getGeneUid(String xrefId) {
+        Long geneUid = null;
+        String geneId = geneCache.getPrimaryId(xrefId);
+        if (StringUtils.isNotEmpty(geneId)) {
+            geneUid = getLong(geneId);
+        } else {
+            logger.info("Getting gene UID: Xref not found for gene {}", xrefId);
         }
-
-        return gene;
+        return geneUid;
     }
 
-    public Entry getProtein(String id) {
-        Entry protein = null;
-        String internalId = rocksDbManager.getString(id, proteinRocksDB);
-        if (StringUtils.isNotEmpty(internalId)) {
-            try {
-                protein = proteinReader.readValue(rocksDbManager.getString(internalId, proteinRocksDB));
-            } catch (IOException e) {
-                logger.info("Error parsing protein {}: {}", id, internalId);
-                logger.info(e.getMessage());
-                protein = null;
-            }
+    public void saveGeneUid(String xrefId, Long geneUid) {
+        String geneId = geneCache.getPrimaryId(xrefId);
+        if (StringUtils.isNotEmpty(geneId)) {
+            putLong(geneId, geneUid);
+        } else {
+            logger.info("Setting gene UID {}: Xref not found for gene {}", geneUid, xrefId);
+        }
+    }
+
+    public void saveUnknownGeneUid(String geneId, String geneName, Long geneUid) {
+        // Add prefix "g." to avoid duplicated names (i.e., proteins and genes have the same name)
+        geneCache.addXrefId(geneId, "g." + geneId);
+        if (StringUtils.isNotEmpty(geneName)) {
+            geneCache.addXrefId(geneName, "g." + geneId);
         }
 
-        return protein;
+        putLong("g." + geneId, geneUid);
+    }
+
+    public Gene getGene(String xrefId) {
+        return geneCache.get(xrefId);
+    }
+
+    public Long getProteinUid(String xrefId) {
+        Long proteinUid = null;
+        String proteinId = proteinCache.getPrimaryId(xrefId);
+        if (StringUtils.isNotEmpty(proteinId)) {
+            proteinUid = getLong(proteinId);
+        } else {
+            logger.info("Getting protein UID: Xref not found for protein {}", xrefId);
+        }
+        return proteinUid;
+    }
+
+    public void saveProteinUid(String xrefId, Long proteinUid) {
+        String proteinId = proteinCache.getPrimaryId(xrefId);
+        if (StringUtils.isNotEmpty(proteinId)) {
+            putLong(proteinId, proteinUid);
+        } else {
+            logger.info("Setting protein UID {}: Xref not found for protein {}", proteinUid, xrefId);
+        }
+    }
+
+    public void saveUnknownProteinUid(String proteinId, String proteinName, Long proteinUid) {
+        proteinCache.addXrefId(proteinId, proteinId);
+        if (StringUtils.isNotEmpty(proteinName)) {
+            proteinCache.addXrefId(proteinName, proteinId);
+        }
+
+        putLong(proteinId, proteinUid);
+    }
+
+    public Entry getProtein(String xrefId) {
+        return proteinCache.get(xrefId);
     }
 
     public String getMiRnaInfo(String id) {
-        String info = rocksDbManager.getString(id, miRnaRocksDB);
+        String info = rocksDbManager.getString(id, miRnaRocksDb);
         if (StringUtils.isNotEmpty(info)) {
             return id + ":" + info;
         }
@@ -355,19 +396,19 @@ public class CsvInfo {
     }
 
     public Long getLong(String key) {
-        return rocksDbManager.getLong(key, rocksDB);
+        return rocksDbManager.getLong(key, uidRocksDb);
     }
 
     public String getString(String key) {
-        return rocksDbManager.getString(key, rocksDB);
+        return rocksDbManager.getString(key, uidRocksDb);
     }
 
     public void putLong(String key, long value) {
-        rocksDbManager.putLong(key, value, rocksDB);
+        rocksDbManager.putLong(key, value, uidRocksDb);
     }
 
     public void putString(String key, String value) {
-        rocksDbManager.putString(key, value, rocksDB);
+        rocksDbManager.putString(key, value, uidRocksDb);
     }
 
     private String getNodeHeaderLine(List<String> attrs) {
@@ -376,7 +417,7 @@ public class CsvInfo {
         for (int i = 1; i < attrs.size(); i++) {
             sb.append(SEPARATOR);
             if (!noAttributes.contains(attrs.get(i))) {
-              sb.append(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES);
+                sb.append(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES);
             }
             sb.append(attrs.get(i));
         }
@@ -441,122 +482,12 @@ public class CsvInfo {
         }
     }
 
-    public void indexingGenes(Path genePath, Path indexPath) throws IOException {
-        RocksDbManager rocksDbManager = new RocksDbManager();
-
-        if (indexPath.toFile().exists()) {
-            geneRocksDB = rocksDbManager.getDBConnection(indexPath.toString(), false);
-            logger.info("\tGene index already created!");
-            return;
-        }
-
-        geneRocksDB = rocksDbManager.getDBConnection(indexPath.toString(), false);
-
-        BufferedReader reader = org.opencb.commons.utils.FileUtils.newBufferedReader(genePath);
-        String jsonGene = reader.readLine();
-        long geneCounter = 0, transcrCounter = 0;
-        while (jsonGene != null) {
-            Gene gene = geneReader.readValue(jsonGene);
-            if (StringUtils.isNotEmpty(gene.getId()) || StringUtils.isNotEmpty(gene.getName())) {
-                geneCounter++;
-                if (geneCounter % 5000 == 0) {
-                    logger.info("Indexing {} genes...", geneCounter);
-                }
-                String gKey = "g." + geneCounter;
-                rocksDbManager.putString(gKey, jsonGene, geneRocksDB);
-                if (StringUtils.isNotEmpty(gene.getId())) {
-                    rocksDbManager.putString(gene.getId(), gKey, geneRocksDB);
-                }
-                if (StringUtils.isNotEmpty(gene.getName())) {
-                    rocksDbManager.putString(gene.getName(), gKey, geneRocksDB);
-                }
-
-                if (ListUtils.isNotEmpty(gene.getTranscripts())) {
-                    for (Transcript transcr : gene.getTranscripts()) {
-                        if (StringUtils.isNotEmpty(transcr.getId()) || org.apache.commons.lang3.StringUtils.isNotEmpty(transcr.getName())) {
-//                            transcrCounter++;
-//                            key = "t." + geneCounter;
-//                            String jsonTranscr = objWriter.writeValueAsString(transcr);
-//                            rocksDbManager.putString(key, jsonTranscr, geneRocksDB);
-//                            if (StringUtils.isNotEmpty(transcr.getId())) {
-//                                rocksDbManager.putString(transcr.getId(), key, geneRocksDB);
-//                            }
-//                            if (StringUtils.isNotEmpty(transcr.getName())) {
-//                                rocksDbManager.putString(transcr.getName(), key, geneRocksDB);
-//                            }
-                            if (ListUtils.isNotEmpty(transcr.getXrefs())) {
-                                for (Xref xref: transcr.getXrefs()) {
-//                                    Node node = NodeBuilder.newNode(getAndIncUid(), xref);
-                                    rocksDbManager.putString(xref.getId(), gKey, geneRocksDB);
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                logger.info("Missing gene ID/name from JSON file");
-            }
-
-
-            // Next line
-            jsonGene = reader.readLine();
-        }
-        logger.info("Indexing {} genes. Done.", geneCounter);
-
-        reader.close();
+    public void indexingGenes(Path inputPath, Path indexPath) throws IOException {
+        geneCache.index(inputPath, indexPath);
     }
 
-    public void indexingProteins(Path proteinPath, Path indexPath) throws IOException {
-        RocksDbManager rocksDbManager = new RocksDbManager();
-
-        if (indexPath.toFile().exists()) {
-            proteinRocksDB = rocksDbManager.getDBConnection(indexPath.toString(), false);
-            logger.info("\tProtein index already created!");
-            return;
-        }
-
-        proteinRocksDB = rocksDbManager.getDBConnection(indexPath.toString(), false);
-
-        BufferedReader reader = org.opencb.commons.utils.FileUtils.newBufferedReader(proteinPath);
-        String jsonProtein = reader.readLine();
-        long proteinCounter = 0;
-        while (jsonProtein != null) {
-            Entry protein = proteinReader.readValue(jsonProtein);
-            if (ListUtils.isNotEmpty(protein.getAccession()) || ListUtils.isNotEmpty(protein.getName())) {
-                proteinCounter++;
-                if (proteinCounter % 5000 == 0) {
-                    logger.info("Indexing {} proteins...", proteinCounter);
-                }
-                String pKey = "p." + proteinCounter;
-                rocksDbManager.putString(pKey, jsonProtein, proteinRocksDB);
-
-                if (ListUtils.isNotEmpty(protein.getAccession())) {
-                    for (String acc: protein.getAccession()) {
-                        rocksDbManager.putString(acc, pKey, proteinRocksDB);
-                    }
-                }
-
-                if (ListUtils.isNotEmpty(protein.getName())) {
-                    for (String name: protein.getName()) {
-                        rocksDbManager.putString(name, pKey, proteinRocksDB);
-                    }
-                }
-
-                if (ListUtils.isNotEmpty(protein.getDbReference())) {
-                    for (DbReferenceType dbRef: protein.getDbReference()) {
-                        rocksDbManager.putString(dbRef.getId(), pKey, proteinRocksDB);
-                    }
-                }
-            } else {
-                logger.info("Missing protein accession/name from JSON file");
-            }
-
-            // Next line
-            jsonProtein = reader.readLine();
-        }
-        logger.info("Indexing {} proteins. Done.", proteinCounter);
-
-        reader.close();
+    public void indexingProteins(Path inputPath, Path indexPath) throws IOException {
+        proteinCache.index(inputPath, indexPath);
     }
 
     public void indexingMiRnas(Path miRnaPath, Path indexPath) throws IOException {
@@ -564,10 +495,10 @@ public class CsvInfo {
 
         if (indexPath.toFile().exists()) {
             logger.info("\tmiRNA index already created!");
-            miRnaRocksDB = rocksDbManager.getDBConnection(indexPath.toString(), false);
+            miRnaRocksDb = rocksDbManager.getDBConnection(indexPath.toString(), false);
             return;
         }
-        miRnaRocksDB = rocksDbManager.getDBConnection(indexPath.toString(), false);
+        miRnaRocksDb = rocksDbManager.getDBConnection(indexPath.toString(), false);
 
         BufferedReader reader = org.opencb.commons.utils.FileUtils.newBufferedReader(miRnaPath);
         String line = reader.readLine();
@@ -593,16 +524,16 @@ public class CsvInfo {
         line = reader.readLine();
         long miRnaCounter = 0;
         while (line != null) {
-                miRnaCounter++;
-                if (miRnaCounter % 5000 == 0) {
-                    logger.info("Indexing {} miRNAs...", miRnaCounter);
-                }
+            miRnaCounter++;
+            if (miRnaCounter % 5000 == 0) {
+                logger.info("Indexing {} miRNAs...", miRnaCounter);
+            }
             fields = line.split(",");
             miRna = fields[indexMiRnaId];
             targetGene = fields[indexTargetGene];
             evidence = fields[indexEvidence];
             if (StringUtils.isNotEmpty(miRna)) {
-                rocksDbManager.putString(miRna, targetGene + ":" + evidence, miRnaRocksDB);
+                rocksDbManager.putString(miRna, targetGene + ":" + evidence, miRnaRocksDb);
             }
 
             // Next line
@@ -858,12 +789,20 @@ public class CsvInfo {
         return this;
     }
 
-    public RocksDB getRocksDB() {
-        return rocksDB;
+    public RocksDB getUidRocksDb() {
+        return uidRocksDb;
     }
 
-    public CsvInfo setRocksDB(RocksDB rocksDB) {
-        this.rocksDB = rocksDB;
+    public CsvInfo setUidRocksDb(RocksDB uidRocksDb) {
+        this.uidRocksDb = uidRocksDb;
         return this;
+    }
+
+    public GeneCache getGeneCache() {
+        return geneCache;
+    }
+
+    public ProteinCache getProteinCache() {
+        return proteinCache;
     }
 }

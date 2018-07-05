@@ -69,8 +69,8 @@ public class SbmlParser {
         Network network = new Network();
 
         // Retrieving model from BioPAX file
-//        SBMLReader reader = new SBMLReader();
-//        SBMLDocument sbml = reader.readSBML(path.toFile().getAbsolutePath());
+//        SBMLReader objReader = new SBMLReader();
+//        SBMLDocument sbml = objReader.readSBML(path.toFile().getAbsolutePath());
 //        Model model = sbml.getModel();
 //
 //        // Species

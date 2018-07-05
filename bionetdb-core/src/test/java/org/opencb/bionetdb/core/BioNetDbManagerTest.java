@@ -3,12 +3,16 @@ package org.opencb.bionetdb.core;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -27,16 +31,17 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.FileUtils;
+import org.opencb.commons.utils.ListUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class BioNetDbManagerTest {
 
@@ -271,5 +276,64 @@ public class BioNetDbManagerTest {
             System.out.println("Processing " + i + " of " + numProteins);
         }
         pw.close();
+    }
+
+    @Test
+    public void countGenes() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        ObjectReader varReader = mapper.reader(Variant.class);
+
+//        String geneFilename = "/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json";
+//        String geneFilename = "/home/jtarraga/data150/platinum/illumina_platinum.export.json.gz";
+//        String variantFilename = "/home/jtarraga/data150/load.neo/10k.clinvar.json";
+        String variantFilename = "/home/jtarraga/data150/load.neo/clinvar.json";
+        BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(variantFilename));
+
+        Set<String> geneIdSet = new HashSet<>();
+        Set<String> geneNameSet = new HashSet<>();
+
+        long numVariants = 0;
+        String line = bufferedReader.readLine();
+        while (line != null) {
+            numVariants++;
+
+            Variant variant = varReader.readValue(line);
+            if (variant.getAnnotation() != null &&
+                    ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
+                    if (StringUtils.isNotEmpty(ct.getEnsemblGeneId())) {
+                        if (!geneIdSet.contains(ct.getEnsemblGeneId())) {
+                            if ("ENSG00000177133".equals(ct.getEnsemblGeneId())) {
+                                System.out.println("===> " + variant.getId() + "," + variant.toString());
+                            }
+                            geneIdSet.add(ct.getEnsemblGeneId());
+                        }
+                    }
+                    if (StringUtils.isNotEmpty(ct.getGeneName())) {
+                        if (!geneNameSet.contains(ct.getGeneName())) {
+                            geneNameSet.add(ct.getGeneName());
+                        }
+                    }
+                }
+            }
+            if (numVariants % 10000 == 0) {
+                System.out.println("Num. variants = " + numVariants + ", num. genes = "
+                        + geneIdSet.size() + ", " + geneNameSet.size());
+            }
+
+            // Read next line
+            line = bufferedReader.readLine();
+        }
+        bufferedReader.close();
+
+        System.out.println("Num. variants = " + numVariants + ", num. genes = "
+                + geneIdSet.size() + ", " + geneNameSet.size());
+
+//        Iterator<String> iterator = geneIdSet.iterator();
+//        while (iterator.hasNext()) {
+//            System.out.println(iterator.next());
+//        }
     }
 }

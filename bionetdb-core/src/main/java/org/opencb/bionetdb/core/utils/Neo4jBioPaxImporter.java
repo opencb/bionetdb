@@ -169,16 +169,46 @@ public class Neo4jBioPaxImporter {
                     break;
                 }
                 case "Protein": {
+                    String protPrimaryId = null;
                     String protName = ((Protein) bioPAXElement).getDisplayName();
-                    Long protUid = (protName == null ? null : csv.getLong(protName));
+                    if (StringUtils.isEmpty(protName)) {
+                        Set<Xref> xrefs = ((Protein)bioPAXElement).getXref();
+                        for (Xref xref: xrefs) {
+                            if (!StringUtils.containsIgnoreCase(xref.getDb(), "Reactome")) {
+                                protPrimaryId = csv.getProteinCache().getPrimaryId(xref.getId());
+                                if (StringUtils.isNotEmpty(protPrimaryId)) {
+                                    break;
+                                }
+                            }
+                        }
+                        if (StringUtils.isEmpty(protPrimaryId)) {
+                            protPrimaryId = getBioPaxId(bioPAXElement.getRDFId());
+                        }
+                    } else {
+                        protPrimaryId = csv.getProteinCache().getPrimaryId(protName);
+                        if (StringUtils.isEmpty(protPrimaryId)) {
+                            Set<Xref> xrefs = ((Protein)bioPAXElement).getXref();
+                            for (Xref xref: xrefs) {
+                                if (!StringUtils.containsIgnoreCase(xref.getDb(), "Reactome")) {
+                                    protPrimaryId = csv.getProteinCache().getPrimaryId(xref.getId());
+                                    if (StringUtils.isNotEmpty(protPrimaryId)) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (StringUtils.isEmpty(protPrimaryId)) {
+                            protPrimaryId = protName;
+                        }
+                    }
+
+                    Long protUid = (protPrimaryId == null ? null : csv.getLong(protPrimaryId));
                     if (protUid == null) {
                         node = loadProtein(bioPAXElement);
                         updateAuxMaps(node);
 
                         updatePhysicalEntity(bioPAXElement);
-                        if (node.getName() != null) {
-                            csv.putLong(node.getName(), node.getUid());
-                        }
+                        csv.putLong(protPrimaryId, node.getUid());
                     } else {
                         // The protein node exists, get the RDF ID and save it to be
                         // referenced later for the possible relationships (interaction, complex,...)

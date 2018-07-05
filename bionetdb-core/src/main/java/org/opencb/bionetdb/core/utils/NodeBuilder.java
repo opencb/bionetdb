@@ -1,10 +1,7 @@
 package org.opencb.bionetdb.core.utils;
 
 import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.FeatureType;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
+import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.*;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
@@ -248,9 +245,15 @@ public class NodeBuilder {
 //        }
         node.addAttribute("dataset", protein.getDataset());
 //        node.addAttribute("dbReference", protein.getDbReference());
-        node.addAttribute("proteinExistence", protein.getProteinExistence());
+        if (protein.getProteinExistence() != null) {
+            node.addAttribute("proteinExistence", protein.getProteinExistence().getType());
+        }
         if (ListUtils.isNotEmpty(protein.getEvidence())) {
-            node.addAttribute("evidence", StringUtils.join(protein.getEvidence(), ","));
+            StringBuilder sb = new StringBuilder();
+            for (EvidenceType evidenceType: protein.getEvidence()) {
+                sb.append(evidenceType.getKey()).append(";");
+            }
+            node.addAttribute("evidence", sb.toString());
         }
 //        // Gene location
 //        if (protein.getGeneLocation() != null) {

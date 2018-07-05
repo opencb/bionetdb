@@ -48,7 +48,7 @@ public class Neo4JVariantLoader {
     }
 
     public void loadVCFFile(Path path) {
-        // VCF File reader management
+        // VCF File objReader management
         VcfFileReader vcfFileReader = new VcfFileReader(path.toString(), false);
         vcfFileReader.open();
         VCFHeader vcfHeader = vcfFileReader.getVcfHeader();
@@ -86,7 +86,7 @@ public class Neo4JVariantLoader {
         }
         System.out.println(">>>> total loading time: " + totalTime + " s");
 
-        // close VCF file reader
+        // close VCF file objReader
         vcfFileReader.close();
     }
 

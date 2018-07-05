@@ -451,7 +451,7 @@ public class Neo4jImporter {
     }
 
     public void generateCSVFromVCF(Path vcfPath, Path outDir) throws FileNotFoundException {
-        // VCF File reader management
+        // VCF File objReader management
         VcfFileReader vcfFileReader = new VcfFileReader(vcfPath.toString(), false);
         vcfFileReader.open();
         VCFHeader vcfHeader = vcfFileReader.getVcfHeader();
@@ -482,7 +482,7 @@ public class Neo4jImporter {
             updateCSVVariantFiles(Neo4jConverter.convert(variantContexts, converter), csvforVariant);
         }
 
-        // close VCF file reader
+        // close VCF file objReader
         vcfFileReader.close();
     }
 

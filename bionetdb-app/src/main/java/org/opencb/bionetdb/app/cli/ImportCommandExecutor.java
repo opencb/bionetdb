@@ -6,6 +6,8 @@ import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.bionetdb.core.utils.CsvInfo;
 import org.opencb.bionetdb.core.utils.Neo4jBioPaxImporter;
 import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
+import org.opencb.bionetdb.core.utils.cache.GeneCache;
+import org.opencb.bionetdb.core.utils.cache.ProteinCache;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -92,41 +94,44 @@ public class ImportCommandExecutor extends CommandExecutor {
                 }
             }
 
-            long geneIndexingTime, proteinIndexingTime, miRnaIndexingTime, bioPaxTime;
+            long geneIndexingTime = 0;
+            long proteinIndexingTime = 0;
+            long miRnaIndexingTime = 0;
+            long bioPaxTime = 0;
 
             // Indexing genes
             logger.info("Starting gene indexing...");
             File geneFile = new File(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME);
-            File geneDbFile = new File(outputPath + "/" + Neo4jCsvImporter.GENE_DBNAME);
             if (!geneFile.exists()) {
                 geneFile = new File(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME + ".gz");
                 FileUtils.checkFile(geneFile.toPath());
             }
             start = System.currentTimeMillis();
-            importer.indexingGenes(geneFile.toPath(), geneDbFile.toPath());
+            importer.indexingGenes(geneFile.toPath(), outputPath);
             geneIndexingTime = (System.currentTimeMillis() - start) / 1000;
             logger.info("Gene indexing done in {} s", geneIndexingTime);
 
             // Indexing proteins
             logger.info("Starting protein indexing...");
             File proteinFile = new File(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME);
-            File proteinDbFile = new File(outputPath + "/" + Neo4jCsvImporter.PROTEIN_DBNAME);
             if (!proteinFile.exists()) {
                 proteinFile = new File(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME + ".gz");
                 FileUtils.checkFile(proteinFile.toPath());
             }
             start = System.currentTimeMillis();
-            importer.indexingProteins(proteinFile.toPath(),proteinDbFile.toPath());
+            importer.indexingProteins(proteinFile.toPath(), outputPath);
             proteinIndexingTime = (System.currentTimeMillis() - start) / 1000;
             logger.info("Protein indexing done in {} s", proteinIndexingTime);
 
             // Indexing miRNA
-            logger.info("Starting miRNA indexing...");
-            start = System.currentTimeMillis();
-            importer.indexingMiRnas(Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME),
-                    Paths.get(outputPath + "/" + Neo4jCsvImporter.MIRNA_DBNAME));
-            miRnaIndexingTime = (System.currentTimeMillis() - start) / 1000;
-            logger.info("miRNA indexing done in {} s", miRnaIndexingTime);
+            if (Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME).toFile().exists()) {
+                logger.info("Starting miRNA indexing...");
+                start = System.currentTimeMillis();
+                importer.indexingMiRnas(Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME),
+                        Paths.get(outputPath + "/" + Neo4jCsvImporter.MIRNA_DBNAME));
+                miRnaIndexingTime = (System.currentTimeMillis() - start) / 1000;
+                logger.info("miRNA indexing done in {} s", miRnaIndexingTime);
+            }
 
             // Parse BioPAX files
             Map<String, Set<String>> filters = parseFilters(importCommandOptions.exclude);
@@ -325,46 +330,46 @@ public class ImportCommandExecutor extends CommandExecutor {
             }
 
             // Post-process miRNA nodes
-            logger.info("Post-processing {} miRNA nodes", rnaNodes.size());
-            pwNode = csv.getCsvWriters().get(Node.Type.RNA.toString());
-            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
-            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(
-                    CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString());
-            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___RNA___MIRNA.toString());
-            for (Node node: rnaNodes) {
-                List<String> miRnaInfo = getMiRnaInfo(node.getName());
-                for (String info: miRnaInfo) {
-                    String[] fields = info.split(":");
-                    String miRnaId = fields[0];
-                    String targetGene = fields[1];
-                    String evidence = fields[2];
-
-                    Long miRnaUid = csv.getLong(miRnaId);
-                    if (miRnaUid == null) {
-                        Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
-                        pwMiRna.println(csv.nodeLine(miRnaNode));
-
-                        // Save the miRNA node uid
-                        miRnaUid = miRnaNode.getUid();
-                        csv.putLong(miRnaId, miRnaUid);
-                    }
-
-                    // Process target gene
-                    Long geneUid = importer.processGene(targetGene, targetGene);
-                    if (geneUid != null) {
-                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
-                            // Write mirna-target gene relation
-                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + evidence);
-                            csv.putLong(miRnaUid + "." + geneUid, 1);
-                        }
-                    }
-
-                    // Write rna-mirna relation
-                    pwRel.println(node.getUid() + "," + miRnaUid);
-                }
-                // Write RNA node
-                pwNode.println(importer.getCsvInfo().nodeLine(node));
-            }
+//            logger.info("Post-processing {} miRNA nodes", rnaNodes.size());
+//            pwNode = csv.getCsvWriters().get(Node.Type.RNA.toString());
+//            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
+//            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(
+//                    CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString());
+//            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___RNA___MIRNA.toString());
+//            for (Node node: rnaNodes) {
+//                List<String> miRnaInfo = getMiRnaInfo(node.getName());
+//                for (String info: miRnaInfo) {
+//                    String[] fields = info.split(":");
+//                    String miRnaId = fields[0];
+//                    String targetGene = fields[1];
+//                    String evidence = fields[2];
+//
+//                    Long miRnaUid = csv.getLong(miRnaId);
+//                    if (miRnaUid == null) {
+//                        Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
+//                        pwMiRna.println(csv.nodeLine(miRnaNode));
+//
+//                        // Save the miRNA node uid
+//                        miRnaUid = miRnaNode.getUid();
+//                        csv.putLong(miRnaId, miRnaUid);
+//                    }
+//
+//                    // Process target gene
+//                    Long geneUid = importer.processGene(targetGene, targetGene);
+//                    if (geneUid != null) {
+//                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
+//                            // Write mirna-target gene relation
+//                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + evidence);
+//                            csv.putLong(miRnaUid + "." + geneUid, 1);
+//                        }
+//                    }
+//
+//                    // Write rna-mirna relation
+//                    pwRel.println(node.getUid() + "," + miRnaUid);
+//                }
+//                // Write RNA node
+//                pwNode.println(importer.getCsvInfo().nodeLine(node));
+//            }
         }
 
         @Override
