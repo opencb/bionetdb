@@ -227,9 +227,14 @@ public class Neo4jCsvImporter {
             Iterator<Xref> it = xrefSet.iterator();
             while (it.hasNext()) {
                 Xref xref = it.next();
-                n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
-                pwXref.println(csv.nodeLine(n));
-                pwRel.println(csv.relationLine(uid, n.getUid()));
+                Long xrefUid = csv.getLong(xref.getDbName() + "." + xref.getId());
+                if (xrefUid == null) {
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
+                    pwXref.println(csv.nodeLine(n));
+                    xrefUid = n.getUid();
+                    csv.putLong(xref.getDbName() + "." + xref.getId(), xrefUid);
+                }
+                pwRel.println(csv.relationLine(uid, xrefUid));
             }
         }
 
@@ -290,9 +295,14 @@ public class Neo4jCsvImporter {
         pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.XREF___PROTEIN___XREF.toString());
         if (ListUtils.isNotEmpty(protein.getDbReference())) {
             for (DbReferenceType dbRef: protein.getDbReference()) {
-                n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
-                pwXref.println(csv.nodeLine(n));
-                pw.println(csv.relationLine(uid, n.getUid()));
+                Long xrefUid = csv.getLong(dbRef.getType() + "." + dbRef.getId());
+                if (xrefUid == null) {
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
+                    pwXref.println(csv.nodeLine(n));
+                    xrefUid = n.getUid();
+                    csv.putLong(dbRef.getType() + "." + dbRef.getId(), xrefUid);
+                }
+                pw.println(csv.relationLine(uid, xrefUid));
             }
         }
 
