@@ -9,6 +9,7 @@ import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
+import org.opencb.biodata.models.core.Xref;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
@@ -24,9 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Neo4jCsvImporter {
     public static final Object GENE_FILENAME = "genes.json";
@@ -210,6 +209,27 @@ public class Neo4jCsvImporter {
                         }
                     }
                 }
+            }
+        }
+
+        // Xrefs
+        if (ListUtils.isNotEmpty(gene.getTranscripts())) {
+            PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
+            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.XREF___GENE___XREF.toString());
+            Set<Xref> xrefSet = new HashSet<>();
+            for (Transcript transcript : gene.getTranscripts()) {
+                if (ListUtils.isNotEmpty(transcript.getXrefs())) {
+                    for (Xref xref : transcript.getXrefs()) {
+                        xrefSet.add(xref);
+                    }
+                }
+            }
+            Iterator<Xref> it = xrefSet.iterator();
+            while (it.hasNext()) {
+                Xref xref = it.next();
+                n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
+                pwXref.println(csv.nodeLine(n));
+                pwRel.println(csv.relationLine(uid, n.getUid()));
             }
         }
 
