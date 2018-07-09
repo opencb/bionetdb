@@ -70,7 +70,7 @@ public class GeneCache extends Cache<Gene> {
                         if (StringUtils.isNotEmpty(transcr.getId()) || StringUtils.isNotEmpty(transcr.getName())) {
                             if (ListUtils.isNotEmpty(transcr.getXrefs())) {
                                 for (Xref xref: transcr.getXrefs()) {
-                                    if (org.apache.commons.lang.StringUtils.isNotEmpty(xref.getId())) {
+                                    if (StringUtils.isNotEmpty(xref.getId())) {
                                         rocksDbManager.putString(xref.getId(), geneId, xrefObjRocksDb);
                                     }
                                 }

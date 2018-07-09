@@ -252,6 +252,12 @@ public class Neo4jCsvImporter {
         for (String key: node.getAttributes().keySet()) {
             newNode.addAttribute(key, node.getAttributes().get(key));
         }
+
+        String geneId = csv.getGeneCache().getPrimaryId(node.getName());
+        if (StringUtils.isNotEmpty(geneId)) {
+            processGene(geneId, geneId);
+        }
+
         return newNode;
     }
 
@@ -321,28 +327,34 @@ public class Neo4jCsvImporter {
 
         // Get protein
         Node n;
-//        if (ListUtils.isNotEmpty(transcript.getXrefs())) {
-//            Entry protein = null;
-//            for (org.opencb.biodata.models.core.Xref xref: transcript.getXrefs()) {
-//                protein = csv.getProtein(xref.getId());
-//                if (protein != null) {
-//                    break;
-//                }
-//            }
-//            if (protein != null) {
-//                PrintWriter pw;
-//                Long proteinUid = csv.getLong(protein.getAccession().get(0));
-//                if (proteinUid == null) {
-//                    // Create protein node and write the CSV file
-//                    Node proteinNode = createProteinNode(protein);
-//                    csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).println(csv.nodeLine(proteinNode));
-//                    proteinUid = proteinNode.getUid();
-//                }
-//
-//                // Write transcript-protein relation
-//                csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__PROTEIN.toString()).println(uid + "," + proteinUid);
-//            }
-//        }
+        if (ListUtils.isNotEmpty(transcript.getXrefs())) {
+            String proteinId = null;
+            Entry protein = null;
+            for (Xref xref: transcript.getXrefs()) {
+                proteinId = csv.getProteinCache().getPrimaryId(xref.getId());
+                if (proteinId != null) {
+                    Long proteinUid = csv.getLong(proteinId);
+                    if (proteinUid == null) {
+                        protein = csv.getProtein(proteinId);
+                        if (protein != null) {
+                            // Create protein node and write the CSV file
+                            Node proteinNode = createProteinNode(protein);
+                            csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).println(csv.nodeLine(proteinNode));
+                            proteinUid = proteinNode.getUid();
+
+                            // Save protein UID
+                            csv.saveProteinUid(proteinId, proteinUid);
+                        } else {
+                            logger.info("Protein not found for ID {}", proteinId);
+                        }
+                    }
+
+                    // Write transcript-protein relation
+                    csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__PROTEIN.toString()).println(uid + "," + proteinUid);
+                    break;
+                }
+            }
+        }
 
         // TFBS
         if (ListUtils.isNotEmpty(transcript.getTfbs())) {
