@@ -794,9 +794,8 @@ public class CsvInfo {
         return uidRocksDb;
     }
 
-    public CsvInfo setUidRocksDb(RocksDB uidRocksDb) {
-        this.uidRocksDb = uidRocksDb;
-        return this;
+    public RocksDB getMiRnaRocksDb() {
+        return miRnaRocksDb;
     }
 
     public GeneCache getGeneCache() {

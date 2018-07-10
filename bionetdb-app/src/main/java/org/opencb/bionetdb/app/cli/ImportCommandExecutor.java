@@ -128,7 +128,7 @@ public class ImportCommandExecutor extends CommandExecutor {
                 logger.info("Starting miRNA indexing...");
                 start = System.currentTimeMillis();
                 importer.indexingMiRnas(Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME),
-                        Paths.get(outputPath + "/" + Neo4jCsvImporter.MIRNA_DBNAME));
+                        Paths.get(outputPath + "/" + Neo4jCsvImporter.MIRNA_DBNAME), true);
                 miRnaIndexingTime = (System.currentTimeMillis() - start) / 1000;
                 logger.info("miRNA indexing done in {} s", miRnaIndexingTime);
             }
@@ -330,46 +330,46 @@ public class ImportCommandExecutor extends CommandExecutor {
             }
 
             // Post-process miRNA nodes
-//            logger.info("Post-processing {} miRNA nodes", rnaNodes.size());
-//            pwNode = csv.getCsvWriters().get(Node.Type.RNA.toString());
-//            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
-//            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(
-//                    CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString());
-//            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___RNA___MIRNA.toString());
-//            for (Node node: rnaNodes) {
-//                List<String> miRnaInfo = getMiRnaInfo(node.getName());
-//                for (String info: miRnaInfo) {
-//                    String[] fields = info.split(":");
-//                    String miRnaId = fields[0];
-//                    String targetGene = fields[1];
-//                    String evidence = fields[2];
-//
-//                    Long miRnaUid = csv.getLong(miRnaId);
-//                    if (miRnaUid == null) {
-//                        Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
-//                        pwMiRna.println(csv.nodeLine(miRnaNode));
-//
-//                        // Save the miRNA node uid
-//                        miRnaUid = miRnaNode.getUid();
-//                        csv.putLong(miRnaId, miRnaUid);
-//                    }
-//
-//                    // Process target gene
-//                    Long geneUid = importer.processGene(targetGene, targetGene);
-//                    if (geneUid != null) {
-//                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
-//                            // Write mirna-target gene relation
-//                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + evidence);
-//                            csv.putLong(miRnaUid + "." + geneUid, 1);
-//                        }
-//                    }
-//
-//                    // Write rna-mirna relation
-//                    pwRel.println(node.getUid() + "," + miRnaUid);
-//                }
-//                // Write RNA node
-//                pwNode.println(importer.getCsvInfo().nodeLine(node));
-//            }
+            logger.info("Post-processing {} miRNA nodes", rnaNodes.size());
+            pwNode = csv.getCsvWriters().get(Node.Type.RNA.toString());
+            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
+            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(
+                    CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString());
+            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___RNA___MIRNA.toString());
+            for (Node node: rnaNodes) {
+                List<String> miRnaInfo = getMiRnaInfo(node.getName());
+                for (String info: miRnaInfo) {
+                    String[] fields = info.split(":");
+                    String miRnaId = fields[0];
+                    String targetGene = fields[1];
+                    String evidence = fields[2];
+
+                    Long miRnaUid = csv.getLong(miRnaId);
+                    if (miRnaUid == null) {
+                        Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
+                        pwMiRna.println(csv.nodeLine(miRnaNode));
+
+                        // Save the miRNA node uid
+                        miRnaUid = miRnaNode.getUid();
+                        csv.putLong(miRnaId, miRnaUid);
+                    }
+
+                    // Process target gene
+                    Long geneUid = importer.processGene(targetGene, targetGene);
+                    if (geneUid != null) {
+                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
+                            // Write mirna-target gene relation
+                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + evidence);
+                            csv.putLong(miRnaUid + "." + geneUid, 1);
+                        }
+                    }
+
+                    // Write rna-mirna relation
+                    pwRel.println(node.getUid() + "," + miRnaUid);
+                }
+                // Write RNA node
+                pwNode.println(importer.getCsvInfo().nodeLine(node));
+            }
         }
 
         @Override

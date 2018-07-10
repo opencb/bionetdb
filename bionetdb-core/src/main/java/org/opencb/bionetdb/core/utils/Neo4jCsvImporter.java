@@ -17,6 +17,7 @@ import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
+import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -674,8 +675,46 @@ public class Neo4jCsvImporter {
         csv.indexingProteins(proteinPath, indexPath);
     }
 
-    public void indexingMiRnas(Path proteinPath, Path indexPath) throws IOException {
+    public void indexingMiRnas(Path proteinPath, Path indexPath, boolean toImport) throws IOException {
         csv.indexingMiRnas(proteinPath, indexPath);
+
+        if (toImport) {
+            // Import miRNAs and genes
+            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
+            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE
+                    .toString());
+
+            RocksIterator rocksIterator = csv.getMiRnaRocksDb().newIterator();
+            rocksIterator.seekToFirst();
+            while (rocksIterator.isValid()) {
+                String miRnaId = new String(rocksIterator.key());
+                String miRnaInfo = new String(rocksIterator.value());
+                String[] fields = miRnaInfo.split(":");
+
+                Long miRnaUid = csv.getLong(miRnaId);
+                if (miRnaUid == null) {
+                    Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
+                    pwMiRna.println(csv.nodeLine(miRnaNode));
+
+                    // Save the miRNA node uid
+                    miRnaUid = miRnaNode.getUid();
+                    csv.putLong(miRnaId, miRnaUid);
+                }
+
+                // Process target gene
+                Long geneUid = processGene(fields[0], fields[0]);
+                if (geneUid != null) {
+                    if (csv.getLong(miRnaUid + "." + geneUid) == null) {
+                        // Write mirna-target gene relation
+                        pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + fields[1]);
+                        csv.putLong(miRnaUid + "." + geneUid, 1);
+                    }
+                }
+
+                // Next miRNA
+                rocksIterator.next();
+            }
+        }
     }
 
     public CsvInfo getCsvInfo() {
