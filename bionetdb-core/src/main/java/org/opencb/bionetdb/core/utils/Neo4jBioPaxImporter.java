@@ -1097,10 +1097,13 @@ public class Neo4jBioPaxImporter {
                             Long nextStepUid = rdfToUid.get(getBioPaxId(nextStep.getRDFId()));
                             Node.Type nextStepType = uidToType.get(nextStepUid);
                             try {
-                                Relation relation = new Relation(csv.getAndIncUid(), null, currentStepUid,
-                                        currentStepType, nextStepUid, nextStepType, Relation.Type.PATHWAY_NEXT_STEP,
-                                        source);
-                                relations.add(relation);
+                                if (csv.getLong(currentStepUid + "." + nextStepUid) == null) {
+                                    Relation relation = new Relation(csv.getAndIncUid(), null, currentStepUid,
+                                            currentStepType, nextStepUid, nextStepType, Relation.Type.PATHWAY_NEXT_STEP,
+                                            source);
+                                    relations.add(relation);
+                                    csv.putLong(currentStepUid + "." + nextStepUid, 1L);
+                                }
                             } catch (Exception e) {
                                 logger.info("impossible create realtionship: " + e.getMessage());
                                 logger.info("current step: {}, uid {}, type {}", currentStep.getRDFId(), currentStepUid,
