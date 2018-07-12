@@ -20,6 +20,7 @@ import java.util.*;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 public class Neo4jConverter {
+    private static int pos = Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES.length();
 
     public static List<Node> toNodeList(Record record) {
         List<Node> nodes = new ArrayList<>();
@@ -92,10 +93,13 @@ public class Neo4jConverter {
         // Then, we can process relationships and insert them into the network
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
-            Relation relation = new Relation(neoRelation.get("uid").asLong(), neoRelation.get("name").asString(),
+            Relation relation = new Relation(key, neoRelation.get("name") == null ? "" : neoRelation.get("name").asString(),
                     nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
                     nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
+            for (String k: neoRelation.asMap().keySet()) {
+                relation.addAttribute(k.substring(pos), neoRelation.get(k).asObject());
+            }
             network.addRelation(relation);
         }
 
@@ -143,7 +147,6 @@ public class Neo4jConverter {
         }
 
         // Set attributes
-        int pos = Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES.length();
         for (String k: neoNode.keys()) {
             if (k.startsWith(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES)) {
                     node.addAttribute(k.substring(pos), neoNode.get(k).asObject());
@@ -179,10 +182,15 @@ public class Neo4jConverter {
         // Then, we can process relationships and insert them into the networkPath
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
-            Relation relation = new Relation(neoRelation.get("uid").asLong(), neoRelation.get("name").asString(),
+            Relation relation = new Relation(key, neoRelation.get("name") == null ? "" : neoRelation.get("name").asString(),
                     nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
                     nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
+            for (String k: neoRelation.asMap().keySet()) {
+                if (k.startsWith(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES)) {
+                    relation.addAttribute(k.substring(pos), neoRelation.get(k).asObject());
+                }
+            }
             networkPath.addRelation(relation);
         }
 
