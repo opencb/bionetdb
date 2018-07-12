@@ -82,7 +82,7 @@ public class BioNetDbManager {
         }
 
         // We can now create the default NetworkDBAdaptor
-        boolean createIndex = false; // true
+        boolean createIndex = true; //false; // true
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, this.configuration, createIndex);
 
         // We create CellBase client
