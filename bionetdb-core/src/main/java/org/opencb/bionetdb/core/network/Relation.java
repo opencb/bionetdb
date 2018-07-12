@@ -56,8 +56,10 @@ public class Relation {
     }
 
     public enum Type {
+        IS                  ("IS"),
+
         COMPONENT_OF_PATHWAY("COMPONENT_OF_PATHWAY"),
-        PATHWAY_NEXT_STEP("PATHWAY_NEXT_STEP"),
+        PATHWAY_NEXT_STEP   ("PATHWAY_NEXT_STEP"),
 
         REACTION            ("REACTION"),
         CATALYSIS           ("CATALYSIS"),
@@ -99,6 +101,7 @@ public class Relation {
         TFBS("TFBS"),
 
 //        RNA__MIRNA("RNA__MIRNA"),
+        TARGET_GENE         ("TARGET_GENE"),
         MIRNA__TARGET_TRANSCRIPT("MIRNA__TARGET_TRANSCRIPT"),
         TARGET_TRANSCRIPT__TRANSCRIPT("TARGET_TRANSCRIPT__TRANSCRIPT"),
 
