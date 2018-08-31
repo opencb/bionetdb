@@ -391,6 +391,15 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return new QueryResult("networkQuery", time, 1, 1, null, null, Arrays.asList(network));
     }
 
+    //-------------------------------------------------------------------------
+    // N E T W O R K     Q U E R I E S
+    //-------------------------------------------------------------------------
+    public QueryResult<String> getDominantVariants() {
+        return new QueryResult("HelloWolrd", 2, 1, 1, null, null, Arrays.asList("Hello wolrd"));
+    }
+
+
+
     public StatementResult addNode(Node node, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
         List<String> props = new ArrayList<>();

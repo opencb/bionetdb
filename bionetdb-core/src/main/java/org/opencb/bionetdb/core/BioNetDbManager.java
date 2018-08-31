@@ -307,6 +307,10 @@ public class BioNetDbManager {
         return null;
     }
 
+    public QueryResult<String> getDominantVariants() {
+        return networkDBAdaptor.getDominantVariants();
+    }
+
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------

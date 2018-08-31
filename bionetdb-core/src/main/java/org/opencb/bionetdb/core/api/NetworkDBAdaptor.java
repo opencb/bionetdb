@@ -121,6 +121,10 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
     QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
 
+    //-------------------------------------------------------------------------
+    // A NA L Y S I S
+    //-------------------------------------------------------------------------
+    QueryResult<String> getDominantVariants();
 
     //-------------------------------------------------------------------------
     // T E S T S
