@@ -22,9 +22,9 @@
     <properties>
         <bionetdb.version>0.2.0-SNAPSHOT</bionetdb.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.7.0-SNAPSHOT</java-common-libs.version>
-        <biodata.version>1.4.0-SNAPSHOT</biodata.version>
-        <cellbase.version>4.6.0-SNAPSHOT</cellbase.version>
+        <java-common-libs.version>3.7.1-SNAPSHOT</java-common-libs.version>
+        <biodata.version>1.4.1-SNAPSHOT</biodata.version>
+        <cellbase.version>4.6.0</cellbase.version>
         <jackson.version>2.8.10</jackson.version>
         <jersey.version>2.23</jersey.version>
         <build.dir>build</build.dir>
