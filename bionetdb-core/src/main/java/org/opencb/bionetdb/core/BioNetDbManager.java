@@ -16,10 +16,7 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
-import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.core.network.NetworkManager;
-import org.opencb.bionetdb.core.network.NetworkPath;
-import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.*;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -307,8 +304,12 @@ public class BioNetDbManager {
         return null;
     }
 
-    public QueryResult<String> getDominantVariants() {
-        return networkDBAdaptor.getDominantVariants();
+    public List<Variant> getMatchingVariants() {
+        return networkDBAdaptor.getMatchingVariants();
+    }
+
+    public List<VariantsPair> getMatchingVariantsInSameGen() {
+        return networkDBAdaptor.getMatchingVariantsInSameGen();
     }
 
     //-------------------------------------------------------------------------
