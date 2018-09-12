@@ -127,9 +127,17 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     // A N A L Y S I S
     //-------------------------------------------------------------------------
 
-    List<Variant> getMatchingVariants();
+    List<Variant> getMatchingDominantVariants(String child, String father, String mother, QueryOptions options);
 
-    List<VariantsPair> getMatchingVariantsInSameGen();
+    List<Variant> getMatchingRecessiveVariants(String child, String father, String mother, QueryOptions options);
+
+    List<Variant> getMatchingDeNovoVariants(String child, String father, String mother, QueryOptions options);
+
+    List<Variant> getMatchingXLinkedVariants(String child, String father, String mother, QueryOptions options);
+
+    List<VariantsPair> getMatchingVariantsInSameGen(String child, String father, String mother, int limit);
+
+    List<String> getSpecificBurdenTest(List<String> genes);
 
     //-------------------------------------------------------------------------
     // T E S T S

@@ -304,12 +304,28 @@ public class BioNetDbManager {
         return null;
     }
 
-    public List<Variant> getMatchingVariants() {
-        return networkDBAdaptor.getMatchingVariants();
+    public List<Variant> getMatchingDominantVariants(String child, String father, String mother, QueryOptions options) {
+        return networkDBAdaptor.getMatchingDominantVariants(child, father, mother, options);
     }
 
-    public List<VariantsPair> getMatchingVariantsInSameGen() {
-        return networkDBAdaptor.getMatchingVariantsInSameGen();
+    public List<Variant> getMatchingRecessiveVariants(String child, String father, String mother, QueryOptions options) {
+        return networkDBAdaptor.getMatchingRecessiveVariants(child, father, mother, options);
+    }
+
+    public List<Variant> getMatchingDeNovoVariants(String child, String father, String mother, QueryOptions options) {
+        return networkDBAdaptor.getMatchingDeNovoVariants(child, father, mother, options);
+    }
+
+    public List<Variant> getMatchingXLinkedVariants(String child, String father, String mother, QueryOptions options) {
+        return networkDBAdaptor.getMatchingXLinkedVariants(child, father, mother, options);
+    }
+
+    public List<VariantsPair> getMatchingVariantsInSameGen(String child, String father, String mother, int limit) {
+        return networkDBAdaptor.getMatchingVariantsInSameGen(child, father, mother, limit);
+    }
+
+    public List<String> getSpecificBurdenTest(List<String> gene) {
+        return networkDBAdaptor.getSpecificBurdenTest(gene);
     }
 
     //-------------------------------------------------------------------------
