@@ -298,7 +298,6 @@ public class GenericRestWSServer {
             list.add(obj);
         }
         queryResponse.setResponse(list);
-
         return createJsonResponse(queryResponse);
     }
 
@@ -332,5 +331,4 @@ public class GenericRestWSServer {
                 .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 .build();
     }
-
 }
