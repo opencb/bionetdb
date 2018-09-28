@@ -16,18 +16,28 @@ import java.util.List;
 import java.util.Map;
 
 public class NodeBuilder {
+
+    public static final String CHROMOSOME = "chromosome";
+    public static final String START = "start";
+    public static final String END = "end";
+    public static final String REFERENCE = "reference";
+    public static final String ALTERNATE = "alternate";
+    public static final String STRAND = "strand";
+    public static final String TYPE = "type";
+
+
     public static Node newNode(long uid, Variant variant) {
         Node node = new Node(uid, variant.toString(), variant.getId(), Node.Type.VARIANT);
         if (ListUtils.isNotEmpty(variant.getNames())) {
             node.addAttribute("alternativeNames", StringUtils.join(variant.getNames(), ";"));
         }
-        node.addAttribute("chromosome", variant.getChromosome());
-        node.addAttribute("start", variant.getStart());
-        node.addAttribute("end", variant.getEnd());
-        node.addAttribute("reference", variant.getReference());
-        node.addAttribute("alternate", variant.getAlternate());
-        node.addAttribute("strand", variant.getStrand());
-        node.addAttribute("type", variant.getType().toString());
+        node.addAttribute(CHROMOSOME, variant.getChromosome());
+        node.addAttribute(START, variant.getStart());
+        node.addAttribute(END, variant.getEnd());
+        node.addAttribute(REFERENCE, variant.getReference());
+        node.addAttribute(ALTERNATE, variant.getAlternate());
+        node.addAttribute(STRAND, variant.getStrand());
+        node.addAttribute(TYPE, variant.getType().toString());
 
         if (ListUtils.isNotEmpty(variant.getStudies())) {
             // Only one single study is supported

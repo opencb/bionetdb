@@ -2,7 +2,10 @@ package org.opencb.bionetdb.core;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NetworkPathIterator;
@@ -15,6 +18,7 @@ import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
+import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.bionetdb.core.network.*;
 import org.opencb.cellbase.client.config.ClientConfiguration;
@@ -300,32 +304,79 @@ public class BioNetDbManager {
     // A N A L Y S I S
     //=========================================================================
 
+    public List<QueryResult<Variant>> tiering(Pedigree pedigree, Phenotype phenotype, List<String> listOfGenes,
+                                              List<String> listOfChromosomes) {
+
+        List<QueryResult<Variant>> tieringList = new ArrayList<>();
+        QueryResult<Variant> dominantVariantsList = getDominantVariants(pedigree, phenotype, false, listOfGenes);
+        QueryResult<Variant> recessiveVariantsList = getRecessiveVariants(pedigree, phenotype, false, listOfGenes);
+        QueryResult<Variant> xLinkedDominantVariantsList = getXLinkedVariants(pedigree, phenotype, true, listOfGenes);
+        QueryResult<Variant> xLinkedRecessiveVariantsList = getXLinkedVariants(pedigree, phenotype, false, listOfGenes);
+        QueryResult<Variant> yLinkedVariantsList = getYLinkedVariants(pedigree, phenotype, listOfGenes);
+        QueryResult<Variant> deNovoVariantList = getDeNovoVariants(pedigree, listOfGenes, listOfChromosomes);
+        QueryResult<Variant> getCompoundHeterozygoteVariants = getCompoundHeterozygoteVariants(pedigree, listOfGenes, listOfChromosomes);
+
+        tieringList.add(dominantVariantsList);
+        tieringList.add(recessiveVariantsList);
+        tieringList.add(xLinkedDominantVariantsList);
+        tieringList.add(xLinkedRecessiveVariantsList);
+        tieringList.add(yLinkedVariantsList);
+        tieringList.add(deNovoVariantList);
+        tieringList.add(getCompoundHeterozygoteVariants);
+
+        return tieringList;
+    }
+
+    public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Phenotype phenotype, boolean incompletePenetrance,
+                                             List<String> listOfGenes) {
+        Map<String, List<String>> listOfGenotypes = ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
+        return networkDBAdaptor.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
+    }
+
+    public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Phenotype phenotype, boolean incompletePenetrance,
+                                              List<String> listOfGenes) {
+        Map<String, List<String>> listOfGenotypes = ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
+        return networkDBAdaptor.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
+    }
+
+    public QueryResult<Variant> getXLinkedVariants(Pedigree pedigree, Phenotype phenotype, boolean isDominant,
+                                            List<String> listOfGenes) {
+        Map<String, List<String>> listOfGenotypes = ModeOfInheritance.xLinked(pedigree, phenotype, isDominant);
+        return networkDBAdaptor.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("X")),
+                listOfGenotypes);
+    }
+
+    public QueryResult<Variant> getYLinkedVariants(Pedigree pedigree, Phenotype phenotype, List<String> listOfGenes) {
+        Map<String, List<String>> listOfGenotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
+        return networkDBAdaptor.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("Y")),
+                listOfGenotypes);
+    }
+
+    public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, List<String> listOfGenes, List<String> listOfChromosomes) {
+        Neo4JVariantIterator variantIterator = networkDBAdaptor.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
+        try {
+            List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygosity(pedigree, variantIterator);
+            return networkDBAdaptor.getVariantsFromList(listOfVariants);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public QueryResult<Variant> getCompoundHeterozygoteVariants(Pedigree pedigree, List<String> listOfGenes,
+                                                                List<String> listOfChromosomes) {
+        Neo4JVariantIterator variantIterator = networkDBAdaptor.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
+        try {
+            List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygosity(pedigree, variantIterator);
+            return networkDBAdaptor.getVariantsFromList(listOfVariants);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
         return null;
-    }
-
-    public List<Variant> getMatchingDominantVariants(String child, String father, String mother, QueryOptions options) {
-        return networkDBAdaptor.getMatchingDominantVariants(child, father, mother, options);
-    }
-
-    public List<Variant> getMatchingRecessiveVariants(String child, String father, String mother, QueryOptions options) {
-        return networkDBAdaptor.getMatchingRecessiveVariants(child, father, mother, options);
-    }
-
-    public List<Variant> getMatchingDeNovoVariants(String child, String father, String mother, QueryOptions options) {
-        return networkDBAdaptor.getMatchingDeNovoVariants(child, father, mother, options);
-    }
-
-    public List<Variant> getMatchingXLinkedVariants(String child, String father, String mother, QueryOptions options) {
-        return networkDBAdaptor.getMatchingXLinkedVariants(child, father, mother, options);
-    }
-
-    public List<VariantsPair> getMatchingVariantsInSameGen(String child, String father, String mother, int limit) {
-        return networkDBAdaptor.getMatchingVariantsInSameGen(child, father, mother, limit);
-    }
-
-    public List<String> getSpecificBurdenTest(List<String> gene) {
-        return networkDBAdaptor.getSpecificBurdenTest(gene);
     }
 
     //-------------------------------------------------------------------------
