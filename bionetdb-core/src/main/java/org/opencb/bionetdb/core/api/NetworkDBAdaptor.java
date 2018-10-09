@@ -1,5 +1,7 @@
 package org.opencb.bionetdb.core.api;
 
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
@@ -136,6 +138,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     QueryResult<Variant> getVariantsFromList(List<Variant> listOfVariants);
 
+    void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
+                List<String> listOfDiseases, List<String> populationFrequencySpecies, double populationFrequency,
+                List<String> consequenceType, boolean onlyComplex, boolean onlyReaction);
 
     //-------------------------------------------------------------------------
     // T E S T S

@@ -375,6 +375,18 @@ public class BioNetDbManager {
         }
     }
 
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
+                       List<String> listOfDiseases, List<String> populationFrequencySpecies, double populationFrequency,
+                       List<String> consequenceType, boolean onlyComplex, boolean onlyReaction) {
+
+
+        networkDBAdaptor.xQuery(pedigree, phenotype, moi, listOfGenes, listOfDiseases, populationFrequencySpecies,
+                populationFrequency, consequenceType, onlyComplex, onlyReaction);
+    }
+
+
+
+
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
         return null;
     }

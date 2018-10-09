@@ -1,10 +1,15 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.*;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.pedigree.Individual;
+import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.NodeIterator;
@@ -23,10 +28,7 @@ import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
@@ -400,22 +402,22 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * This method looks for all the variants of interest for a given pedigree. It should be aimed to a gene panel, and may be filtered
      * by chromosome too.
      *
-     * @param listOfGenes list of strings with the genes we want to check (may be null but shouldn't).
+     * @param listOfGenes      list of strings with the genes we want to check (may be null but shouldn't).
      * @param listOfChromosome list of strings with the genes we want to check (may be null).
-     * @param individualsGT list of strings with the genes we want to check (can't be null).
+     * @param individualsGT    list of strings with the genes we want to check (can't be null).
      * @return a QueryResult object containing the variants matching the specifications.
      */
     public QueryResult<Variant> getVariantsFromPedigree(List<String> listOfGenes, List<String> listOfChromosome,
-                                                    Map<String, List<String>> individualsGT) {
+                                                        Map<String, List<String>> individualsGT) {
 
         String queryString;
         List<String> matches = new ArrayList<>();
         List<String> individualsID = new ArrayList<>(individualsGT.keySet());
-        String genesSubstring = getGenericSubstring(listOfGenes, "ref.id");
-        String chromosomeSubstring = getGenericSubstring(listOfChromosome, "var.attr_chromosome");
+        String genesSubstring = getGenericSubstring(listOfGenes, "ref.id", true);
+        String chromosomeSubstring = getGenericSubstring(listOfChromosome, "var.attr_chromosome", true);
 
         for (String individual : individualsID) {
-            String genotypeSubstring = getGenericSubstring(individualsGT.get(individual), "vc.attr_GT");
+            String genotypeSubstring = getGenericSubstring(individualsGT.get(individual), "vc.attr_GT", true);
             queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)"
                     + "-[:VARIANT__CONSEQUENCE_TYPE]-(:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)-[:GENE__TRANSCRIPT]"
                     + "-(:GENE)-[:XREF]-(ref:XREF)"
@@ -426,7 +428,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         queryString = queryString + " RETURN DISTINCT var.name LIMIT 10";
         System.out.println("queryString = " + queryString + "\n");
 
-        return executeNeoQuery(queryString);
+        return getVariantsFromNeo(queryString);
     }
 
 //  DE AQUÍ PARRIBA SON PA DOMINANT, RECESSIVE Y LINKED ///////////////////////////////////////////////////////
@@ -436,13 +438,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * This method looks for all the variants pertaining to a set of individuals. It should be aimed to a gene panel, and may be filtered
      * by chromosome too.
      *
-     * @param listOfGenes list of strings with the genes we want to check (may be null but shouldn't).
-     * @param listOfChromosome list of strings with the genes we want to check (may be null).
+     * @param listOfGenes       list of strings with the genes we want to check (may be null but shouldn't).
+     * @param listOfChromosome  list of strings with the genes we want to check (may be null).
      * @param listOfIndividuals list of strings with the genes we want to check (can't be null).
      * @return a StatementResult object containing the variants matching the specifications.
      */
     public Neo4JVariantIterator variantsToIterator(List<String> listOfGenes, List<String> listOfChromosome,
-                                      List<org.opencb.biodata.models.core.pedigree.Individual> listOfIndividuals) {
+                                                   List<org.opencb.biodata.models.core.pedigree.Individual> listOfIndividuals) {
 
         // It's likely that this action could be done more efficiently.
         List<String> stringListOfIndividuals = new LinkedList<>();
@@ -450,11 +452,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             stringListOfIndividuals.add(individual.getId());
         }
 
-        // We could probably change the filtering by chromosome to the genes instead of the variants. It's more efficient.
+        // Maybe we could change the filtering by chromosome to the genes instead of the variants. It's more efficient.
         // For that we should modify the method "getGenericSubstring"
-        String individualsSubstring = getGenericSubstring(stringListOfIndividuals, "sam.id");
-        String genesSubstring = getGenericSubstring(listOfGenes, "ref.id");
-        String chromosomeSubstring = getGenericSubstring(listOfChromosome, "var.attr_chromosome");
+        String individualsSubstring = getGenericSubstring(stringListOfIndividuals, "sam.id", false);
+        String genesSubstring = getGenericSubstring(listOfGenes, "ref.id", true);
+        String chromosomeSubstring = getGenericSubstring(listOfChromosome, "var.attr_chromosome", true);
         String matchString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)"
                 + "-[:VARIANT__CONSEQUENCE_TYPE]-(:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)-[:GENE__TRANSCRIPT]"
                 + "-(gene:GENE)-[:XREF]-(ref:XREF)"
@@ -488,7 +490,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String variantsString = StringUtils.join(listOfVariants, "' OR var.name='") + "')";
         String endingString = " RETURN var.name LIMIT 10";
         String queryString = startingString + variantsString + endingString;
-        return executeNeoQuery(queryString);
+        return getVariantsFromNeo(queryString);
     }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -498,8 +500,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
      * Builds the part of the cypher query aimed to act as a searching filter. We can fiter by the individual samples, their
      * genotype, the chromosome or the genes in which we want to look up.
      *
+     * @param stringList The list of elements that will compound the filter
+     * @param calling    The index we want to use to call if from the database
+     * @param isNotLast  A boolean that adds an "AND" operator at the end of the substring if needed
+     * @return the substring with the filter ready to use for Neo4j
      */
-    private String getGenericSubstring(List<String> stringList, String calling) {
+    private static String getGenericSubstring(List<String> stringList, String calling, boolean isNotLast) {
         String substring = "";
         if (stringList.size() == 0) {
             return substring;
@@ -510,7 +516,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
             substring = StringUtils.join(elements, " OR ");
             substring = "(" + substring + ")";
-            if (!calling.equals("sam.id")) {
+            if (isNotLast) {
                 substring = substring + " AND ";
             }
             return substring;
@@ -518,15 +524,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     /**
-     *
      * This method calls Neo4j driver, executes the query and returns a list of variants inside a queryObject.
-     *
+     * <p>
      * [Mainly used for methods "getVariantsFromPedigree" and "getVariantsFromList"]
      *
      * @param queryString The cypher query we wish to execute in Neo4j database
      * @return QueryOption object containing a List of variants as a result of the query
      */
-    private QueryResult<Variant> executeNeoQuery(String queryString) {
+    private QueryResult<Variant> getVariantsFromNeo(String queryString) {
         Session session = this.driver.session();
         StatementResult result = session.run(queryString);
         List<Variant> variants = new ArrayList<>();
@@ -537,6 +542,163 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
         variantsResult.setResult(variants);
         return variantsResult;
+    }
+
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, List<String> listOfDiseases,
+                       List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
+                       boolean onlyComplex, boolean onlyReaction) {
+        Map<String, List<String>> GT;
+        // Try Catch por si ponen Dominant o dOMINANT o cosas de esas
+        switch (moi) {
+            case "dominant":
+                 GT = ModeOfInheritance.dominant(pedigree, phenotype, false);
+                break;
+            case "recessive":
+                 GT = ModeOfInheritance.recessive(pedigree, phenotype, false);
+                break;
+            default:
+                 GT = ModeOfInheritance.recessive(pedigree, phenotype, false);
+                break;
+        }
+
+        // Los booleanos son ambos "false" por defecto, lo que significa que por defecto pasamos tanto COMPLEX como REACTION.
+        // Ésto cambia si el usuario especifica que quiere "onlyComplex" o "onlyReaction"
+        if (!onlyReaction) {
+            xQueryCraftsman(GT, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
+                    consequenceType, true);
+        }
+        if (!onlyComplex) {
+            xQueryCraftsman(GT, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
+                    consequenceType, false);
+        }
+    }
+
+    private static List<String> getFamilySubstrings(Map<String, List<String>> GT, List<String> listOfGenes, int numOfInd,
+                                                    boolean returnTime, boolean listOfDiseasesAbsence) {
+        String familySubString = "";
+        String familyIndex = "";
+        if (numOfInd == 0) {
+            // Lanzar excepción pq no puede haber cero individuos
+            return Arrays.asList(familySubString, familyIndex);
+        } else {
+            int counter = 0;
+            List<String> filters = new ArrayList<>();
+            // Linked List mejor??
+            for (String member : GT.keySet()) {
+                // En lugar de un counter y este bucle for podría haber utilizado la forma con la "i" pero había que hacer una
+                // conversión de Set a List al obtener las keys y no he preferido ésto. Tampoco cambia mucho.
+                String filter = "";
+                if (listOfDiseasesAbsence && counter == 0) {
+                    filter += " WHERE " + getGenericSubstring(listOfGenes, "ref.id", true) +
+                            getGenericSubstring(Collections.singletonList(member), "sam.id", true) +
+                            getGenericSubstring(GT.get(member), "vc.attr_GT", false);
+                } else {
+                    filter += " WHERE " + getGenericSubstring(Collections.singletonList(member), "sam.id", true) +
+                            getGenericSubstring(GT.get(member), "vc.attr_GT", false);
+                }
+                if (returnTime && counter == numOfInd - 1) {
+                    filter += " RETURN sam.id AS SAMPLE" + counter + ", vc.attr_GT AS GENOTYPE" + counter + ", ";
+                } else {
+                    filter += " WITH DISTINCT sam.id AS SAMPLE" + counter + ", vc.attr_GT AS GENOTYPE" + counter + ", ";
+                }
+                familyIndex = "";
+                for (int i = counter; i > 0; i--) {
+                    familyIndex += "SAMPLE" + (i - 1) + ", GENOTYPE" + (i - 1) + ", ";
+                }
+                if (listOfDiseasesAbsence && counter == 0) {
+                    filter += familyIndex + "var, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT, ref.id AS GENE \n";
+                } else {
+                    filter += familyIndex + "var, MUT_PROT, NEXUS, PANEL_PROT, GENE \n";
+                }
+                filters.add(filter);
+                counter++;
+            }
+            familyIndex = "SAMPLE" + (numOfInd - 1) + ", GENOTYPE" + (numOfInd - 1) + ", " + familyIndex;
+            familySubString = StringUtils.join(filters, " MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-" +
+                    "[:VARIANT__VARIANT_CALL]-(var:VARIANT) ");
+            return Arrays.asList(familySubString, familyIndex);
+        }
+    }
+
+
+    // Si se mantiene público es recomendable pasar la entrada de GT a ista de individuos y genotipos, más estándar.
+    public void xQueryCraftsman(Map<String, List<String>> GT, List<String> listOfGenes, List<String> listOfDiseases,
+                                List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
+                                boolean complexOrReaction) {
+        // Population frecuency podemos ponerla invertida (1 - 0.99) pa q sea más sencillo.
+        String queryString;
+        // HEAD
+        // Filtering by diseases is faster because of the exclusion of genes without disease related
+        String familyIndex = getFamilySubstrings(GT, listOfGenes, GT.size(), false, true).get(1);
+
+        if (CollectionUtils.isNotEmpty(listOfDiseases)) {
+            queryString = "MATCH (dis:DISEASE)-[:GENE__DISEASE]-(gene2:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)-" +
+                    "[:TRANSCRIPT__PROTEIN]-(prot1:PROTEIN)-";
+            if (complexOrReaction) {
+                queryString += "[:COMPONENT_OF_COMPLEX]-(nex:COMPLEX)-[:COMPONENT_OF_COMPLEX]-";
+            } else {
+                queryString += "[:REACTANT|:PRODUCT]-(nex:REACTION)-[:REACTANT|:PRODUCT]-";
+            }
+            queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF)" +
+                    " WHERE " + getGenericSubstring(listOfGenes, "ref.id", true) +
+                    getGenericSubstring(listOfDiseases, "dis.name", false) +
+                    " WITH DISTINCT tr1, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT, ref.id AS GENE\n" +
+                    " MATCH (tr1:TRANSCRIPT)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-" +
+                    "(var:VARIANT)-[:VARIANT__VARIANT_CALL]-(vc:VARIANT_CALL)-[:SAMPLE__VARIANT_CALL]-(sam:SAMPLE) ";
+            if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) ||
+                    CollectionUtils.isNotEmpty(consequenceType)) {
+                queryString += getFamilySubstrings(GT, listOfGenes, GT.size(), false, false).get(0);
+            } else {
+                queryString += getFamilySubstrings(GT, listOfGenes, GT.size(), true, false).get(0);
+            }
+        } else {
+            queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)-" +
+                    "[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(tr1:TRANSCRIPT)-" +
+                    "[:TRANSCRIPT__PROTEIN]-(prot1:PROTEIN)-";
+            if (complexOrReaction) {
+                queryString += "[:COMPONENT_OF_COMPLEX]-(nex:COMPLEX)-[:COMPONENT_OF_COMPLEX]-";
+            } else {
+                queryString += "[:REACTANT|:PRODUCT]-(nex:REACTION)-[:REACTANT|:PRODUCT]-";
+            }
+            queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF) ";
+            if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) ||
+                    CollectionUtils.isNotEmpty(consequenceType)) {
+                queryString += getFamilySubstrings(GT, listOfGenes, GT.size(), false, true).get(0);
+            } else {
+                queryString += getFamilySubstrings(GT, listOfGenes, GT.size(), true, true).get(0);
+            }
+        }
+
+        // TAIL
+        if (CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) {
+
+            queryString += " MATCH (var)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)" +
+                    " WHERE " + getGenericSubstring(populationFrequencySpecies, "pf.id", true) +
+                    "toFloat(pf.attr_refAlleleFreq)>" + populationFrequency;
+            // Explicitar que population frecuency ha de ser un valor entre 0 y 1, usando un punto como delimitación separación
+            // entre parte entera y decimal
+
+            if (CollectionUtils.isNotEmpty(consequenceType)) {
+                queryString += " WITH DISTINCT " + familyIndex + " var, pf.attr_refAlleleFreq AS PF, MUT_PROT, NEXUS," +
+                        " PANEL_PROT, GENE\n" +
+                        " MATCH (var)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__SO]-(so:SO)" +
+                        " WHERE " + getGenericSubstring(consequenceType, "so.name", false) +
+                        " RETURN DISTINCT " + familyIndex + " var.name, so.name, PF, MUT_PROT, NEXUS, PANEL_PROT, GENE";
+            } else {
+                queryString += " RETURN DISTINCT " + familyIndex + " var.name, pf.attr_refAlleleFreq AS PF, MUT_PROT, NEXUS," +
+                        " PANEL_PROT, GENE";
+            }
+        } else {
+            if (CollectionUtils.isNotEmpty(consequenceType)) {
+
+                queryString += " MATCH (var)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__SO]-(so:SO)" +
+                        " WHERE " + getGenericSubstring(consequenceType, "so.name", false) +
+                        " RETURN DISTINCT " + familyIndex + " var.name, so.name, MUT_PROT, NEXUS, PANEL_PROT, GENE";
+            }
+        }
+        System.out.println(queryString);
+//        Session session = this.driver.session();
+//        StatementResult result = session.run(queryString);
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -557,7 +719,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (node.getAttributes().containsKey("uidCounter")) {
             props.add("n." + PREFIX_ATTRIBUTES + "uidCounter=" + node.getAttributes().get("uidCounter"));
         }
-        for (String key: node.getAttributes().keySet()) {
+        for (String key : node.getAttributes().keySet()) {
             if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
                 props.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
             } else {
@@ -690,7 +852,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (StringUtils.isNotEmpty(relation.getSource())) {
             props.add("source:\"" + relation.getSource() + "\"");
         }
-        for (String key: relation.getAttributes().keySet()) {
+        for (String key : relation.getAttributes().keySet()) {
             props.add(PREFIX_ATTRIBUTES + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
         }
         String propsJoined = "{" + String.join(",", props) + "}";
@@ -702,7 +864,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 .append("(uid) MERGE (o)-[r:")
                 .append(StringUtils.join(relation.getTags(), ":"));
         if (ListUtils.isNotEmpty(props)) {
-                statementTemplate.append(propsJoined);
+            statementTemplate.append(propsJoined);
         }
         statementTemplate.append("]->(d)");
 
@@ -762,7 +924,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         StringBuilder cypher = new StringBuilder();
         cypher.append("merge (n{uid:0}) set ");
         List<String> sets = new ArrayList<>();
-        for (String key: attrs.keySet()) {
+        for (String key : attrs.keySet()) {
             StringBuilder strSet = new StringBuilder("n.").append(PREFIX_ATTRIBUTES).append(key).append("=");
             if (attrs.get(key) instanceof String) {
                 strSet.append("'").append(attrs.get(key)).append("'");
