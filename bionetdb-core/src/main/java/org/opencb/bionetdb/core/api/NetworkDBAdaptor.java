@@ -130,17 +130,20 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     // A N A L Y S I S
     //-------------------------------------------------------------------------
 
-    QueryResult<Variant> getVariantsFromPedigree(List<String> listOfGenes, List<String> listOfChromosome,
-                                             Map<String, List<String>> individualsGT);
+    // Ya no están en DBAdaptor:
 
-    Neo4JVariantIterator variantsToIterator(List<String> listOfGenes, List<String> listOfChromosome,
-                                             List<org.opencb.biodata.models.core.pedigree.Individual> listOfIndividuals);
-
-    QueryResult<Variant> getVariantsFromList(List<Variant> listOfVariants);
-
-    void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
-                List<String> listOfDiseases, List<String> populationFrequencySpecies, double populationFrequency,
-                List<String> consequenceType, boolean onlyComplex, boolean onlyReaction);
+//    QueryResult<Variant> getVariantsFromPedigree(List<String> listOfGenes, List<String> listOfChromosome,
+//                                             Map<String, List<String>> individualsGT);
+//
+//    Neo4JVariantIterator variantsToIterator(List<String> listOfGenes, List<String> listOfChromosome,
+//                                             List<org.opencb.biodata.models.core.pedigree.Individual> listOfIndividuals);
+//
+//    QueryResult<Variant> getVariantsFromList(List<Variant> listOfVariants);
+//
+//
+//    void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
+//                List<String> listOfDiseases, List<String> populationFrequencySpecies, double populationFrequency,
+//                List<String> consequenceType, boolean onlyComplex, boolean onlyReaction);
 
     //-------------------------------------------------------------------------
     // T E S T S

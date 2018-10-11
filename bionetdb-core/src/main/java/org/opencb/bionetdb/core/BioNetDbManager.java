@@ -20,6 +20,10 @@ import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
+import org.opencb.bionetdb.core.neo4j.interpretation.Options;
+import org.opencb.bionetdb.core.neo4j.interpretation.Tiering;
+import org.opencb.bionetdb.core.neo4j.interpretation.VariantFilter;
+import org.opencb.bionetdb.core.neo4j.interpretation.XQueryAnalysis;
 import org.opencb.bionetdb.core.network.*;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
@@ -54,6 +58,8 @@ public class BioNetDbManager {
 
     private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
+    private Tiering tiering;
+    private XQueryAnalysis xQueryAnalysis;
 
     public BioNetDbManager(BioNetDBConfiguration configuration) throws BioNetDBException {
         init(null, configuration);
@@ -85,6 +91,8 @@ public class BioNetDbManager {
         // We can now create the default NetworkDBAdaptor
         boolean createIndex = true; //false; // true
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, this.configuration, createIndex);
+        tiering = new Tiering(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
+        xQueryAnalysis = new XQueryAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
 
         // We create CellBase client
         cellbaseClientConfiguration = new ClientConfiguration();
@@ -330,33 +338,34 @@ public class BioNetDbManager {
     public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Phenotype phenotype, boolean incompletePenetrance,
                                              List<String> listOfGenes) {
         Map<String, List<String>> listOfGenotypes = ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
-        return networkDBAdaptor.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
+        return tiering.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
     }
 
     public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Phenotype phenotype, boolean incompletePenetrance,
                                               List<String> listOfGenes) {
         Map<String, List<String>> listOfGenotypes = ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
-        return networkDBAdaptor.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
+        return tiering.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
     }
 
     public QueryResult<Variant> getXLinkedVariants(Pedigree pedigree, Phenotype phenotype, boolean isDominant,
                                             List<String> listOfGenes) {
         Map<String, List<String>> listOfGenotypes = ModeOfInheritance.xLinked(pedigree, phenotype, isDominant);
-        return networkDBAdaptor.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("X")),
+        return tiering.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("X")),
                 listOfGenotypes);
     }
 
     public QueryResult<Variant> getYLinkedVariants(Pedigree pedigree, Phenotype phenotype, List<String> listOfGenes) {
+
         Map<String, List<String>> listOfGenotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
-        return networkDBAdaptor.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("Y")),
+        return tiering.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("Y")),
                 listOfGenotypes);
     }
 
     public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, List<String> listOfGenes, List<String> listOfChromosomes) {
-        Neo4JVariantIterator variantIterator = networkDBAdaptor.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
+        Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
         try {
             List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygosity(pedigree, variantIterator);
-            return networkDBAdaptor.getVariantsFromList(listOfVariants);
+            return tiering.getVariantsFromList(listOfVariants);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -365,27 +374,33 @@ public class BioNetDbManager {
 
     public QueryResult<Variant> getCompoundHeterozygoteVariants(Pedigree pedigree, List<String> listOfGenes,
                                                                 List<String> listOfChromosomes) {
-        Neo4JVariantIterator variantIterator = networkDBAdaptor.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
+        Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
         try {
             List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygosity(pedigree, variantIterator);
-            return networkDBAdaptor.getVariantsFromList(listOfVariants);
+            return tiering.getVariantsFromList(listOfVariants);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
-                       List<String> listOfDiseases, List<String> populationFrequencySpecies, double populationFrequency,
-                       List<String> consequenceType, boolean onlyComplex, boolean onlyReaction) {
-
-
-        networkDBAdaptor.xQuery(pedigree, phenotype, moi, listOfGenes, listOfDiseases, populationFrequencySpecies,
-                populationFrequency, consequenceType, onlyComplex, onlyReaction);
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes) {
+        xQueryAnalysis.xQuery(pedigree, phenotype, moi, listOfGenes);
     }
 
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
+                       Options options) {
+        xQueryAnalysis.xQuery(pedigree, phenotype, moi, listOfGenes, options);
+    }
 
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, VariantFilter variantFilter) {
+        xQueryAnalysis.xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter);
+    }
 
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, VariantFilter variantFilter,
+                       Options options) {
+        xQueryAnalysis.xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter, options);
+    }
 
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
         return null;

@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.driver.v1.Driver;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -10,10 +11,38 @@ import java.util.*;
 
 public class XQueryAnalysis {
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, List<String> listOfDiseases,
-                       List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
-                       boolean onlyComplex, boolean onlyReaction) {
+    private Driver driver;
+
+    public XQueryAnalysis(Driver driver) {
+        this.driver = driver;
+    }
+
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes) {
+        VariantFilter variantFilter = new VariantFilter();
+        Options options = new Options();
+        xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter, options);
+    }
+
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, Options options) {
+        VariantFilter variantFilter = new VariantFilter();
+        xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter, options);
+    }
+
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, VariantFilter variantFilter) {
+        Options options = new Options();
+        xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter, options);
+    }
+
+    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, VariantFilter variantFilter,
+                       Options options) {
+
+        List<String> listOfDiseases;
+        List<String> populationFrequencySpecies;
+        double populationFrequency;
+        List<String> consequenceType;
+
         Map<String, List<String>> GT;
+        boolean noMOI = false;
         // Try Catch por si ponen Dominant o dOMINANT o cosas de esas
         switch (moi) {
             case "dominant":
@@ -23,31 +52,61 @@ public class XQueryAnalysis {
                 GT = ModeOfInheritance.recessive(pedigree, phenotype, false);
                 break;
             default:
-                GT = ModeOfInheritance.recessive(pedigree, phenotype, false);
+                List<org.opencb.biodata.models.core.pedigree.Individual> familyMembers = pedigree.getMembers();
+                GT = new HashMap<>();
+                for (org.opencb.biodata.models.core.pedigree.Individual member : familyMembers) {
+                    GT.put(member.getId(), Collections.emptyList());
+                }
+                noMOI = true;
                 break;
         }
 
-        // Los booleanos son ambos "false" por defecto, lo que significa que por defecto pasamos tanto COMPLEX como REACTION.
-        // Ésto cambia si el usuario especifica que quiere "onlyComplex" o "onlyReaction"
-        if (!onlyReaction) {
-            xQueryCraftsman(GT, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
-                    consequenceType, true);
+        if (CollectionUtils.isNotEmpty(variantFilter.getListOfDiseases())) {
+            listOfDiseases = variantFilter.getListOfDiseases();
+        } else {
+            listOfDiseases = Collections.emptyList();
         }
-        if (!onlyComplex) {
-            xQueryCraftsman(GT, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
-                    consequenceType, false);
+
+        if (CollectionUtils.isNotEmpty(variantFilter.getPopulationFrequencySpecies())) {
+            populationFrequencySpecies = variantFilter.getPopulationFrequencySpecies();
+            populationFrequency = variantFilter.getPopulationFrequency();
+        } else {
+            populationFrequencySpecies = Collections.emptyList();
+            populationFrequency = -1;
+        }
+
+        if (CollectionUtils.isNotEmpty(variantFilter.getConsequenceType())) {
+            consequenceType = variantFilter.getConsequenceType();
+        } else {
+            consequenceType = Collections.emptyList();
+        }
+
+        // T H R O W - E X C E P T I O N
+        if (options.isOnlyComplex() && options.isOnlyReaction()) {
+            System.out.println("You can't chose both onlyReactions and onlyComplex");
+        } else {
+
+            // Los booleanos son ambos "false" por defecto, lo que significa que por defecto pasamos tanto COMPLEX como REACTION.
+            // Ésto cambia si el usuario especifica que quiere "onlyComplex" o "onlyReaction"
+            if (!options.isOnlyReaction()) {
+                xQueryCraftsman(GT, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
+                        consequenceType, true, noMOI);
+            }
+            if (!options.isOnlyComplex()) {
+                xQueryCraftsman(GT, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
+                        consequenceType, false, noMOI);
+            }
         }
     }
 
-    // Si se mantiene público es recomendable pasar la entrada de GT a ista de individuos y genotipos, más estándar.
     public void xQueryCraftsman(Map<String, List<String>> GT, List<String> listOfGenes, List<String> listOfDiseases,
-                                List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
-                                boolean complexOrReaction) {
+                                       List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
+                                       boolean complexOrReaction, boolean noMOI) {
         // Population frecuency podemos ponerla invertida (1 - 0.99) pa q sea más sencillo.
         String queryString;
-        // HEAD
+        // HEAD - Implements the part of the query who treats samples and listOfDiseases
         // Filtering by diseases is faster because of the exclusion of genes without disease related
-        String familyIndex = getFamilySubstrings(GT, listOfGenes, GT.size(), false, true).get(1);
+        String familyIndex = getFamilySubstrings(GT, listOfGenes,false, true, noMOI).get(1);
 
         if (CollectionUtils.isNotEmpty(listOfDiseases)) {
             queryString = "MATCH (dis:DISEASE)-[:GENE__DISEASE]-(gene2:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)-" +
@@ -65,9 +124,9 @@ public class XQueryAnalysis {
                     "(var:VARIANT)-[:VARIANT__VARIANT_CALL]-(vc:VARIANT_CALL)-[:SAMPLE__VARIANT_CALL]-(sam:SAMPLE) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) ||
                     CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(GT, listOfGenes, GT.size(), false, false).get(0);
+                queryString += getFamilySubstrings(GT, listOfGenes,false, false, noMOI).get(0);
             } else {
-                queryString += getFamilySubstrings(GT, listOfGenes, GT.size(), true, false).get(0);
+                queryString += getFamilySubstrings(GT, listOfGenes,true, false, noMOI).get(0);
             }
         } else {
             queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)-" +
@@ -81,13 +140,13 @@ public class XQueryAnalysis {
             queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) ||
                     CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(GT, listOfGenes, GT.size(), false, true).get(0);
+                queryString += getFamilySubstrings(GT, listOfGenes,false,true, noMOI).get(0);
             } else {
-                queryString += getFamilySubstrings(GT, listOfGenes, GT.size(), true, true).get(0);
+                queryString += getFamilySubstrings(GT, listOfGenes,true,true, noMOI).get(0);
             }
         }
 
-        // TAIL
+        // TAIL - Implements the part of the query who treats ConsequenceType and PopulationFrequency
         if (CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) {
 
             queryString += " MATCH (var)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)" +
@@ -117,6 +176,7 @@ public class XQueryAnalysis {
         System.out.println(queryString);
 //        Session session = this.driver.session();
 //        StatementResult result = session.run(queryString);
+//        session.close();
     }
 
     /**
@@ -146,12 +206,13 @@ public class XQueryAnalysis {
         }
     }
 
-    private static List<String> getFamilySubstrings(Map<String, List<String>> GT, List<String> listOfGenes, int numOfInd,
-                                                    boolean returnTime, boolean listOfDiseasesAbsence) {
+    private static List<String> getFamilySubstrings(Map<String, List<String>> GT, List<String> listOfGenes, boolean returnTime,
+                                                    boolean listOfDiseasesAbsence, boolean noMOI) {
         String familySubString = "";
         String familyIndex = "";
+        int numOfInd = GT.size();
         if (numOfInd == 0) {
-            // Lanzar excepción pq no puede haber cero individuos
+            // Throw an exception. 0 individuals is impossible.
             return Arrays.asList(familySubString, familyIndex);
         } else {
             int counter = 0;
@@ -163,14 +224,23 @@ public class XQueryAnalysis {
                 String filter = "";
                 if (listOfDiseasesAbsence && counter == 0) {
                     filter += " WHERE " + getGenericSubstring(listOfGenes, "ref.id", true) +
-                            getGenericSubstring(Collections.singletonList(member), "sam.id", true) +
-                            getGenericSubstring(GT.get(member), "vc.attr_GT", false);
+                            getGenericSubstring(Collections.singletonList(member), "sam.id", true);
+                    if (noMOI) {
+                        // This could be also implemented in method getGenericString if needed.
+                        filter += " (vc.attr_GT<>'0/0') ";
+                    } else {
+                        filter += getGenericSubstring(GT.get(member), "vc.attr_GT", false);
+                    }
                 } else {
-                    filter += " WHERE " + getGenericSubstring(Collections.singletonList(member), "sam.id", true) +
-                            getGenericSubstring(GT.get(member), "vc.attr_GT", false);
+                    filter += " WHERE " + getGenericSubstring(Collections.singletonList(member), "sam.id", true);
+                    if (noMOI) {
+                        filter += " (vc.attr_GT<>'0/0') ";
+                    } else {
+                        filter += getGenericSubstring(GT.get(member), "vc.attr_GT", false);
+                    }
                 }
                 if (returnTime && counter == numOfInd - 1) {
-                    filter += " RETURN sam.id AS SAMPLE" + counter + ", vc.attr_GT AS GENOTYPE" + counter + ", ";
+                    filter += " RETURN DISTINCT sam.id AS SAMPLE" + counter + ", vc.attr_GT AS GENOTYPE" + counter + ", ";
                 } else {
                     filter += " WITH DISTINCT sam.id AS SAMPLE" + counter + ", vc.attr_GT AS GENOTYPE" + counter + ", ";
                 }
@@ -179,9 +249,19 @@ public class XQueryAnalysis {
                     familyIndex += "SAMPLE" + (i - 1) + ", GENOTYPE" + (i - 1) + ", ";
                 }
                 if (listOfDiseasesAbsence && counter == 0) {
-                    filter += familyIndex + "var, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT, ref.id AS GENE \n";
+                    if (returnTime && counter == numOfInd - 1) {
+                        filter += familyIndex + "var.name, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT, " +
+                                "ref.id AS GENE \n";
+                    } else {
+                        filter += familyIndex + "var, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT, " +
+                                "ref.id AS GENE \n";
+                    }
                 } else {
-                    filter += familyIndex + "var, MUT_PROT, NEXUS, PANEL_PROT, GENE \n";
+                    if (returnTime && counter == numOfInd - 1) {
+                        filter += familyIndex + "var.name, MUT_PROT, NEXUS, PANEL_PROT, GENE \n";
+                    } else {
+                        filter += familyIndex + "var, MUT_PROT, NEXUS, PANEL_PROT, GENE \n";
+                    }
                 }
                 filters.add(filter);
                 counter++;
