@@ -289,14 +289,16 @@ public class Neo4JVariantLoader {
                                         .append(uniprotId).append("' RETURN n");
                                 List<Node> proteinNodes = null;
                                 try {
-                                    proteinNodes = networkDBAdaptor.nodeQuery(cypher.toString());
-                                    if (ListUtils.isEmpty(proteinNodes)) {
+                                    QueryResult<Node> queryResult = networkDBAdaptor.nodeQuery(cypher.toString());
+                                    if (queryResult == null || ListUtils.isEmpty(queryResult.getResult())) {
                                         // This protein is not stored in the database, we must create the node and then
                                         // link to the protein variant annotation
                                         Node proteinNode = new Node(++uidCounter, uniprotId, uniprotName, Node.Type.PROTEIN);
                                         networkDBAdaptor.addNode(proteinNode, tx);
 
                                         proteinNodes.add(proteinNode);
+                                    } else {
+                                        proteinNodes = queryResult.getResult();
                                     }
                                 } catch (BioNetDBException e) {
                                     e.printStackTrace();
