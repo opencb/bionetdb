@@ -675,8 +675,8 @@ public class Neo4jCsvImporter {
         csv.indexingProteins(proteinPath, indexPath);
     }
 
-    public void indexingMiRnas(Path proteinPath, Path indexPath, boolean toImport) throws IOException {
-        csv.indexingMiRnas(proteinPath, indexPath);
+    public void indexingMiRnas(Path miRnaPath, Path indexPath, boolean toImport) throws IOException {
+        csv.indexingMiRnas(miRnaPath, indexPath);
 
         if (toImport) {
             // Import miRNAs and genes
@@ -689,7 +689,6 @@ public class Neo4jCsvImporter {
             while (rocksIterator.isValid()) {
                 String miRnaId = new String(rocksIterator.key());
                 String miRnaInfo = new String(rocksIterator.value());
-                String[] fields = miRnaInfo.split(":");
 
                 Long miRnaUid = csv.getLong(miRnaId);
                 if (miRnaUid == null) {
@@ -701,13 +700,18 @@ public class Neo4jCsvImporter {
                     csv.putLong(miRnaId, miRnaUid);
                 }
 
-                // Process target gene
-                Long geneUid = processGene(fields[0], fields[0]);
-                if (geneUid != null) {
-                    if (csv.getLong(miRnaUid + "." + geneUid) == null) {
-                        // Write mirna-target gene relation
-                        pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + fields[1]);
-                        csv.putLong(miRnaUid + "." + geneUid, 1);
+                String[] fields = miRnaInfo.split("::");
+                for (int i = 0; i < fields.length; i++) {
+                    String[] subFields = fields[i].split(":");
+
+                    // Process target gene
+                    Long geneUid = processGene(subFields[0], subFields[0]);
+                    if (geneUid != null) {
+                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
+                            // Write mirna-target gene relation
+                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + subFields[1]);
+                            csv.putLong(miRnaUid + "." + geneUid, 1);
+                        }
                     }
                 }
 

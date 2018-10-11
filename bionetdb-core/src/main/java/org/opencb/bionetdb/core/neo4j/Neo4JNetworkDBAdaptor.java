@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.core.neo4j;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.neo4j.driver.v1.*;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
@@ -22,14 +23,12 @@ import org.opencb.bionetdb.core.utils.Neo4jConverter;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by imedina on 05/08/15.
@@ -130,7 +129,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-    //-------------------------------------------------------------------------
+    //-----------------NodeQuery--------------------------------------------------------
     // I N S E R T     N E T W O R K S
     //-------------------------------------------------------------------------
 
@@ -293,8 +292,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
 
     @Override
-    public NodeIterator nodeIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parseNode(query, queryOptions);
+    public NodeIterator nodeIterator(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parseNodeQuery(query, queryOptions);
         return nodeIterator(cypher);
     }
 
@@ -305,28 +304,33 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public List<Node> nodeQuery(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parseNode(query, queryOptions);
+    public QueryResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parseNodeQuery(query, queryOptions);
         return nodeQuery(cypher);
     }
 
     @Override
-    public List<Node> nodeQuery(String cypher) throws BioNetDBException {
-        Session session = this.driver.session();
+    public QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException {
+        // Query for nodes using the node iterator
+        StopWatch stopWatch = StopWatch.createStarted();
         NodeIterator nodeIterator = nodeIterator(cypher);
         List<Node> nodes = new ArrayList<>();
         while (nodeIterator.hasNext()) {
             nodes.add(nodeIterator.next());
         }
-        return nodes;
+        int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+        // Create QueryResult and return
+        QueryResult<Node> queryResult = new QueryResult<>("", dbTime, nodes.size(), nodes.size(), "", "", nodes);
+        return queryResult;
     }
     //-------------------------------------------------------------------------
     // T A B L E     Q U E R I E S
     //-------------------------------------------------------------------------
 
     @Override
-    public RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        String cypher = Neo4JQueryParser.parseNode(query, queryOptions);
+    public RowIterator rowIterator(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parseNodeQuery(query, queryOptions);
         return rowIterator(cypher);
     }
 

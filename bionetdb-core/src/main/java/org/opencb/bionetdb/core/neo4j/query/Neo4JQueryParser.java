@@ -2,10 +2,9 @@ package org.opencb.bionetdb.core.neo4j.query;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
+import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.network.Node;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
@@ -22,15 +21,15 @@ public class Neo4JQueryParser {
     private static final Set<String> GENE_PSEUDO_ATTRS = new HashSet<>(Arrays.asList("drug", "hpo", "go"));
     private static final Set<String> VARIANT_PSEUDO_ATTRS = new HashSet<>(Arrays.asList("popFreq", "so"));
 
-    public static String parseNode(NodeQuery query, QueryOptions options) throws BioNetDBException {
+    public static String parseNodeQuery(Query query, QueryOptions options) throws BioNetDBException {
         String nameNode = "n";
 
         // Match clause
         StringBuilder match = new StringBuilder();
         match.append("MATCH (").append(nameNode);
-        if (query.getType() != null) {
-            match.append(":").append(query.getType().name());
-        }
+//        if (query.getType() != null) {
+//            match.append(":").append(query.getType().name());
+//        }
         match.append(")");
 
         // Where clauses, parse attributes and relationships
@@ -40,12 +39,12 @@ public class Neo4JQueryParser {
             where.append(" WHERE ").append(StringUtils.join(filters, " AND "));
         }
 
-        // Parse pseudo-attributes
-        if (query.getType() == Node.Type.GENE) {
-            where.append(parseGeneNode(query, options));
-        } else if (query.getType() == Node.Type.VARIANT) {
-            where.append(parseVariantNode(query, options));
-        }
+//        // Parse pseudo-attributes
+//        if (query.getType() == Node.Type.GENE) {
+//            where.append(parseGeneNode(query, options));
+//        } else if (query.getType() == Node.Type.VARIANT) {
+//            where.append(parseVariantNode(query, options));
+//        }
 
         // Return clauses
         StringBuilder ret = new StringBuilder();
@@ -135,16 +134,16 @@ public class Neo4JQueryParser {
     //-------------------------------------------------------------------------
 
 
-    private static List<String> getAttributeFilters(String nodeName, NodeQuery query, QueryOptions options) {
+    private static List<String> getAttributeFilters(String nodeName, Query query, QueryOptions options) {
         // Get pseudo-attributes for the target node
         Set<String> skip;
-        if (query.getType() == Node.Type.GENE) {
-            skip = GENE_PSEUDO_ATTRS;
-        } else if (query.getType() == Node.Type.VARIANT) {
-            skip = VARIANT_PSEUDO_ATTRS;
-        } else {
+//        if (query.getType() == Node.Type.GENE) {
+//            skip = GENE_PSEUDO_ATTRS;
+//        } else if (query.getType() == Node.Type.VARIANT) {
+//            skip = VARIANT_PSEUDO_ATTRS;
+//        } else {
             skip = new HashSet<>();
-        }
+//        }
 
         // Only process the non pseudo-attributes
         List<String> filters = new ArrayList<>();

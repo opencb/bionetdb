@@ -18,7 +18,7 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
         NodeQuery query = new NodeQuery(Node.Type.PROTEIN);
         query.put("name", "RDH11");
-        String cypher = parser.parseNode(query, QueryOptions.empty());
+        String cypher = parser.parseNodeQuery(query, QueryOptions.empty());
         System.out.println(cypher);
     }
 

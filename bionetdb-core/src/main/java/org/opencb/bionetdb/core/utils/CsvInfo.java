@@ -534,7 +534,13 @@ public class CsvInfo {
             targetGene = fields[indexTargetGene];
             evidence = fields[indexEvidence];
             if (StringUtils.isNotEmpty(miRna)) {
-                rocksDbManager.putString(miRna, targetGene + ":" + evidence, miRnaRocksDb);
+                String info = rocksDbManager.getString(miRna, miRnaRocksDb);
+                if (info == null) {
+                    info = targetGene + ":" + evidence;
+                } else {
+                    info = info + "::" + targetGene + ":" + evidence;
+                }
+                rocksDbManager.putString(miRna, info, miRnaRocksDb);
             }
 
             // Next line
