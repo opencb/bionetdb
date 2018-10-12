@@ -1,12 +1,8 @@
 package org.opencb.bionetdb.core.api;
 
-import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.core.pedigree.Pedigree;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.cellbase.client.rest.GeneClient;
@@ -18,7 +14,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
