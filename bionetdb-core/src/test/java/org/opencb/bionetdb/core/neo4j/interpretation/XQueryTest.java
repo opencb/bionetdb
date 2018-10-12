@@ -46,7 +46,6 @@ public class XQueryTest {
 
     @Test
     public void queryVariant() {
-
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
         Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
         Phenotype phenotype3 = new Phenotype("disease3", "disease2", "");
@@ -64,12 +63,13 @@ public class XQueryTest {
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3, phenotype4));
         family1.setProband(daughter);
 
+        FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "dominant");
         VariantFilter variantFilter = new VariantFilter((Arrays.asList("Hepatitis", "Anxiety")), Arrays.asList("AFR", "EUROPE"), 0.99,
                 Arrays.asList("variant", "intron_variant"));
         Options options = new Options(true, false);
 
-        bioNetDbManager.xQuery(family1, phenotype1, "dominant", Arrays.asList("CADM1", "BRCA1", "BRCA2", "TP53", "BCL2", "ADSL",
-                "CTBP2P1", "BMPR2"), options);
+        bioNetDbManager.xQuery(familyFilter, Arrays.asList("CADM1", "BRCA1", "BRCA2", "TP53", "BCL2", "ADSL", "CTBP2P1", "BMPR2"),
+                variantFilter, options);
     }
     // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.99"  Arrays.asList("variant", "intron_variant")
 }

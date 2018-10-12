@@ -20,10 +20,7 @@ import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
-import org.opencb.bionetdb.core.neo4j.interpretation.Options;
-import org.opencb.bionetdb.core.neo4j.interpretation.Tiering;
-import org.opencb.bionetdb.core.neo4j.interpretation.VariantFilter;
-import org.opencb.bionetdb.core.neo4j.interpretation.XQueryAnalysis;
+import org.opencb.bionetdb.core.neo4j.interpretation.*;
 import org.opencb.bionetdb.core.network.*;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
@@ -384,22 +381,22 @@ public class BioNetDbManager {
         }
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes) {
-        xQueryAnalysis.xQuery(pedigree, phenotype, moi, listOfGenes);
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes) {
+        xQueryAnalysis.xQuery(familyFilter, listOfGenes);
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes,
                        Options options) {
-        xQueryAnalysis.xQuery(pedigree, phenotype, moi, listOfGenes, options);
+        xQueryAnalysis.xQuery(familyFilter, listOfGenes, options);
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, VariantFilter variantFilter) {
-        xQueryAnalysis.xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter);
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter) {
+        xQueryAnalysis.xQuery(familyFilter, listOfGenes, variantFilter);
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, VariantFilter variantFilter,
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter,
                        Options options) {
-        xQueryAnalysis.xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter, options);
+        xQueryAnalysis.xQuery(familyFilter, listOfGenes, variantFilter, options);
     }
 
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {

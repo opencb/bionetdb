@@ -17,32 +17,55 @@ public class XQueryAnalysis {
         this.driver = driver;
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes) {
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes) {
         VariantFilter variantFilter = new VariantFilter();
         Options options = new Options();
-        xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter, options);
+        xQuery(familyFilter, listOfGenes, variantFilter, options);
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, Options options) {
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, Options options) {
         VariantFilter variantFilter = new VariantFilter();
-        xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter, options);
+        xQuery(familyFilter, listOfGenes, variantFilter, options);
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, VariantFilter variantFilter) {
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter) {
         Options options = new Options();
-        xQuery(pedigree, phenotype, moi, listOfGenes, variantFilter, options);
+        xQuery(familyFilter, listOfGenes, variantFilter, options);
     }
 
-    public void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes, VariantFilter variantFilter,
+    /**
+     * This method acts as a manager for XQueryCraftsman. It takes the arguments with the OpenCGA standard and converts them in
+     * simpler forms that allow XQueryCraftsman to create the XQuery
+     *
+     * @param familyFilter  it is an object that gathers the data of the proband and his family
+     * @param listOfGenes   the list of genes we would like to study
+     * @param variantFilter it is an object that gathers some features we could specify in order to reduce the scope of the result
+     * @param options       we could choice to study reactions, proteic complexes or both
+     */
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter,
                        Options options) {
 
+        // MOI input
+        Pedigree pedigree = familyFilter.getPedigree();
+        Phenotype phenotype = familyFilter.getPhenotype();
+        String moi;
+
+        // MOI output
+        Map<String, List<String>> GT;
+        boolean absenceOfMOI = false;
+
+        // GeneFilter
         List<String> listOfDiseases;
         List<String> populationFrequencySpecies;
         double populationFrequency;
         List<String> consequenceType;
 
-        Map<String, List<String>> GT;
-        boolean noMOI = false;
+        if (!familyFilter.getMoi().isEmpty()) {
+            moi = familyFilter.getMoi();
+        } else {
+            moi = "";
+        }
+
         // Try Catch por si ponen Dominant o dOMINANT o cosas de esas
         switch (moi) {
             case "dominant":
@@ -51,13 +74,22 @@ public class XQueryAnalysis {
             case "recessive":
                 GT = ModeOfInheritance.recessive(pedigree, phenotype, false);
                 break;
+            case "xlinkeddominant":
+                GT = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                break;
+            case "xlinkedrecessive":
+                GT = ModeOfInheritance.xLinked(pedigree, phenotype, false);
+                break;
+            case "ylinked":
+                GT = ModeOfInheritance.yLinked(pedigree, phenotype);
+                break;
             default:
                 List<org.opencb.biodata.models.core.pedigree.Individual> familyMembers = pedigree.getMembers();
                 GT = new HashMap<>();
                 for (org.opencb.biodata.models.core.pedigree.Individual member : familyMembers) {
                     GT.put(member.getId(), Collections.emptyList());
                 }
-                noMOI = true;
+                absenceOfMOI = true;
                 break;
         }
 
@@ -85,28 +117,40 @@ public class XQueryAnalysis {
         if (options.isOnlyComplex() && options.isOnlyReaction()) {
             System.out.println("You can't chose both onlyReactions and onlyComplex");
         } else {
-
             // Los booleanos son ambos "false" por defecto, lo que significa que por defecto pasamos tanto COMPLEX como REACTION.
             // Ésto cambia si el usuario especifica que quiere "onlyComplex" o "onlyReaction"
             if (!options.isOnlyReaction()) {
                 xQueryCraftsman(GT, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
-                        consequenceType, true, noMOI);
+                        consequenceType, true, absenceOfMOI);
             }
             if (!options.isOnlyComplex()) {
                 xQueryCraftsman(GT, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
-                        consequenceType, false, noMOI);
+                        consequenceType, false, absenceOfMOI);
             }
         }
     }
 
+    /**
+     * This method builds the XQuery
+     *
+     * @param GT                         It's a map on which we store the individuals we want to analyze related with their genotypes
+     * @param listOfGenes                the list of genes in we would like to look for proteins
+     * @param listOfDiseases             An optional list of diseases we would like to focuse on
+     * @param populationFrequencySpecies An optional filter aimed to filter by species. Must be used jointly with "populationFrequency"
+     * @param populationFrequency        An optional filter aimed to filter by the amount of people who carries a specific mutation in the
+     *                                   target protein. Must be used jointly with "populationFrequency"
+     * @param consequenceType            An optional filter aimed to filter by consequence type of the target protein
+     * @param complexOrReaction          this boolean specifies if we want to study proteic reactions (false), or proteic complexes (true)
+     * @param absenceOfMOI                      We must make it true in case we don't want to specify any MOI
+     */
     public void xQueryCraftsman(Map<String, List<String>> GT, List<String> listOfGenes, List<String> listOfDiseases,
-                                       List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
-                                       boolean complexOrReaction, boolean noMOI) {
+                                List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
+                                boolean complexOrReaction, boolean absenceOfMOI) {
         // Population frecuency podemos ponerla invertida (1 - 0.99) pa q sea más sencillo.
         String queryString;
         // HEAD - Implements the part of the query who treats samples and listOfDiseases
         // Filtering by diseases is faster because of the exclusion of genes without disease related
-        String familyIndex = getFamilySubstrings(GT, listOfGenes,false, true, noMOI).get(1);
+        String familyIndex = getFamilySubstrings(GT, listOfGenes, false, true, absenceOfMOI).get(1);
 
         if (CollectionUtils.isNotEmpty(listOfDiseases)) {
             queryString = "MATCH (dis:DISEASE)-[:GENE__DISEASE]-(gene2:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)-" +
@@ -124,9 +168,9 @@ public class XQueryAnalysis {
                     "(var:VARIANT)-[:VARIANT__VARIANT_CALL]-(vc:VARIANT_CALL)-[:SAMPLE__VARIANT_CALL]-(sam:SAMPLE) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) ||
                     CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(GT, listOfGenes,false, false, noMOI).get(0);
+                queryString += getFamilySubstrings(GT, listOfGenes, false, false, absenceOfMOI).get(0);
             } else {
-                queryString += getFamilySubstrings(GT, listOfGenes,true, false, noMOI).get(0);
+                queryString += getFamilySubstrings(GT, listOfGenes, true, false, absenceOfMOI).get(0);
             }
         } else {
             queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)-" +
@@ -140,9 +184,9 @@ public class XQueryAnalysis {
             queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) ||
                     CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(GT, listOfGenes,false,true, noMOI).get(0);
+                queryString += getFamilySubstrings(GT, listOfGenes, false, true, absenceOfMOI).get(0);
             } else {
-                queryString += getFamilySubstrings(GT, listOfGenes,true,true, noMOI).get(0);
+                queryString += getFamilySubstrings(GT, listOfGenes, true, true, absenceOfMOI).get(0);
             }
         }
 
@@ -206,6 +250,9 @@ public class XQueryAnalysis {
         }
     }
 
+    /**
+     * This method builds the body of the sample and genotype filter
+     */
     private static List<String> getFamilySubstrings(Map<String, List<String>> GT, List<String> listOfGenes, boolean returnTime,
                                                     boolean listOfDiseasesAbsence, boolean noMOI) {
         String familySubString = "";

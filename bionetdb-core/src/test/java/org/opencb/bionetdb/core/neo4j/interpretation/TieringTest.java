@@ -77,7 +77,6 @@ public class TieringTest {
                 Arrays.asList("CADM1", "FGF13", "CD99L2", "DDX3Y", "CDC27P2"), Collections.emptyList());
         for (QueryResult<Variant> variants : tieringVariants) {
             System.out.println("Query result: " + variants.getResult() + "\n\n");
-
         }
         // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.99"  Arrays.asList("variant", "intron_variant")
     }

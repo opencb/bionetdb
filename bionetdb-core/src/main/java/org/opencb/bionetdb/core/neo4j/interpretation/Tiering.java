@@ -125,7 +125,7 @@ public class Tiering {
     /**
      * Builds the part of the cypher query aimed to act as a searching filter. We can fiter by the individual samples, their
      * genotype, the chromosome or the genes in which we want to look up.
-     *
+     * <p>
      * [Mainly used for methods "getVariantsFromPedigree" and "getVariantsFromList"]
      *
      * @param stringList The list of elements that will compound the filter
@@ -153,7 +153,7 @@ public class Tiering {
 
     /**
      * This method calls Neo4j driver, executes the query and returns a list of variants inside a queryObject.
-     *
+     * <p>
      * [Mainly used for methods "getVariantsFromPedigree" and "variantsToIterator"]
      *
      * @param queryString The cypher query we wish to execute in Neo4j database
