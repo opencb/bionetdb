@@ -66,10 +66,10 @@ public class XQueryTest {
         FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "ylinked");
         VariantFilter variantFilter = new VariantFilter((Arrays.asList("Hepatitis", "Anxiety")), Arrays.asList("AFR", "EUROPE"), 0.99,
                 Arrays.asList("variant", "intron_variant"));
-        Options options = new Options(true, false);
+        OptionsFilter optionsFilter = new OptionsFilter(true, false);
 
         bioNetDbManager.xQuery(familyFilter, Arrays.asList("CADM1", "BRCA1", "BRCA2", "TP53", "BCL2", "ADSL", "CTBP2P1", "BMPR2"),
-                variantFilter, options);
+                variantFilter, optionsFilter);
     }
     // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.99"  Arrays.asList("variant", "intron_variant")
 }

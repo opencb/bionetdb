@@ -386,8 +386,8 @@ public class BioNetDbManager {
     }
 
     public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes,
-                       Options options) {
-        xQueryAnalysis.xQuery(familyFilter, listOfGenes, options);
+                       OptionsFilter optionsFilter) {
+        xQueryAnalysis.xQuery(familyFilter, listOfGenes, optionsFilter);
     }
 
     public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter) {
@@ -395,8 +395,8 @@ public class BioNetDbManager {
     }
 
     public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter,
-                       Options options) {
-        xQueryAnalysis.xQuery(familyFilter, listOfGenes, variantFilter, options);
+                       OptionsFilter optionsFilter) {
+        xQueryAnalysis.xQuery(familyFilter, listOfGenes, variantFilter, optionsFilter);
     }
 
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {

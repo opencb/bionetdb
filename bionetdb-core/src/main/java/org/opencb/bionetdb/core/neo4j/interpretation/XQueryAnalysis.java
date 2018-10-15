@@ -19,18 +19,18 @@ public class XQueryAnalysis {
 
     public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes) {
         VariantFilter variantFilter = new VariantFilter();
-        Options options = new Options();
-        xQuery(familyFilter, listOfGenes, variantFilter, options);
+        OptionsFilter optionsFilter = new OptionsFilter();
+        xQuery(familyFilter, listOfGenes, variantFilter, optionsFilter);
     }
 
-    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, Options options) {
+    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, OptionsFilter optionsFilter) {
         VariantFilter variantFilter = new VariantFilter();
-        xQuery(familyFilter, listOfGenes, variantFilter, options);
+        xQuery(familyFilter, listOfGenes, variantFilter, optionsFilter);
     }
 
     public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter) {
-        Options options = new Options();
-        xQuery(familyFilter, listOfGenes, variantFilter, options);
+        OptionsFilter optionsFilter = new OptionsFilter();
+        xQuery(familyFilter, listOfGenes, variantFilter, optionsFilter);
     }
 
     /**
@@ -40,10 +40,10 @@ public class XQueryAnalysis {
      * @param familyFilter  it is an object that gathers the data of the proband and his family
      * @param listOfGenes   the list of genes we would like to study
      * @param variantFilter it is an object that gathers some features we could specify in order to reduce the scope of the result
-     * @param options       we could choice to study reactions, proteic complexes or both
+     * @param optionsFilter       we could choice to study reactions, proteic complexes or both
      */
     public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter,
-                       Options options) {
+                       OptionsFilter optionsFilter) {
 
         // MOI input
         Pedigree pedigree = familyFilter.getPedigree();
@@ -112,16 +112,16 @@ public class XQueryAnalysis {
         }
 
         // T H R O W - E X C E P T I O N
-        if (options.isOnlyComplex() && options.isOnlyReaction()) {
+        if (optionsFilter.isOnlyComplex() && optionsFilter.isOnlyReaction()) {
             System.out.println("You can't chose both onlyReactions and onlyComplex");
         } else {
             // Los booleanos son ambos "false" por defecto, lo que significa que por defecto pasamos tanto COMPLEX como REACTION.
             // Ésto cambia si el usuario especifica que quiere "onlyComplex" o "onlyReaction"
-            if (!options.isOnlyReaction()) {
+            if (!optionsFilter.isOnlyReaction()) {
                 xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
                         consequenceType, true, absenceOfMOI);
             }
-            if (!options.isOnlyComplex()) {
+            if (!optionsFilter.isOnlyComplex()) {
                 xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
                         consequenceType, false, absenceOfMOI);
             }
