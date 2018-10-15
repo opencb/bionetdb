@@ -48,7 +48,7 @@ public class XQueryAnalysis {
         // MOI input
         Pedigree pedigree = familyFilter.getPedigree();
         Phenotype phenotype = familyFilter.getPhenotype();
-        String moi;
+        String moi = "";
 
         // MOI output
         Map<String, List<String>> genotypes;
@@ -62,8 +62,6 @@ public class XQueryAnalysis {
 
         if (!familyFilter.getMoi().isEmpty()) {
             moi = familyFilter.getMoi();
-        } else {
-            moi = "";
         }
 
         // Try Catch por si ponen Dominant o dOMINANT o cosas de esas
@@ -133,7 +131,7 @@ public class XQueryAnalysis {
     /**
      * This method builds the XQuery.
      *
-     * @param genotypes                         It's a map on which we store the individuals we want to analyze related with their genotypes
+     * @param genotypes                  It's a map on which we store the individuals we want to analyze related with their genotypes
      * @param listOfGenes                the list of genes in we would like to look for proteins
      * @param listOfDiseases             An optional list of diseases we would like to focuse on
      * @param populationFrequencySpecies An optional filter aimed to filter by species. Must be used jointly with "populationFrequency"
@@ -141,7 +139,7 @@ public class XQueryAnalysis {
      *                                   target protein. Must be used jointly with "populationFrequency"
      * @param consequenceType            An optional filter aimed to filter by consequence type of the target protein
      * @param complexOrReaction          this boolean specifies if we want to study proteic reactions (false), or proteic complexes (true)
-     * @param absenceOfMOI                      We must make it true in case we don't want to specify any MOI
+     * @param absenceOfMOI               We must make it true in case we don't want to specify any MOI
      */
     public void xQueryCraftsman(Map<String, List<String>> genotypes, List<String> listOfGenes, List<String> listOfDiseases,
                                 List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
@@ -224,33 +222,6 @@ public class XQueryAnalysis {
     }
 
     /**
-     * Builds the part of the cypher query aimed to act as a searching filter. We can fiter by the individual samples, their
-     * genotype, the chromosome or the genes in which we want to look up.
-     *
-     * @param stringList The list of elements that will compound the filter
-     * @param calling    The index we want to use to call if from the database
-     * @param isNotLast  A boolean that adds an "AND" operator at the end of the substring if needed
-     * @return the substring with the filter ready to use for Neo4j
-     */
-    private static String getGenericSubstring(List<String> stringList, String calling, boolean isNotLast) {
-        String substring = "";
-        if (stringList.size() == 0) {
-            return substring;
-        } else {
-            List<String> elements = new ArrayList<>();
-            for (String element : stringList) {
-                elements.add(substring + calling + "='" + element + "'");
-            }
-            substring = StringUtils.join(elements, " OR ");
-            substring = "(" + substring + ")";
-            if (isNotLast) {
-                substring = substring + " AND ";
-            }
-            return substring;
-        }
-    }
-
-    /**
      * This method builds the body of the sample and genotype filter.
      */
     private static List<String> getFamilySubstrings(Map<String, List<String>> genotype, List<String> listOfGenes, boolean returnTime,
@@ -319,4 +290,32 @@ public class XQueryAnalysis {
             return Arrays.asList(familySubString, familyIndex);
         }
     }
+
+
+    /**
+     * Builds the part of the cypher query aimed to act as a searching filter. We can fiter by the individual samples, their
+     * genotype, the chromosome or the genes in which we want to look up.
+     *
+     * @param stringList The list of elements that will compound the filter
+     * @param calling    The index we want to use to call if from the database
+     * @param isNotLast  A boolean that adds an "AND" operator at the end of the substring if needed
+     * @return the substring with the filter ready to use for Neo4j
+     */
+    private static String getGenericSubstring(List<String> stringList, String calling, boolean isNotLast) {
+        String substring = "";
+        if (CollectionUtils.isEmpty(stringList)) {
+            stringList.add("-");
+        }
+        List<String> elements = new ArrayList<>();
+        for (String element : stringList) {
+            elements.add(substring + calling + "='" + element + "'");
+        }
+        substring = StringUtils.join(elements, " OR ");
+        substring = "(" + substring + ")";
+        if (isNotLast) {
+            substring = substring + " AND ";
+        }
+        return substring;
+    }
 }
+

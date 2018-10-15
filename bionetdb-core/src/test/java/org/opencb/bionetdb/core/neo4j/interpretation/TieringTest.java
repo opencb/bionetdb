@@ -49,17 +49,10 @@ public class TieringTest {
 
     @Test
     public void queryVariant() {
-        Pedigree family1;
-        Pedigree family2;
-        Phenotype phenotype1;
-        Phenotype phenotype2;
-        Phenotype phenotype3;
-        Phenotype phenotype4;
-
-        phenotype1 = new Phenotype("disease1", "disease1", "");
-        phenotype2 = new Phenotype("disease2", "disease2", "");
-        phenotype3 = new Phenotype("disease3", "disease2", "");
-        phenotype4 = new Phenotype("disease4", "disease2", "");
+        Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
+        Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
+        Phenotype phenotype3 = new Phenotype("disease3", "disease2", "");
+        Phenotype phenotype4 = new Phenotype("disease4", "disease2", "");
 
         Individual father = new Individual().setId("NA12877").setSex(Individual.Sex.MALE)
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype3));
@@ -68,7 +61,7 @@ public class TieringTest {
         Individual daughter = new Individual().setId("NA12879").setSex(Individual.Sex.FEMALE)
                 .setPhenotypes(Collections.singletonList(phenotype2))
                 .setMother(mother).setFather(father);
-        family1 = new Pedigree()
+        Pedigree family1 = new Pedigree()
                 .setMembers(Arrays.asList(father, mother, daughter))
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3, phenotype4));
         family1.setProband(daughter);
@@ -78,7 +71,6 @@ public class TieringTest {
         for (QueryResult<Variant> variants : tieringVariants) {
             System.out.println("Query result: " + variants.getResult() + "\n\n");
         }
-        // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.99"  Arrays.asList("variant", "intron_variant")
     }
 }
 
@@ -122,10 +114,11 @@ public class TieringTest {
 //                .setMother(ind10).setFather(ind11);
 //        Individual ind18 = new Individual().setId("ind18").setSex(Individual.Sex.MALE)
 //                .setPhenotypes(Collections.singletonList(phenotype1));
-//        family2 = new Pedigree()
+//        Pedigree family2 = new Pedigree()
 //                .setMembers(Arrays.asList(ind1, ind2, ind3, ind4, ind5, ind6, ind7, ind8, ind9, ind10, ind11, ind12, ind13, ind14, ind15,
 //                        ind16, ind17, ind18))
 //                .setPhenotypes(Collections.singletonList(phenotype1));
+//        family2.setProband();
 
 // T I E R I N G - P I E C E S
 //
