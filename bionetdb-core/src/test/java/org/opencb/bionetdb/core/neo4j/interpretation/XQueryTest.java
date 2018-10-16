@@ -3,9 +3,9 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.core.pedigree.Individual;
-import org.opencb.biodata.models.core.pedigree.Pedigree;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -51,11 +51,11 @@ public class XQueryTest {
         Phenotype phenotype3 = new Phenotype("disease3", "disease2", "");
         Phenotype phenotype4 = new Phenotype("disease4", "disease2", "");
 
-        Individual father = new Individual().setId("NA12877").setSex(Individual.Sex.MALE)
+        Member father = new Member().setId("NA12877").setSex(Member.Sex.MALE)
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype3));
-        Individual mother = new Individual().setId("NA12878").setSex(Individual.Sex.FEMALE)
+        Member mother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE)
                 .setPhenotypes(Collections.singletonList(phenotype2));
-        Individual daughter = new Individual().setId("NA12879").setSex(Individual.Sex.FEMALE)
+        Member daughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
                 .setPhenotypes(Collections.singletonList(phenotype2))
                 .setMother(mother).setFather(father);
         Pedigree family1 = new Pedigree()

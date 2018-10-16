@@ -1,7 +1,7 @@
 package org.opencb.bionetdb.core.neo4j.interpretation;
 
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.core.pedigree.Pedigree;
 
 public class FamilyFilter {
 

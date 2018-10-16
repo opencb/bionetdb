@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.*;
+import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.variant.Variant;
 
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
@@ -65,16 +66,16 @@ public class Tiering {
      *
      * @param listOfGenes       list of strings with the genes we want to check (may be null but shouldn't).
      * @param listOfChromosome  list of strings with the genes we want to check (may be null).
-     * @param listOfIndividuals list of strings with the genes we want to check (can't be null).
+     * @param listOfMembers list of strings with the genes we want to check (can't be null).
      * @return a StatementResult object containing the variants matching the specifications.
      */
     public Neo4JVariantIterator variantsToIterator(List<String> listOfGenes, List<String> listOfChromosome,
-                                                   List<org.opencb.biodata.models.core.pedigree.Individual> listOfIndividuals) {
+                                                   List<Member> listOfMembers) {
 
         // It's likely that this action could be done more efficiently.
         List<String> stringListOfIndividuals = new LinkedList<>();
-        for (org.opencb.biodata.models.core.pedigree.Individual individual : listOfIndividuals) {
-            stringListOfIndividuals.add(individual.getId());
+        for (Member member : listOfMembers) {
+            stringListOfIndividuals.add(member.getId());
         }
 
         // Maybe we could change the filtering by chromosome to the genes instead of the variants. It's more efficient.

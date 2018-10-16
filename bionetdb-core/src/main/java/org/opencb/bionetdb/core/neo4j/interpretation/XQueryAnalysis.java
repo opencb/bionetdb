@@ -3,8 +3,8 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.Driver;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.core.pedigree.Pedigree;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 
 import java.util.*;
@@ -45,15 +45,15 @@ public class XQueryAnalysis {
     public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter,
                        OptionsFilter optionsFilter) {
 
-        // MOI input
+        // FamilyFilter input
         Pedigree pedigree = familyFilter.getPedigree();
         Phenotype phenotype = familyFilter.getPhenotype();
         String moi = "";
 
-        // MOI output
+        // FamilyFilter output
         Map<String, List<String>> genotypes;
 
-        // GeneFilter
+        // VariantFilter
         List<String> listOfDiseases;
         List<String> populationFrequencySpecies;
         double populationFrequency;
@@ -86,11 +86,15 @@ public class XQueryAnalysis {
                 break;
         }
         // yLinked or other mistakes can return empty genotype lists. The next exception aims to avoid those errors.
-        for (String member : genotypes.keySet()) {
-            if (CollectionUtils.isEmpty(genotypes.get(member))) {
-                genotypes.remove(member);
-            }
-        }
+        genotypes.entrySet().removeIf((entry) -> CollectionUtils.isEmpty(entry.getValue()));
+
+//        for (Iterator<Map.Entry<String, List<String>>> iterator = genotypes.entrySet().iterator(); iterator.hasNext();) {
+//            Map.Entry<String, List<String>> entry = iterator.next();
+//            if (CollectionUtils.isEmpty(entry.getValue())) {
+//                iterator.remove();
+//            }
+//        }
+
         if (genotypes.size() == 0) {
             throw new IllegalArgumentException("Number of individuals with filled genotypes list is zero");
         }

@@ -1,18 +1,20 @@
 package org.opencb.bionetdb.core.neo4j.interpretation;
 
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+
 import java.util.List;
 
 public class GeneFilter {
 
     private List<String> genes;
-    private List<String> panels;
+    private List<DiseasePanel> panels;
     private List<String> diseases;
 
     public GeneFilter(List<String> genes) {
         this.genes = genes;
     }
 
-    public GeneFilter(List<String> genes, List<String> panels, List<String> diseases) {
+    public GeneFilter(List<String> genes, List<DiseasePanel> panels, List<String> diseases) {
         this.genes = genes;
         this.panels = panels;
         this.diseases = diseases;
@@ -36,11 +38,11 @@ public class GeneFilter {
         this.genes = genes;
     }
 
-    public List<String> getPanels() {
+    public List<DiseasePanel> getPanels() {
         return panels;
     }
 
-    public void setPanels(List<String> panels) {
+    public void setPanels(List<DiseasePanel> panels) {
         this.panels = panels;
     }
 
