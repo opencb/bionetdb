@@ -40,7 +40,7 @@ public class XQueryAnalysis {
      * @param familyFilter  it is an object that gathers the data of the proband and his family
      * @param listOfGenes   the list of genes we would like to study
      * @param variantFilter it is an object that gathers some features we could specify in order to reduce the scope of the result
-     * @param optionsFilter       we could choice to study reactions, proteic complexes or both
+     * @param optionsFilter we could choice to study reactions, proteic complexes or both
      */
     public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter,
                        OptionsFilter optionsFilter) {
@@ -52,7 +52,6 @@ public class XQueryAnalysis {
 
         // MOI output
         Map<String, List<String>> genotypes;
-        boolean absenceOfMOI = false;
 
         // GeneFilter
         List<String> listOfDiseases;
@@ -82,13 +81,18 @@ public class XQueryAnalysis {
                 genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
                 break;
             default:
-                List<org.opencb.biodata.models.core.pedigree.Individual> familyMembers = pedigree.getMembers();
                 genotypes = new HashMap<>();
-                for (org.opencb.biodata.models.core.pedigree.Individual member : familyMembers) {
-                    genotypes.put(member.getId(), Collections.emptyList());
-                }
-                absenceOfMOI = true;
+                    genotypes.put(pedigree.getProband().getId(), Collections.singletonList("NON_REF"));
                 break;
+        }
+        // yLinked or other mistakes can return empty genotype lists. The next exception aims to avoid those errors.
+        for (String member : genotypes.keySet()) {
+            if (CollectionUtils.isEmpty(genotypes.get(member))) {
+                genotypes.remove(member);
+            }
+        }
+        if (genotypes.size() == 0) {
+            throw new IllegalArgumentException("Number of individuals with filled genotypes list is zero");
         }
 
         if (CollectionUtils.isNotEmpty(variantFilter.getListOfDiseases())) {
@@ -119,11 +123,11 @@ public class XQueryAnalysis {
             // Ésto cambia si el usuario especifica que quiere "onlyComplex" o "onlyReaction"
             if (!optionsFilter.isOnlyReaction()) {
                 xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
-                        consequenceType, true, absenceOfMOI);
+                        consequenceType, true);
             }
             if (!optionsFilter.isOnlyComplex()) {
                 xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
-                        consequenceType, false, absenceOfMOI);
+                        consequenceType, false);
             }
         }
     }
@@ -139,16 +143,15 @@ public class XQueryAnalysis {
      *                                   target protein. Must be used jointly with "populationFrequency"
      * @param consequenceType            An optional filter aimed to filter by consequence type of the target protein
      * @param complexOrReaction          this boolean specifies if we want to study proteic reactions (false), or proteic complexes (true)
-     * @param absenceOfMOI               We must make it true in case we don't want to specify any MOI
      */
     public void xQueryCraftsman(Map<String, List<String>> genotypes, List<String> listOfGenes, List<String> listOfDiseases,
                                 List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
-                                boolean complexOrReaction, boolean absenceOfMOI) {
+                                boolean complexOrReaction) {
         // Population frecuency podemos ponerla invertida (1 - 0.99) pa q sea más sencillo.
         String queryString;
         // HEAD - Implements the part of the query who treats samples and listOfDiseases
         // Filtering by diseases is faster because of the exclusion of genes without disease related
-        String familyIndex = getFamilySubstrings(genotypes, listOfGenes, false, true, absenceOfMOI).get(1);
+        String familyIndex = getFamilySubstrings(genotypes, listOfGenes, false, true).get(1);
 
         if (CollectionUtils.isNotEmpty(listOfDiseases)) {
             queryString = "MATCH (dis:DISEASE)-[:GENE__DISEASE]-(gene2:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)-"
@@ -166,9 +169,9 @@ public class XQueryAnalysis {
                     + "(var:VARIANT)-[:VARIANT__VARIANT_CALL]-(vc:VARIANT_CALL)-[:SAMPLE__VARIANT_CALL]-(sam:SAMPLE) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0)
                     || CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(genotypes, listOfGenes, false, false, absenceOfMOI).get(0);
+                queryString += getFamilySubstrings(genotypes, listOfGenes, false, false).get(0);
             } else {
-                queryString += getFamilySubstrings(genotypes, listOfGenes, true, false, absenceOfMOI).get(0);
+                queryString += getFamilySubstrings(genotypes, listOfGenes, true, false).get(0);
             }
         } else {
             queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)-"
@@ -182,38 +185,30 @@ public class XQueryAnalysis {
             queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0)
                     || CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(genotypes, listOfGenes, false, true, absenceOfMOI).get(0);
+                queryString += getFamilySubstrings(genotypes, listOfGenes, false, true).get(0);
             } else {
-                queryString += getFamilySubstrings(genotypes, listOfGenes, true, true, absenceOfMOI).get(0);
+                queryString += getFamilySubstrings(genotypes, listOfGenes, true, true).get(0);
             }
         }
 
         // TAIL - Implements the part of the query who treats ConsequenceType and PopulationFrequency
         if (CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0) {
-
             queryString += " MATCH (var)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)"
                     + " WHERE " + getGenericSubstring(populationFrequencySpecies, "pf.id", true)
                     + "toFloat(pf.attr_refAlleleFreq)>" + populationFrequency;
             // Explicitar que population frecuency ha de ser un valor entre 0 y 1, usando un punto como delimitación separación
             // entre parte entera y decimal
-
             if (CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += " WITH DISTINCT " + familyIndex + " var, pf.attr_refAlleleFreq AS PF, MUT_PROT, NEXUS,"
-                        + " PANEL_PROT, GENE\n"
-                        + " MATCH (var)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__SO]-(so:SO)"
-                        + " WHERE " + getGenericSubstring(consequenceType, "so.name", false)
-                        + " RETURN DISTINCT " + familyIndex + " var.name, so.name, PF, MUT_PROT, NEXUS, PANEL_PROT, GENE";
+                queryString += " WITH DISTINCT " + familyIndex + " var, MUT_PROT, NEXUS, PANEL_PROT, GENE\n";
             } else {
-                queryString += " RETURN DISTINCT " + familyIndex + " var.name, pf.attr_refAlleleFreq AS PF, MUT_PROT, NEXUS,"
-                        + " PANEL_PROT, GENE";
+                queryString += " RETURN DISTINCT " + familyIndex + " var.name, MUT_PROT, NEXUS, PANEL_PROT, GENE";
             }
-        } else {
-            if (CollectionUtils.isNotEmpty(consequenceType)) {
+        }
+        if (CollectionUtils.isNotEmpty(consequenceType)) {
+            queryString += " MATCH (var)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__SO]-(so:SO)"
+                    + " WHERE " + getGenericSubstring(consequenceType, "so.name", false)
+                    + " RETURN DISTINCT " + familyIndex + " var.name, so.name, MUT_PROT, NEXUS, PANEL_PROT, GENE";
 
-                queryString += " MATCH (var)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__SO]-(so:SO)"
-                        + " WHERE " + getGenericSubstring(consequenceType, "so.name", false)
-                        + " RETURN DISTINCT " + familyIndex + " var.name, so.name, MUT_PROT, NEXUS, PANEL_PROT, GENE";
-            }
         }
         System.out.println(queryString);
 //        Session session = this.driver.session();
@@ -225,13 +220,12 @@ public class XQueryAnalysis {
      * This method builds the body of the sample and genotype filter.
      */
     private static List<String> getFamilySubstrings(Map<String, List<String>> genotype, List<String> listOfGenes, boolean returnTime,
-                                                    boolean listOfDiseasesAbsence, boolean noMOI) {
-        String familySubString = "";
+                                                    boolean listOfDiseasesAbsence) {
+        String familySubString;
         String familyIndex = "";
         int numOfInd = genotype.size();
         if (numOfInd == 0) {
-            // Throw an exception. 0 individuals is impossible.
-            return Arrays.asList(familySubString, familyIndex);
+            throw new IllegalArgumentException("Number of individuals must be at least one.");
         } else {
             int counter = 0;
             List<String> filters = new ArrayList<>();
@@ -243,7 +237,7 @@ public class XQueryAnalysis {
                 if (listOfDiseasesAbsence && counter == 0) {
                     filter += " WHERE " + getGenericSubstring(listOfGenes, "ref.id", true)
                             + getGenericSubstring(Collections.singletonList(member), "sam.id", true);
-                    if (noMOI) {
+                    if (genotype.get(member).get(0).equals("NON_REF")) {
                         // This could be also implemented in method getGenericString if needed.
                         filter += " (vc.attr_GT<>'0/0') ";
                     } else {
@@ -251,7 +245,7 @@ public class XQueryAnalysis {
                     }
                 } else {
                     filter += " WHERE " + getGenericSubstring(Collections.singletonList(member), "sam.id", true);
-                    if (noMOI) {
+                    if (genotype.get(member).get(0).equals("NON_REF")) {
                         filter += " (vc.attr_GT<>'0/0') ";
                     } else {
                         filter += getGenericSubstring(genotype.get(member), "vc.attr_GT", false);
@@ -290,7 +284,6 @@ public class XQueryAnalysis {
             return Arrays.asList(familySubString, familyIndex);
         }
     }
-
 
     /**
      * Builds the part of the cypher query aimed to act as a searching filter. We can fiter by the individual samples, their

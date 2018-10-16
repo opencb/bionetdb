@@ -63,7 +63,7 @@ public class XQueryTest {
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3, phenotype4));
         family1.setProband(daughter);
 
-        FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "ylinked");
+        FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "dominant");
         VariantFilter variantFilter = new VariantFilter((Arrays.asList("Hepatitis", "Anxiety")), Arrays.asList("AFR", "EUROPE"), 0.99,
                 Arrays.asList("variant", "intron_variant"));
         OptionsFilter optionsFilter = new OptionsFilter(true, false);
