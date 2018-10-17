@@ -32,13 +32,16 @@ public class VariantFilter {
         return populationFrequencySpecies;
     }
 
-    public void setPopulationFrequencySpecies(List<String> populationFrequencySpecies, double populationFrequency) {
-        this.populationFrequencySpecies = populationFrequencySpecies;
-        this.populationFrequency = populationFrequency;
-    }
-
     public double getPopulationFrequency() {
         return populationFrequency;
+    }
+
+    public void setPopulationFrequencySpecies(List<String> populationFrequencySpecies, double populationFrequency) {
+        if (populationFrequency <= 0 || populationFrequency >= 1) {
+            throw new IllegalArgumentException("populationFrequency must be a value between 0 and 1");
+        }
+        this.populationFrequencySpecies = populationFrequencySpecies;
+        this.populationFrequency = populationFrequency;
     }
 
     public List<String> getConsequenceType() {

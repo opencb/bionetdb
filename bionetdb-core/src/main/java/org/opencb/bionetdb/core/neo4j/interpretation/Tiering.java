@@ -18,7 +18,7 @@ public class Tiering {
 
     private Driver driver;
 
-    public static final String PREFIX_ATTRIBUTES = "attr_";
+//    public static final String PREFIX_ATTRIBUTES = "attr_";
 
     public Tiering(Driver driver) {
         this.driver = driver;
@@ -64,9 +64,9 @@ public class Tiering {
      * This method looks for all the variants pertaining to a set of individuals. It should be aimed to a gene panel, and may be filtered
      * by chromosome too.
      *
-     * @param listOfGenes       list of strings with the genes we want to check (may be null but shouldn't).
-     * @param listOfChromosome  list of strings with the genes we want to check (may be null).
-     * @param listOfMembers list of strings with the genes we want to check (can't be null).
+     * @param listOfGenes      list of strings with the genes we want to check (may be null but shouldn't).
+     * @param listOfChromosome list of strings with the genes we want to check (may be null).
+     * @param listOfMembers    list of strings with the genes we want to check (can't be null).
      * @return a StatementResult object containing the variants matching the specifications.
      */
     public Neo4JVariantIterator variantsToIterator(List<String> listOfGenes, List<String> listOfChromosome,

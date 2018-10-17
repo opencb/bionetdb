@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -15,6 +16,7 @@ import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class XQueryTest {
 
@@ -27,7 +29,7 @@ public class XQueryTest {
     public void setUp() throws Exception {
         try {
             BioNetDBConfiguration bioNetDBConfiguration = BioNetDBConfiguration.load(getClass().getResourceAsStream("/configuration.yml"));
-            for (DatabaseConfiguration dbConfig: bioNetDBConfiguration.getDatabases()) {
+            for (DatabaseConfiguration dbConfig : bioNetDBConfiguration.getDatabases()) {
                 System.out.println(dbConfig);
             }
 
@@ -46,6 +48,8 @@ public class XQueryTest {
 
     @Test
     public void queryVariant() {
+        List<List<Variant>> listOfVariants;
+
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
         Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
         Phenotype phenotype3 = new Phenotype("disease3", "disease2", "");
@@ -64,12 +68,14 @@ public class XQueryTest {
         family1.setProband(daughter);
 
         FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "dominant");
-        VariantFilter variantFilter = new VariantFilter((Arrays.asList("Hepatitis", "Anxiety")), Arrays.asList("AFR", "EUROPE"), 0.99,
+        GeneFilter geneFilter = new GeneFilter();
+        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
+        VariantFilter variantFilter = new VariantFilter((Arrays.asList("Hepatitis", "Anxiety")), Arrays.asList("AFR", "EUROPE"), 0.01,
                 Arrays.asList("variant", "intron_variant"));
         OptionsFilter optionsFilter = new OptionsFilter(true, false);
 
-        bioNetDbManager.xQuery(familyFilter, Arrays.asList("CADM1", "BRCA1", "BRCA2", "TP53", "BCL2", "ADSL", "CTBP2P1", "BMPR2"),
-                variantFilter, optionsFilter);
+        listOfVariants = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
+        System.out.println(listOfVariants);
     }
-    // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.99"  Arrays.asList("variant", "intron_variant")
+    // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.01"  Arrays.asList("variant", "intron_variant")
 }

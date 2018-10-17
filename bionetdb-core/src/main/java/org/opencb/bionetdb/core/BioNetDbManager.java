@@ -298,7 +298,7 @@ public class BioNetDbManager {
 
     public QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
             throws BioNetDBException {
-       return networkDBAdaptor.networkQueryByPaths(pathQueries, queryOptions);
+        return networkDBAdaptor.networkQueryByPaths(pathQueries, queryOptions);
     }
 
     public QueryResult<Network> networkQuery(String cypher) throws BioNetDBException {
@@ -333,19 +333,19 @@ public class BioNetDbManager {
     }
 
     public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Phenotype phenotype, boolean incompletePenetrance,
-                                             List<String> listOfGenes) {
+                                                    List<String> listOfGenes) {
         Map<String, List<String>> listOfGenotypes = ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
         return tiering.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
     }
 
     public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Phenotype phenotype, boolean incompletePenetrance,
-                                              List<String> listOfGenes) {
+                                                     List<String> listOfGenes) {
         Map<String, List<String>> listOfGenotypes = ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
         return tiering.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
     }
 
     public QueryResult<Variant> getXLinkedVariants(Pedigree pedigree, Phenotype phenotype, boolean isDominant,
-                                            List<String> listOfGenes) {
+                                                   List<String> listOfGenes) {
         Map<String, List<String>> listOfGenotypes = ModeOfInheritance.xLinked(pedigree, phenotype, isDominant);
         return tiering.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("X")),
                 listOfGenotypes);
@@ -381,22 +381,21 @@ public class BioNetDbManager {
         }
     }
 
-    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes) {
-        xQueryAnalysis.xQuery(familyFilter, listOfGenes);
+    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) {
+        return xQueryAnalysis.xQuery(familyFilter, geneFilter);
     }
 
-    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes,
-                       OptionsFilter optionsFilter) {
-        xQueryAnalysis.xQuery(familyFilter, listOfGenes, optionsFilter);
+    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter) {
+        return xQueryAnalysis.xQuery(familyFilter, geneFilter, optionsFilter);
     }
 
-    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter) {
-        xQueryAnalysis.xQuery(familyFilter, listOfGenes, variantFilter);
+    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter) {
+        return xQueryAnalysis.xQuery(familyFilter, geneFilter, variantFilter);
     }
 
-    public void xQuery(FamilyFilter familyFilter, List<String> listOfGenes, VariantFilter variantFilter,
-                       OptionsFilter optionsFilter) {
-        xQueryAnalysis.xQuery(familyFilter, listOfGenes, variantFilter, optionsFilter);
+    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
+                                      OptionsFilter optionsFilter) {
+        return xQueryAnalysis.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
@@ -410,7 +409,7 @@ public class BioNetDbManager {
     private List<Variant> convert(List<VariantContext> variantContexts, VariantContextToVariantConverter converter) {
         // Iterate over variant context and convert to variant
         List<Variant> variants = new ArrayList<>(variantContexts.size());
-        for (VariantContext variantContext: variantContexts) {
+        for (VariantContext variantContext : variantContexts) {
             Variant variant = converter.convert(variantContext);
             variants.add(variant);
         }
@@ -423,7 +422,7 @@ public class BioNetDbManager {
         // Get network nodes
         List<Node> nodes = netManager.getNodes(type);
 
-        for (Node node: nodes) {
+        for (Node node : nodes) {
             String key = type.name() + ":" + node.getId();
             if (idToUidMap.containsKey(key)) {
                 netManager.replaceUid(node.getUid(), idToUidMap.get(key));

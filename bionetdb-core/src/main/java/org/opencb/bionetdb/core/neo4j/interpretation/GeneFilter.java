@@ -10,6 +10,8 @@ public class GeneFilter {
     private List<DiseasePanel> panels;
     private List<String> diseases;
 
+    public GeneFilter() {}
+
     public GeneFilter(List<String> genes) {
         this.genes = genes;
     }
