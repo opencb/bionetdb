@@ -91,6 +91,11 @@ public class NodeBuilder {
             }
             node.addAttribute("heritableTraits", her.toString());
         }
+        if (evidence.getVariantClassification() != null
+                && evidence.getVariantClassification().getClinicalSignificance() != null) {
+            node.addAttribute("clinicalSignificance", evidence.getVariantClassification().getClinicalSignificance()
+                    .name());
+        }
         if (evidence.getSource() != null && evidence.getSource().getName() != null) {
             node.addAttribute("source", evidence.getSource().getName());
         }
