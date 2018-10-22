@@ -96,6 +96,7 @@ public class ImportCommandExecutor extends CommandExecutor {
 
             long geneIndexingTime = 0;
             long proteinIndexingTime = 0;
+            long genePanelsTime = 0;
             long miRnaIndexingTime = 0;
             long bioPaxTime = 0;
 
@@ -122,6 +123,16 @@ public class ImportCommandExecutor extends CommandExecutor {
             importer.indexingProteins(proteinFile.toPath(), outputPath);
             proteinIndexingTime = (System.currentTimeMillis() - start) / 1000;
             logger.info("Protein indexing done in {} s", proteinIndexingTime);
+
+            // Gene panels support
+            if (Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME).toFile().exists()) {
+                logger.info("Starting gene panels processing...");
+                start = System.currentTimeMillis();
+                importer.addGenePanels(Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME), outputPath);
+                genePanelsTime = (System.currentTimeMillis() - start) / 1000;
+                logger.info("Gene panels processing done in {} s", genePanelsTime);
+            }
+
 
             // Indexing miRNA
             if (Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME).toFile().exists()) {
@@ -153,6 +164,7 @@ public class ImportCommandExecutor extends CommandExecutor {
 
             logger.info("Gene indexing in {} s", geneIndexingTime);
             logger.info("Protein indexing in {} s", proteinIndexingTime);
+            logger.info("Gene panels processing in {} s", genePanelsTime);
             logger.info("miRNA indexing in {} s", miRnaIndexingTime);
             logger.info("BioPAX processing in {} s", bioPaxTime);
             logger.info("Variant processing in {} s", variantTime);

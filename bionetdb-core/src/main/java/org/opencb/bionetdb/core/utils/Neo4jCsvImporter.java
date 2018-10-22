@@ -1,11 +1,13 @@
 package org.opencb.bionetdb.core.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.FeatureType;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
@@ -21,16 +23,15 @@ import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
 public class Neo4jCsvImporter {
     public static final Object GENE_FILENAME = "genes.json";
     public static final Object GENE_DBNAME = "genes.rocksdb";
+
+    public static final Object PANEL_DIRNAME = "panels";
 
     public static final Object PROTEIN_FILENAME = "proteins.json";
     public static final Object PROTEIN_DBNAME = "proteins.rocksdb";
@@ -673,6 +674,43 @@ public class Neo4jCsvImporter {
 
     public void indexingProteins(Path proteinPath, Path indexPath) throws IOException {
         csv.indexingProteins(proteinPath, indexPath);
+    }
+
+    public void addGenePanels(Path panelPath, Path indexPath) throws IOException {
+        File[] panelFiles = panelPath.toFile().listFiles();
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectReader reader = mapper.reader(DiseasePanel.class);
+
+        // Get CSV file writers
+        PrintWriter pwNode = csv.getCsvWriters().get(Node.Type.PANEL.toString());
+        PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.PANEL__GENE.toString());
+
+        for (File panelFile: panelFiles) {
+            if (panelFile.getName().endsWith("json")) {
+                FileInputStream fis = new FileInputStream(panelFile);
+                byte[] data = new byte[(int) panelFile.length()];
+                fis.read(data);
+                fis.close();
+
+                //String str = new String(data, "UTF-8");
+                DiseasePanel panel = reader.readValue(data);
+
+                // Create node and save CSV file
+                Node node = NodeBuilder.newNode(csv.getAndIncUid(), panel);
+                pwNode.println(csv.nodeLine(node));
+
+                for (DiseasePanel.GenePanel gene: panel.getGenes()) {
+                    if (StringUtils.isNotEmpty(gene.getId())) {
+                        Long geneUid = processGene(gene.getId(), gene.getName());
+                        if (geneUid != null) {
+                            // Add relation to CSV file
+                            pwRel.println(node.getUid() + "," + geneUid);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void indexingMiRnas(Path miRnaPath, Path indexPath, boolean toImport) throws IOException {

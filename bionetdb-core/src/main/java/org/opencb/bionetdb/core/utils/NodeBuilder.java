@@ -2,6 +2,8 @@ package org.opencb.bionetdb.core.utils;
 
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.*;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
@@ -299,24 +301,33 @@ public class NodeBuilder {
         node.addAttribute("dbName", xref.getType());
         return node;
     }
-/*
-    public static Node newNode(long uid, Panel panel) {
+
+    public static Node newNode(long uid, DiseasePanel panel) {
         Node node = new Node(uid, panel.getId(), panel.getName(), Node.Type.PANEL);
-        node.addAttribute("author", panel.getAuthor());
-        node.addAttribute("version", panel.getVersion());
-        node.addAttribute("date", panel.getDate());
+        node.addAttribute("description", panel.getDescription());
+        node.addAttribute("creationDate", panel.getCreationDate());
+        node.addAttribute("modificationDate", panel.getModificationDate());
+        if (ListUtils.isNotEmpty(panel.getPhenotypes())) {
+            StringBuilder sb = new StringBuilder();
+            for (Phenotype phenotype: panel.getPhenotypes()) {
+                if (StringUtils.isNotEmpty(phenotype.getName())) {
+                    if (sb.length() > 0) {
+                        sb.append("--");
+                    }
+                    sb.append(phenotype.getName());
+                }
+            }
+            if (sb.length() > 0) {
+                node.addAttribute("phenotypeNames", sb.toString());
+            }
+        }
         if (panel.getSource() != null) {
-            node.addAttribute("sourceProject", panel.getSource().getProject());
             node.addAttribute("sourceId", panel.getSource().getId());
+            node.addAttribute("sourceName", panel.getSource().getId());
+            node.addAttribute("sourceAuthor", panel.getSource().getAuthor());
+            node.addAttribute("sourceProject", panel.getSource().getProject());
             node.addAttribute("sourceVersion", panel.getSource().getVersion());
         }
         return node;
     }
-
-    public static Node newNode(long uid, OntologyTerm term) {
-        Node node = new Node(uid, term.getId(), term.getName(), Node.Type.ONTOLOGY);
-        node.addAttribute("source", term.getSource());
-        return node;
-    }
-    */
 }

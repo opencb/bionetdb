@@ -592,6 +592,11 @@ public class CsvInfo {
                 "source", "status");
         nodeAttributes.put(Node.Type.GENE.toString(), new ArrayList<>(attrs));
 
+        // Panel
+        attrs = Arrays.asList("panelId", "id", "name", "description", "phenotypeNames", "sourceId", "sourceName",
+                "sourceAuthor", "sourceProject", "sourceVersion", "creationDate", "modificationDate");
+        nodeAttributes.put(Node.Type.PANEL.toString(), new ArrayList<>(attrs));
+
         // Drug
         attrs = Arrays.asList("drugId", "id", "name", "source", "type", "studyType");
         nodeAttributes.put(Node.Type.DRUG.toString(), new ArrayList<>(attrs));
