@@ -12,8 +12,8 @@ public class GeneFilter {
 
     public GeneFilter() {}
 
-    public GeneFilter(List<String> genes) {
-        this.genes = genes;
+    public GeneFilter(List<DiseasePanel> panels) {
+        this.panels = panels;
     }
 
     public GeneFilter(List<String> genes, List<DiseasePanel> panels, List<String> diseases) {
@@ -36,23 +36,26 @@ public class GeneFilter {
         return genes;
     }
 
-    public void setGenes(List<String> genes) {
+    public GeneFilter setGenes(List<String> genes) {
         this.genes = genes;
+        return this;
     }
 
     public List<DiseasePanel> getPanels() {
         return panels;
     }
 
-    public void setPanels(List<DiseasePanel> panels) {
+    public GeneFilter setPanels(List<DiseasePanel> panels) {
         this.panels = panels;
+        return this;
     }
 
     public List<String> getDiseases() {
         return diseases;
     }
 
-    public void setDiseases(List<String> diseases) {
+    public GeneFilter setDiseases(List<String> diseases) {
         this.diseases = diseases;
+        return this;
     }
 }

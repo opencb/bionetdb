@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class XQueryTest {
 
@@ -47,7 +48,7 @@ public class XQueryTest {
     }
 
     @Test
-    public void queryVariant() {
+    public void queryVariant() throws ExecutionException, InterruptedException {
         List<List<Variant>> listOfVariants;
 
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
@@ -69,10 +70,11 @@ public class XQueryTest {
 
         FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "dominant");
         GeneFilter geneFilter = new GeneFilter();
-        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
+        geneFilter.setGenes(Arrays.asList("UQCRB", "CADM1", "ADSL"));
+//        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
         VariantFilter variantFilter = new VariantFilter((Arrays.asList("Hepatitis", "Anxiety")), Arrays.asList("AFR", "EUROPE"), 0.01,
                 Arrays.asList("variant", "intron_variant"));
-        OptionsFilter optionsFilter = new OptionsFilter(true, false);
+        OptionsFilter optionsFilter = new OptionsFilter(false, false);
 
         listOfVariants = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
         System.out.println(listOfVariants);

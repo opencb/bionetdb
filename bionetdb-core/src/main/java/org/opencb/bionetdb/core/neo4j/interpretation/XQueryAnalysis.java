@@ -13,31 +13,36 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class XQueryAnalysis {
 
     private Driver driver;
 
-    private List<List<Variant>> listOfVariants = new ArrayList<>();
-
     public XQueryAnalysis(Driver driver) {
         this.driver = driver;
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) {
+    public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException,
+            InterruptedException {
         VariantFilter variantFilter = new VariantFilter();
         OptionsFilter optionsFilter = new OptionsFilter();
-        return xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
+        return xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter) {
+    public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter)
+            throws ExecutionException, InterruptedException {
         VariantFilter variantFilter = new VariantFilter();
-        return xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
+        return xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter) {
+    public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter)
+            throws ExecutionException, InterruptedException {
         OptionsFilter optionsFilter = new OptionsFilter();
-        return xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
+        return xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 
     /**
@@ -50,10 +55,11 @@ public class XQueryAnalysis {
      * @param optionsFilter we could choice to study reactions, proteic complexes or both
      * @return the method returns a list with two posible lists inside: A list of variants obtained from the complex pathway or a list
      * of variants obtained from the complex pathway
+     * @throws ExecutionException when trouble with multithreading
+     * @throws InterruptedException when trouble with multithreading
      */
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
-                                      OptionsFilter optionsFilter) {
-
+    public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
+                                             OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
         // FamilyFilter input
         Pedigree pedigree = familyFilter.getPedigree();
         Phenotype phenotype = familyFilter.getPhenotype();
@@ -63,7 +69,7 @@ public class XQueryAnalysis {
         Map<String, List<String>> genotypes;
 
         // GeneFilter
-        Set<String> setOfGenes = new HashSet<>();
+        List<String> listOfGenes;
 
         // VariantFilter
         List<String> listOfDiseases;
@@ -75,7 +81,6 @@ public class XQueryAnalysis {
         if (!familyFilter.getMoi().isEmpty()) {
             moi = familyFilter.getMoi();
         }
-        // TTry/Catch in case they put dOMINANT or Dominant or that kind of mistakes???
         switch (moi) {
             case "dominant":
                 genotypes = ModeOfInheritance.dominant(pedigree, phenotype, false);
@@ -99,12 +104,16 @@ public class XQueryAnalysis {
         }
         // yLinked or other mistakes can return empty genotype lists. The next exception aims to avoid those errors.
         genotypes.entrySet().removeIf((entry) -> CollectionUtils.isEmpty(entry.getValue()));
+        if (genotypes.size() == 0) {
+            throw new IllegalArgumentException("Number of individuals with filled genotypes list is zero");
+        }
 
         // G E N E - F I L T E R
         if (CollectionUtils.isEmpty(geneFilter.getGenes()) && CollectionUtils.isEmpty(geneFilter.getPanels())
                 && CollectionUtils.isEmpty(geneFilter.getDiseases())) {
             throw new IllegalArgumentException("GeneFilter cannot be empty");
         }
+        Set<String> setOfGenes = new HashSet<>();
         if (CollectionUtils.isNotEmpty(geneFilter.getGenes())) {
             setOfGenes.addAll(geneFilter.getGenes());
         }
@@ -114,11 +123,7 @@ public class XQueryAnalysis {
         if (CollectionUtils.isNotEmpty(geneFilter.getDiseases())) {
             setOfGenes.addAll(diseaseToList(geneFilter.getDiseases()));
         }
-        List<String> listOfGenes = new LinkedList<>(setOfGenes);
-
-        if (genotypes.size() == 0) {
-            throw new IllegalArgumentException("Number of individuals with filled genotypes list is zero");
-        }
+        listOfGenes = new LinkedList<>(setOfGenes);
 
         // V A R I A N T - F I L T E R
         if (CollectionUtils.isNotEmpty(variantFilter.getListOfDiseases())) {
@@ -141,25 +146,94 @@ public class XQueryAnalysis {
             consequenceType = Collections.emptyList();
         }
 
+        // M U L T I T H R E A D E D - X - Q U E R Y
+        Future<List<List<Variant>>> listOfFutureVariants;
+        List<List<Variant>> listOfVariants = new ArrayList<>();
+        List<Variant> listOfComplexVariants = new ArrayList<>();
+        List<Variant> listOfReactionVariants = new ArrayList<>();
+        if (listOfGenes.size() == 1) {
+            return xQueryCall(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency, consequenceType,
+                    optionsFilter);
+        } else if (listOfGenes.size() == 2) {
+            ExecutorService executor = Executors.newFixedThreadPool(2);
+            for (String gene : listOfGenes) {
+                listOfFutureVariants = executor.submit(new Threadpool(genotypes, gene, listOfDiseases, populationFrequencySpecies,
+                        populationFrequency, consequenceType, optionsFilter));
+                listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
+                listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
+            }
+        } else if (listOfGenes.size() == 3) {
+            ExecutorService executor = Executors.newFixedThreadPool(3);
+            for (String gene : listOfGenes) {
+                listOfFutureVariants = executor.submit(new Threadpool(genotypes, gene, listOfDiseases, populationFrequencySpecies,
+                        populationFrequency, consequenceType, optionsFilter));
+                listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
+                listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
+            }
+        } else if (listOfGenes.size() > 3) {
+            ExecutorService executor = Executors.newFixedThreadPool(4);
+            for (String gene : listOfGenes) {
+                listOfFutureVariants = executor.submit(new Threadpool(genotypes, gene, listOfDiseases, populationFrequencySpecies,
+                        populationFrequency, consequenceType, optionsFilter));
+                listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
+                listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
+            }
+        } else {
+            throw new IllegalArgumentException("There was no genes to analyze");
+        }
+        listOfVariants.add(listOfComplexVariants);
+        listOfVariants.add(listOfReactionVariants);
+        return listOfVariants;
+    }
+
+    /**
+     * This method gathers the processed info by XQuery and calls the Craftsman.
+     *
+     * @param genotypes                  It's a map on which we store the individuals we want to analyze related with their genotypes
+     * @param listOfGenes                the list of genes in we would like to look for proteins
+     * @param listOfDiseases             An optional list of diseases we would like to focuse on
+     * @param populationFrequencySpecies An optional filter aimed to filter by species. Must be used jointly with "populationFrequency"
+     * @param populationFrequency        An optional filter aimed to filter by the amount of people who carries a specific mutation in the
+     *                                   target protein. Must be used jointly with "populationFrequency"
+     * @param consequenceType            An optional filter aimed to filter by consequence type of the target protein
+     * @param optionsFilter we could choice to study reactions, proteic complexes or both
+     * @return the method returns a list with two posible lists inside: A list of variants obtained from the complex pathway or a list
+     * of variants obtained from the complex pathway
+     */
+    List<List<Variant>> xQueryCall(Map<String, List<String>> genotypes, List<String> listOfGenes, List<String> listOfDiseases,
+                                   List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
+                                   OptionsFilter optionsFilter) {
         if (optionsFilter.isOnlyComplex() && optionsFilter.isOnlyReaction()) {
             throw new IllegalArgumentException("You can't chose both onlyReactions and onlyComplex");
         } else {
+            ArrayList<List<Variant>> listOfVariants = new ArrayList<>(2);
             // Booleans are both "false" by default, which means we will give both COMPLEX como REACTION nexus by def.
             // This changes when the user specifies he wants "onlyComplex" or "onlyReaction"
             if (!optionsFilter.isOnlyReaction()) {
                 List<Variant> listOfComplexVariant = xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies,
                         populationFrequency, consequenceType, true);
                 listOfVariants.add(listOfComplexVariant);
+            } else {
+                listOfVariants.add(Collections.emptyList());
             }
+
             if (!optionsFilter.isOnlyComplex()) {
                 List<Variant> listOfReactionVariant = xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies,
                         populationFrequency, consequenceType, false);
                 listOfVariants.add(listOfReactionVariant);
+            } else {
+                listOfVariants.add(Collections.emptyList());
             }
+            return listOfVariants;
         }
-        return listOfVariants;
     }
 
+    /**
+     * This method transforms gene panels into a list of genes.
+     *
+     * @param panels the list of panels we would like to analyze
+     * @return list of genes
+     */
     private Set<String> panelToList(List<DiseasePanel> panels) {
         Session session = this.driver.session();
         StatementResult result = session.run("" + panels + "");
@@ -173,6 +247,12 @@ public class XQueryAnalysis {
         return setOfGenes;
     }
 
+    /**
+     * This method transforms diseases into a list of genes.
+     *
+     * @param diseases the list of panels we would like to analyze
+     * @return list of genes
+     */
     private Set<String> diseaseToList(List<String> diseases) {
         Set<String> setOfGenes = new HashSet<>();
         Session session = this.driver.session();
@@ -188,7 +268,7 @@ public class XQueryAnalysis {
     }
 
     /**
-     * This method builds the XQuery.
+     * This method builds the XQuery and calls Neo4J.
      *
      * @param genotypes                  It's a map on which we store the individuals we want to analyze related with their genotypes
      * @param listOfGenes                the list of genes in we would like to look for proteins

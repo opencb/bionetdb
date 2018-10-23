@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Created by joaquin on 1/29/18.
@@ -56,7 +57,7 @@ public class BioNetDbManager {
     private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
     private Tiering tiering;
-    private XQueryAnalysis xQueryAnalysis;
+    public static XQueryAnalysis xQueryAnalysis;
 
     public BioNetDbManager(BioNetDBConfiguration configuration) throws BioNetDBException {
         init(null, configuration);
@@ -381,21 +382,23 @@ public class BioNetDbManager {
         }
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) {
-        return xQueryAnalysis.xQuery(familyFilter, geneFilter);
+    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException, InterruptedException {
+        return xQueryAnalysis.xQueryManager(familyFilter, geneFilter);
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter) {
-        return xQueryAnalysis.xQuery(familyFilter, geneFilter, optionsFilter);
+    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter)
+            throws ExecutionException, InterruptedException {
+        return xQueryAnalysis.xQueryManager(familyFilter, geneFilter, optionsFilter);
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter) {
-        return xQueryAnalysis.xQuery(familyFilter, geneFilter, variantFilter);
+    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter)
+            throws ExecutionException, InterruptedException {
+        return xQueryAnalysis.xQueryManager(familyFilter, geneFilter, variantFilter);
     }
 
     public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
-                                      OptionsFilter optionsFilter) {
-        return xQueryAnalysis.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
+                                      OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
+        return xQueryAnalysis.xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
