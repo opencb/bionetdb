@@ -8,7 +8,6 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.BioNetDbManager;
-import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 
@@ -21,9 +20,6 @@ import java.util.concurrent.ExecutionException;
 public class XQueryTest {
 
     private BioNetDbManager bioNetDbManager;
-    private NetworkDBAdaptor networkDBAdaptor;
-
-    private String database;
 
     @Before
     public void setUp() throws Exception {

@@ -24,24 +24,28 @@ public class FamilyFilter {
         return pedigree;
     }
 
-    public void setPedigree(Pedigree pedigree) {
+    public FamilyFilter setPedigree(Pedigree pedigree) {
         this.pedigree = pedigree;
+        return this;
     }
 
     public Phenotype getPhenotype() {
         return phenotype;
     }
 
-    public void setPhenotype(Phenotype phenotype) {
+    public FamilyFilter setPhenotype(Phenotype phenotype) {
         this.phenotype = phenotype;
+        return this;
     }
 
     public String getMoi() {
         return moi;
     }
 
-    public void setMoi(String moi) {
+    public FamilyFilter setMoi(String moi) {
         this.moi = moi;
+        return this;
+
     }
 
     @Override

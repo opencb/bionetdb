@@ -8,10 +8,8 @@ import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.BioNetDbManager;
-import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
@@ -22,9 +20,6 @@ import java.util.List;
 public class TieringTest {
 
     private BioNetDbManager bioNetDbManager;
-    private NetworkDBAdaptor networkDBAdaptor;
-
-    private String database;
 
     @Before
     public void setUp() throws Exception {
@@ -36,7 +31,6 @@ public class TieringTest {
 
             bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
             bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
-            networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, bioNetDBConfiguration, true);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -44,7 +38,7 @@ public class TieringTest {
 
     @After
     public void tearDown() throws Exception {
-        networkDBAdaptor.close();
+        bioNetDbManager.close();
     }
 
     @Test

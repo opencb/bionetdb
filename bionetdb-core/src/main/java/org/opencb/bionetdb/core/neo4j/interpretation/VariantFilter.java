@@ -24,8 +24,9 @@ public class VariantFilter {
         return listOfDiseases;
     }
 
-    public void setListOfDiseases(List<String> listOfDiseases) {
+    public VariantFilter setListOfDiseases(List<String> listOfDiseases) {
         this.listOfDiseases = listOfDiseases;
+        return this;
     }
 
     public List<String> getPopulationFrequencySpecies() {
@@ -36,20 +37,22 @@ public class VariantFilter {
         return populationFrequency;
     }
 
-    public void setPopulationFrequencySpecies(List<String> populationFrequencySpecies, double populationFrequency) {
+    public VariantFilter setPopulationFrequencySpecies(List<String> populationFrequencySpecies, double populationFrequency) {
         if (populationFrequency <= 0 || populationFrequency >= 1) {
             throw new IllegalArgumentException("populationFrequency must be a value between 0 and 1");
         }
         this.populationFrequencySpecies = populationFrequencySpecies;
         this.populationFrequency = populationFrequency;
+        return this;
     }
 
     public List<String> getConsequenceType() {
         return consequenceType;
     }
 
-    public void setConsequenceType(List<String> consequenceType) {
+    public VariantFilter setConsequenceType(List<String> consequenceType) {
         this.consequenceType = consequenceType;
+        return this;
     }
 
     @Override

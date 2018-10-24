@@ -17,16 +17,18 @@ public class OptionsFilter {
         return onlyComplex;
     }
 
-    public void setOnlyComplex(boolean onlyComplex) {
+    public OptionsFilter setOnlyComplex(boolean onlyComplex) {
         this.onlyComplex = onlyComplex;
+        return this;
     }
 
     public boolean isOnlyReaction() {
         return onlyReaction;
     }
 
-    public void setOnlyReaction(boolean onlyReaction) {
+    public OptionsFilter setOnlyReaction(boolean onlyReaction) {
         this.onlyReaction = onlyReaction;
+        return this;
     }
 
     @Override
