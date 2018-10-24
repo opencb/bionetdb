@@ -49,13 +49,16 @@ public class XQueryAnalysis {
      * This method acts as a manager for XQueryCraftsman. It takes the arguments with the OpenCGA standard and converts them in
      * simpler forms that allow XQueryCraftsman to create the XQuery.
      *
+     * IF YOU WANT TO AVOID USING MULTITHREADING JUST TURN "true" THE FIRST "if loop" IN THE "M U L T I T H R E A D E D - X - Q U E R Y"
+     * PART
+     *
      * @param familyFilter  it is an object that gathers the data of the proband and his family
      * @param geneFilter    the list of genes we would like to study
      * @param variantFilter it is an object that gathers some features we could specify in order to reduce the scope of the result
      * @param optionsFilter we could choice to study reactions, proteic complexes or both
      * @return the method returns a list with two posible lists inside: A list of variants obtained from the complex pathway or a list
      * of variants obtained from the complex pathway
-     * @throws ExecutionException when trouble with multithreading
+     * @throws ExecutionException   when trouble with multithreading
      * @throws InterruptedException when trouble with multithreading
      */
     public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
@@ -157,7 +160,7 @@ public class XQueryAnalysis {
         } else if (listOfGenes.size() == 2) {
             ExecutorService executor = Executors.newFixedThreadPool(2);
             for (String gene : listOfGenes) {
-                listOfFutureVariants = executor.submit(new Threadpool(genotypes, gene, listOfDiseases, populationFrequencySpecies,
+                listOfFutureVariants = executor.submit(new Threadpool(this, genotypes, gene, listOfDiseases, populationFrequencySpecies,
                         populationFrequency, consequenceType, optionsFilter));
                 listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
                 listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
@@ -165,7 +168,7 @@ public class XQueryAnalysis {
         } else if (listOfGenes.size() == 3) {
             ExecutorService executor = Executors.newFixedThreadPool(3);
             for (String gene : listOfGenes) {
-                listOfFutureVariants = executor.submit(new Threadpool(genotypes, gene, listOfDiseases, populationFrequencySpecies,
+                listOfFutureVariants = executor.submit(new Threadpool(this, genotypes, gene, listOfDiseases, populationFrequencySpecies,
                         populationFrequency, consequenceType, optionsFilter));
                 listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
                 listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
@@ -173,7 +176,7 @@ public class XQueryAnalysis {
         } else if (listOfGenes.size() > 3) {
             ExecutorService executor = Executors.newFixedThreadPool(4);
             for (String gene : listOfGenes) {
-                listOfFutureVariants = executor.submit(new Threadpool(genotypes, gene, listOfDiseases, populationFrequencySpecies,
+                listOfFutureVariants = executor.submit(new Threadpool(this, genotypes, gene, listOfDiseases, populationFrequencySpecies,
                         populationFrequency, consequenceType, optionsFilter));
                 listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
                 listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
@@ -187,7 +190,7 @@ public class XQueryAnalysis {
     }
 
     /**
-     * This method gathers the processed info by XQuery and calls the Craftsman.
+     * This method gathers the processed info by XQuery and calls the Craftsman. Acts like the intermediary.
      *
      * @param genotypes                  It's a map on which we store the individuals we want to analyze related with their genotypes
      * @param listOfGenes                the list of genes in we would like to look for proteins
@@ -196,7 +199,7 @@ public class XQueryAnalysis {
      * @param populationFrequency        An optional filter aimed to filter by the amount of people who carries a specific mutation in the
      *                                   target protein. Must be used jointly with "populationFrequency"
      * @param consequenceType            An optional filter aimed to filter by consequence type of the target protein
-     * @param optionsFilter we could choice to study reactions, proteic complexes or both
+     * @param optionsFilter              we could choice to study reactions, proteic complexes or both
      * @return the method returns a list with two posible lists inside: A list of variants obtained from the complex pathway or a list
      * of variants obtained from the complex pathway
      */
@@ -449,4 +452,3 @@ public class XQueryAnalysis {
         return substring;
     }
 }
-

@@ -57,7 +57,7 @@ public class BioNetDbManager {
     private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
     private Tiering tiering;
-    public static XQueryAnalysis xQueryAnalysis;
+    private static XQueryAnalysis xQueryAnalysis;
 
     public BioNetDbManager(BioNetDBConfiguration configuration) throws BioNetDBException {
         init(null, configuration);
@@ -200,6 +200,10 @@ public class BioNetDbManager {
 
         session.close();
      */
+
+    public void close() throws Exception {
+        networkDBAdaptor.close();
+    }
 
     //=========================================================================
     // S I M P L E     Q U E R I E S: NODES, PATHS, NETWORK
@@ -401,9 +405,10 @@ public class BioNetDbManager {
         return xQueryAnalysis.xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 
-    public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
-        return null;
-    }
+
+//    public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
+//        return null;
+//    }
 
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S

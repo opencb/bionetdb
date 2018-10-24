@@ -393,7 +393,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
 
 
-
     //------------------------------------------------------------------------------------------------------------------
 
     public StatementResult addNode(Node node, Transaction tx) {

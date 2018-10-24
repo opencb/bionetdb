@@ -11,7 +11,6 @@ import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -36,7 +35,6 @@ public class XQueryTest {
 
             bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
             bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
-            networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, bioNetDBConfiguration, true);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -44,7 +42,7 @@ public class XQueryTest {
 
     @After
     public void tearDown() throws Exception {
-        networkDBAdaptor.close();
+        bioNetDbManager.close();
     }
 
     @Test
@@ -70,8 +68,8 @@ public class XQueryTest {
 
         FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "dominant");
         GeneFilter geneFilter = new GeneFilter();
-        geneFilter.setGenes(Arrays.asList("UQCRB", "CADM1", "ADSL"));
-//        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
+//        geneFilter.setGenes(Arrays.asList("UQCRB", "CADM1", "ADSL"));
+        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
         VariantFilter variantFilter = new VariantFilter((Arrays.asList("Hepatitis", "Anxiety")), Arrays.asList("AFR", "EUROPE"), 0.01,
                 Arrays.asList("variant", "intron_variant"));
         OptionsFilter optionsFilter = new OptionsFilter(false, false);
