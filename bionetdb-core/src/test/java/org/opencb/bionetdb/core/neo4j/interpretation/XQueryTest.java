@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.neo4j.interpretation;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +44,7 @@ public class XQueryTest {
 
     @Test
     public void queryVariant() throws ExecutionException, InterruptedException {
-        List<List<Variant>> listOfVariants;
+        Pair<List<Variant>, List<Variant>> listOfVariants;
 
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
         Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
@@ -64,11 +65,11 @@ public class XQueryTest {
 
         FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "dominant");
         GeneFilter geneFilter = new GeneFilter();
-//        geneFilter.setGenes(Arrays.asList("UQCRB", "CADM1", "ADSL"));
-        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
-        VariantFilter variantFilter = new VariantFilter((Arrays.asList("Hepatitis", "Anxiety")), Arrays.asList("AFR", "EUROPE"), 0.01,
+        geneFilter.setGenes(Collections.singletonList("BRCA1"));
+//        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
+        VariantFilter variantFilter = new VariantFilter(Arrays.asList("Hepatitis", "Anxiety"), Arrays.asList("AFR", "EUROPE"), 0.01,
                 Arrays.asList("variant", "intron_variant"));
-        OptionsFilter optionsFilter = new OptionsFilter(false, false);
+        OptionsFilter optionsFilter = new OptionsFilter(true, false);
 
         listOfVariants = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
         System.out.println(listOfVariants);

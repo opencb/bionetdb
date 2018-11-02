@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
@@ -386,22 +387,23 @@ public class BioNetDbManager {
         }
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException, InterruptedException {
+    public Pair<List<Variant>, List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException,
+            InterruptedException {
         return xQueryAnalysis.xQueryManager(familyFilter, geneFilter);
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter)
+    public Pair<List<Variant>, List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter)
             throws ExecutionException, InterruptedException {
         return xQueryAnalysis.xQueryManager(familyFilter, geneFilter, optionsFilter);
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter)
+    public Pair<List<Variant>, List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter)
             throws ExecutionException, InterruptedException {
         return xQueryAnalysis.xQueryManager(familyFilter, geneFilter, variantFilter);
     }
 
-    public List<List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
-                                      OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
+    public Pair<List<Variant>, List<Variant>> xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
+                                                     OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
         return xQueryAnalysis.xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 

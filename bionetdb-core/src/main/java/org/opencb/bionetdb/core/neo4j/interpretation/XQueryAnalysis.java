@@ -2,6 +2,8 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -13,10 +15,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class XQueryAnalysis {
 
@@ -26,20 +25,20 @@ public class XQueryAnalysis {
         this.driver = driver;
     }
 
-    public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException,
+    public Pair<List<Variant>, List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException,
             InterruptedException {
         VariantFilter variantFilter = new VariantFilter();
         OptionsFilter optionsFilter = new OptionsFilter();
         return xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 
-    public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter)
+    public Pair<List<Variant>, List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter)
             throws ExecutionException, InterruptedException {
         VariantFilter variantFilter = new VariantFilter();
         return xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
 
-    public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter)
+    public Pair<List<Variant>, List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter)
             throws ExecutionException, InterruptedException {
         OptionsFilter optionsFilter = new OptionsFilter();
         return xQueryManager(familyFilter, geneFilter, variantFilter, optionsFilter);
@@ -48,7 +47,7 @@ public class XQueryAnalysis {
     /**
      * This method acts as a manager for XQueryCraftsman. It takes the arguments with the OpenCGA standard and converts them in
      * simpler forms that allow XQueryCraftsman to create the XQuery.
-     *
+     * <p>
      * IF YOU WANT TO AVOID USING MULTITHREADING JUST TURN "true" THE FIRST "if loop" IN THE "M U L T I T H R E A D E D - X - Q U E R Y"
      * PART
      *
@@ -61,8 +60,8 @@ public class XQueryAnalysis {
      * @throws ExecutionException   when trouble with multithreading
      * @throws InterruptedException when trouble with multithreading
      */
-    public List<List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
-                                             OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
+    public Pair<List<Variant>, List<Variant>> xQueryManager(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
+                                                            OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
         // FamilyFilter input
         Pedigree pedigree = familyFilter.getPedigree();
         Phenotype phenotype = familyFilter.getPhenotype();
@@ -150,42 +149,32 @@ public class XQueryAnalysis {
         }
 
         // M U L T I T H R E A D E D - X - Q U E R Y
-        Future<List<List<Variant>>> listOfFutureVariants;
-        List<List<Variant>> listOfVariants = new ArrayList<>();
-        List<Variant> listOfComplexVariants = new ArrayList<>();
-        List<Variant> listOfReactionVariants = new ArrayList<>();
-        if (listOfGenes.size() == 1) {
-            return xQueryCall(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency, consequenceType,
-                    optionsFilter);
-        } else if (listOfGenes.size() == 2) {
-            ExecutorService executor = Executors.newFixedThreadPool(2);
-            for (String gene : listOfGenes) {
-                listOfFutureVariants = executor.submit(new Threadpool(this, genotypes, gene, listOfDiseases, populationFrequencySpecies,
-                        populationFrequency, consequenceType, optionsFilter));
-                listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
-                listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
-            }
-        } else if (listOfGenes.size() == 3) {
-            ExecutorService executor = Executors.newFixedThreadPool(3);
-            for (String gene : listOfGenes) {
-                listOfFutureVariants = executor.submit(new Threadpool(this, genotypes, gene, listOfDiseases, populationFrequencySpecies,
-                        populationFrequency, consequenceType, optionsFilter));
-                listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
-                listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
-            }
-        } else if (listOfGenes.size() > 3) {
-            ExecutorService executor = Executors.newFixedThreadPool(4);
-            for (String gene : listOfGenes) {
-                listOfFutureVariants = executor.submit(new Threadpool(this, genotypes, gene, listOfDiseases, populationFrequencySpecies,
-                        populationFrequency, consequenceType, optionsFilter));
-                listOfComplexVariants.addAll(listOfFutureVariants.get().get(0));
-                listOfReactionVariants.addAll(listOfFutureVariants.get().get(1));
-            }
+        Pair<List<Variant>, List<Variant>> listOfVariants;
+        int numThreads = Math.min(4, listOfGenes.size());
+
+        if (numThreads == 1) {
+            listOfVariants = xQueryCall(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies, populationFrequency,
+                    consequenceType, optionsFilter);
         } else {
-            throw new IllegalArgumentException("There was no genes to analyze");
+            List<Future<Pair<List<Variant>, List<Variant>>>> futures = new ArrayList<>();
+            ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+            for (String gene : listOfGenes) {
+                futures.add(executor.submit(new Threadpool(this, genotypes, gene, listOfDiseases, populationFrequencySpecies,
+                        populationFrequency, consequenceType, optionsFilter)));
+            }
+            executor.shutdown();
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            listOfVariants = new ImmutablePair<>(new ArrayList<>(), new ArrayList<>());
+            for (Future<Pair<List<Variant>, List<Variant>>> future : futures) {
+                Pair<List<Variant>, List<Variant>> pair = future.get();
+                if (CollectionUtils.isNotEmpty(pair.getLeft())) {
+                    listOfVariants.getLeft().addAll(pair.getLeft());
+                }
+                if (CollectionUtils.isNotEmpty(pair.getRight())) {
+                    listOfVariants.getRight().addAll(pair.getRight());
+                }
+            }
         }
-        listOfVariants.add(listOfComplexVariants);
-        listOfVariants.add(listOfReactionVariants);
         return listOfVariants;
     }
 
@@ -200,34 +189,29 @@ public class XQueryAnalysis {
      *                                   target protein. Must be used jointly with "populationFrequency"
      * @param consequenceType            An optional filter aimed to filter by consequence type of the target protein
      * @param optionsFilter              we could choice to study reactions, proteic complexes or both
-     * @return the method returns a list with two posible lists inside: A list of variants obtained from the complex pathway or a list
-     * of variants obtained from the complex pathway
+     * @return a pair of lists corresponding to variants in proteins related to a complex and variants related to a reaction
      */
-    List<List<Variant>> xQueryCall(Map<String, List<String>> genotypes, List<String> listOfGenes, List<String> listOfDiseases,
-                                   List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
-                                   OptionsFilter optionsFilter) {
+    Pair<List<Variant>, List<Variant>> xQueryCall(Map<String, List<String>> genotypes, List<String> listOfGenes,
+                                                  List<String> listOfDiseases, List<String> populationFrequencySpecies,
+                                                  double populationFrequency, List<String> consequenceType,
+                                                  OptionsFilter optionsFilter) {
         if (optionsFilter.isOnlyComplex() && optionsFilter.isOnlyReaction()) {
             throw new IllegalArgumentException("You can't chose both onlyReactions and onlyComplex");
         } else {
-            ArrayList<List<Variant>> listOfVariants = new ArrayList<>(2);
             // Booleans are both "false" by default, which means we will give both COMPLEX como REACTION nexus by def.
             // This changes when the user specifies he wants "onlyComplex" or "onlyReaction"
+            List<Variant> listOfComplexVariants = Collections.emptyList();
             if (!optionsFilter.isOnlyReaction()) {
-                List<Variant> listOfComplexVariant = xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies,
+                listOfComplexVariants = xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies,
                         populationFrequency, consequenceType, true);
-                listOfVariants.add(listOfComplexVariant);
-            } else {
-                listOfVariants.add(Collections.emptyList());
             }
 
+            List<Variant> listOfReactionVariants = Collections.emptyList();
             if (!optionsFilter.isOnlyComplex()) {
-                List<Variant> listOfReactionVariant = xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies,
+                listOfReactionVariants = xQueryCraftsman(genotypes, listOfGenes, listOfDiseases, populationFrequencySpecies,
                         populationFrequency, consequenceType, false);
-                listOfVariants.add(listOfReactionVariant);
-            } else {
-                listOfVariants.add(Collections.emptyList());
             }
-            return listOfVariants;
+            return Pair.of(listOfComplexVariants, listOfReactionVariants);
         }
     }
 
@@ -337,16 +321,18 @@ public class XQueryAnalysis {
             if (CollectionUtils.isNotEmpty(consequenceType)) {
                 queryString += " WITH DISTINCT " + familyIndex + " var, MUT_PROT, NEXUS, PANEL_PROT, GENE\n";
             } else {
-                queryString += " RETURN DISTINCT " + familyIndex + " var.name AS VARIANT, MUT_PROT, NEXUS, PANEL_PROT, GENE";
+                queryString += " RETURN DISTINCT " + familyIndex + " var.attr_chromosome AS CH, var.attr_start AS POS,"
+                        + " var.attr_reference AS REF, var.attr_alternate AS ALT, MUT_PROT, NEXUS, PANEL_PROT, GENE";
             }
         }
         if (CollectionUtils.isNotEmpty(consequenceType)) {
             queryString += " MATCH (var)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__SO]-(so:SO)"
                     + " WHERE " + getGenericSubstring(consequenceType, "so.name", false)
-                    + " RETURN DISTINCT " + familyIndex + " var.name AS VARIANT, so.name AS CT, MUT_PROT, NEXUS, PANEL_PROT, GENE";
+                    + " RETURN DISTINCT " + familyIndex + " var.attr_chromosome AS CH, var.attr_start AS POS, var.attr_reference AS REF,"
+                    + " var.attr_alternate AS ALT, so.name AS CT, MUT_PROT, NEXUS, PANEL_PROT, GENE";
 
         }
-//        System.out.println(queryString);
+        System.out.println(queryString);
         Session session = this.driver.session();
         StatementResult result = session.run(queryString);
         session.close();
@@ -354,7 +340,8 @@ public class XQueryAnalysis {
         List<Variant> variants = new ArrayList<>();
         while (result.hasNext()) {
             Record record = result.next();
-            variants.add(new Variant(record.get("VARIANT").asString()));
+            variants.add(new Variant(record.get("CH").asString(), Integer.parseInt(record.get("POS").asString()),
+                    record.get("REF").asString(), record.get("ALT").asString()));
         }
         return variants;
     }
@@ -403,15 +390,17 @@ public class XQueryAnalysis {
                 }
                 if (listOfDiseasesAbsence && counter == 0) {
                     if (returnTime && counter == numOfInd - 1) {
-                        filter += familyIndex + "var.name AS VARIANT, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT, "
-                                + "ref.id AS GENE \n";
+                        filter += familyIndex + "var.attr_chromosome AS CH, var.attr_start AS POS, var.attr_reference AS REF,"
+                                + " var.attr_alternate AS ALT, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT,"
+                                + " ref.id AS GENE \n";
                     } else {
-                        filter += familyIndex + "var, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT, "
-                                + "ref.id AS GENE \n";
+                        filter += familyIndex + "var, prot1.name AS MUT_PROT, nex.name AS NEXUS, prot2.name AS PANEL_PROT,"
+                                + " ref.id AS GENE \n";
                     }
                 } else {
                     if (returnTime && counter == numOfInd - 1) {
-                        filter += familyIndex + "var.name AS VARIANT, MUT_PROT, NEXUS, PANEL_PROT, GENE \n";
+                        filter += familyIndex + "var.attr_chromosome AS CH, var.attr_start AS POS, var.attr_reference AS REF,"
+                                + " var.attr_alternate AS ALT, MUT_PROT, NEXUS, PANEL_PROT, GENE \n";
                     } else {
                         filter += familyIndex + "var, MUT_PROT, NEXUS, PANEL_PROT, GENE \n";
                     }
