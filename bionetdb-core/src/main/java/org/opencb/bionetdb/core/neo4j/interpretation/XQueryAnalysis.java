@@ -222,14 +222,20 @@ public class XQueryAnalysis {
      * @return list of genes
      */
     private Set<String> panelToList(List<DiseasePanel> panels) {
-        Session session = this.driver.session();
-        StatementResult result = session.run("" + panels + "");
-        session.close();
-
+        List<String> setOfPanels = new ArrayList<>();
         Set<String> setOfGenes = new HashSet<>();
+        for (DiseasePanel panel : panels) {
+            setOfPanels.add(panel.getName());
+        }
+
+        Session session = this.driver.session();
+        StatementResult result = session.run("MATCH (panel:PANEL)-[:PANEL__GENE]-(gene:GENE) "
+                + " WHERE " + getGenericSubstring(setOfPanels, "panel.name", false)
+                + " RETURN DISTINCT gene.name AS gene");
+        session.close();
         while (result.hasNext()) {
             Record record = result.next();
-            setOfGenes.add(record.get("gene.id").asString());
+            setOfGenes.add(record.get("gene").asString());
         }
         return setOfGenes;
     }
