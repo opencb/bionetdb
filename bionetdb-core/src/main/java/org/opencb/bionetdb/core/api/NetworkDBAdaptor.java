@@ -1,5 +1,7 @@
 package org.opencb.bionetdb.core.api;
 
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.bionetdb.core.VariantsPair;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -124,18 +126,27 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
     QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
 
+    //-------------------------------------------------------------------------
+    // A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    List<Variant> getMatchingDominantVariants(String child, String father, String mother, QueryOptions options);
+
+    List<Variant> getMatchingRecessiveVariants(String child, String father, String mother, QueryOptions options);
+
+    List<Variant> getMatchingDeNovoVariants(String child, String father, String mother, QueryOptions options);
+
+    List<Variant> getMatchingXLinkedVariants(String child, String father, String mother, QueryOptions options);
+
+    List<VariantsPair> getMatchingVariantsInSameGen(String child, String father, String mother, int limit);
+
+    List<String> getSpecificBurdenTest(List<String> genes);
 
     //-------------------------------------------------------------------------
     // T E S T S
     //-------------------------------------------------------------------------
 
     void loadTest();
-
-
-
-
-
-
 
 //    QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
 //

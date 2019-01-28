@@ -16,10 +16,7 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
-import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.core.network.NetworkManager;
-import org.opencb.bionetdb.core.network.NetworkPath;
-import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.network.*;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -305,6 +302,30 @@ public class BioNetDbManager {
 
     public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
         return null;
+    }
+
+    public List<Variant> getMatchingDominantVariants(String child, String father, String mother, QueryOptions options) {
+        return networkDBAdaptor.getMatchingDominantVariants(child, father, mother, options);
+    }
+
+    public List<Variant> getMatchingRecessiveVariants(String child, String father, String mother, QueryOptions options) {
+        return networkDBAdaptor.getMatchingRecessiveVariants(child, father, mother, options);
+    }
+
+    public List<Variant> getMatchingDeNovoVariants(String child, String father, String mother, QueryOptions options) {
+        return networkDBAdaptor.getMatchingDeNovoVariants(child, father, mother, options);
+    }
+
+    public List<Variant> getMatchingXLinkedVariants(String child, String father, String mother, QueryOptions options) {
+        return networkDBAdaptor.getMatchingXLinkedVariants(child, father, mother, options);
+    }
+
+    public List<VariantsPair> getMatchingVariantsInSameGen(String child, String father, String mother, int limit) {
+        return networkDBAdaptor.getMatchingVariantsInSameGen(child, father, mother, limit);
+    }
+
+    public List<String> getSpecificBurdenTest(List<String> gene) {
+        return networkDBAdaptor.getSpecificBurdenTest(gene);
     }
 
     //-------------------------------------------------------------------------
