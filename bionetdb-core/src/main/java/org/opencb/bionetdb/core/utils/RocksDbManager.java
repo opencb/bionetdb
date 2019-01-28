@@ -26,7 +26,7 @@ public class RocksDbManager {
         // A static method that loads the RocksDB C++ library.
         RocksDB.loadLibrary();
 
-        // The Options class contains a set of configurable DB options that determines the behavior of a database.
+        // The OptionsFilter class contains a set of configurable DB options that determines the behavior of a database.
         Options options = new Options().setCreateIfMissing(true);
         if (maxOpenFiles > 0) {
             options.setMaxOpenFiles(maxOpenFiles);
