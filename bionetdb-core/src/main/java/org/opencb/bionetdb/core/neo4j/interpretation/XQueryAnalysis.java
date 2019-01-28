@@ -196,7 +196,7 @@ public class XQueryAnalysis {
                                                   double populationFrequency, List<String> consequenceType,
                                                   OptionsFilter optionsFilter) {
         if (optionsFilter.isOnlyComplex() && optionsFilter.isOnlyReaction()) {
-            throw new IllegalArgumentException("You can't chose both onlyReactions and onlyComplex");
+            throw new IllegalArgumentException("You can't choose both onlyReactions and onlyComplex");
         } else {
             // Booleans are both "false" by default, which means we will give both COMPLEX como REACTION nexus by def.
             // This changes when the user specifies he wants "onlyComplex" or "onlyReaction"
@@ -273,12 +273,13 @@ public class XQueryAnalysis {
      * @param complexOrReaction          this boolean specifies if we want to study proteic reactions (false), or proteic complexes (true)
      * @return A list of variants either obtained from the complex pathway or the reaction pathway
      */
-    public List<Variant> xQueryCraftsman(Map<String, List<String>> genotypes, List<String> listOfGenes, List<String> listOfDiseases,
+    private List<Variant> xQueryCraftsman(Map<String, List<String>> genotypes, List<String> listOfGenes, List<String> listOfDiseases,
                                          List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
                                          boolean complexOrReaction) {
         String queryString;
         // H E A D - Implements the part of the query who treats samples and listOfDiseases
         // Filtering by diseases is faster because of the exclusion of genes without disease related
+        // IMPORTANT: the filter order is important, 1) diseases, 2) family, 3) SO/Pop. frequency
         String familyIndex = getFamilySubstrings(genotypes, listOfGenes, false, true).get(1);
 
         if (CollectionUtils.isNotEmpty(listOfDiseases)) {
