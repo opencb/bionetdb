@@ -1,7 +1,5 @@
 package org.opencb.bionetdb.core.api;
 
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.bionetdb.core.VariantsPair;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -130,17 +128,20 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     // A N A L Y S I S
     //-------------------------------------------------------------------------
 
-    List<Variant> getMatchingDominantVariants(String child, String father, String mother, QueryOptions options);
+    // Ya no están en DBAdaptor:
 
-    List<Variant> getMatchingRecessiveVariants(String child, String father, String mother, QueryOptions options);
-
-    List<Variant> getMatchingDeNovoVariants(String child, String father, String mother, QueryOptions options);
-
-    List<Variant> getMatchingXLinkedVariants(String child, String father, String mother, QueryOptions options);
-
-    List<VariantsPair> getMatchingVariantsInSameGen(String child, String father, String mother, int limit);
-
-    List<String> getSpecificBurdenTest(List<String> genes);
+//    QueryResult<Variant> getVariantsFromPedigree(List<String> listOfGenes, List<String> listOfChromosome,
+//                                             Map<String, List<String>> individualsGT);
+//
+//    Neo4JVariantIterator variantsToIterator(List<String> listOfGenes, List<String> listOfChromosome,
+//                                             List<org.opencb.biodata.models.core.pedigree.Individual> listOfIndividuals);
+//
+//    QueryResult<Variant> getVariantsFromList(List<Variant> listOfVariants);
+//
+//
+//    void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
+//                List<String> listOfDiseases, List<String> populationFrequencySpecies, double populationFrequency,
+//                List<String> consequenceType, boolean onlyComplex, boolean onlyReaction);
 
     //-------------------------------------------------------------------------
     // T E S T S

@@ -6,7 +6,6 @@ import org.neo4j.driver.v1.*;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.bionetdb.core.VariantsPair;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.NodeIterator;
@@ -67,7 +66,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         // Add configuration node
         if (!existConfigNode()) {
-        createConfigNode();
+            createConfigNode();
         }
     }
 
@@ -145,7 +144,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Session session = this.driver.session();
 
         // First, insert Neo4J nodes
-        for (Node node: network.getNodes()) {
+        for (Node node : network.getNodes()) {
             session.writeTransaction(tx -> {
                 addNode(node, tx);
                 return 1;
@@ -153,7 +152,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
 
         // Second, insert Neo4J relationships
-        for (Relation relation: network.getRelations()) {
+        for (Relation relation : network.getRelations()) {
             session.writeTransaction(tx -> {
                 addRelation(relation, tx);
                 return 1;
@@ -187,7 +186,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public void annotateVariants(List<String> variantIds, VariationClient variationClient) throws BioNetDBException, IOException {
         Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
         QueryResponse<Variant> entryQueryResponse = variationClient.get(variantIds, QueryOptions.empty());
-        for (QueryResult<Variant> queryResult: entryQueryResponse.getResponse()) {
+        for (QueryResult<Variant> queryResult : entryQueryResponse.getResponse()) {
             if (ListUtils.isNotEmpty(queryResult.getResult())) {
                 variantLoader.loadVariants(queryResult.getResult());
             }
@@ -217,7 +216,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
         QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
         QueryResponse<Gene> entryQueryResponse = geneClient.get(geneIds, options);
-        for (QueryResult<Gene> queryResult: entryQueryResponse.getResponse()) {
+        for (QueryResult<Gene> queryResult : entryQueryResponse.getResponse()) {
             if (ListUtils.isNotEmpty(queryResult.getResult())) {
                 variantLoader.loadGenes(queryResult.getResult());
             }
@@ -247,7 +246,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
         QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
         QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, options);
-        for (QueryResult<Entry> queryResult: entryQueryResponse.getResponse()) {
+        for (QueryResult<Entry> queryResult : entryQueryResponse.getResponse()) {
             if (ListUtils.isNotEmpty(queryResult.getResult())) {
                 variantLoader.loadProteins(queryResult.getResult());
             }
@@ -400,241 +399,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     // A N A L Y S I S     Q U E R I E S
     //-------------------------------------------------------------------------
 
-    /**
-     * This method bases himself in a specific genotype model for a family composed by the parents and a child. The method
-     * returns the variants that match the model (In this case we've chosen a dominant model in which the genotype of the
-     * father and child may be heterozygote "0/1" or homozygote "1/1", while the mother's is "0/0" -- We could change the
-     * patterns as we prefer).
-     * We can also modulate how many variants we need by specifying the limit. If no limit is set, the method will return
-     * every variant that fits in.
-     *
-     * @param child the name/id of the child node
-     * @param father the name/id of the father node
-     * @param mother the name/id of the mother node
-     * @param options We can add a limit of results. 5 as default.
-     * @return a list of variants that match the model
-     */
-    public List<Variant> getMatchingDominantVariants(String child, String father, String mother, QueryOptions options) {
-        int limit = options.getInt(QueryOptions.LIMIT, 5);
-        Session session = this.driver.session();
-        StatementResult result = session.run("MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)"
-                + " -[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE (b.attr_GT='0/1' OR b.attr_GT='1/1') AND a.name='" + child + "'"
-                + " WITH c"
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE (b.attr_GT='0/1' OR b.attr_GT='1/1') AND a.name='" + father + "'"
-                + " WITH c"
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE b.attr_GT='0/0' AND a.name='" + mother + "'"
-                + " RETURN c.name LIMIT " + limit);
-
-        List<Variant> variants = new ArrayList<>();
-        while (result.hasNext()) {
-            Record record = result.next();
-            variants.add(new Variant(record.get("c.name").asString()));
-        }
-        return variants;
-    }
-
-    /**
-     * This method bases himself in a specific genotype model for a family composed by the parents and a child. The method
-     * returns the variants that match the model (In this case we've chosen a recessive model in which the genotype of the
-     * father and child is homozygote"1/1", while the mother's may be "0/0" or "0/1" -- We could change the
-     * patterns as we prefer).
-     * We can also modulate how many variants we need by specifying the limit. If no limit is set, the method will return
-     * every variant that fits in.
-     *
-     * @param child the name/id of the child node
-     * @param father the name/id of the father node
-     * @param mother the name/id of the mother node
-     * @param options We can add a limit of results. 5 as default.
-     * @return a list of variants that match the model
-     */
-    public List<Variant> getMatchingRecessiveVariants(String child, String father, String mother, QueryOptions options) {
-        int limit = options.getInt(QueryOptions.LIMIT, 5);
-        Session session = this.driver.session();
-        StatementResult result = session.run("MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)"
-                + " -[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE (b.attr_GT='1/1') AND a.name='" + child + "'"
-                + " WITH c"
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE (b.attr_GT='1/1') AND a.name='" + father + "'"
-                + " WITH c"
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE (b.attr_GT='0/0' OR b.attr_GT='0/1') AND a.name='" + mother + "'"
-                + " RETURN c.name LIMIT " + limit);
-
-        List<Variant> variants = new ArrayList<>();
-        while (result.hasNext()) {
-            Record record = result.next();
-            variants.add(new Variant(record.get("c.name").asString()));
-        }
-        return variants;
-    }
-
-    /**
-     * This method bases himself in a specific genotype model for a family composed by the parents and a child. The method
-     * returns the variants that match the model (In this case we've chosen a dominant model in which the genotype of the
-     * father and child may be heterozygote "0/1" or homozygote "1/1", while the mother's is "0/0" -- We could change the
-     * patterns as we prefer).
-     * We can also modulate how many variants we need by specifying the limit. If no limit is set, the method will return
-     * every variant that fits in.
-     *
-     * @param child the name/id of the child node
-     * @param father the name/id of the father node
-     * @param mother the name/id of the mother node
-     * @param options We can add a limit of results. 5 as default.
-     * @return a list of variants that match the model
-     */
-    public List<Variant> getMatchingDeNovoVariants(String child, String father, String mother, QueryOptions options) {
-        int limit = options.getInt(QueryOptions.LIMIT, 5);
-        Session session = this.driver.session();
-        StatementResult result = session.run("MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)"
-                + " -[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE (b.attr_GT='0/1' OR b.attr_GT='1/1') AND a.name='" + child + "'"
-                + " WITH c"
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE b.attr_GT='0/0' AND a.name='" + father + "'"
-                + " WITH c"
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE b.attr_GT='0/0' AND a.name='" + mother + "'"
-                + " RETURN c.name LIMIT " + limit);
-
-        List<Variant> variants = new ArrayList<>();
-        while (result.hasNext()) {
-            Record record = result.next();
-            variants.add(new Variant(record.get("c.name").asString()));
-        }
-        return variants;
-    }
-
-    /**
-     * This method bases himself in a specific X linked genotype model for a family composed by the parents and a child. The method
-     * returns the variants that match the model (In this case we've chosen a recessive model in which the genotype of the
-     * father and child is homozygote"1/1", while the mother's may be "0/0" or "0/1" -- We could change the
-     * patterns as we prefer).
-     * We can also modulate how many variants we need by specifying the limit. If no limit is set, the method will return
-     * every variant that fits in.
-     *
-     * @param child the name/id of the child node
-     * @param father the name/id of the father node
-     * @param mother the name/id of the mother node
-     * @param options We can add a limit of results. 5 as default.
-     * @return a list of variants that match the model
-     */
-    public List<Variant> getMatchingXLinkedVariants(String child, String father, String mother, QueryOptions options) {
-        int limit = options.getInt(QueryOptions.LIMIT, 5);
-        Session session = this.driver.session();
-        StatementResult result = session.run("MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)"
-                + " -[r2:VARIANT__VARIANT_CALL]-(c:VARIANT{attr_chromosome:'X'})"
-                + " WHERE (b.attr_GT='1/1') AND a.name='" + child + "'"
-                + " WITH c"
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE (b.attr_GT='1/1') AND a.name='" + father + "'"
-                + " WITH c"
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE (b.attr_GT='0/0' OR b.attr_GT='0/1') AND a.name='" + mother + "'"
-                + " RETURN c.name LIMIT " + limit);
-
-        List<Variant> variants = new ArrayList<>();
-        while (result.hasNext()) {
-            Record record = result.next();
-            variants.add(new Variant(record.get("c.name").asString()));
-        }
-        return variants;
-    }
-
-    /**
-     * This method bases himself in a specific genotype model for a family composed by the parents and a child. The method
-     * returns the variants that match the model and the gen in which they are located (In this case we've chosen an
-     * compound heterozygote model -- We could change the patterns as we prefer).
-     * We can also modulate how many results we need by specifying the limit. If no limit is set, the method will return
-     * every variants and gene that fits in.
-     *
-     * @param child the name/id of the child node
-     * @param father the name/id of the father node
-     * @param mother the name/id of the mother node
-     * @param limit We can add a limit of results. 5 as default.
-     * @return a list of objects that contain the info suggested by the model
-     */
-    public List<VariantsPair> getMatchingVariantsInSameGen(String child, String father, String mother, int limit) {
-//        int limit = options.getInt(QueryOptions.LIMIT, 5);
-        Session session = this.driver.session();
-        StatementResult result = session.run("MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)"
-                + " -[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE b.attr_GT='0/1' AND a.name='" + child + "'"
-                + " WITH c"
-
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " WHERE b.attr_GT='0/1' AND a.name='" + father + "'"
-                + " WITH c"
-
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " -[r3:VARIANT__CONSEQUENCE_TYPE]-(d:CONSEQUENCE_TYPE)-[r4:CONSEQUENCE_TYPE__TRANSCRIPT]-(e:TRANSCRIPT)"
-                + " -[r5:GENE__TRANSCRIPT]-(f:GENE)"
-                + " WHERE b.attr_GT='0/0' AND a.name='" + mother + "'"
-                + " WITH c as v1, d as CT1, e as TR1, f"
-
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " -[r3:VARIANT__CONSEQUENCE_TYPE]-(d:CONSEQUENCE_TYPE)-[r4:CONSEQUENCE_TYPE__TRANSCRIPT]-(e:TRANSCRIPT)"
-                + " -[r5:GENE__TRANSCRIPT]-(f:GENE)"
-                + " WITH v1, CT1, TR1, f"
-
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " -[r3:VARIANT__CONSEQUENCE_TYPE]-(d:CONSEQUENCE_TYPE)-[r4:CONSEQUENCE_TYPE__TRANSCRIPT]-(e:TRANSCRIPT)"
-                + " -[r5:GENE__TRANSCRIPT]-(f:GENE)"
-                + " WHERE b.attr_GT='0/1' AND a.name='" + child + "'"
-                + " WITH v1, CT1, TR1, c, f"
-
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " -[r3:VARIANT__CONSEQUENCE_TYPE]-(d:CONSEQUENCE_TYPE)-[r4:CONSEQUENCE_TYPE__TRANSCRIPT]-(e:TRANSCRIPT)"
-                + " -[r5:GENE__TRANSCRIPT]-(f:GENE)"
-                + " WHERE b.attr_GT='0/0' AND a.name='" + father + "'"
-                + " WITH v1, CT1, TR1, c, f"
-
-                + " MATCH (a:SAMPLE)-[r1:SAMPLE__VARIANT_CALL]-(b:VARIANT_CALL)-[r2:VARIANT__VARIANT_CALL]-(c:VARIANT)"
-                + " -[r3:VARIANT__CONSEQUENCE_TYPE]-(d:CONSEQUENCE_TYPE)-[r4:CONSEQUENCE_TYPE__TRANSCRIPT]-(e:TRANSCRIPT)"
-                + " -[r5:GENE__TRANSCRIPT]-(f:GENE)"
-                + " WHERE b.attr_GT='0/1' AND a.name='" + mother + "'"
-                + " RETURN DISTINCT v1.name AS var1, c.name AS var2, f.name AS gene LIMIT " + limit);
-
-        List<VariantsPair> listVaraintsPair = new ArrayList<>();
-        while (result.hasNext()) {
-            Record record = result.next();
-            VariantsPair variantsPair = new VariantsPair(
-                    new Variant(record.get("var1").asString()),
-                    new Variant(record.get("var2").asString()),
-                    record.get("gene").asString());
-            listVaraintsPair.add(variantsPair);
-        }
-        return listVaraintsPair;
-    }
-
-    /**
-     * This method aplies the burden test to the given transcripts, which consists on calculate the number of mutated alleles compared to
-     * the length of the transcript.
-     *
-     * @param transcripts a list of the transcripts we would like to analyze
-     * @return a list of the values in the same order as transcripts were given
-     */
-    public List<String> getSpecificBurdenTest(List<String> transcripts) {
-        if (transcripts == null || transcripts.size() == 0) {
-            throw new IllegalArgumentException("The input is empty");
-        }
-        int length = transcripts.size();
-        List<String> resultBurdenTest = new ArrayList<>(length);
-        for (String transcript : transcripts) {
-            Session session = this.driver.session();
-            StatementResult result = session.run("MATCH (a:TRANSCRIPT{name:'" + transcript + "'})"
-                    + " -[r1:CONSEQUENCE_TYPE__TRANSCRIPT]-(b:CONSEQUENCE_TYPE)-[r2:VARIANT__CONSEQUENCE_TYPE]-(c:VARIANT)"
-                    + " WITH a.name AS tr_name, toInteger(a.attr_start) AS tr_start, toInteger(a.attr_end) AS tr_end,"
-                    + " count(distinct c) AS numb_of_var"
-                    + " RETURN tr_name, toFloat(numb_of_var)/(tr_end - tr_start) AS burden_test");
-
-            resultBurdenTest.add(transcript + ": " + result.single().get("burden_test").toString());
-        }
-        return resultBurdenTest;
-    }
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -654,7 +418,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (node.getAttributes().containsKey("uidCounter")) {
             props.add("n." + PREFIX_ATTRIBUTES + "uidCounter=" + node.getAttributes().get("uidCounter"));
         }
-        for (String key: node.getAttributes().keySet()) {
+        for (String key : node.getAttributes().keySet()) {
             if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
                 props.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
             } else {
@@ -787,7 +551,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (StringUtils.isNotEmpty(relation.getSource())) {
             props.add("source:\"" + relation.getSource() + "\"");
         }
-        for (String key: relation.getAttributes().keySet()) {
+        for (String key : relation.getAttributes().keySet()) {
             props.add(PREFIX_ATTRIBUTES + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
         }
         String propsJoined = "{" + String.join(",", props) + "}";
@@ -799,7 +563,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 .append("(uid) MERGE (o)-[r:")
                 .append(StringUtils.join(relation.getTags(), ":"));
         if (ListUtils.isNotEmpty(props)) {
-                statementTemplate.append(propsJoined);
+            statementTemplate.append(propsJoined);
         }
         statementTemplate.append("]->(d)");
 
@@ -859,7 +623,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         StringBuilder cypher = new StringBuilder();
         cypher.append("merge (n{uid:0}) set ");
         List<String> sets = new ArrayList<>();
-        for (String key: attrs.keySet()) {
+        for (String key : attrs.keySet()) {
             StringBuilder strSet = new StringBuilder("n.").append(PREFIX_ATTRIBUTES).append(key).append("=");
             if (attrs.get(key) instanceof String) {
                 strSet.append("'").append(attrs.get(key)).append("'");

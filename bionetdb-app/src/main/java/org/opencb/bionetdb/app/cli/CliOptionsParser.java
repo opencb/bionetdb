@@ -287,7 +287,7 @@ public class CliOptionsParser {
             System.err.println("");
             System.err.println("Usage:   bionetdb.sh " + parsedCommand + " [options]");
             System.err.println("");
-            System.err.println("Options:");
+            System.err.println("OptionsFilter:");
             printCommandUsage(jcommander.getCommands().get(parsedCommand));
             System.err.println("");
         }
