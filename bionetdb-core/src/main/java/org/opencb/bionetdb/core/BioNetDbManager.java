@@ -2,7 +2,6 @@ package org.opencb.bionetdb.core;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;

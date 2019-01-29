@@ -7,8 +7,8 @@ import java.util.*;
 
 public class VariantContainer {
 
-    public List<Variant> complexVariantList = new ArrayList<>();
-    public List<Variant> reactionVariantList = new ArrayList<>();
+    private List<Variant> complexVariantList = new ArrayList<>();
+    private List<Variant> reactionVariantList = new ArrayList<>();
 
     public VariantContainer() {
     }

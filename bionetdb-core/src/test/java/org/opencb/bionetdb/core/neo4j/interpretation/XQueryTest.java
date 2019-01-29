@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.core.neo4j.interpretation;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,16 +7,13 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 
 import java.io.IOException;
-import java.sql.SQLOutput;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class XQueryTest {
