@@ -46,7 +46,6 @@ public class XQueryTest {
 
     @Test
     public void queryVariant() throws ExecutionException, InterruptedException {
-        Pair<List<Variant>, List<Variant>> listOfVariants;
 
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
         Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
@@ -78,8 +77,10 @@ public class XQueryTest {
 
         OptionsFilter optionsFilter = new OptionsFilter(true, false);
 
-        listOfVariants = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
-        System.out.println(listOfVariants);
+        VariantContainer listOfVariants = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
+        System.out.println(listOfVariants.getComplexVariantList());
+        System.out.println(listOfVariants.getReactionVariantList());
+
     }
     // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.01"  Arrays.asList("variant", "intron_variant")
 }
