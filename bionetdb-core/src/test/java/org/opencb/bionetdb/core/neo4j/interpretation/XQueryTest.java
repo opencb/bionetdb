@@ -73,10 +73,10 @@ public class XQueryTest {
 
         OptionsFilter optionsFilter = new OptionsFilter(true, false);
 
-        VariantContainer listOfVariants = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
-        System.out.println(listOfVariants.getComplexVariantList());
-        System.out.println(listOfVariants.getReactionVariantList());
-
+        VariantContainer container = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
+        System.out.println(container.getComplexVariantList());
+        System.out.println(container.getReactionVariantList());
+        System.out.println(container.getComplexVariantList().get(0).getStudiesMap());
     }
     // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.01"  Arrays.asList("variant", "intron_variant")
 }

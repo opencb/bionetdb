@@ -25,6 +25,14 @@ public class NodeBuilder {
     public static final String STRAND = "strand";
     public static final String TYPE = "type";
 
+    // This ones are added for XQueryAnalysis
+    public static final String TARGET_PROTEIN = "target_protein";
+    public static final String NEXUS = "nexus";
+    public static final String PANEL_PROTEIN = "panel_protein";
+    public static final String PANEL_GENE = "panel_gene";
+
+
+
 
     public static Node newNode(long uid, Variant variant) {
         Node node = new Node(uid, variant.toString(), variant.getId(), Node.Type.VARIANT);
