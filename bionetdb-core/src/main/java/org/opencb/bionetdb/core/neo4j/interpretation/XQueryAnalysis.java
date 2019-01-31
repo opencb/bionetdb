@@ -6,6 +6,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Phenotype;
@@ -65,7 +66,9 @@ public class XQueryAnalysis {
         // FamilyFilter input
         Pedigree pedigree = familyFilter.getPedigree();
         Phenotype phenotype = familyFilter.getPhenotype();
-        String moi = "";
+        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
+        ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
+        boolean penetranceBoolean = false;
 
         // FamilyFilter output
         Map<String, List<String>> genotypes;
@@ -80,23 +83,30 @@ public class XQueryAnalysis {
         List<String> consequenceType;
 
         // F A M I L Y - F I L T E R
-        if (!familyFilter.getMoi().isEmpty()) {
+        if (!familyFilter.moiExists()) {
             moi = familyFilter.getMoi();
         }
+        if (!familyFilter.penetranceExists()) {
+            penetrance = familyFilter.getPenetrance();
+        }
+        if (penetrance == ClinicalProperty.Penetrance.INCOMPLETE) {
+            penetranceBoolean = true;
+        }
+
         switch (moi) {
-            case "dominant":
-                genotypes = ModeOfInheritance.dominant(pedigree, phenotype, false);
+            case MONOALLELIC:
+                genotypes = ModeOfInheritance.dominant(pedigree, phenotype, penetranceBoolean);
                 break;
-            case "recessive":
-                genotypes = ModeOfInheritance.recessive(pedigree, phenotype, false);
+            case BIALLELIC:
+                genotypes = ModeOfInheritance.recessive(pedigree, phenotype, penetranceBoolean);
                 break;
-            case "xlinkeddominant":
+            case XLINKED_MONOALLELIC:
                 genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
                 break;
-            case "xlinkedrecessive":
+            case XLINKED_BIALLELIC:
                 genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
                 break;
-            case "ylinked":
+            case YLINKED:
                 genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
                 break;
             default:
@@ -149,11 +159,11 @@ public class XQueryAnalysis {
         }
 
         // M U L T I T H R E A D E D - X - Q U E R Y
-        VariantContainer variantList;
+        VariantContainer variantContainer;
         int numThreads = Math.min(4, geneList.size());
 
         if (numThreads == 1) {
-            variantList = xQueryCall(genotypes, geneList, diseaseList, populationFrequencySpecies, populationFrequency,
+            variantContainer = xQueryCall(genotypes, geneList, diseaseList, populationFrequencySpecies, populationFrequency,
                     consequenceType, optionsFilter);
         } else {
             List<Future<VariantContainer>> futures = new ArrayList<>();
@@ -164,18 +174,20 @@ public class XQueryAnalysis {
             }
             executor.shutdown();
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-            variantList = new VariantContainer();
+            variantContainer = new VariantContainer();
             for (Future<VariantContainer> future : futures) {
                 VariantContainer container = future.get();
-                if (CollectionUtils.isNotEmpty(container.getComplexVariantList())) {
-                    variantList.getComplexVariantList().addAll(container.getComplexVariantList());
+                if (CollectionUtils.isNotEmpty(container.getVariantList())) {
+                    variantContainer.getVariantList().addAll(container.getVariantList());
                 }
-                if (CollectionUtils.isNotEmpty(container.getReactionVariantList())) {
-                    variantList.getReactionVariantList().addAll(container.getReactionVariantList());
+                if (CollectionUtils.isNotEmpty(container.getVariantList())) {
+                    variantContainer.getVariantList().addAll(container.getVariantList());
                 }
             }
         }
-        return variantList;
+        variantContainer.setMoi(moi);
+        variantContainer.setPenetrance(penetrance);
+        return variantContainer;
     }
 
     /**
@@ -191,27 +203,24 @@ public class XQueryAnalysis {
      * @param optionsFilter              we could choice to study reactions, proteic complexes or both
      * @return an object containing two lists corresponding to variants in proteins related to a complex and variants related to a reaction
      */
-    VariantContainer xQueryCall(Map<String, List<String>> genotypes, List<String> geneList,
-                                List<String> diseaseList, List<String> populationFrequencySpecies,
-                                double populationFrequency, List<String> consequenceType,
+    VariantContainer xQueryCall(Map<String, List<String>> genotypes, List<String> geneList, List<String> diseaseList,
+                                List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
                                 OptionsFilter optionsFilter) {
         if (optionsFilter.isOnlyComplex() && optionsFilter.isOnlyReaction()) {
             throw new IllegalArgumentException("You can't choose both onlyReactions and onlyComplex");
         } else {
             // Booleans are both "false" by default, which means we will give both COMPLEX and REACTION nexus by default
             // This changes when the user specifies he wants "onlyComplex" or "onlyReaction"
-            List<Variant> complexVariantList = Collections.emptyList();
+            List<Variant> variantList = new ArrayList<>();
             if (!optionsFilter.isOnlyReaction()) {
-                complexVariantList = xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
-                        populationFrequency, consequenceType, true);
+                variantList.addAll(xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
+                        populationFrequency, consequenceType, true));
             }
-
-            List<Variant> reactionVariantList = Collections.emptyList();
             if (!optionsFilter.isOnlyComplex()) {
-                reactionVariantList = xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
-                        populationFrequency, consequenceType, false);
+                variantList.addAll(xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
+                        populationFrequency, consequenceType, false));
             }
-            return new VariantContainer(complexVariantList, reactionVariantList);
+            return new VariantContainer(variantList);
         }
     }
 
@@ -276,11 +285,18 @@ public class XQueryAnalysis {
     private List<Variant> xQueryCraftsman(Map<String, List<String>> genotypes, List<String> geneList, List<String> diseaseList,
                                           List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
                                           boolean complexOrReaction) {
+        String nexus;
+        if (complexOrReaction) {
+            nexus = NodeBuilder.COMPLEX;
+        } else {
+            nexus = NodeBuilder.REACTION;
+        }
+
         String queryString;
         // H E A D - Implements the part of the query who treats samples and diseaseList
-        // Filtering by diseases is faster because of the exclusion of genes without disease related
         // IMPORTANT: the filter order is important, 1) diseases, 2) family, 3) SO/Pop. frequency
-        String familyIndex = getFamilySubstrings(genotypes, geneList, false, true).get(1);
+        // Filtering by diseases is faster because of the exclusion of genes without disease related!!
+        String familyIndex = getFamilySubstrings(genotypes, geneList, false, true, nexus).get(1);
 
         if (CollectionUtils.isNotEmpty(diseaseList)) {
             queryString = "MATCH (dis:DISEASE)-[:GENE__DISEASE]-(gene2:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)-"
@@ -293,15 +309,15 @@ public class XQueryAnalysis {
             queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF)"
                     + " WHERE " + getGenericSubstring(geneList, "ref.id", true)
                     + getGenericSubstring(diseaseList, "dis.name", false)
-                    + " WITH DISTINCT tr1, prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS " + NodeBuilder.NEXUS
+                    + " WITH DISTINCT tr1, prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS " + nexus
                     + ", prot2.name AS " + NodeBuilder.PANEL_PROTEIN + ", ref.id AS " + NodeBuilder.PANEL_GENE + "\n"
                     + " MATCH (tr1:TRANSCRIPT)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-"
                     + "(var:VARIANT)-[:VARIANT__VARIANT_CALL]-(vc:VARIANT_CALL)-[:SAMPLE__VARIANT_CALL]-(sam:SAMPLE) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0)
                     || CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(genotypes, geneList, false, false).get(0);
+                queryString += getFamilySubstrings(genotypes, geneList, false, false, nexus).get(0);
             } else {
-                queryString += getFamilySubstrings(genotypes, geneList, true, false).get(0);
+                queryString += getFamilySubstrings(genotypes, geneList, true, false, nexus).get(0);
             }
         } else {
             queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)-"
@@ -315,9 +331,9 @@ public class XQueryAnalysis {
             queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0)
                     || CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(genotypes, geneList, false, true).get(0);
+                queryString += getFamilySubstrings(genotypes, geneList, false, true, nexus).get(0);
             } else {
-                queryString += getFamilySubstrings(genotypes, geneList, true, true).get(0);
+                queryString += getFamilySubstrings(genotypes, geneList, true, true, nexus).get(0);
             }
         }
 
@@ -327,13 +343,13 @@ public class XQueryAnalysis {
                     + " WHERE " + getGenericSubstring(populationFrequencySpecies, "pf.id", true)
                     + "toFloat(pf.attr_altAlleleFreq)<" + populationFrequency;
             if (CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += " WITH DISTINCT " + familyIndex + " var, " + NodeBuilder.TARGET_PROTEIN + ", " + NodeBuilder.NEXUS + ", "
+                queryString += " WITH DISTINCT " + familyIndex + " var, " + NodeBuilder.TARGET_PROTEIN + ", " + nexus + ", "
                         + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE + "\n";
             } else {
                 queryString += " RETURN DISTINCT " + familyIndex + " var.attr_chromosome AS " + NodeBuilder.CHROMOSOME
                         + ", var.attr_start AS " + NodeBuilder.START + ", var.attr_reference AS " + NodeBuilder.REFERENCE
                         + ", var.attr_alternate AS " + NodeBuilder.ALTERNATE + ", var.attr_type AS " + NodeBuilder.TYPE + ", "
-                        + NodeBuilder.TARGET_PROTEIN + ", " + NodeBuilder.NEXUS + ", " + NodeBuilder.PANEL_PROTEIN + ", "
+                        + NodeBuilder.TARGET_PROTEIN + ", " + nexus + ", " + NodeBuilder.PANEL_PROTEIN + ", "
                         + NodeBuilder.PANEL_GENE;
             }
         }
@@ -343,7 +359,7 @@ public class XQueryAnalysis {
                     + " RETURN DISTINCT " + familyIndex + " var.attr_chromosome AS " + NodeBuilder.CHROMOSOME + ", var.attr_start AS "
                     + NodeBuilder.START + ", var.attr_reference AS " + NodeBuilder.REFERENCE + ", var.attr_alternate AS "
                     + NodeBuilder.ALTERNATE + ", var.attr_type AS " + NodeBuilder.TYPE + ", so.name AS CT, " + NodeBuilder.TARGET_PROTEIN
-                    + ", " + NodeBuilder.NEXUS + ", " + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE;
+                    + ", " + nexus + ", " + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE;
         }
         System.out.println(queryString);
         Session session = this.driver.session();
@@ -352,7 +368,6 @@ public class XQueryAnalysis {
 
         List<Variant> variants = new ArrayList<>();
         while (result.hasNext()) {
-//            Record record = result.next();
             variants.add(new Neo4JVariantIterator(result).next());
         }
         return variants;
@@ -362,7 +377,7 @@ public class XQueryAnalysis {
      * This method builds the body of the sample and genotype filter.
      */
     private static List<String> getFamilySubstrings(Map<String, List<String>> genotype, List<String> geneList, boolean returnTime,
-                                                    boolean absenceOfDiseaseList) {
+                                                    boolean absenceOfDiseaseList, String nexus) {
         String familySubString;
         String familyIndex = "";
         int numberOfIndividuals = genotype.size();
@@ -408,10 +423,10 @@ public class XQueryAnalysis {
                         filter += familyIndex + "var.attr_chromosome AS " + NodeBuilder.CHROMOSOME + ", var.attr_start AS "
                                 + NodeBuilder.START + ", var.attr_reference AS " + NodeBuilder.REFERENCE + ", var.attr_alternate AS "
                                 + NodeBuilder.ALTERNATE + ", prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS "
-                                + NodeBuilder.NEXUS + ", prot2.name AS " + NodeBuilder.PANEL_PROTEIN + "," + " ref.id AS "
+                                + nexus + ", prot2.name AS " + NodeBuilder.PANEL_PROTEIN + "," + " ref.id AS "
                                 + NodeBuilder.PANEL_GENE + "\n";
                     } else {
-                        filter += familyIndex + "var, prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS " + NodeBuilder.NEXUS
+                        filter += familyIndex + "var, prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS " + nexus
                                 + ", prot2.name AS " + NodeBuilder.PANEL_PROTEIN + "," + " ref.id AS " + NodeBuilder.PANEL_GENE + "\n";
                     }
                 } else {
@@ -419,10 +434,10 @@ public class XQueryAnalysis {
                     if (returnTime && counter == numberOfIndividuals - 1) {
                         filter += familyIndex + "var.attr_chromosome AS " + NodeBuilder.CHROMOSOME + ", var.attr_start AS "
                                 + NodeBuilder.START + ", var.attr_reference AS " + NodeBuilder.REFERENCE + ", var.attr_alternate AS "
-                                + NodeBuilder.ALTERNATE + ", " + NodeBuilder.TARGET_PROTEIN + ", " + NodeBuilder.NEXUS + ", "
+                                + NodeBuilder.ALTERNATE + ", " + NodeBuilder.TARGET_PROTEIN + ", " + nexus + ", "
                                 + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE + "\n";
                     } else {
-                        filter += familyIndex + "var, " + NodeBuilder.TARGET_PROTEIN + ", " + NodeBuilder.NEXUS + ", "
+                        filter += familyIndex + "var, " + NodeBuilder.TARGET_PROTEIN + ", " + nexus + ", "
                                 + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE + "\n";
                     }
                 }

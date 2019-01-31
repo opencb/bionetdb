@@ -47,8 +47,11 @@ public class RecordToVariantConverter implements Converter<Record, Variant> {
         if (!record.get(NodeBuilder.TARGET_PROTEIN).isNull()) {
             systemMap.put(NodeBuilder.TARGET_PROTEIN, record.get(NodeBuilder.TARGET_PROTEIN).asString());
         }
-        if (!record.get(NodeBuilder.NEXUS).isNull()) {
-            systemMap.put(NodeBuilder.NEXUS, record.get(NodeBuilder.NEXUS).asString());
+        if (!record.get(NodeBuilder.COMPLEX).isNull()) {
+            systemMap.put(NodeBuilder.COMPLEX, record.get(NodeBuilder.COMPLEX).asString());
+        }
+        if (!record.get(NodeBuilder.REACTION).isNull()) {
+            systemMap.put(NodeBuilder.REACTION, record.get(NodeBuilder.REACTION).asString());
         }
         if (!record.get(NodeBuilder.PANEL_PROTEIN).isNull()) {
             systemMap.put(NodeBuilder.PANEL_PROTEIN, record.get(NodeBuilder.PANEL_PROTEIN).asString());

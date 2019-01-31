@@ -29,6 +29,8 @@ public class NodeBuilder {
     public static final String BIONETDB_PREFIX = "bioNetDB";
     public static final String TARGET_PROTEIN = BIONETDB_PREFIX + "TargetProtein";
     public static final String NEXUS = BIONETDB_PREFIX + "Nexus";
+    public static final String COMPLEX = BIONETDB_PREFIX + "Complex";
+    public static final String REACTION = BIONETDB_PREFIX + "Reaction";
     public static final String PANEL_PROTEIN = BIONETDB_PREFIX + "PanelProtein";
     public static final String PANEL_GENE = BIONETDB_PREFIX + "PanelGene";
 
@@ -64,7 +66,7 @@ public class NodeBuilder {
         Node node = new Node(uid, variantNode.getId() + "_" + variantNode.getSource(), "", Node.Type.VARIANT_FILE_INFO);
         Map<String, String> fileAttrs = studyEntry.getFiles().get(0).getAttributes();
         node.addAttribute("filename", studyEntry.getFiles().get(0).getFileId());
-        for (String key: fileAttrs.keySet()) {
+        for (String key : fileAttrs.keySet()) {
             node.addAttribute(key, fileAttrs.get(key));
         }
         return node;
@@ -267,7 +269,7 @@ public class NodeBuilder {
         }
         if (ListUtils.isNotEmpty(protein.getEvidence())) {
             StringBuilder sb = new StringBuilder();
-            for (EvidenceType evidenceType: protein.getEvidence()) {
+            for (EvidenceType evidenceType : protein.getEvidence()) {
                 sb.append(evidenceType.getKey()).append(";");
             }
             node.addAttribute("evidence", sb.toString());
