@@ -27,6 +27,13 @@ public class NodeBuilder {
     public static final String STRAND = "strand";
     public static final String TYPE = "type";
 
+    // These attributes are added by XQueryAnalysis
+    public static final String BIONETDB_PREFIX = "bioNetDB";
+    public static final String TARGET_PROTEIN = BIONETDB_PREFIX + "TargetProtein";
+    public static final String NEXUS = BIONETDB_PREFIX + "Nexus";
+    public static final String PANEL_PROTEIN = BIONETDB_PREFIX + "PanelProtein";
+    public static final String PANEL_GENE = BIONETDB_PREFIX + "PanelGene";
+
 
     public static Node newNode(long uid, Variant variant) {
         Node node = new Node(uid, variant.toString(), variant.getId(), Node.Type.VARIANT);

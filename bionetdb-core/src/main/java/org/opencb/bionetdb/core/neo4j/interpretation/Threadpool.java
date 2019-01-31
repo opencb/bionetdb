@@ -1,14 +1,11 @@
 package org.opencb.bionetdb.core.neo4j.interpretation;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.biodata.models.variant.Variant;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-public class Threadpool implements Callable<Pair<List<Variant>, List<Variant>>> {
+public class Threadpool implements Callable<VariantContainer> {
 
     private XQueryAnalysis xQueryAnalysis;
 
@@ -33,7 +30,7 @@ public class Threadpool implements Callable<Pair<List<Variant>, List<Variant>>> 
         this.xQueryAnalysis = xQueryAnalysis;
     }
 
-    public Pair<List<Variant>, List<Variant>> call() {
+    public VariantContainer call() {
         return xQueryAnalysis.xQueryCall(genotypes, Collections.singletonList(gene), listOfDiseases, populationFrequencySpecies,
                 populationFrequency, consequenceType, optionsFilter);
     }
