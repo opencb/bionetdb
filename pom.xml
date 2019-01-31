@@ -121,11 +121,13 @@
                 <!--<scope>system</scope>-->
                 <!--<systemPath>${basedir}/bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>-->
             <!--</dependency>-->
+            <!--
             <dependency>
                 <groupId>psidev.psi.mi</groupId>
                 <artifactId>psimitab</artifactId>
                 <version>1.8.5</version>
             </dependency>
+            -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
@@ -297,7 +299,7 @@
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
-
+<!--
     <repositories>
         <repository>
             <id>intact.nexus</id>
@@ -305,5 +307,5 @@
             <url>http://www.ebi.ac.uk/intact/maven/nexus/content/groups/public</url>
         </repository>
     </repositories>
-
+-->
 </project>
