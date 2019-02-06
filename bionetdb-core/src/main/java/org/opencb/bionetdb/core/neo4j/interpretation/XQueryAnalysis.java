@@ -159,14 +159,14 @@ public class XQueryAnalysis {
         }
 
         // M U L T I T H R E A D E D - X - Q U E R Y
-        VariantContainer variantContainer;
+        List<Variant> finalVariantList = new ArrayList<>();
         int numThreads = Math.min(4, geneList.size());
 
         if (numThreads == 1) {
-            variantContainer = xQueryCall(genotypes, geneList, diseaseList, populationFrequencySpecies, populationFrequency,
+            finalVariantList = xQueryCall(genotypes, geneList, diseaseList, populationFrequencySpecies, populationFrequency,
                     consequenceType, optionsFilter);
         } else {
-            List<Future<VariantContainer>> futures = new ArrayList<>();
+            List<Future<List<Variant>>> futures = new ArrayList<>();
             ExecutorService executor = Executors.newFixedThreadPool(numThreads);
             for (String gene : geneList) {
                 futures.add(executor.submit(new Threadpool(this, genotypes, gene, diseaseList, populationFrequencySpecies,
@@ -174,20 +174,14 @@ public class XQueryAnalysis {
             }
             executor.shutdown();
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-            variantContainer = new VariantContainer();
-            for (Future<VariantContainer> future : futures) {
-                VariantContainer container = future.get();
-                if (CollectionUtils.isNotEmpty(container.getVariantList())) {
-                    variantContainer.getVariantList().addAll(container.getVariantList());
-                }
-                if (CollectionUtils.isNotEmpty(container.getVariantList())) {
-                    variantContainer.getVariantList().addAll(container.getVariantList());
+            for (Future<List<Variant>> future : futures) {
+                List<Variant> variantList = future.get();
+                if (CollectionUtils.isNotEmpty(variantList)) {
+                    finalVariantList.addAll(variantList);
                 }
             }
         }
-        variantContainer.setMoi(moi);
-        variantContainer.setPenetrance(penetrance);
-        return variantContainer;
+        return new VariantContainer(finalVariantList, moi, penetrance);
     }
 
     /**
@@ -195,7 +189,7 @@ public class XQueryAnalysis {
      *
      * @param genotypes                  It's a map on which we store the individuals we want to analyze related with their genotypes
      * @param geneList                   the list of genes in we would like to look for proteins
-     * @param diseaseList                An optional list of diseases we would like to focuse on
+     * @param diseaseList                An optional list of diseases we would like to focus on
      * @param populationFrequencySpecies An optional filter aimed to filter by species. Must be used jointly with "populationFrequency"
      * @param populationFrequency        An optional filter aimed to filter by the amount of people who carries a specific mutation in the
      *                                   target protein. Must be used jointly with "populationFrequency"
@@ -203,7 +197,7 @@ public class XQueryAnalysis {
      * @param optionsFilter              we could choice to study reactions, proteic complexes or both
      * @return an object containing two lists corresponding to variants in proteins related to a complex and variants related to a reaction
      */
-    VariantContainer xQueryCall(Map<String, List<String>> genotypes, List<String> geneList, List<String> diseaseList,
+    List<Variant> xQueryCall(Map<String, List<String>> genotypes, List<String> geneList, List<String> diseaseList,
                                 List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
                                 OptionsFilter optionsFilter) {
         if (optionsFilter.isOnlyComplex() && optionsFilter.isOnlyReaction()) {
@@ -220,7 +214,7 @@ public class XQueryAnalysis {
                 variantList.addAll(xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
                         populationFrequency, consequenceType, false));
             }
-            return new VariantContainer(variantList);
+            return variantList;
         }
     }
 

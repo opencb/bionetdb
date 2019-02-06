@@ -4,13 +4,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
-import org.opencb.bionetdb.core.utils.NodeBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -66,9 +66,9 @@ public class XQueryTest {
 
         GeneFilter geneFilter = new GeneFilter();
         geneFilter.setGenes(Collections.singletonList("BRCA1"));
-//        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
-//        DiseasePanel panel = new DiseasePanel().setName("Neurotransmitter disorders");
-//        geneFilter.setPanels(Collections.singletonList(panel));
+        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
+        DiseasePanel panel = new DiseasePanel().setName("Neurotransmitter disorders");
+        geneFilter.setPanels(Collections.singletonList(panel));
 
         VariantFilter variantFilter = new VariantFilter(Arrays.asList("Hepatitis", "Anxiety"), Arrays.asList("AFR", "EUROPE"), 0.01,
                 Arrays.asList("variant", "intron_variant"));
