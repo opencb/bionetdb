@@ -57,7 +57,7 @@ public class BioNetDbManager {
     private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
     private Tiering tiering;
-    private static XQueryAnalysis xQueryAnalysis;
+    private XQueryAnalysis xQueryAnalysis;
 
     public BioNetDbManager(BioNetDBConfiguration configuration) throws BioNetDBException {
         init(null, configuration);

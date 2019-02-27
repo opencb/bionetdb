@@ -28,7 +28,6 @@ public class NodeBuilder {
     // These attributes are added by XQueryAnalysis
     public static final String BIONETDB_PREFIX = "bioNetDB";
     public static final String TARGET_PROTEIN = BIONETDB_PREFIX + "TargetProtein";
-    public static final String NEXUS = BIONETDB_PREFIX + "Nexus";
     public static final String COMPLEX = BIONETDB_PREFIX + "Complex";
     public static final String REACTION = BIONETDB_PREFIX + "Reaction";
     public static final String PANEL_PROTEIN = BIONETDB_PREFIX + "PanelProtein";

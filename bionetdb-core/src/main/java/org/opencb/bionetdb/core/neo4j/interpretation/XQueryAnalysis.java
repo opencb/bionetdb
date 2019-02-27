@@ -55,9 +55,8 @@ public class XQueryAnalysis {
      * @param familyFilter  it is an object that gathers the data of the proband and his family
      * @param geneFilter    the list of genes we would like to study
      * @param variantFilter it is an object that gathers some features we could specify in order to reduce the scope of the result
-     * @param optionsFilter we could choice to study reactions, proteic complexes or both
-     * @return the method returns a list with two posible lists inside: A list of variants obtained from the complex pathway or a list
-     * of variants obtained from the complex pathway
+     * @param optionsFilter we could choose to study reactions, proteic complexes or both
+     * @return an object containing a list of variants, the moi and the penetrance.
      * @throws ExecutionException   when trouble with multithreading
      * @throws InterruptedException when trouble with multithreading
      */
@@ -195,7 +194,7 @@ public class XQueryAnalysis {
      *                                   target protein. Must be used jointly with "populationFrequency"
      * @param consequenceType            An optional filter aimed to filter by consequence type of the target protein
      * @param optionsFilter              we could choice to study reactions, proteic complexes or both
-     * @return an object containing two lists corresponding to variants in proteins related to a complex and variants related to a reaction
+     * @return a list of variants
      */
     List<Variant> xQueryCall(Map<String, List<String>> genotypes, List<String> geneList, List<String> diseaseList,
                                 List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
@@ -222,7 +221,7 @@ public class XQueryAnalysis {
      * This method transforms gene panels into a list of genes.
      *
      * @param panels the list of panels we would like to analyze
-     * @return list of genes
+     * @return a list of genes
      */
     private Set<String> panelToList(List<DiseasePanel> panels) {
         List<String> panelSet = new ArrayList<>();
@@ -247,7 +246,7 @@ public class XQueryAnalysis {
      * This method transforms diseases into a list of genes.
      *
      * @param diseases the list of panels we would like to analyze
-     * @return list of genes
+     * @return a list of genes
      */
     private Set<String> diseaseToList(List<String> diseases) {
         Set<String> geneSet = new HashSet<>();
