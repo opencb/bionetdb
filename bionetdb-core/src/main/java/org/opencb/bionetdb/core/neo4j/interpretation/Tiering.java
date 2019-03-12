@@ -51,7 +51,7 @@ public class Tiering {
             matches.add(queryString);
         }
         queryString = StringUtils.join(matches, " WITH DISTINCT var\n");
-        queryString = queryString + " RETURN DISTINCT var.name LIMIT 10";
+        queryString = queryString + " RETURN DISTINCT var.name";
         System.out.println("queryString = " + queryString + "\n");
 
         return getVariantsFromNeo(queryString);
@@ -115,13 +115,13 @@ public class Tiering {
     public QueryResult<Variant> getVariantsFromList(List<Variant> listOfVariants) {
         String startingString = "MATCH (var:VARIANT) WHERE (var.name='";
         String variantsString = StringUtils.join(listOfVariants, "' OR var.name='") + "')";
-        String endingString = " RETURN var.name LIMIT 10";
+        String endingString = " RETURN var.name";
         String queryString = startingString + variantsString + endingString;
         return getVariantsFromNeo(queryString);
     }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////// THIS METHODS ARE AUXILIAR FOR THE ONES ABOVE ////////////////////////////////////
 
     /**
      * Builds the part of the cypher query aimed to act as a searching filter. We can fiter by the individual samples, their

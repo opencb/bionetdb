@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.sql.SQLOutput;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -323,16 +324,16 @@ public class BioNetDbManager {
         QueryResult<Variant> xLinkedDominantVariantsList = getXLinkedVariants(pedigree, phenotype, true, listOfGenes);
         QueryResult<Variant> xLinkedRecessiveVariantsList = getXLinkedVariants(pedigree, phenotype, false, listOfGenes);
         QueryResult<Variant> yLinkedVariantsList = getYLinkedVariants(pedigree, phenotype, listOfGenes);
-        QueryResult<Variant> deNovoVariantList = getDeNovoVariants(pedigree, listOfGenes, listOfChromosomes);
-        QueryResult<Variant> getCompoundHeterozygoteVariants = getCompoundHeterozygoteVariants(pedigree, listOfGenes, listOfChromosomes);
+//        QueryResult<Variant> deNovoVariantList = getDeNovoVariants(pedigree, listOfGenes, listOfChromosomes);
+//        QueryResult<Variant> getCompoundHeterozygoteVariants = getCompoundHeterozygoteVariants(pedigree, listOfGenes, listOfChromosomes);
 
         tieringList.add(dominantVariantsList);
         tieringList.add(recessiveVariantsList);
         tieringList.add(xLinkedDominantVariantsList);
         tieringList.add(xLinkedRecessiveVariantsList);
         tieringList.add(yLinkedVariantsList);
-        tieringList.add(deNovoVariantList);
-        tieringList.add(getCompoundHeterozygoteVariants);
+//        tieringList.add(deNovoVariantList);
+//        tieringList.add(getCompoundHeterozygoteVariants);
 
         return tieringList;
     }
@@ -363,10 +364,11 @@ public class BioNetDbManager {
                 listOfGenotypes);
     }
 
+    //    NOT WORKING YET
     public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, List<String> listOfGenes, List<String> listOfChromosomes) {
         Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
         try {
-            List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygosity(pedigree, variantIterator);
+            List<Variant> listOfVariants = ModeOfInheritance.deNovoVariants(pedigree.getProband(), variantIterator);
             return tiering.getVariantsFromList(listOfVariants);
         } catch (Exception e) {
             e.printStackTrace();
@@ -374,6 +376,7 @@ public class BioNetDbManager {
         }
     }
 
+    //    NOT WORKING YET
     public QueryResult<Variant> getCompoundHeterozygoteVariants(Pedigree pedigree, List<String> listOfGenes,
                                                                 List<String> listOfChromosomes) {
         Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
@@ -405,7 +408,6 @@ public class BioNetDbManager {
                                                      OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
         return xQueryAnalysis.execute(familyFilter, geneFilter, variantFilter, optionsFilter);
     }
-
 
 //    public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
 //        return null;

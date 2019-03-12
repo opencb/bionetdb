@@ -42,7 +42,7 @@ public class XQueryTest {
     }
 
     @Test
-    public void queryVariant() throws ExecutionException, InterruptedException {
+    public void queryVariantPlatinum() throws ExecutionException, InterruptedException {
 
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
         Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");

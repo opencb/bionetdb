@@ -42,11 +42,11 @@ public class TieringTest {
     }
 
     @Test
-    public void queryVariant() {
+    public void queryVariantPlatinum() {
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
         Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
-        Phenotype phenotype3 = new Phenotype("disease3", "disease2", "");
-        Phenotype phenotype4 = new Phenotype("disease4", "disease2", "");
+        Phenotype phenotype3 = new Phenotype("disease3", "disease3", "");
+        Phenotype phenotype4 = new Phenotype("disease4", "disease4", "");
 
         Member father = new Member().setId("NA12877").setSex(Member.Sex.MALE)
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype3));
@@ -60,42 +60,44 @@ public class TieringTest {
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3, phenotype4));
         family1.setProband(daughter);
 
-        List<QueryResult<Variant>> tieringVariants = bioNetDbManager.tiering(family1, phenotype1,
-                Arrays.asList("CADM1", "FGF13", "CD99L2", "DDX3Y", "CDC27P2"), Collections.emptyList());
-        for (QueryResult<Variant> variants : tieringVariants) {
-            System.out.println("Query result: " + variants.getResult() + "\n\n");
-        }
-    }
-}
+//        T I E R I N G - P I E C E S
+        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(family1, phenotype1, false,
+                Arrays.asList("CADM1", "CTBP2P1", "BRCA1"));
+        System.out.println(dominantVariants.getResult() + "\n\n\n");
 
-// T I E R I N G - P I E C E S
-//
-//        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(family1, phenotype1, false,
-//                Arrays.asList("CADM1", "CTBP2P1", "BRCA1"));
-//        System.out.println(dominantVariants.getResult() + "\n\n\n");
-//
-//        QueryResult<Variant> recessiveVariants = bioNetDbManager.getRecessiveVariants(family1, phenotype1, false,
+        QueryResult<Variant> recessiveVariants = bioNetDbManager.getRecessiveVariants(family1, phenotype1, false,
+                Arrays.asList("CADM1", "CTBP2P1", "BRCA1"));
+        System.out.println(recessiveVariants.getResult() + "\n\n\n");
+
+        QueryResult<Variant> xLinkedVariants = bioNetDbManager.getXLinkedVariants(family1, phenotype1, false,
+                Arrays.asList("FGF13", "CD99L2"));
+        System.out.println(xLinkedVariants.getResult() + "\n\n\n");
+
+        QueryResult<Variant> xLinkedVariants2 = bioNetDbManager.getXLinkedVariants(family1, phenotype1, true,
+                Arrays.asList("FGF13", "CD99L2"));
+        System.out.println(xLinkedVariants2.getResult() + "\n\n\n");
+
+//        NO DEVUELVE NA PQ LOS GENOTYPOS Q SALEN NO SON ADECUADOS
+        QueryResult<Variant> yLinkedVariants = bioNetDbManager.getYLinkedVariants(family1, phenotype1,
+                Arrays.asList("DDX3Y", "CDC27P2"));
+        System.out.println(yLinkedVariants.getResult() + "\n\n\n");
+
+//        THIS TWO NOT WORKING YET. MOI METHODS USE AUXILIAR DEPRECATED METHOD
+//        QueryResult<Variant> deNovoVariants = bioNetDbManager.getDeNovoVariants(family1, Arrays.asList("CADM1", "CTBP2P1", "BRCA1"),
 //                Collections.emptyList());
-//        System.out.println(recessiveVariants.getResult() + "\n\n\n");
-//
-//        QueryResult<Variant> xLinkedVariants = bioNetDbManager.getXLinkedVariants(family1, phenotype1, false,
-//                Arrays.asList("FGF13", "CD99L2"));
-//        System.out.println(xLinkedVariants.getResult() + "\n\n\n");
-//
-//        QueryResult<Variant> xLinkedVariants2 = bioNetDbManager.getXLinkedVariants(family1, phenotype1, true,
-//                Arrays.asList("FGF13", "CD99L2"));
-//        System.out.println(xLinkedVariants2.getResult() + "\n\n\n");
-//
-//        QueryResult<Variant> yLinkedVariants = bioNetDbManager.getYLinkedVariants(family1, phenotype1,
-//                Arrays.asList("DDX3Y", "CDC27P2"));
-//        System.out.println(yLinkedVariants.getResult() + "\n\n\n");
-//
-//         QueryResult<Variant> deNovoVariants = bioNetDbManager.getDeNovoVariants(family1, Collections.emptyList(),
-//              Collections.emptyList());
-//         System.out.println(deNovoVariants.getResult() + "\n\n\n");
+//        System.out.println(deNovoVariants.getResult() + "\n\n\n");
 //
 //        QueryResult<Variant> chVariants = bioNetDbManager.getCompoundHeterozygoteVariants(family1, Collections.singletonList("CADM1"),
 //                Collections.emptyList());
 //        System.out.println(chVariants.getResult() + "\n\n\n");
+
+//        DE NOVO AND COMP-HET NOT WORKING YET
+//        List<QueryResult<Variant>> tieringVariants = bioNetDbManager.tiering(family1, phenotype1,
+//                Arrays.asList("CADM1", "FGF13", "CD99L2", "DDX3Y", "CDC27P2"), Collections.emptyList());
+//        for (QueryResult<Variant> variants : tieringVariants) {
+//            System.out.println("Query result: " + variants.getResult() + "\n\n");
+//        }
+    }
+}
 
 
