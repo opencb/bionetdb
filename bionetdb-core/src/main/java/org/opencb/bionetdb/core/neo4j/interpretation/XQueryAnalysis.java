@@ -9,7 +9,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
@@ -64,7 +64,11 @@ public class XQueryAnalysis {
                                     OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
         // FamilyFilter input
         Pedigree pedigree = familyFilter.getPedigree();
-        Phenotype phenotype = familyFilter.getPhenotype();
+
+
+//        THIS HAS TO BE AMMENDED SINCE THE NEW INPUT REQUIRES DISORDERS, NOT PHENOTYPES
+        Disorder disorder = familyFilter.getDisorder();
+
         ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
         ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
         boolean penetranceBoolean = false;
@@ -94,19 +98,19 @@ public class XQueryAnalysis {
 
         switch (moi) {
             case MONOALLELIC:
-                genotypes = ModeOfInheritance.dominant(pedigree, phenotype, penetranceBoolean);
+                genotypes = ModeOfInheritance.dominant(pedigree, disorder, penetranceBoolean);
                 break;
             case BIALLELIC:
-                genotypes = ModeOfInheritance.recessive(pedigree, phenotype, penetranceBoolean);
+                genotypes = ModeOfInheritance.recessive(pedigree, disorder, penetranceBoolean);
                 break;
             case XLINKED_MONOALLELIC:
-                genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
                 break;
             case XLINKED_BIALLELIC:
-                genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
+                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
                 break;
             case YLINKED:
-                genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
+                genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
                 break;
             default:
                 genotypes = new HashMap<>();

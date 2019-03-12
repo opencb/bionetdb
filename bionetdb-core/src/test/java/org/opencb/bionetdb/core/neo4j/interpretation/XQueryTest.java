@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.bionetdb.core.BioNetDbManager;
@@ -48,6 +49,7 @@ public class XQueryTest {
         Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
         Phenotype phenotype3 = new Phenotype("disease3", "disease2", "");
         Phenotype phenotype4 = new Phenotype("disease4", "disease2", "");
+        Disorder disorder = new Disorder().setEvidences(Collections.singletonList(phenotype1));
 
         Member father = new Member().setId("NA12877").setSex(Member.Sex.MALE)
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype3));
@@ -61,7 +63,7 @@ public class XQueryTest {
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3, phenotype4));
         family1.setProband(daughter);
 
-        FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, ClinicalProperty.ModeOfInheritance.MONOALLELIC,
+        FamilyFilter familyFilter = new FamilyFilter(family1, disorder, ClinicalProperty.ModeOfInheritance.MONOALLELIC,
                 ClinicalProperty.Penetrance.COMPLETE);
 
         GeneFilter geneFilter = new GeneFilter();

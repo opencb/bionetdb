@@ -18,8 +18,6 @@ public class Tiering {
 
     private Driver driver;
 
-//    public static final String PREFIX_ATTRIBUTES = "attr_";
-
     public Tiering(Driver driver) {
         this.driver = driver;
     }
@@ -51,7 +49,15 @@ public class Tiering {
             matches.add(queryString);
         }
         queryString = StringUtils.join(matches, " WITH DISTINCT var\n");
-        queryString = queryString + " RETURN DISTINCT var.name";
+//        queryString = queryString + " RETURN DISTINCT var.name";
+
+
+        queryString = queryString + " RETURN DISTINCT var.attr_chromosome AS " + NodeBuilder.CHROMOSOME
+                + ", var.attr_start AS " + NodeBuilder.START
+                + ", var.attr_end AS " + NodeBuilder.END
+                + ", var.attr_reference AS " + NodeBuilder.REFERENCE
+                + ", var.attr_alternate AS " + NodeBuilder.ALTERNATE
+                + ", var.attr_type AS " + NodeBuilder.TYPE;
         System.out.println("queryString = " + queryString + "\n");
 
         return getVariantsFromNeo(queryString);
@@ -89,7 +95,7 @@ public class Tiering {
                 + " WHERE " + genesSubstring + chromosomeSubstring + individualsSubstring
                 + " WITH var, collect(DISTINCT sam.id) AS sam_collection, collect(vc.attr_GT) AS gt_collection,"
                 + " COUNT (DISTINCT sam.id) AS num_of_sam\n";
-        String returnString = " RETURN var.attr_chromosome AS " + NodeBuilder.CHROMOSOME
+        String returnString = " RETURN DISTINCT var.attr_chromosome AS " + NodeBuilder.CHROMOSOME
                 + ", var.attr_start AS " + NodeBuilder.START
                 + ", var.attr_end AS " + NodeBuilder.END
                 + ", var.attr_reference AS " + NodeBuilder.REFERENCE
@@ -115,7 +121,12 @@ public class Tiering {
     public QueryResult<Variant> getVariantsFromList(List<Variant> listOfVariants) {
         String startingString = "MATCH (var:VARIANT) WHERE (var.name='";
         String variantsString = StringUtils.join(listOfVariants, "' OR var.name='") + "')";
-        String endingString = " RETURN var.name";
+        String endingString = " RETURN DISTINCT var.attr_chromosome AS " + NodeBuilder.CHROMOSOME
+                + ", var.attr_start AS " + NodeBuilder.START
+                + ", var.attr_end AS " + NodeBuilder.END
+                + ", var.attr_reference AS " + NodeBuilder.REFERENCE
+                + ", var.attr_alternate AS " + NodeBuilder.ALTERNATE
+                + ", var.attr_type AS " + NodeBuilder.TYPE;
         String queryString = startingString + variantsString + endingString;
         return getVariantsFromNeo(queryString);
     }
@@ -166,8 +177,7 @@ public class Tiering {
         session.close();
         List<Variant> variants = new ArrayList<>();
         while (result.hasNext()) {
-            Record record = result.next();
-            variants.add(new Variant(record.get("var.name").asString()));
+            variants.add(new Neo4JVariantIterator(result).next());
         }
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
         variantsResult.setResult(variants);

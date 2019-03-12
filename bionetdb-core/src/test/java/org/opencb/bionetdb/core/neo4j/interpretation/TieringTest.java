@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -44,41 +45,39 @@ public class TieringTest {
     @Test
     public void queryVariantPlatinum() {
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
-        Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
-        Phenotype phenotype3 = new Phenotype("disease3", "disease3", "");
-        Phenotype phenotype4 = new Phenotype("disease4", "disease4", "");
+        Disorder disorder = new Disorder().setEvidences(Collections.singletonList(phenotype1));
 
         Member father = new Member().setId("NA12877").setSex(Member.Sex.MALE)
-                .setPhenotypes(Arrays.asList(phenotype1, phenotype3));
+                .setPhenotypes(Collections.emptyList());
         Member mother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE)
-                .setPhenotypes(Collections.singletonList(phenotype2));
+                .setPhenotypes(Collections.singletonList(phenotype1));
         Member daughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
-                .setPhenotypes(Collections.singletonList(phenotype2))
+                .setPhenotypes(Collections.singletonList(phenotype1))
                 .setMother(mother).setFather(father);
         Pedigree family1 = new Pedigree()
                 .setMembers(Arrays.asList(father, mother, daughter))
-                .setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3, phenotype4));
+                .setPhenotypes(Collections.singletonList(phenotype1));
         family1.setProband(daughter);
 
 //        T I E R I N G - P I E C E S
-        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(family1, phenotype1, false,
-                Arrays.asList("CADM1", "CTBP2P1", "BRCA1"));
+        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(family1, disorder, false,
+                Collections.singletonList("CADM1"));
         System.out.println(dominantVariants.getResult() + "\n\n\n");
 
-        QueryResult<Variant> recessiveVariants = bioNetDbManager.getRecessiveVariants(family1, phenotype1, false,
-                Arrays.asList("CADM1", "CTBP2P1", "BRCA1"));
+        QueryResult<Variant> recessiveVariants = bioNetDbManager.getRecessiveVariants(family1, disorder, false,
+                Collections.singletonList("CADM1"));
         System.out.println(recessiveVariants.getResult() + "\n\n\n");
 
-        QueryResult<Variant> xLinkedVariants = bioNetDbManager.getXLinkedVariants(family1, phenotype1, false,
+        QueryResult<Variant> xLinkedVariants = bioNetDbManager.getXLinkedVariants(family1, disorder, false,
                 Arrays.asList("FGF13", "CD99L2"));
         System.out.println(xLinkedVariants.getResult() + "\n\n\n");
 
-        QueryResult<Variant> xLinkedVariants2 = bioNetDbManager.getXLinkedVariants(family1, phenotype1, true,
+        QueryResult<Variant> xLinkedVariants2 = bioNetDbManager.getXLinkedVariants(family1, disorder, true,
                 Arrays.asList("FGF13", "CD99L2"));
         System.out.println(xLinkedVariants2.getResult() + "\n\n\n");
 
 //        NO DEVUELVE NA PQ LOS GENOTYPOS Q SALEN NO SON ADECUADOS
-        QueryResult<Variant> yLinkedVariants = bioNetDbManager.getYLinkedVariants(family1, phenotype1,
+        QueryResult<Variant> yLinkedVariants = bioNetDbManager.getYLinkedVariants(family1, disorder,
                 Arrays.asList("DDX3Y", "CDC27P2"));
         System.out.println(yLinkedVariants.getResult() + "\n\n\n");
 
@@ -92,12 +91,10 @@ public class TieringTest {
 //        System.out.println(chVariants.getResult() + "\n\n\n");
 
 //        DE NOVO AND COMP-HET NOT WORKING YET
-//        List<QueryResult<Variant>> tieringVariants = bioNetDbManager.tiering(family1, phenotype1,
-//                Arrays.asList("CADM1", "FGF13", "CD99L2", "DDX3Y", "CDC27P2"), Collections.emptyList());
-//        for (QueryResult<Variant> variants : tieringVariants) {
-//            System.out.println("Query result: " + variants.getResult() + "\n\n");
-//        }
+        List<QueryResult<Variant>> tieringVariants = bioNetDbManager.tiering(family1, disorder,
+                Arrays.asList("CADM1", "FGF13", "CD99L2", "DDX3Y", "CDC27P2"), Collections.emptyList());
+        for (QueryResult<Variant> variants : tieringVariants) {
+            System.out.println("Query result: " + variants.getResult() + "\n\n");
+        }
     }
 }
-
-

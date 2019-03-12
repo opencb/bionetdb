@@ -2,24 +2,24 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.commons.Disorder;
 
 public class FamilyFilter {
 
     private Pedigree pedigree;
-    private Phenotype phenotype;
+    private Disorder disorder;
     private ClinicalProperty.ModeOfInheritance moi;
     private ClinicalProperty.Penetrance penetrance;
 
-    public FamilyFilter(Pedigree pedigree, Phenotype phenotype) {
+    public FamilyFilter(Pedigree pedigree, Disorder disorder) {
         this.pedigree = pedigree;
-        this.phenotype = phenotype;
+        this.disorder = disorder;
     }
 
-    public FamilyFilter(Pedigree pedigree, Phenotype phenotype, ClinicalProperty.ModeOfInheritance moi,
+    public FamilyFilter(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
                         ClinicalProperty.Penetrance penetrance) {
         this.pedigree = pedigree;
-        this.phenotype = phenotype;
+        this.disorder = disorder;
         this.moi = moi;
         this.penetrance = penetrance;
     }
@@ -33,12 +33,12 @@ public class FamilyFilter {
         return this;
     }
 
-    public Phenotype getPhenotype() {
-        return phenotype;
+    public Disorder getDisorder() {
+        return disorder;
     }
 
-    public FamilyFilter setPhenotype(Phenotype phenotype) {
-        this.phenotype = phenotype;
+    public FamilyFilter setDisorder(Disorder disorder) {
+        this.disorder = disorder;
         return this;
     }
 
@@ -72,7 +72,7 @@ public class FamilyFilter {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyFilter{");
         sb.append("pedigree=").append(pedigree);
-        sb.append(", phenotype=").append(phenotype);
+        sb.append(", disorder=").append(disorder);
         sb.append(", moi='").append(moi).append('\'');
         sb.append('}');
         return sb.toString();
