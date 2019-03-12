@@ -534,7 +534,13 @@ public class CsvInfo {
             targetGene = fields[indexTargetGene];
             evidence = fields[indexEvidence];
             if (StringUtils.isNotEmpty(miRna)) {
-                rocksDbManager.putString(miRna, targetGene + ":" + evidence, miRnaRocksDb);
+                String info = rocksDbManager.getString(miRna, miRnaRocksDb);
+                if (info == null) {
+                    info = targetGene + ":" + evidence;
+                } else {
+                    info = info + "::" + targetGene + ":" + evidence;
+                }
+                rocksDbManager.putString(miRna, info, miRnaRocksDb);
             }
 
             // Next line
@@ -567,7 +573,8 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.FUNCTIONAL_SCORE.toString(), new ArrayList<>(attrs));
 
         // Trait association
-        attrs = Arrays.asList("traitId", "id", "name", "url", "heritableTraits", "source", "alleleOrigin");
+        attrs = Arrays.asList("traitId", "id", "name", "url", "heritableTraits", "source", "alleleOrigin",
+                "clinicalSignificance");
         nodeAttributes.put(Node.Type.TRAIT_ASSOCIATION.toString(), new ArrayList<>(attrs));
 
         // Consequence type
@@ -584,6 +591,11 @@ public class CsvInfo {
         attrs = Arrays.asList("geneId", "id", "name", "biotype", "chromosome", "start", "end", "strand", "description",
                 "source", "status");
         nodeAttributes.put(Node.Type.GENE.toString(), new ArrayList<>(attrs));
+
+        // Panel
+        attrs = Arrays.asList("panelId", "id", "name", "description", "phenotypeNames", "sourceId", "sourceName",
+                "sourceAuthor", "sourceProject", "sourceVersion", "creationDate", "modificationDate");
+        nodeAttributes.put(Node.Type.PANEL.toString(), new ArrayList<>(attrs));
 
         // Drug
         attrs = Arrays.asList("drugId", "id", "name", "source", "type", "studyType");

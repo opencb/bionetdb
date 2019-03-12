@@ -8,6 +8,7 @@ import org.opencb.bionetdb.core.network.Node;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -40,7 +41,10 @@ public interface NetworkDBAdaptor extends AutoCloseable {
         PE_ONTOLOGY ("pe.ontology", TEXT_ARRAY, ""),  // example: "go:001234, go:002345"
         PE_CELLOCATION ("pe.cellularLocation", TEXT_ARRAY, ""), // example: "nucleoplasm,..."
         JUMPS("jumps", INTEGER, ""),
-        SCRIPT ("script",  STRING, "");
+        SCRIPT ("script",  STRING, ""),
+
+        ID("id", TEXT_ARRAY, ""),
+        LABEL("label", TEXT_ARRAY, "");
 
         NetworkQueryParams(String key, Type type, String description) {
             this.key = key;
@@ -88,8 +92,11 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     // N O D E S
     //-------------------------------------------------------------------------
 
-    NodeIterator nodeIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException;
+    NodeIterator nodeIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
     NodeIterator nodeIterator(String cypher) throws BioNetDBException;
+
+    QueryResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
     // T A B L E S
@@ -97,11 +104,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //   - a row is modeled as a list of Object
     //-------------------------------------------------------------------------
 
-    List<Node> nodeQuery(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException;
-
-    List<Node> nodeQuery(String cypher) throws BioNetDBException;
-
-    RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException;
+    RowIterator rowIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
     RowIterator rowIterator(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------

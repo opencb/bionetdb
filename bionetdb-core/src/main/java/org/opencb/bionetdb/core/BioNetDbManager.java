@@ -88,7 +88,7 @@ public class BioNetDbManager {
         }
 
         // We can now create the default NetworkDBAdaptor
-        boolean createIndex = true; //false; // true
+        boolean createIndex = false; // true
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, this.configuration, createIndex);
         tiering = new Tiering(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
         xQueryAnalysis = new XQueryAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());

@@ -1,11 +1,13 @@
 package org.opencb.bionetdb.core.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.FeatureType;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
@@ -21,16 +23,15 @@ import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
 public class Neo4jCsvImporter {
     public static final Object GENE_FILENAME = "genes.json";
     public static final Object GENE_DBNAME = "genes.rocksdb";
+
+    public static final Object PANEL_DIRNAME = "panels";
 
     public static final Object PROTEIN_FILENAME = "proteins.json";
     public static final Object PROTEIN_DBNAME = "proteins.rocksdb";
@@ -675,8 +676,45 @@ public class Neo4jCsvImporter {
         csv.indexingProteins(proteinPath, indexPath);
     }
 
-    public void indexingMiRnas(Path proteinPath, Path indexPath, boolean toImport) throws IOException {
-        csv.indexingMiRnas(proteinPath, indexPath);
+    public void addGenePanels(Path panelPath, Path indexPath) throws IOException {
+        File[] panelFiles = panelPath.toFile().listFiles();
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectReader reader = mapper.reader(DiseasePanel.class);
+
+        // Get CSV file writers
+        PrintWriter pwNode = csv.getCsvWriters().get(Node.Type.PANEL.toString());
+        PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.PANEL__GENE.toString());
+
+        for (File panelFile: panelFiles) {
+            if (panelFile.getName().endsWith("json")) {
+                FileInputStream fis = new FileInputStream(panelFile);
+                byte[] data = new byte[(int) panelFile.length()];
+                fis.read(data);
+                fis.close();
+
+                //String str = new String(data, "UTF-8");
+                DiseasePanel panel = reader.readValue(data);
+
+                // Create node and save CSV file
+                Node node = NodeBuilder.newNode(csv.getAndIncUid(), panel);
+                pwNode.println(csv.nodeLine(node));
+
+                for (DiseasePanel.GenePanel gene: panel.getGenes()) {
+                    if (StringUtils.isNotEmpty(gene.getId())) {
+                        Long geneUid = processGene(gene.getId(), gene.getName());
+                        if (geneUid != null) {
+                            // Add relation to CSV file
+                            pwRel.println(node.getUid() + "," + geneUid);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void indexingMiRnas(Path miRnaPath, Path indexPath, boolean toImport) throws IOException {
+        csv.indexingMiRnas(miRnaPath, indexPath);
 
         if (toImport) {
             // Import miRNAs and genes
@@ -689,7 +727,6 @@ public class Neo4jCsvImporter {
             while (rocksIterator.isValid()) {
                 String miRnaId = new String(rocksIterator.key());
                 String miRnaInfo = new String(rocksIterator.value());
-                String[] fields = miRnaInfo.split(":");
 
                 Long miRnaUid = csv.getLong(miRnaId);
                 if (miRnaUid == null) {
@@ -701,13 +738,18 @@ public class Neo4jCsvImporter {
                     csv.putLong(miRnaId, miRnaUid);
                 }
 
-                // Process target gene
-                Long geneUid = processGene(fields[0], fields[0]);
-                if (geneUid != null) {
-                    if (csv.getLong(miRnaUid + "." + geneUid) == null) {
-                        // Write mirna-target gene relation
-                        pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + fields[1]);
-                        csv.putLong(miRnaUid + "." + geneUid, 1);
+                String[] fields = miRnaInfo.split("::");
+                for (int i = 0; i < fields.length; i++) {
+                    String[] subFields = fields[i].split(":");
+
+                    // Process target gene
+                    Long geneUid = processGene(subFields[0], subFields[0]);
+                    if (geneUid != null) {
+                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
+                            // Write mirna-target gene relation
+                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + subFields[1]);
+                            csv.putLong(miRnaUid + "." + geneUid, 1);
+                        }
                     }
                 }
 

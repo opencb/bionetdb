@@ -57,10 +57,12 @@
             <!--<artifactId>libsbml</artifactId>-->
             <!--<systemPath>${basedir}/../bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>-->
         <!--</dependency>-->
+        <!--
         <dependency>
             <groupId>psidev.psi.mi</groupId>
             <artifactId>psimitab</artifactId>
         </dependency>
+        -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>

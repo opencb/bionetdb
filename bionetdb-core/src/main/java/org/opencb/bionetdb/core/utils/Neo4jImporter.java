@@ -314,13 +314,13 @@ public class Neo4jImporter {
         attrs = Arrays.asList("panelId", "id", "name", "author", "version", "date", "sourceProject", "sourceId", "sourceVersion");
         nodeAttributes.put(Node.Type.PANEL.toString(), new ArrayList<>(attrs));
 
-        // Disease group
-        attrs = Arrays.asList("diseaseGroupId", "id", "name");
-        nodeAttributes.put(Node.Type.DISEASE_GROUP.toString(), new ArrayList<>(attrs));
-
-        // Disease subgroup
-        attrs = Arrays.asList("diseaseSubGroupId", "id", "name");
-        nodeAttributes.put(Node.Type.DISEASE_SUBGROUP.toString(), new ArrayList<>(attrs));
+//        // Disease group
+//        attrs = Arrays.asList("diseaseGroupId", "id", "name");
+//        nodeAttributes.put(Node.Type.DISEASE_GROUP.toString(), new ArrayList<>(attrs));
+//
+//        // Disease subgroup
+//        attrs = Arrays.asList("diseaseSubGroupId", "id", "name");
+//        nodeAttributes.put(Node.Type.DISEASE_SUBGROUP.toString(), new ArrayList<>(attrs));
 
         // Ontology
         attrs = Arrays.asList("ontologyId", "id", "name", "source");
