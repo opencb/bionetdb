@@ -18,6 +18,7 @@ import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
+import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.bionetdb.core.neo4j.interpretation.*;
 import org.opencb.bionetdb.core.network.*;
@@ -373,19 +374,22 @@ public class BioNetDbManager {
 //            return null;
 //        }
 //    }
-//
-//    //    NOT WORKING YET
-//    public QueryResult<Variant> getCompoundHeterozygoteVariants(Pedigree pedigree, List<String> listOfGenes,
-//                                                                List<String> listOfChromosomes) {
-//        Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
+
+    //    NOT WORKING YET
+    public QueryResult<Variant> getCompoundHeterozygoteVariants(Pedigree pedigree, List<String> listOfGenes,
+                                                                List<String> listOfChromosomes) {
+        Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
+        System.out.println("probando");
 //        try {
-//            List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygous(pedigree, variantIterator);
+//            List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygous(variantIterator, pedigree.getProband(),
+//                    pedigree.getProband().getMother(), pedigree.getProband().getMother());
 //            return tiering.getVariantsFromList(listOfVariants);
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //            return null;
 //        }
-//    }
+        return null;
+    }
 
     public VariantContainer xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException,
             InterruptedException {

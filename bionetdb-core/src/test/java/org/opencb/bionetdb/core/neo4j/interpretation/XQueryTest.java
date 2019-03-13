@@ -68,9 +68,9 @@ public class XQueryTest {
 
         GeneFilter geneFilter = new GeneFilter();
         geneFilter.setGenes(Collections.singletonList("BRCA1"));
-        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
-        DiseasePanel panel = new DiseasePanel().setName("Neurotransmitter disorders");
-        geneFilter.setPanels(Collections.singletonList(panel));
+//        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
+//        DiseasePanel panel = new DiseasePanel().setName("Neurotransmitter disorders");
+//        geneFilter.setPanels(Collections.singletonList(panel));
 
         VariantFilter variantFilter = new VariantFilter(Arrays.asList("Hepatitis", "Anxiety"), Arrays.asList("AFR", "EUROPE"), 0.01,
                 Arrays.asList("variant", "intron_variant"));

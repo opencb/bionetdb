@@ -60,7 +60,7 @@ public class Tiering {
                 + ", var.attr_type AS " + NodeBuilder.TYPE;
         System.out.println("queryString = " + queryString + "\n");
 
-        return getVariantsFromNeo(queryString);
+        return executeQuery(queryString);
     }
 
 //  DE AQUÍ PARRIBA SON PA DOMINANT, RECESSIVE Y LINKED ///////////////////////////////////////////////////////
@@ -128,7 +128,7 @@ public class Tiering {
                 + ", var.attr_alternate AS " + NodeBuilder.ALTERNATE
                 + ", var.attr_type AS " + NodeBuilder.TYPE;
         String queryString = startingString + variantsString + endingString;
-        return getVariantsFromNeo(queryString);
+        return executeQuery(queryString);
     }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,7 +171,7 @@ public class Tiering {
      * @param queryString The cypher query we wish to execute in Neo4j database
      * @return QueryOption object containing a List of variants as a result of the query
      */
-    private QueryResult<Variant> getVariantsFromNeo(String queryString) {
+    private QueryResult<Variant> executeQuery(String queryString) {
         Session session = this.driver.session();
         StatementResult result = session.run(queryString);
         session.close();
