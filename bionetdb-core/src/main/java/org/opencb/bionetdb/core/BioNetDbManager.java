@@ -375,11 +375,10 @@ public class BioNetDbManager {
 //        }
 //    }
 
-    //    NOT WORKING YET
-    public QueryResult<Variant> getCompoundHeterozygoteVariants(Pedigree pedigree, List<String> listOfGenes,
-                                                                List<String> listOfChromosomes) {
-        Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
-        System.out.println("probando");
+//    //    NOT WORKING YET
+//    public QueryResult<Variant> getCompoundHeterozygoteVariants(Pedigree pedigree, List<String> listOfGenes,
+//                                                                List<String> listOfChromosomes) {
+//        Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
 //        try {
 //            List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygous(variantIterator, pedigree.getProband(),
 //                    pedigree.getProband().getMother(), pedigree.getProband().getMother());
@@ -387,9 +386,7 @@ public class BioNetDbManager {
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //            return null;
-//        }
-        return null;
-    }
+//    }
 
     public VariantContainer xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException,
             InterruptedException {
