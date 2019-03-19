@@ -3,8 +3,10 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.bionetdb.core.BioNetDbManager;
@@ -41,12 +43,13 @@ public class XQueryTest {
     }
 
     @Test
-    public void queryVariant() throws ExecutionException, InterruptedException {
+    public void queryVariantPlatinum() throws ExecutionException, InterruptedException {
 
         Phenotype phenotype1 = new Phenotype("disease1", "disease1", "");
         Phenotype phenotype2 = new Phenotype("disease2", "disease2", "");
         Phenotype phenotype3 = new Phenotype("disease3", "disease2", "");
         Phenotype phenotype4 = new Phenotype("disease4", "disease2", "");
+        Disorder disorder = new Disorder().setEvidences(Collections.singletonList(phenotype1));
 
         Member father = new Member().setId("NA12877").setSex(Member.Sex.MALE)
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype3));
@@ -60,13 +63,14 @@ public class XQueryTest {
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3, phenotype4));
         family1.setProband(daughter);
 
-        FamilyFilter familyFilter = new FamilyFilter(family1, phenotype1, "dominant");
+        FamilyFilter familyFilter = new FamilyFilter(family1, disorder, ClinicalProperty.ModeOfInheritance.MONOALLELIC,
+                ClinicalProperty.Penetrance.COMPLETE);
 
         GeneFilter geneFilter = new GeneFilter();
         geneFilter.setGenes(Collections.singletonList("BRCA1"));
-        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
-        DiseasePanel panel = new DiseasePanel().setName("Neurotransmitter disorders");
-        geneFilter.setPanels(Collections.singletonList(panel));
+//        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
+//        DiseasePanel panel = new DiseasePanel().setName("Neurotransmitter disorders");
+//        geneFilter.setPanels(Collections.singletonList(panel));
 
         VariantFilter variantFilter = new VariantFilter(Arrays.asList("Hepatitis", "Anxiety"), Arrays.asList("AFR", "EUROPE"), 0.01,
                 Arrays.asList("variant", "intron_variant"));
@@ -74,9 +78,8 @@ public class XQueryTest {
         OptionsFilter optionsFilter = new OptionsFilter(true, false);
 
         VariantContainer container = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
-        System.out.println(container.getComplexVariantList());
-        System.out.println(container.getReactionVariantList());
-        System.out.println(container.getComplexVariantList().get(0).getStudiesMap());
+        System.out.println(container.getVariantList());
+        System.out.println(container.getVariantList().get(0).getStudiesMap().get("S").getAllAttributes());
     }
     // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.01"  Arrays.asList("variant", "intron_variant")
 }

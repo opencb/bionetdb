@@ -6,9 +6,10 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
@@ -54,9 +55,8 @@ public class XQueryAnalysis {
      * @param familyFilter  it is an object that gathers the data of the proband and his family
      * @param geneFilter    the list of genes we would like to study
      * @param variantFilter it is an object that gathers some features we could specify in order to reduce the scope of the result
-     * @param optionsFilter we could choice to study reactions, proteic complexes or both
-     * @return the method returns a list with two posible lists inside: A list of variants obtained from the complex pathway or a list
-     * of variants obtained from the complex pathway
+     * @param optionsFilter we could choose to study reactions, proteic complexes or both
+     * @return an object containing a list of variants, the moi and the penetrance.
      * @throws ExecutionException   when trouble with multithreading
      * @throws InterruptedException when trouble with multithreading
      */
@@ -64,8 +64,14 @@ public class XQueryAnalysis {
                                     OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
         // FamilyFilter input
         Pedigree pedigree = familyFilter.getPedigree();
-        Phenotype phenotype = familyFilter.getPhenotype();
-        String moi = "";
+
+
+//        THIS HAS TO BE AMMENDED SINCE THE NEW INPUT REQUIRES DISORDERS, NOT PHENOTYPES
+        Disorder disorder = familyFilter.getDisorder();
+
+        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
+        ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
+        boolean penetranceBoolean = false;
 
         // FamilyFilter output
         Map<String, List<String>> genotypes;
@@ -80,24 +86,31 @@ public class XQueryAnalysis {
         List<String> consequenceType;
 
         // F A M I L Y - F I L T E R
-        if (!familyFilter.getMoi().isEmpty()) {
+        if (!familyFilter.moiExists()) {
             moi = familyFilter.getMoi();
         }
+        if (!familyFilter.penetranceExists()) {
+            penetrance = familyFilter.getPenetrance();
+        }
+        if (penetrance == ClinicalProperty.Penetrance.INCOMPLETE) {
+            penetranceBoolean = true;
+        }
+
         switch (moi) {
-            case "dominant":
-                genotypes = ModeOfInheritance.dominant(pedigree, phenotype, false);
+            case MONOALLELIC:
+                genotypes = ModeOfInheritance.dominant(pedigree, disorder, penetranceBoolean);
                 break;
-            case "recessive":
-                genotypes = ModeOfInheritance.recessive(pedigree, phenotype, false);
+            case BIALLELIC:
+                genotypes = ModeOfInheritance.recessive(pedigree, disorder, penetranceBoolean);
                 break;
-            case "xlinkeddominant":
-                genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+            case XLINKED_MONOALLELIC:
+                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
                 break;
-            case "xlinkedrecessive":
-                genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
+            case XLINKED_BIALLELIC:
+                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
                 break;
-            case "ylinked":
-                genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
+            case YLINKED:
+                genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
                 break;
             default:
                 genotypes = new HashMap<>();
@@ -149,14 +162,14 @@ public class XQueryAnalysis {
         }
 
         // M U L T I T H R E A D E D - X - Q U E R Y
-        VariantContainer variantList;
+        List<Variant> finalVariantList = new ArrayList<>();
         int numThreads = Math.min(4, geneList.size());
 
         if (numThreads == 1) {
-            variantList = xQueryCall(genotypes, geneList, diseaseList, populationFrequencySpecies, populationFrequency,
+            finalVariantList = xQueryCall(genotypes, geneList, diseaseList, populationFrequencySpecies, populationFrequency,
                     consequenceType, optionsFilter);
         } else {
-            List<Future<VariantContainer>> futures = new ArrayList<>();
+            List<Future<List<Variant>>> futures = new ArrayList<>();
             ExecutorService executor = Executors.newFixedThreadPool(numThreads);
             for (String gene : geneList) {
                 futures.add(executor.submit(new Threadpool(this, genotypes, gene, diseaseList, populationFrequencySpecies,
@@ -164,18 +177,14 @@ public class XQueryAnalysis {
             }
             executor.shutdown();
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-            variantList = new VariantContainer();
-            for (Future<VariantContainer> future : futures) {
-                VariantContainer container = future.get();
-                if (CollectionUtils.isNotEmpty(container.getComplexVariantList())) {
-                    variantList.getComplexVariantList().addAll(container.getComplexVariantList());
-                }
-                if (CollectionUtils.isNotEmpty(container.getReactionVariantList())) {
-                    variantList.getReactionVariantList().addAll(container.getReactionVariantList());
+            for (Future<List<Variant>> future : futures) {
+                List<Variant> variantList = future.get();
+                if (CollectionUtils.isNotEmpty(variantList)) {
+                    finalVariantList.addAll(variantList);
                 }
             }
         }
-        return variantList;
+        return new VariantContainer(finalVariantList, moi, penetrance);
     }
 
     /**
@@ -183,35 +192,32 @@ public class XQueryAnalysis {
      *
      * @param genotypes                  It's a map on which we store the individuals we want to analyze related with their genotypes
      * @param geneList                   the list of genes in we would like to look for proteins
-     * @param diseaseList                An optional list of diseases we would like to focuse on
+     * @param diseaseList                An optional list of diseases we would like to focus on
      * @param populationFrequencySpecies An optional filter aimed to filter by species. Must be used jointly with "populationFrequency"
      * @param populationFrequency        An optional filter aimed to filter by the amount of people who carries a specific mutation in the
      *                                   target protein. Must be used jointly with "populationFrequency"
      * @param consequenceType            An optional filter aimed to filter by consequence type of the target protein
      * @param optionsFilter              we could choice to study reactions, proteic complexes or both
-     * @return an object containing two lists corresponding to variants in proteins related to a complex and variants related to a reaction
+     * @return a list of variants
      */
-    VariantContainer xQueryCall(Map<String, List<String>> genotypes, List<String> geneList,
-                                List<String> diseaseList, List<String> populationFrequencySpecies,
-                                double populationFrequency, List<String> consequenceType,
+    List<Variant> xQueryCall(Map<String, List<String>> genotypes, List<String> geneList, List<String> diseaseList,
+                                List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
                                 OptionsFilter optionsFilter) {
         if (optionsFilter.isOnlyComplex() && optionsFilter.isOnlyReaction()) {
             throw new IllegalArgumentException("You can't choose both onlyReactions and onlyComplex");
         } else {
             // Booleans are both "false" by default, which means we will give both COMPLEX and REACTION nexus by default
             // This changes when the user specifies he wants "onlyComplex" or "onlyReaction"
-            List<Variant> complexVariantList = Collections.emptyList();
+            List<Variant> variantList = new ArrayList<>();
             if (!optionsFilter.isOnlyReaction()) {
-                complexVariantList = xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
-                        populationFrequency, consequenceType, true);
+                variantList.addAll(xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
+                        populationFrequency, consequenceType, true));
             }
-
-            List<Variant> reactionVariantList = Collections.emptyList();
             if (!optionsFilter.isOnlyComplex()) {
-                reactionVariantList = xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
-                        populationFrequency, consequenceType, false);
+                variantList.addAll(xQueryCraftsman(genotypes, geneList, diseaseList, populationFrequencySpecies,
+                        populationFrequency, consequenceType, false));
             }
-            return new VariantContainer(complexVariantList, reactionVariantList);
+            return variantList;
         }
     }
 
@@ -219,7 +225,7 @@ public class XQueryAnalysis {
      * This method transforms gene panels into a list of genes.
      *
      * @param panels the list of panels we would like to analyze
-     * @return list of genes
+     * @return a list of genes
      */
     private Set<String> panelToList(List<DiseasePanel> panels) {
         List<String> panelSet = new ArrayList<>();
@@ -244,7 +250,7 @@ public class XQueryAnalysis {
      * This method transforms diseases into a list of genes.
      *
      * @param diseases the list of panels we would like to analyze
-     * @return list of genes
+     * @return a list of genes
      */
     private Set<String> diseaseToList(List<String> diseases) {
         Set<String> geneSet = new HashSet<>();
@@ -276,11 +282,18 @@ public class XQueryAnalysis {
     private List<Variant> xQueryCraftsman(Map<String, List<String>> genotypes, List<String> geneList, List<String> diseaseList,
                                           List<String> populationFrequencySpecies, double populationFrequency, List<String> consequenceType,
                                           boolean complexOrReaction) {
+        String nexus;
+        if (complexOrReaction) {
+            nexus = NodeBuilder.COMPLEX;
+        } else {
+            nexus = NodeBuilder.REACTION;
+        }
+
         String queryString;
         // H E A D - Implements the part of the query who treats samples and diseaseList
-        // Filtering by diseases is faster because of the exclusion of genes without disease related
         // IMPORTANT: the filter order is important, 1) diseases, 2) family, 3) SO/Pop. frequency
-        String familyIndex = getFamilySubstrings(genotypes, geneList, false, true).get(1);
+        // Filtering by diseases is faster because of the exclusion of genes without disease related!!
+        String familyIndex = getFamilySubstrings(genotypes, geneList, false, true, nexus).get(1);
 
         if (CollectionUtils.isNotEmpty(diseaseList)) {
             queryString = "MATCH (dis:DISEASE)-[:GENE__DISEASE]-(gene2:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)-"
@@ -293,15 +306,15 @@ public class XQueryAnalysis {
             queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF)"
                     + " WHERE " + getGenericSubstring(geneList, "ref.id", true)
                     + getGenericSubstring(diseaseList, "dis.name", false)
-                    + " WITH DISTINCT tr1, prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS " + NodeBuilder.NEXUS
+                    + " WITH DISTINCT tr1, prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS " + nexus
                     + ", prot2.name AS " + NodeBuilder.PANEL_PROTEIN + ", ref.id AS " + NodeBuilder.PANEL_GENE + "\n"
                     + " MATCH (tr1:TRANSCRIPT)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-"
                     + "(var:VARIANT)-[:VARIANT__VARIANT_CALL]-(vc:VARIANT_CALL)-[:SAMPLE__VARIANT_CALL]-(sam:SAMPLE) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0)
                     || CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(genotypes, geneList, false, false).get(0);
+                queryString += getFamilySubstrings(genotypes, geneList, false, false, nexus).get(0);
             } else {
-                queryString += getFamilySubstrings(genotypes, geneList, true, false).get(0);
+                queryString += getFamilySubstrings(genotypes, geneList, true, false, nexus).get(0);
             }
         } else {
             queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)-"
@@ -315,9 +328,9 @@ public class XQueryAnalysis {
             queryString += "(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF) ";
             if ((CollectionUtils.isNotEmpty(populationFrequencySpecies) && populationFrequency > 0)
                     || CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += getFamilySubstrings(genotypes, geneList, false, true).get(0);
+                queryString += getFamilySubstrings(genotypes, geneList, false, true, nexus).get(0);
             } else {
-                queryString += getFamilySubstrings(genotypes, geneList, true, true).get(0);
+                queryString += getFamilySubstrings(genotypes, geneList, true, true, nexus).get(0);
             }
         }
 
@@ -327,13 +340,13 @@ public class XQueryAnalysis {
                     + " WHERE " + getGenericSubstring(populationFrequencySpecies, "pf.id", true)
                     + "toFloat(pf.attr_altAlleleFreq)<" + populationFrequency;
             if (CollectionUtils.isNotEmpty(consequenceType)) {
-                queryString += " WITH DISTINCT " + familyIndex + " var, " + NodeBuilder.TARGET_PROTEIN + ", " + NodeBuilder.NEXUS + ", "
+                queryString += " WITH DISTINCT " + familyIndex + " var, " + NodeBuilder.TARGET_PROTEIN + ", " + nexus + ", "
                         + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE + "\n";
             } else {
                 queryString += " RETURN DISTINCT " + familyIndex + " var.attr_chromosome AS " + NodeBuilder.CHROMOSOME
                         + ", var.attr_start AS " + NodeBuilder.START + ", var.attr_reference AS " + NodeBuilder.REFERENCE
                         + ", var.attr_alternate AS " + NodeBuilder.ALTERNATE + ", var.attr_type AS " + NodeBuilder.TYPE + ", "
-                        + NodeBuilder.TARGET_PROTEIN + ", " + NodeBuilder.NEXUS + ", " + NodeBuilder.PANEL_PROTEIN + ", "
+                        + NodeBuilder.TARGET_PROTEIN + ", " + nexus + ", " + NodeBuilder.PANEL_PROTEIN + ", "
                         + NodeBuilder.PANEL_GENE;
             }
         }
@@ -343,7 +356,7 @@ public class XQueryAnalysis {
                     + " RETURN DISTINCT " + familyIndex + " var.attr_chromosome AS " + NodeBuilder.CHROMOSOME + ", var.attr_start AS "
                     + NodeBuilder.START + ", var.attr_reference AS " + NodeBuilder.REFERENCE + ", var.attr_alternate AS "
                     + NodeBuilder.ALTERNATE + ", var.attr_type AS " + NodeBuilder.TYPE + ", so.name AS CT, " + NodeBuilder.TARGET_PROTEIN
-                    + ", " + NodeBuilder.NEXUS + ", " + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE;
+                    + ", " + nexus + ", " + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE;
         }
         System.out.println(queryString);
         Session session = this.driver.session();
@@ -352,7 +365,6 @@ public class XQueryAnalysis {
 
         List<Variant> variants = new ArrayList<>();
         while (result.hasNext()) {
-//            Record record = result.next();
             variants.add(new Neo4JVariantIterator(result).next());
         }
         return variants;
@@ -362,7 +374,7 @@ public class XQueryAnalysis {
      * This method builds the body of the sample and genotype filter.
      */
     private static List<String> getFamilySubstrings(Map<String, List<String>> genotype, List<String> geneList, boolean returnTime,
-                                                    boolean absenceOfDiseaseList) {
+                                                    boolean absenceOfDiseaseList, String nexus) {
         String familySubString;
         String familyIndex = "";
         int numberOfIndividuals = genotype.size();
@@ -408,10 +420,10 @@ public class XQueryAnalysis {
                         filter += familyIndex + "var.attr_chromosome AS " + NodeBuilder.CHROMOSOME + ", var.attr_start AS "
                                 + NodeBuilder.START + ", var.attr_reference AS " + NodeBuilder.REFERENCE + ", var.attr_alternate AS "
                                 + NodeBuilder.ALTERNATE + ", prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS "
-                                + NodeBuilder.NEXUS + ", prot2.name AS " + NodeBuilder.PANEL_PROTEIN + "," + " ref.id AS "
+                                + nexus + ", prot2.name AS " + NodeBuilder.PANEL_PROTEIN + "," + " ref.id AS "
                                 + NodeBuilder.PANEL_GENE + "\n";
                     } else {
-                        filter += familyIndex + "var, prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS " + NodeBuilder.NEXUS
+                        filter += familyIndex + "var, prot1.name AS " + NodeBuilder.TARGET_PROTEIN + ", nex.name AS " + nexus
                                 + ", prot2.name AS " + NodeBuilder.PANEL_PROTEIN + "," + " ref.id AS " + NodeBuilder.PANEL_GENE + "\n";
                     }
                 } else {
@@ -419,10 +431,10 @@ public class XQueryAnalysis {
                     if (returnTime && counter == numberOfIndividuals - 1) {
                         filter += familyIndex + "var.attr_chromosome AS " + NodeBuilder.CHROMOSOME + ", var.attr_start AS "
                                 + NodeBuilder.START + ", var.attr_reference AS " + NodeBuilder.REFERENCE + ", var.attr_alternate AS "
-                                + NodeBuilder.ALTERNATE + ", " + NodeBuilder.TARGET_PROTEIN + ", " + NodeBuilder.NEXUS + ", "
+                                + NodeBuilder.ALTERNATE + ", " + NodeBuilder.TARGET_PROTEIN + ", " + nexus + ", "
                                 + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE + "\n";
                     } else {
-                        filter += familyIndex + "var, " + NodeBuilder.TARGET_PROTEIN + ", " + NodeBuilder.NEXUS + ", "
+                        filter += familyIndex + "var, " + NodeBuilder.TARGET_PROTEIN + ", " + nexus + ", "
                                 + NodeBuilder.PANEL_PROTEIN + ", " + NodeBuilder.PANEL_GENE + "\n";
                     }
                 }
