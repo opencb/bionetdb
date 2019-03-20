@@ -147,7 +147,7 @@ public class Neo4JQueryParser {
 
         // Only process the non pseudo-attributes
         List<String> filters = new ArrayList<>();
-        for (String key: query.keySet()) {
+        for (String key : query.keySet()) {
             if (skip.contains(key)) {
                 continue;
             }
@@ -344,12 +344,8 @@ public class Neo4JQueryParser {
         return cypherQuery.toString();
     }
 
-    public static String parseVariantQuery(Query query, QueryOptions options) {
-        return parseVariantQuery(query, options, false);
-    }
-
-    public static String parseVariantQuery(Query query, QueryOptions options, boolean asRow) {
-        List<String> matches= new LinkedList<>();
+    public static String parseVariantQuery(Query query, QueryOptions options)  {
+        List<String> matches = new LinkedList<>();
         List<String> wheres = new LinkedList<>();
 
         String match, where;
@@ -427,18 +423,12 @@ public class Neo4JQueryParser {
             if (i < matches.size() - 1) {
                 sb.append(" WITH DISTINCT v ");
             } else {
-                if (asRow) {
-                    sb.append(" RETURN DISTINCT v.id, v.name, v.attr_chromosome, v.attr_start, v.attr_end, "
-                            + "v.attr_reference, v.attr_alternate, v.attr_type");
-                } else {
-                    sb.append(" RETURN DISTINCT v");
-                }
-            }
+                sb.append(" RETURN DISTINCT v");
         }
-
-
-        return sb.toString();
     }
+        System.out.println(sb);
+        return sb.toString();
+}
 
     /**
      * Builds the part of the cypher query aimed to act as a searching filter. We can fiter by the individual samples, their

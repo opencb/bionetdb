@@ -4,6 +4,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
@@ -63,14 +64,14 @@ public class XQueryTest {
                 .setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3, phenotype4));
         family1.setProband(daughter);
 
-        FamilyFilter familyFilter = new FamilyFilter(family1, disorder, ClinicalProperty.ModeOfInheritance.MONOALLELIC,
+        FamilyFilter familyFilter = new FamilyFilter(family1, disorder, ClinicalProperty.ModeOfInheritance.BIALLELIC,
                 ClinicalProperty.Penetrance.COMPLETE);
 
         GeneFilter geneFilter = new GeneFilter();
         geneFilter.setGenes(Collections.singletonList("BRCA1"));
-//        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
-//        DiseasePanel panel = new DiseasePanel().setName("Neurotransmitter disorders");
-//        geneFilter.setPanels(Collections.singletonList(panel));
+        geneFilter.setDiseases(Collections.singletonList("Anxiety"));
+        DiseasePanel panel = new DiseasePanel().setName("Neurotransmitter disorders");
+        geneFilter.setPanels(Collections.singletonList(panel));
 
         VariantFilter variantFilter = new VariantFilter(Arrays.asList("Hepatitis", "Anxiety"), Arrays.asList("AFR", "EUROPE"), 0.01,
                 Arrays.asList("variant", "intron_variant"));
