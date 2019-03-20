@@ -75,23 +75,23 @@ public class PabloTieringTest {
         family3.setProband(illDaughter);
 
 //        T I E R I N G - P I E C E S
-        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(family1, disorder, false,
-                Collections.singletonList("CADM1"));
-        System.out.println(dominantVariants.getResult() + "\n\n\n");
-
-        QueryResult<Variant> recessiveVariants = bioNetDbManager.getRecessiveVariants(family1, disorder, false,
-                Collections.singletonList("CADM1"));
-        System.out.println(recessiveVariants.getResult() + "\n\n\n");
-
-        QueryResult<Variant> xLinkedVariants = bioNetDbManager.getXLinkedVariants(family2, disorder, false,
-                Collections.singletonList("FGF13"));
-        System.out.println(xLinkedVariants.getResult() + "\n\n\n");
-
-        QueryResult<Variant> xLinkedVariants2 = bioNetDbManager.getXLinkedVariants(family1, disorder, true,
-                Collections.singletonList("CD99L2"));
-        System.out.println(xLinkedVariants2.getResult() + "\n\n\n");
-
-        QueryResult<Variant> yLinkedVariants = bioNetDbManager.getYLinkedVariants(family3, disorder, Collections.singletonList("DDX3Y"));
-        System.out.println(yLinkedVariants.getResult() + "\n\n\n");
+//        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(family1, disorder, false,
+//                Collections.singletonList("CADM1"));
+//        System.out.println(dominantVariants.getResult() + "\n\n\n");
+//
+//        QueryResult<Variant> recessiveVariants = bioNetDbManager.getRecessiveVariants(family1, disorder, false,
+//                Collections.singletonList("CADM1"));
+//        System.out.println(recessiveVariants.getResult() + "\n\n\n");
+//
+//        QueryResult<Variant> xLinkedVariants = bioNetDbManager.getXLinkedVariants(family2, disorder, false,
+//                Collections.singletonList("FGF13"));
+//        System.out.println(xLinkedVariants.getResult() + "\n\n\n");
+//
+//        QueryResult<Variant> xLinkedVariants2 = bioNetDbManager.getXLinkedVariants(family1, disorder, true,
+//                Collections.singletonList("CD99L2"));
+//        System.out.println(xLinkedVariants2.getResult() + "\n\n\n");
+//
+//        QueryResult<Variant> yLinkedVariants = bioNetDbManager.getYLinkedVariants(family3, disorder, Collections.singletonList("DDX3Y"));
+//        System.out.println(yLinkedVariants.getResult() + "\n\n\n");
     }
 }

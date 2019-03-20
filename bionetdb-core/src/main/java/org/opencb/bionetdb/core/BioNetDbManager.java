@@ -20,6 +20,7 @@ import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.bionetdb.core.neo4j.interpretation.*;
+import org.opencb.bionetdb.core.neo4j.interpretation.XQuery.*;
 import org.opencb.bionetdb.core.network.*;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
@@ -315,7 +316,7 @@ public class BioNetDbManager {
 
     public List<QueryResult<Variant>> tiering(Pedigree pedigree, Disorder disorder, List<String> listOfGenes,
                                               List<String> listOfChromosomes) {
-
+/*
         List<QueryResult<Variant>> tieringList = new ArrayList<>();
         QueryResult<Variant> dominantVariantsList = getDominantVariants(pedigree, disorder, false, listOfGenes);
         QueryResult<Variant> recessiveVariantsList = getRecessiveVariants(pedigree, disorder, false, listOfGenes);
@@ -334,12 +335,17 @@ public class BioNetDbManager {
 //        tieringList.add(getCompoundHeterozygoteVariants);
 
         return tieringList;
+        */
+        return null;
     }
 
-    public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, boolean incompletePenetrance,
-                                                    List<String> listOfGenes) {
-        Map<String, List<String>> listOfGenotypes = ModeOfInheritance.dominant(pedigree, disorder, incompletePenetrance);
-        return tiering.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
+    public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+        MoIManager moIManager = new MoIManager(networkDBAdaptor);
+        List<Variant> dominantVariants = moIManager.getDominantVariants(pedigree, disorder, query);
+
+        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
+        variantsResult.setResult(dominantVariants);
+        return variantsResult;
     }
 
     public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, boolean incompletePenetrance,

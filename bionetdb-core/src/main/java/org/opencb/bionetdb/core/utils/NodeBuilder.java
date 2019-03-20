@@ -10,8 +10,10 @@ import org.opencb.biodata.models.core.TranscriptTfbs;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.network.Node;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.ListUtils;
 
 import java.util.List;
@@ -61,6 +63,37 @@ public class NodeBuilder {
             }
         }
         return node;
+    }
+
+    public static Variant newVariant(Node node) {
+        VariantBuilder variantBuilder = Variant.newBuilder();
+
+        ObjectMap attrs = node.getAttributes();
+        if (attrs.containsKey(NodeBuilder.CHROMOSOME)) {
+            variantBuilder.setChromosome(attrs.getString(NodeBuilder.CHROMOSOME));
+        }
+
+        if (attrs.containsKey(NodeBuilder.START)) {
+            variantBuilder.setStart(attrs.getInt(NodeBuilder.START));
+        }
+
+        if (attrs.containsKey(NodeBuilder.END)) {
+            variantBuilder.setEnd(attrs.getInt(NodeBuilder.END));
+        }
+
+        if (attrs.containsKey(NodeBuilder.REFERENCE)) {
+            variantBuilder.setReference(attrs.getString(NodeBuilder.REFERENCE));
+        }
+
+        if (attrs.containsKey(NodeBuilder.ALTERNATE)) {
+            variantBuilder.setAlternate(attrs.getString(NodeBuilder.ALTERNATE));
+        }
+
+        if (attrs.containsKey(NodeBuilder.TYPE)) {
+            variantBuilder.setType(VariantType.valueOf(attrs.getString(NodeBuilder.TYPE)));
+        }
+
+        return variantBuilder.build();
     }
 
     public static Node newNode(long uid, StudyEntry studyEntry, Node variantNode) {

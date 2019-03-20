@@ -4,7 +4,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
@@ -12,6 +11,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
+import org.opencb.bionetdb.core.neo4j.interpretation.XQuery.*;
 
 import java.io.IOException;
 import java.util.Arrays;

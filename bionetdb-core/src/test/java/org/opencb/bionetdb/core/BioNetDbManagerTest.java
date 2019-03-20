@@ -6,9 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.models.clinical.pedigree.Member;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
@@ -48,20 +52,27 @@ public class BioNetDbManagerTest {
     private String database = "scerevisiae";
     private BioNetDbManager bioNetDbManager;
 
+
     @Before
-    public void initialize () {
+    public void setUp() throws Exception {
         try {
             BioNetDBConfiguration bioNetDBConfiguration = BioNetDBConfiguration.load(getClass().getResourceAsStream("/configuration.yml"));
-            for (DatabaseConfiguration dbConfig: bioNetDBConfiguration.getDatabases()) {
+            for (DatabaseConfiguration dbConfig : bioNetDBConfiguration.getDatabases()) {
                 System.out.println(dbConfig);
             }
-            bioNetDbManager = new BioNetDbManager(database, bioNetDBConfiguration);
+
+            bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
+            bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (BioNetDBException e) {
             e.printStackTrace();
         }
     }
+
+    @After
+    public void tearDown() throws Exception {
+        bioNetDbManager.close();
+    }
+
 
     //-------------------------------------------------------------------------
     //
@@ -161,19 +172,72 @@ public class BioNetDbManagerTest {
         System.out.println(queryResult.getResult().get(0).toString());
     }
 
+    @Test
+    public void dominant() throws BioNetDBException {
+        Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
+        Pedigree pedigree = getPedigree(disorder);
+
+        Query query = new Query();
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("biotype", "protein_coding");
+
+        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(pedigree, disorder, query);
+        if (dominantVariants.getResult().size() > 1) {
+            for (Variant variant : dominantVariants.getResult()) {
+                System.out.println(variant.toStringSimple());
+            }
+        }
+    }
+
     //-------------------------------------------------------------------------
     //
     //-------------------------------------------------------------------------
 
+
+    private Pedigree getPedigree(Disorder disorder) {
+        Member healthyFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
+        Member illFather = new Member().setId("NA12877").setSex(Member.Sex.MALE)
+                .setDisorders(Collections.singletonList(disorder));
+
+        Member healthyMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE);
+        Member illMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE)
+                .setDisorders(Collections.singletonList(disorder));
+
+        Member healthyDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
+                .setMother(illMother).setFather(healthyFather);
+        Member illDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
+                .setDisorders(Collections.singletonList(disorder))
+                .setMother(illMother).setFather(healthyFather);
+
+        Pedigree family1 = new Pedigree()
+                .setMembers(Arrays.asList(healthyFather, illMother, illDaughter))
+                .setDisorders(Collections.singletonList(disorder));
+        family1.setProband(illDaughter);
+
+        return family1;
+/*
+        Pedigree family2 = new Pedigree()
+                .setMembers(Arrays.asList(illFather, illMother, illDaughter))
+                .setDisorders(Collections.singletonList(disorder));
+        family2.setProband(illDaughter);
+
+        Pedigree family3 = new Pedigree()
+                .setMembers(Arrays.asList(illFather, healthyMother, healthyDaughter))
+                .setDisorders(Collections.singletonList(disorder));
+        family3.setProband(illDaughter);
+*/
+
+    }
+
     private void printNodes(List<Node> nodes) {
-        for (Node node: nodes) {
+        for (Node node : nodes) {
             System.out.println(node.toStringEx());
         }
     }
 
     private void printLists(List<List<Object>> lists) {
-        for (List<Object> list: lists) {
-            for (Object item: list) {
+        for (List<Object> list : lists) {
+            for (Object item : list) {
                 System.out.print(item + ", ");
             }
         }
@@ -195,10 +259,10 @@ public class BioNetDbManagerTest {
         List<String> ids = new ArrayList<>();
         ids.add(geneId);
         QueryResponse<Gene> geneQueryResponse = geneClient.get(ids, options);
-        for (QueryResult<Gene> result: geneQueryResponse.getResponse()) {
-            for (Gene gene: result.getResult()) {
+        for (QueryResult<Gene> result : geneQueryResponse.getResponse()) {
+            for (Gene gene : result.getResult()) {
                 System.out.println(gene.getId() + ", " + gene.getName());
-                for (Transcript transcript: gene.getTranscripts()) {
+                for (Transcript transcript : gene.getTranscripts()) {
                     System.out.println("\t" + transcript.getId() + ", " + transcript.getName());
                     if (transcript.getId().equals(transcriptId)) {
                         System.out.println("\t\tFOUND !!!!");
@@ -230,10 +294,10 @@ public class BioNetDbManagerTest {
         mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         ObjectWriter writer = mapper.writer();
         PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".genes.json").toString());
-        for (int i = 0; i < numGenes; i+=bufferSize) {
+        for (int i = 0; i < numGenes; i += bufferSize) {
             options.put(QueryOptions.SKIP, i);
             QueryResponse<Gene> geneResponse = geneClient.search(query, options);
-            for (Gene gene: geneResponse.allResults()) {
+            for (Gene gene : geneResponse.allResults()) {
                 String json = writer.writeValueAsString(gene);
                 pw.println(json);
             }
@@ -263,13 +327,13 @@ public class BioNetDbManagerTest {
         mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         ObjectWriter writer = mapper.writer();
         PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".proteins.json").toString());
-        for (int i = 0; i < numProteins; i+=bufferSize) {
+        for (int i = 0; i < numProteins; i += bufferSize) {
             options.put(QueryOptions.SKIP, i);
             QueryResponse<Entry> proteinResponse = proteinClient.search(query, options);
             if (proteinResponse.allResults().size() == 0) {
                 break;
             }
-            for (Entry entry: proteinResponse.allResults()) {
+            for (Entry entry : proteinResponse.allResults()) {
                 String json = writer.writeValueAsString(entry);
                 pw.println(json);
             }
@@ -302,7 +366,7 @@ public class BioNetDbManagerTest {
             Variant variant = varReader.readValue(line);
             if (variant.getAnnotation() != null &&
                     ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
-                for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
+                for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                     if (StringUtils.isNotEmpty(ct.getEnsemblGeneId())) {
                         if (!geneIdSet.contains(ct.getEnsemblGeneId())) {
                             if ("ENSG00000177133".equals(ct.getEnsemblGeneId())) {
