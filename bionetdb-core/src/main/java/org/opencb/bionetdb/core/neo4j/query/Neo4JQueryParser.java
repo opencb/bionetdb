@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
-import org.opencb.bionetdb.core.api.query.VariantNodeQueryParam;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -537,8 +536,8 @@ public class Neo4JQueryParser {
                 for (String v : values) {
                     matcher = POP_FREQ_PATTERN.matcher(v);
                     if (matcher.find()) {
-                        list.add("(pf.id = '" + matcher.group(1) + "' AND toFloat(pf.attr_altAlleleFreq)" +
-                                matcher.group(2) + matcher.group(3) + ")");
+                        list.add("(pf.id = '" + matcher.group(1) + "' AND toFloat(pf.attr_altAlleleFreq)" + matcher.group(2)
+                                + matcher.group(3) + ")");
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
                     }

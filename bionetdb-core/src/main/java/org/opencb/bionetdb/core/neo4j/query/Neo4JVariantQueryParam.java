@@ -4,10 +4,9 @@ import org.opencb.commons.datastore.core.QueryParam;
 
 import java.util.*;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
-public class Neo4JVariantQueryParam  implements QueryParam {
+public final class Neo4JVariantQueryParam  implements QueryParam {
 
     private final String key;
     private final Type type;
@@ -34,7 +33,8 @@ public class Neo4JVariantQueryParam  implements QueryParam {
 
     public static final String ANNOT_CONSEQUENCE_TYPE_DESCR
             = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578";
-    public static final Neo4JVariantQueryParam ANNOT_CONSEQUENCE_TYPE = new Neo4JVariantQueryParam("ct", TEXT_ARRAY, ANNOT_CONSEQUENCE_TYPE_DESCR);
+    public static final Neo4JVariantQueryParam ANNOT_CONSEQUENCE_TYPE = new Neo4JVariantQueryParam("ct", TEXT_ARRAY,
+            ANNOT_CONSEQUENCE_TYPE_DESCR);
 
     public static final String ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR
             = "Alternate Population Frequency: {population}[<|>|<=|>=]{number}. e.g. ALL<0.01";
