@@ -75,9 +75,9 @@ public class TieringTest {
         family3.setProband(illDaughter);
         
 //        T I E R I N G - P I E C E S
-        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(family1, disorder, false,
-                Collections.singletonList("CADM1"));
-        System.out.println(dominantVariants.getResult() + "\n\n\n");
+//        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(family1, disorder, false,
+//                Collections.singletonList("CADM1"));
+//        System.out.println(dominantVariants.getResult() + "\n\n\n");
 //
 //        QueryResult<Variant> recessiveVariants = bioNetDbManager.getRecessiveVariants(family1, disorder, false,
 //                Collections.singletonList("CADM1"));

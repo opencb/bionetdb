@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.neo4j.interpretation;
+package org.opencb.bionetdb.core.neo4j.interpretation.XQuery;
 
 public class OptionsFilter {
 

@@ -142,7 +142,7 @@ public class Neo4JQueryParser {
 //        } else if (query.getType() == Node.Type.VARIANT) {
 //            skip = VARIANT_PSEUDO_ATTRS;
 //        } else {
-            skip = new HashSet<>();
+        skip = new HashSet<>();
 //        }
 
         // Only process the non pseudo-attributes
@@ -342,6 +342,131 @@ public class Neo4JQueryParser {
             cypherQuery.append(StringUtils.join(myWhereClauses, " AND "));
         }
         return cypherQuery.toString();
+    }
+
+    public static String parseVariantQuery(Query query, QueryOptions options) {
+        return parseVariantQuery(query, options, false);
+    }
+
+    public static String parseVariantQuery(Query query, QueryOptions options, boolean asRow) {
+        List<String> matches= new LinkedList<>();
+        List<String> wheres = new LinkedList<>();
+
+        String match, where;
+
+        // panel
+        if (query.containsKey("panel")) {
+            match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
+                    + "[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+            matches.add(match);
+
+            List<String> panels = Arrays.asList(query.getString("panel").split(","));
+            where = "WHERE " + getGenericSubstring(panels, "p.name", false);
+            if (query.containsKey("biotype")) {
+                List<String> biotypes = Arrays.asList(query.getString("biotype").split(","));
+                where += (" AND " + getGenericSubstring(biotypes, "ct.attr_biotype", false));
+            }
+            wheres.add(where);
+        }
+
+        /*
+        // genotype (sample)
+        if (query.containsKey("genotype")) {
+            match = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
+            matches.add(match);
+
+            List<String> samples = Arrays.asList(query.getString("genotypes").split(";"));
+            for (String sample : samples) {
+                String[] fields = sample.split(":");
+            }
+
+            //where = "WHERE " + getGenericSubstring(panels, "p.id", false);
+            //wheres.add(where);
+        }
+        */
+
+        // SO
+        if (query.containsKey("consequenceType")) {
+            match = "MATCH (so:SO)-[:CONSEQUENCE_TYPE__SO]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+            matches.add(match);
+
+            List<String> connsequeneTypes = Arrays.asList(query.getString("consequenceType").split(","));
+            where = "WHERE " + getGenericSubstring(connsequeneTypes, "so.name", false);
+            if (!query.containsKey("panel") && query.containsKey("biotype")) {
+                List<String> biotypes = Arrays.asList(query.getString("biotype").split(","));
+                where += (" AND " + getGenericSubstring(biotypes, "ct.attr_biotype", false));
+            }
+            wheres.add(where);
+        }
+
+        // biotype
+        if (query.containsKey("biotype") && !query.containsKey("panel") && !query.containsKey("consequenceType")) {
+            match = "MATCH (ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+            matches.add(match);
+
+            List<String> biotypes = Arrays.asList(query.getString("biotype").split(","));
+            where = "WHERE " + getGenericSubstring(biotypes, "ct.name", false);
+            wheres.add(where);
+        }
+
+/*
+        // Pop. freq.
+        if (query.containsKey("populationFrequency")) {
+            String match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
+
+            matches.add(match);
+
+            List<String> populationFrequencies = Arrays.asList(query.getString("populationFrequency").split(","));
+            where = "WHERE " + getGenericSubstring(populationFrequencies, "so.name", false);
+            wheres.add(where);
+        }
+*/
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < matches.size(); i++) {
+            sb.append(matches.get(i)).append(" ").append(wheres.get(i));
+            if (i < matches.size() - 1) {
+                sb.append(" WITH DISTINCT v ");
+            } else {
+                if (asRow) {
+                    sb.append(" RETURN DISTINCT v.id, v.name, v.attr_chromosome, v.attr_start, v.attr_end, "
+                            + "v.attr_reference, v.attr_alternate, v.attr_type");
+                } else {
+                    sb.append(" RETURN DISTINCT v");
+                }
+            }
+        }
+
+
+        return sb.toString();
+    }
+
+    /**
+     * Builds the part of the cypher query aimed to act as a searching filter. We can fiter by the individual samples, their
+     * genotype, the chromosome or the genes in which we want to look up.
+     * <p>
+     * [Mainly used for methods "getVariantsFromPedigree" and "getVariantsFromList"]
+     *
+     * @param stringList The list of elements that will compound the filter
+     * @param calling    The index we want to use to call if from the database
+     * @param isNotLast  A boolean that adds an "AND" operator at the end of the substring if needed
+     * @return the substring with the filter ready to use for Neo4j
+     */
+    private static String getGenericSubstring(List<String> stringList, String calling, boolean isNotLast) {
+        String substring = "";
+        if (stringList.size() == 0) {
+            return substring;
+        } else {
+            List<String> elements = new ArrayList<>();
+            for (String element : stringList) {
+                elements.add(substring + calling + "='" + element + "'");
+            }
+            substring = StringUtils.join(elements, " OR ");
+            substring = "(" + substring + ")";
+            if (isNotLast) {
+                substring = substring + " AND ";
+            }
+            return substring;
+        }
     }
 
 //    public static String parseNodeQueries(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
