@@ -4,12 +4,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
+import org.opencb.bionetdb.core.api.query.VariantNodeQueryParam;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by imedina on 03/09/15.
@@ -20,6 +23,8 @@ public class Neo4JQueryParser {
 
     private static final Set<String> GENE_PSEUDO_ATTRS = new HashSet<>(Arrays.asList("drug", "hpo", "go"));
     private static final Set<String> VARIANT_PSEUDO_ATTRS = new HashSet<>(Arrays.asList("popFreq", "so"));
+
+    private static final Pattern POP_FREQ_PATTERN = Pattern.compile("([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
 
     public static String parseNodeQuery(Query query, QueryOptions options) throws BioNetDBException {
         String nameNode = "n";
@@ -355,16 +360,19 @@ public class Neo4JQueryParser {
         String match, where;
 
         // panel
-        if (query.containsKey("panel")) {
+        String param = Neo4JVariantQueryParam.PANEL.key();
+        if (query.containsKey(param)) {
             match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
                     + "[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
             matches.add(match);
 
-            List<String> panels = Arrays.asList(query.getString("panel").split(","));
-            where = "WHERE " + getGenericSubstring(panels, "p.name", false);
-            if (query.containsKey("biotype")) {
-                List<String> biotypes = Arrays.asList(query.getString("biotype").split(","));
-                where += (" AND " + getGenericSubstring(biotypes, "ct.attr_biotype", false));
+            List<String> panels = Arrays.asList(query.getString(param).split(","));
+            where = "WHERE " + getConditionString(panels, "p.name", false);
+
+            param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
+            if (query.containsKey(param)) {
+                List<String> biotypes = Arrays.asList(query.getString(param).split(","));
+                where += (" AND " + getConditionString(biotypes, "ct.attr_biotype", false));
             }
             wheres.add(where);
         }
@@ -380,47 +388,50 @@ public class Neo4JQueryParser {
                 String[] fields = sample.split(":");
             }
 
-            //where = "WHERE " + getGenericSubstring(panels, "p.id", false);
+            //where = "WHERE " + getConditionString(panels, "p.id", false);
             //wheres.add(where);
         }
         */
 
         // SO
-        if (query.containsKey("consequenceType")) {
+        param = Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key();
+        if (query.containsKey(param)) {
             match = "MATCH (so:SO)-[:CONSEQUENCE_TYPE__SO]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
             matches.add(match);
 
-            List<String> connsequeneTypes = Arrays.asList(query.getString("consequenceType").split(","));
-            where = "WHERE " + getGenericSubstring(connsequeneTypes, "so.name", false);
-            if (!query.containsKey("panel") && query.containsKey("biotype")) {
-                List<String> biotypes = Arrays.asList(query.getString("biotype").split(","));
-                where += (" AND " + getGenericSubstring(biotypes, "ct.attr_biotype", false));
+            List<String> connsequeneTypes = Arrays.asList(query.getString(param).split(","));
+            where = "WHERE " + getConditionString(connsequeneTypes, "so.name", false);
+
+            param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
+            if (!query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && query.containsKey(param)) {
+                List<String> biotypes = Arrays.asList(query.getString(param).split(","));
+                where += (" AND " + getConditionString(biotypes, "ct.attr_biotype", false));
             }
             wheres.add(where);
         }
 
         // biotype
-        if (query.containsKey("biotype") && !query.containsKey("panel") && !query.containsKey("consequenceType")) {
+        param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
+        if (query.containsKey(param) && !query.containsKey(Neo4JVariantQueryParam.PANEL.key())
+                && !query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
             match = "MATCH (ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
             matches.add(match);
 
-            List<String> biotypes = Arrays.asList(query.getString("biotype").split(","));
-            where = "WHERE " + getGenericSubstring(biotypes, "ct.name", false);
+            List<String> biotypes = Arrays.asList(query.getString(param).split(","));
+            where = "WHERE " + getConditionString(biotypes, "ct.name", false);
             wheres.add(where);
         }
 
-/*
         // Pop. freq.
-        if (query.containsKey("populationFrequency")) {
-            String match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
-
+        param = Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
+        if (query.containsKey(param)) {
+            match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
             matches.add(match);
 
-            List<String> populationFrequencies = Arrays.asList(query.getString("populationFrequency").split(","));
-            where = "WHERE " + getGenericSubstring(populationFrequencies, "so.name", false);
+            where = "WHERE " + parsePopFreqValue(query.getString(param));
             wheres.add(where);
         }
-*/
+
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < matches.size(); i++) {
             sb.append(matches.get(i)).append(" ").append(wheres.get(i));
@@ -436,7 +447,6 @@ public class Neo4JQueryParser {
             }
         }
 
-
         return sb.toString();
     }
 
@@ -451,14 +461,19 @@ public class Neo4JQueryParser {
      * @param isNotLast  A boolean that adds an "AND" operator at the end of the substring if needed
      * @return the substring with the filter ready to use for Neo4j
      */
-    private static String getGenericSubstring(List<String> stringList, String calling, boolean isNotLast) {
+
+    private static String getConditionString(List<String> stringList, String calling, boolean isNotLast) {
+        return getConditionString(stringList, calling, "=", isNotLast);
+    }
+
+    private static String getConditionString(List<String> stringList, String calling, String op, boolean isNotLast) {
         String substring = "";
         if (stringList.size() == 0) {
             return substring;
         } else {
             List<String> elements = new ArrayList<>();
             for (String element : stringList) {
-                elements.add(substring + calling + "='" + element + "'");
+                elements.add(substring + calling + op + "'" + element + "'");
             }
             substring = StringUtils.join(elements, " OR ");
             substring = "(" + substring + ")";
@@ -489,4 +504,48 @@ public class Neo4JQueryParser {
 //        return cypher.toString();
 //    }
 
+
+    /**
+     * Parse population/stats values, e.g.: all>0.4 or JPN<0.00982. This function takes into account
+     * multiple values and the separator between them can be:
+     *     "," to apply a "OR condition"
+     *     ";" to apply a "AND condition"
+     *
+     * @param value        Paramenter value
+     * @return             The string with the boolean conditions
+     */
+    private static String parsePopFreqValue(String value) {
+
+        // Parameter for population frequency node: pf.id, pf.attr_altAlleleFreq
+        StringBuilder sb = new StringBuilder();
+        if (StringUtils.isNotEmpty(value)) {
+            String logicalComparator = value.contains(",") ? " OR " : " AND ";
+
+            Matcher matcher;
+            String[] values = value.split("[,;]");
+            if (values.length == 1) {
+                matcher = POP_FREQ_PATTERN.matcher(value);
+                if (matcher.find()) {
+                    sb.append("(pf.id = '" + matcher.group(1)).append("' AND toFloat(pf.attr_altAlleleFreq)")
+                            .append(matcher.group(2)).append(matcher.group(3)).append(")");
+                } else {
+                    // error
+                    throw new IllegalArgumentException("Invalid expression " +  value);
+                }
+            } else {
+                List<String> list = new ArrayList<>(values.length);
+                for (String v : values) {
+                    matcher = POP_FREQ_PATTERN.matcher(v);
+                    if (matcher.find()) {
+                        list.add("(pf.id = '" + matcher.group(1) + "' AND toFloat(pf.attr_altAlleleFreq)" +
+                                matcher.group(2) + matcher.group(3) + ")");
+                    } else {
+                        throw new IllegalArgumentException("Invalid expression " +  value);
+                    }
+                }
+                sb.append("(").append(StringUtils.join(list, logicalComparator)).append(")");
+            }
+        }
+        return sb.toString();
+    }
 }

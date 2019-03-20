@@ -58,25 +58,47 @@ public class Neo4JQueryParserTest {
 
 
     @Test
-    public void parseVariantQuery1() throws Exception {
+    public void parseVariantQueryPanelBiotypeConsequenceType() throws Exception {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put("panel", "Familial or syndromic hypoparathyroidism,Hydrocephalus,Cerebellar hypoplasia");
-        query.put("biotype", "protein_coding,polymorphic_pseudogene");
-        query.put("consequenceType", "missense_variant,intron_variant,");
+        query.put(Neo4JVariantQueryParam.PANEL.key(), "Familial or syndromic hypoparathyroidism,Hydrocephalus,Cerebellar hypoplasia");
+        query.put(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,polymorphic_pseudogene");
+        query.put(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,intron_variant,");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
     }
 
     @Test
-    public void parseVariantQuery2() throws Exception {
+    public void parseVariantQueryBiotypeConsequenceType() throws Exception {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put("biotype", "protein_coding,polymorphic_pseudogene");
-        query.put("consequenceType", "missense_variant,intron_variant,");
+        query.put(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,polymorphic_pseudogene");
+        query.put(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,intron_variant,");
+
+        String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
+        System.out.println(cypher);
+    }
+
+    @Test
+    public void parseVariantQueryPopFreq() throws Exception {
+        Neo4JQueryParser parser = new Neo4JQueryParser();
+
+        Query query = new Query();
+        query.put(Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001");
+
+        String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
+        System.out.println(cypher);
+    }
+
+    @Test
+    public void parseVariantQueryPopFreqs() throws Exception {
+        Neo4JQueryParser parser = new Neo4JQueryParser();
+
+        Query query = new Query();
+        query.put(Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001,AFR>0.3");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
