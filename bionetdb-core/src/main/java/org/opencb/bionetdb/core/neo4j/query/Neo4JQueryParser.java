@@ -8,10 +8,13 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
 
 /**
  * Created by imedina on 03/09/15.
@@ -378,19 +381,43 @@ public class Neo4JQueryParser {
 
         /*
         // genotype (sample)
-        if (query.containsKey("genotype")) {
-            match = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
-            matches.add(match);
-
-            List<String> samples = Arrays.asList(query.getString("genotypes").split(";"));
-            for (String sample : samples) {
-                String[] fields = sample.split(":");
-            }
-
-            //where = "WHERE " + getConditionString(panels, "p.id", false);
-            //wheres.add(where);
-        }
         */
+        //VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter();
+
+
+        param = Neo4JVariantQueryParam.GENOTYPE.key();
+        if (query.containsKey(param)) {
+            HashMap<Object, List<String>> map = new LinkedHashMap<>();
+            VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+            List<String> samples = new ArrayList<>(map.size());
+            map.keySet().stream().map(Object::toString).forEach(samples::add);
+
+
+            Iterator<Object> sampleIterator = map.keySet().iterator();
+            while (sampleIterator.hasNext()) {
+                match = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
+                matches.add(match);
+
+                String sample = sampleIterator.next().toString();
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("(");
+                sb.append("sam.id='").append(sample).append("'").append(" AND ");
+                Iterator<String> gtIterator = map.get(sample).iterator();
+                sb.append("(");
+                while (gtIterator.hasNext()) {
+                    sb.append("vc.id='").append(gtIterator.next()).append("'");
+                    if (gtIterator.hasNext()) {
+                        sb.append(" OR ");
+                    } else {
+                        sb.append(")");
+                    }
+                }
+                sb.append(")");
+
+                wheres.add("WHERE " + sb.toString());
+            }
+        }
 
         // SO
         param = Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key();
