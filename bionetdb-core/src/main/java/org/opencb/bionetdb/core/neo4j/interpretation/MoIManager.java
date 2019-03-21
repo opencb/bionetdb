@@ -37,7 +37,31 @@ public class MoIManager {
         Map<String, List<String>> genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
         putGenotypes(query, genotypes);
 
-        String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty(), true);
+        String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
+        return queryVariants(cypher);
+    }
+
+    public List<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+        Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
+        putGenotypes(query, genotypes);
+
+        String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
+        return queryVariants(cypher);
+    }
+
+    public List<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+        Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
+        putGenotypes(query, genotypes);
+
+        String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
+        return queryVariants(cypher);
+    }
+
+    public List<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+        Map<String, List<String>> genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+        putGenotypes(query, genotypes);
+
+        String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
         return queryVariants(cypher);
     }
 

@@ -6,11 +6,9 @@ import org.junit.Test;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
-import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -94,7 +92,6 @@ public class TieringTest {
 //        QueryResult<Variant> yLinkedVariants = bioNetDbManager.getYLinkedVariants(family3, disorder, Collections.singletonList("DDX3Y"));
 //        System.out.println(yLinkedVariants.getResult() + "\n\n\n");
 
-////        THIS TWO NOT WORKING YET. MOI METHODS USE AUXILIAR DEPRECATED METHOD
 //        QueryResult<Variant> deNovoVariants = bioNetDbManager.getDeNovoVariants(family1, Arrays.asList("CADM1", "CTBP2P1", "BRCA1"),
 //                Collections.emptyList());
 //        System.out.println(deNovoVariants.getResult() + "\n\n\n");
@@ -102,12 +99,5 @@ public class TieringTest {
 //        QueryResult<Variant> chVariants = bioNetDbManager.getCompoundHeterozygoteVariants(family1, Collections.singletonList("CADM1"),
 //                Collections.emptyList());
 //        System.out.println(chVariants.getResult() + "\n\n\n");
-
-////        THIS ONE CAN'T WORK WITH A SINGLE PEDIGREE FOR EVERY METHOD
-//        List<QueryResult<Variant>> tieringVariants = bioNetDbManager.tiering(family2, disorder,
-//                Arrays.asList("CADM1", "FGF13", "CD99L2", "DDX3Y", "CDC27P2"), Collections.emptyList());
-//        for (QueryResult<Variant> variants : tieringVariants) {
-//            System.out.println("Query result: " + variants.getResult() + "\n\n");
-//        }
     }
 }
