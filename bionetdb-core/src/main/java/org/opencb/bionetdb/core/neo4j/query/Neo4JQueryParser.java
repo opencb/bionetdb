@@ -14,8 +14,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
-
 /**
  * Created by imedina on 03/09/15.
  */
@@ -357,7 +355,7 @@ public class Neo4JQueryParser {
 
         String match, where;
 
-        // panel
+        // Panel
         String param = Neo4JVariantQueryParam.PANEL.key();
         if (query.containsKey(param)) {
             match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
@@ -375,16 +373,12 @@ public class Neo4JQueryParser {
             wheres.add(where);
         }
 
-        /*
-        // genotype (sample)
-        */
-        //VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter();
-
-
+        // Genotype (sample)
         param = Neo4JVariantQueryParam.GENOTYPE.key();
         if (query.containsKey(param)) {
             HashMap<Object, List<String>> map = new LinkedHashMap<>();
-            VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+            VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils
+                    .parseGenotypeFilter(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), map);
             List<String> samples = new ArrayList<>(map.size());
             map.keySet().stream().map(Object::toString).forEach(samples::add);
 
@@ -432,7 +426,7 @@ public class Neo4JQueryParser {
             wheres.add(where);
         }
 
-        // biotype
+        // Biotype
         param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
         if (query.containsKey(param) && !query.containsKey(Neo4JVariantQueryParam.PANEL.key())
                 && !query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {

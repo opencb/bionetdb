@@ -79,7 +79,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-            <version>1.4.0-dev</version>
+            <version>1.4.1-dev</version>
         </dependency>
     </dependencies>
 
