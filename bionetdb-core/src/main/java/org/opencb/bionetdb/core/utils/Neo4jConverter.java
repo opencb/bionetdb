@@ -38,7 +38,7 @@ public class Neo4jConverter {
         List<Object> row = new ArrayList<>();
 
         for (Pair<String, Value> pair: record.fields()) {
-            if (pair.value().hasType(TYPE_SYSTEM.NODE()) || pair.value().hasType(TYPE_SYSTEM.RELATIONSHIP())
+            if (/*pair.value().hasType(TYPE_SYSTEM.NODE()) ||*/ pair.value().hasType(TYPE_SYSTEM.RELATIONSHIP())
                     || pair.value().hasType(TYPE_SYSTEM.PATH())) {
                 // Skip nodes, relationships and paths
                 continue;
@@ -121,7 +121,7 @@ public class Neo4jConverter {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private static Node toNode(org.neo4j.driver.v1.types.Node neoNode) {
+    public static Node toNode(org.neo4j.driver.v1.types.Node neoNode) {
         // Set uid, id and name
         Node node = new Node(neoNode.get("uid").asLong());
         if (neoNode.containsKey("id")) {
