@@ -2,10 +2,9 @@ package org.opencb.bionetdb.core;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NetworkPathIterator;
@@ -19,9 +18,13 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
-import org.opencb.bionetdb.core.neo4j.interpretation.*;
+import org.opencb.bionetdb.core.neo4j.interpretation.MoIManager;
+import org.opencb.bionetdb.core.neo4j.interpretation.Tiering;
 import org.opencb.bionetdb.core.neo4j.interpretation.XQuery.*;
-import org.opencb.bionetdb.core.network.*;
+import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.network.NetworkManager;
+import org.opencb.bionetdb.core.network.NetworkPath;
+import org.opencb.bionetdb.core.network.Node;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -341,31 +344,48 @@ public class BioNetDbManager {
 
     public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         MoIManager moIManager = new MoIManager(networkDBAdaptor);
-        List<Variant> dominantVariants = moIManager.getDominantVariants(pedigree, disorder, query);
+        List<Variant> variants = moIManager.getDominantVariants(pedigree, disorder, query);
 
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(dominantVariants);
+        variantsResult.setResult(variants);
         return variantsResult;
     }
 
-    public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, boolean incompletePenetrance,
-                                                     List<String> listOfGenes) {
-        Map<String, List<String>> listOfGenotypes = ModeOfInheritance.recessive(pedigree, disorder, incompletePenetrance);
-        return tiering.getVariantsFromPedigree(listOfGenes, Collections.emptyList(), listOfGenotypes);
+    public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+        MoIManager manager = new MoIManager(networkDBAdaptor);
+        List<Variant> variants = manager.getRecessiveVariants(pedigree, disorder, query);
+
+        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
+        variantsResult.setResult(variants);
+        return variantsResult;
     }
 
-    public QueryResult<Variant> getXLinkedVariants(Pedigree pedigree, Disorder disorder, boolean isDominant,
-                                                   List<String> listOfGenes) {
-        Map<String, List<String>> listOfGenotypes = ModeOfInheritance.xLinked(pedigree, disorder, isDominant);
-        return tiering.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("X")),
-                listOfGenotypes);
+    public QueryResult<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+        MoIManager manager = new MoIManager(networkDBAdaptor);
+        List<Variant> variants = manager.getXLinkedDominantVariants(pedigree, disorder, query);
+
+        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
+        variantsResult.setResult(variants);
+        return variantsResult;
     }
 
-    public QueryResult<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, List<String> listOfGenes) {
+    public QueryResult<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+        MoIManager manager = new MoIManager(networkDBAdaptor);
+        List<Variant> variants = manager.getXLinkedRecessiveVariants(pedigree, disorder, query);
 
-        Map<String, List<String>> listOfGenotypes = ModeOfInheritance.yLinked(pedigree, disorder);
-        return tiering.getVariantsFromPedigree(listOfGenes, new ArrayList<>(Collections.singletonList("Y")),
-                listOfGenotypes);
+        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
+        variantsResult.setResult(variants);
+        return variantsResult;
+    }
+
+    public QueryResult<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+
+        MoIManager manager = new MoIManager(networkDBAdaptor);
+        List<Variant> variants = manager.getYLinkedVariants(pedigree, disorder, query);
+
+        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
+        variantsResult.setResult(variants);
+        return variantsResult;
     }
 
 //    //    NOT WORKING YET

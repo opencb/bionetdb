@@ -182,8 +182,76 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
 
         QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(pedigree, disorder, query);
-        if (dominantVariants.getResult().size() > 1) {
+        if (dominantVariants.getResult().size() > 0) {
             for (Variant variant : dominantVariants.getResult()) {
+                System.out.println(variant.toStringSimple());
+            }
+        }
+    }
+
+    @Test
+    public void recessive() throws BioNetDBException {
+        Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
+        Pedigree pedigree = getPedigree(disorder);
+
+        Query query = new Query();
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("biotype", "protein_coding");
+
+        QueryResult<Variant> variants = bioNetDbManager.getRecessiveVariants(pedigree, disorder, query);
+        if (variants.getResult().size() > 0) {
+            for (Variant variant : variants.getResult()) {
+                System.out.println(variant.toStringSimple());
+            }
+        }
+    }
+
+    @Test
+    public void xLinkedDominant() throws BioNetDBException {
+        Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
+        Pedigree pedigree = getPedigree(disorder);
+
+        Query query = new Query();
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("biotype", "protein_coding");
+
+        QueryResult<Variant> variants = bioNetDbManager.getXLinkedDominantVariants(pedigree, disorder, query);
+        if (variants.getResult().size() > 0) {
+            for (Variant variant : variants.getResult()) {
+                System.out.println(variant.toStringSimple());
+            }
+        }
+    }
+
+    @Test
+    public void xLinkedRecessive() throws BioNetDBException {
+        Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
+        Pedigree pedigree = getPedigree(disorder);
+
+        Query query = new Query();
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("biotype", "protein_coding");
+
+        QueryResult<Variant> variants = bioNetDbManager.getXLinkedRecessiveVariants(pedigree, disorder, query);
+        if (variants.getResult().size() > 0) {
+            for (Variant variant : variants.getResult()) {
+                System.out.println(variant.toStringSimple());
+            }
+        }
+    }
+
+    @Test
+    public void yLinked() throws BioNetDBException {
+        Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
+        Pedigree pedigree = getPedigree(disorder);
+
+        Query query = new Query();
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("biotype", "protein_coding");
+
+        QueryResult<Variant> variants = bioNetDbManager.getYLinkedVariants(pedigree, disorder, query);
+        if (variants.getResult().size() > 0) {
+            for (Variant variant : variants.getResult()) {
                 System.out.println(variant.toStringSimple());
             }
         }
