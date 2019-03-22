@@ -10,9 +10,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.security.InvalidParameterException;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -390,10 +388,31 @@ public class Neo4JQueryParser {
     }
 
     public static String parseVariantQuery(Query query, QueryOptions options) {
-//        List<String> matches = new LinkedList<>();
-        //      List<String> wheres = new LinkedList<>();
+        List<CypherStatement> cypherStatements = getCypherStatements(query, options);
 
-//        String match, where;
+        int i = 0;
+        CypherStatement st;
+        StringBuilder sb = new StringBuilder();
+        for (i = 0; i < cypherStatements.size() - 1; i++) {
+            st = cypherStatements.get(i);
+            sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append(st.getWith()).append("\n");
+        }
+        st = cypherStatements.get(i);
+        sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n");
+        if (!query.getBoolean(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key())) {
+            sb.append("RETURN DISTINCT v");
+        } else {
+            sb.append("WITH DISTINCT v").append("\n")
+                    .append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT) ")
+                    .append("RETURN DISTINCT v, collect(s), collect(vc)");
+        }
+
+        System.out.println(sb);
+        return sb.toString();
+    }
+
+    public static List<CypherStatement> getCypherStatements(Query query, QueryOptions queryOptions) {
+        List<CypherStatement> cypherStatements = new ArrayList<>();
 
         // Chromosome
         String chromWhere = "";
@@ -403,8 +422,6 @@ public class Neo4JQueryParser {
             chromWhere = getConditionString(chromosomes, "v.attr_chromosome", true);
         }
 
-        List<CypherStatement> cypherStatements = new ArrayList<>();
-
         // Panel
         if (query.containsKey(Neo4JVariantQueryParam.PANEL.key())) {
             cypherStatements.add(parsePanels(query.getString(Neo4JVariantQueryParam.PANEL.key()),
@@ -412,15 +429,7 @@ public class Neo4JQueryParser {
             chromWhere = "";
         }
 
-        // Genotype (sample)
-        // chromWhere should be used only once, not every genotype iteration
-        if (query.containsKey(Neo4JVariantQueryParam.GENOTYPE.key())) {
-            cypherStatements.addAll(parseGenotypes(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), chromWhere));
-            chromWhere = "";
-        }
-
         // SO
-        // if SO gets indexed, probably should come before genotypes
         if (query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
             String biotypeValues = "";
             if (!query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && query.containsKey(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key())) {
@@ -428,6 +437,13 @@ public class Neo4JQueryParser {
             }
             cypherStatements.add(parseConsequenceTypes(query.getString(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()), biotypeValues,
                     chromWhere));
+            chromWhere = "";
+        }
+
+        // Genotype (sample)
+        // chromWhere should be used only once, not every genotype iteration
+        if (query.containsKey(Neo4JVariantQueryParam.GENOTYPE.key())) {
+            cypherStatements.addAll(parseGenotypes(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), chromWhere));
             chromWhere = "";
         }
 
@@ -495,25 +511,7 @@ public class Neo4JQueryParser {
         }
 */
 
-        int i = 0;
-        CypherStatement st;
-        StringBuilder sb = new StringBuilder();
-        for (i = 0; i < cypherStatements.size() - 1; i++) {
-            st = cypherStatements.get(i);
-            sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append(st.getWith()).append("\n");
-        }
-        st = cypherStatements.get(i);
-        sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n");
-        if (!query.getBoolean(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key())) {
-            sb.append("RETURN DISTINCT v");
-        } else {
-            sb.append("WITH DISTINCT v").append("\n")
-                    .append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT) ")
-                    .append("RETURN DISTINCT v, collect(s), collect(vc)");
-        }
-
-        System.out.println(sb);
-        return sb.toString();
+        return cypherStatements;
     }
 
     public static CypherStatement parsePanels(String panelValues, String biotypeValues, String chromWhere) {
@@ -522,7 +520,7 @@ public class Neo4JQueryParser {
         String match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
                 + "[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
 
-        String where = "WHERE " + getConditionString(panels, "p.name", false)  + chromWhere;
+        String where = "WHERE " + getConditionString(panels, "p.name", false) + chromWhere;
         if (StringUtils.isNotEmpty(biotypeValues)) {
             where += (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", true));
         }
@@ -578,12 +576,12 @@ public class Neo4JQueryParser {
 
     private static CypherStatement parseBiotypes(String biotypeValues, String chromWhere) {
         List<String> biotypes = Arrays.asList(biotypeValues.split(","));
-        String match = "MATCH MATCH (ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+        String match = "MATCH (ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
 
         String where = "WHERE " + getConditionString(biotypes, "ct.attr_biotype", false) + chromWhere;
 
         // With
-        String with = " WITH DISTINCT v";
+        String with = "WITH DISTINCT v";
 
         return new CypherStatement(match, where, with);
     }
@@ -599,11 +597,11 @@ public class Neo4JQueryParser {
      * @param isNotFirst A boolean that adds an "AND" operator at the start of the substring if needed
      * @return the substring with the filter ready to use for Neo4j
      */
-    private static String getConditionString(List<String> stringList, String calling, boolean isNotFirst) {
+    public static String getConditionString(List<String> stringList, String calling, boolean isNotFirst) {
         return getConditionString(stringList, calling, "=", " OR ", isNotFirst);
     }
 
-    private static String getConditionString(List<String> stringList, String calling, String op, String logicalOp, boolean isNotFirst) {
+    public static String getConditionString(List<String> stringList, String calling, String op, String logicalOp, boolean isNotFirst) {
         String substring = "";
         if (stringList.size() == 0) {
             return substring;

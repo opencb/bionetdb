@@ -131,7 +131,7 @@ public class MoIManager {
         for (String sample : genotypes.keySet()) {
             gt.add(sample + ":" + StringUtils.join(genotypes.get(sample), ","));
         }
-        query.put("genotype", gt);
+        query.put(Neo4JVariantQueryParam.GENOTYPE.key(), gt);
     }
 
     private List<Variant> queryVariants(String cypher) throws BioNetDBException {

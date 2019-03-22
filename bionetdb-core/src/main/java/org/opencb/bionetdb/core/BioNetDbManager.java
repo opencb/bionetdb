@@ -20,9 +20,9 @@ import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.bionetdb.core.neo4j.interpretation.MoIManager;
-import org.opencb.bionetdb.core.neo4j.interpretation.SystemProtein.SystemProteinAnalysis;
+import org.opencb.bionetdb.core.neo4j.interpretation.ProteinSystem.ProteinSystemAnalysis;
 import org.opencb.bionetdb.core.neo4j.interpretation.Tiering;
-import org.opencb.bionetdb.core.neo4j.interpretation.XQuery.*;
+import org.opencb.bionetdb.core.neo4j.interpretation.XQuery.XQueryAnalysis;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.NetworkManager;
 import org.opencb.bionetdb.core.network.NetworkPath;
@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Created by joaquin on 1/29/18.
@@ -395,10 +394,10 @@ public class BioNetDbManager {
     //-------------------------------------------------------------------------
 
     public QueryResult<Variant> getProteinSystemVariants(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
-                                                         Query query) {
-        SystemProteinAnalysis analysis = new SystemProteinAnalysis(networkDBAdaptor);
+                                                         boolean complexOrReaction, Query query) throws BioNetDBException {
+        ProteinSystemAnalysis analysis = new ProteinSystemAnalysis(networkDBAdaptor);
 
-        List<Variant> variants = analysis.execute(pedigree, disorder, moi, query);
+        List<Variant> variants = analysis.execute(pedigree, disorder, moi, complexOrReaction, query);
 
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
         variantsResult.setResult(variants);

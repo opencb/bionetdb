@@ -3,20 +3,11 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.pedigree.Member;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
-import org.opencb.bionetdb.core.neo4j.interpretation.XQuery.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
 public class XQueryTest {
@@ -80,7 +71,7 @@ public class XQueryTest {
 //
 //        VariantContainer container = bioNetDbManager.xQuery(familyFilter, geneFilter, variantFilter, optionsFilter);
 //        System.out.println(container.getVariantList());
-//        System.out.println(container.getVariantList().get(0).getStudiesMap().get("S").getAllAttributes());
+//        System.out.println(container.getVariantList().get(0).get("S").getStudiesMap().getAllAttributes());
     }
     // Arrays.asList("Hepatitis", "Anxiety")  Arrays.asList("AFR", "EUROPE")  "0.01"  Arrays.asList("variant", "intron_variant")
 }
