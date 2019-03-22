@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
@@ -19,6 +20,7 @@ import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.bionetdb.core.neo4j.interpretation.MoIManager;
+import org.opencb.bionetdb.core.neo4j.interpretation.SystemProtein.SystemProteinAnalysis;
 import org.opencb.bionetdb.core.neo4j.interpretation.Tiering;
 import org.opencb.bionetdb.core.neo4j.interpretation.XQuery.*;
 import org.opencb.bionetdb.core.network.Network;
@@ -317,30 +319,9 @@ public class BioNetDbManager {
     // A N A L Y S I S
     //=========================================================================
 
-    public List<QueryResult<Variant>> tiering(Pedigree pedigree, Disorder disorder, List<String> listOfGenes,
-                                              List<String> listOfChromosomes) {
-/*
-        List<QueryResult<Variant>> tieringList = new ArrayList<>();
-        QueryResult<Variant> dominantVariantsList = getDominantVariants(pedigree, disorder, false, listOfGenes);
-        QueryResult<Variant> recessiveVariantsList = getRecessiveVariants(pedigree, disorder, false, listOfGenes);
-        QueryResult<Variant> xLinkedDominantVariantsList = getXLinkedVariants(pedigree, disorder, true, listOfGenes);
-        QueryResult<Variant> xLinkedRecessiveVariantsList = getXLinkedVariants(pedigree, disorder, false, listOfGenes);
-        QueryResult<Variant> yLinkedVariantsList = getYLinkedVariants(pedigree, disorder, listOfGenes);
-//        QueryResult<Variant> deNovoVariantList = getDeNovoVariants(pedigree, listOfGenes, listOfChromosomes);
-//        QueryResult<Variant> getCompoundHeterozygoteVariants = getCompoundHeterozygoteVariants(pedigree, listOfGenes, listOfChromosomes);
-
-        tieringList.add(dominantVariantsList);
-        tieringList.add(recessiveVariantsList);
-        tieringList.add(xLinkedDominantVariantsList);
-        tieringList.add(xLinkedRecessiveVariantsList);
-        tieringList.add(yLinkedVariantsList);
-//        tieringList.add(deNovoVariantList);
-//        tieringList.add(getCompoundHeterozygoteVariants);
-
-        return tieringList;
-        */
-        return null;
-    }
+    //-------------------------------------------------------------------------
+    // Mode of Inheritance methods
+    //-------------------------------------------------------------------------
 
     public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         MoIManager moIManager = new MoIManager(networkDBAdaptor);
@@ -409,29 +390,20 @@ public class BioNetDbManager {
         return variantsResult;
     }
 
-    public VariantContainer xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException,
-            InterruptedException {
-        return xQueryAnalysis.execute(familyFilter, geneFilter);
-    }
+    //-------------------------------------------------------------------------
+    // Protein system
+    //-------------------------------------------------------------------------
 
-    public VariantContainer xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, OptionsFilter optionsFilter)
-            throws ExecutionException, InterruptedException {
-        return xQueryAnalysis.execute(familyFilter, geneFilter, optionsFilter);
-    }
+    public QueryResult<Variant> getProteinSystemVariants(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
+                                                         Query query) {
+        SystemProteinAnalysis analysis = new SystemProteinAnalysis(networkDBAdaptor);
 
-    public VariantContainer xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter)
-            throws ExecutionException, InterruptedException {
-        return xQueryAnalysis.execute(familyFilter, geneFilter, variantFilter);
-    }
+        List<Variant> variants = analysis.execute(pedigree, disorder, moi, query);
 
-    public VariantContainer xQuery(FamilyFilter familyFilter, GeneFilter geneFilter, VariantFilter variantFilter,
-                                   OptionsFilter optionsFilter) throws ExecutionException, InterruptedException {
-        return xQueryAnalysis.execute(familyFilter, geneFilter, variantFilter, optionsFilter);
+        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
+        variantsResult.setResult(variants);
+        return variantsResult;
     }
-
-//    public QueryResult getSummaryStats(Query query, QueryOptions queryOptions) throws BioNetDBException {
-//        return null;
-//    }
 
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
