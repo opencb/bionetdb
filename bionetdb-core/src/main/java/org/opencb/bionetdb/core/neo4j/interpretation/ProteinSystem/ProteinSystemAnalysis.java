@@ -95,7 +95,8 @@ public class ProteinSystemAnalysis {
 
         String nexus = complexOrReaction ? COMPLEX : REACTION;
 
-        cypher.append("MATCH (v:VARIANT)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)-[:TRANSCRIPT__PROTEIN]-(prot1:PROTEIN)-");
+        cypher.append("MATCH (v:VARIANT)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)");
+                cypher.append("-[:TRANSCRIPT__PROTEIN]-(prot1:PROTEIN)-");
         if (complexOrReaction) {
             cypher.append("[:COMPONENT_OF_COMPLEX]-(nex:COMPLEX)-[:COMPONENT_OF_COMPLEX]-");
         } else {
