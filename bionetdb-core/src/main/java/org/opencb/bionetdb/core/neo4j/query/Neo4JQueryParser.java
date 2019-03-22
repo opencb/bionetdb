@@ -14,8 +14,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.GENOTYPE;
-
 /**
  * Created by imedina on 03/09/15.
  */
@@ -357,7 +355,7 @@ public class Neo4JQueryParser {
 
         String match, where;
 
-        // panel
+        // Panel
         String param = Neo4JVariantQueryParam.PANEL.key();
         if (query.containsKey(param)) {
             match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
@@ -375,43 +373,26 @@ public class Neo4JQueryParser {
             wheres.add(where);
         }
 
-        /*
-        // genotype (sample)
-        */
-        //VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter();
-
-
+        // Genotype (sample)
         param = Neo4JVariantQueryParam.GENOTYPE.key();
         if (query.containsKey(param)) {
             HashMap<Object, List<String>> map = new LinkedHashMap<>();
-            VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
+            VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils
+                    .parseGenotypeFilter(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), map);
             List<String> samples = new ArrayList<>(map.size());
             map.keySet().stream().map(Object::toString).forEach(samples::add);
 
-
             Iterator<Object> sampleIterator = map.keySet().iterator();
             while (sampleIterator.hasNext()) {
-                match = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
-                matches.add(match);
-
                 String sample = sampleIterator.next().toString();
+                if (map.get(sample).size() > 0) {
+                    match = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
+                    matches.add(match);
 
-                StringBuilder sb = new StringBuilder();
-                sb.append("(");
-                sb.append("sam.id='").append(sample).append("'").append(" AND ");
-                Iterator<String> gtIterator = map.get(sample).iterator();
-                sb.append("(");
-                while (gtIterator.hasNext()) {
-                    sb.append("vc.id='").append(gtIterator.next()).append("'");
-                    if (gtIterator.hasNext()) {
-                        sb.append(" OR ");
-                    } else {
-                        sb.append(")");
-                    }
+                    where = getConditionString(Collections.singletonList(sample), "sam.id", true)
+                            + getConditionString(map.get(sample), "vc.attr_GT", false);
+                    wheres.add("WHERE " + where);
                 }
-                sb.append(")");
-
-                wheres.add("WHERE " + sb.toString());
             }
         }
 
@@ -432,7 +413,7 @@ public class Neo4JQueryParser {
             wheres.add(where);
         }
 
-        // biotype
+        // Biotype
         param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
         if (query.containsKey(param) && !query.containsKey(Neo4JVariantQueryParam.PANEL.key())
                 && !query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
@@ -460,7 +441,13 @@ public class Neo4JQueryParser {
             if (i < matches.size() - 1) {
                 sb.append(" WITH DISTINCT v ");
             } else {
-                sb.append(" RETURN DISTINCT v");
+                if (!query.getBoolean(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key())) {
+                    sb.append(" RETURN DISTINCT v");
+                } else {
+                    sb.append(" WITH DISTINCT v ")
+                            .append("MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT) ")
+                            .append("RETURN DISTINCT v, collect(sam), collect(vc)");
+                }
             }
         }
         System.out.println(sb);
@@ -478,7 +465,6 @@ public class Neo4JQueryParser {
      * @param isNotLast  A boolean that adds an "AND" operator at the end of the substring if needed
      * @return the substring with the filter ready to use for Neo4j
      */
-
     private static String getConditionString(List<String> stringList, String calling, boolean isNotLast) {
         return getConditionString(stringList, calling, "=", isNotLast);
     }
@@ -500,27 +486,6 @@ public class Neo4JQueryParser {
             return substring;
         }
     }
-
-//    public static String parseNodeQueries(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
-//        return null;
-////        if (query.getType() == Node.Type.VARIANT) {
-////            return Neo4JVariantQueryParser.parse(query, options);
-////        } else if (query.getType() == Node.Type.GENE) {
-////            return Neo4JGeneQueryParser.parse(query, options);
-////        } else {
-////            return parseNodeQuery(query, options);
-////        }
-//    }
-//
-//    public static String parse(List<NetworkPathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
-//        return null;
-//    }
-
-//    private static String parseNodeQuery(NodeQuery query, QueryOptions options)  throws BioNetDBException {
-//        StringBuilder cypher = new StringBuilder();
-//        return cypher.toString();
-//    }
-
 
     /**
      * Parse population/stats values, e.g.: all>0.4 or JPN<0.00982. This function takes into account

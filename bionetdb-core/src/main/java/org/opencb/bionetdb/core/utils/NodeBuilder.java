@@ -93,6 +93,9 @@ public class NodeBuilder {
             variantBuilder.setType(VariantType.valueOf(attrs.getString(NodeBuilder.TYPE)));
         }
 
+        variantBuilder.setStudyId("S");
+        variantBuilder.setFormat("GT");
+
         return variantBuilder.build();
     }
 
@@ -360,7 +363,7 @@ public class NodeBuilder {
         node.addAttribute("modificationDate", panel.getModificationDate());
         if (ListUtils.isNotEmpty(panel.getPhenotypes())) {
             StringBuilder sb = new StringBuilder();
-            for (Phenotype phenotype: panel.getPhenotypes()) {
+            for (Phenotype phenotype : panel.getPhenotypes()) {
                 if (StringUtils.isNotEmpty(phenotype.getName())) {
                     if (sb.length() > 0) {
                         sb.append("--");

@@ -175,11 +175,13 @@ public class BioNetDbManagerTest {
     @Test
     public void dominant() throws BioNetDBException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
-        Pedigree pedigree = getPedigree(disorder);
+        Pedigree pedigree = getPedigreeFamily1(disorder);
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
 
         QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(pedigree, disorder, query);
         if (dominantVariants.getResult().size() > 0) {
@@ -192,11 +194,13 @@ public class BioNetDbManagerTest {
     @Test
     public void recessive() throws BioNetDBException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
-        Pedigree pedigree = getPedigree(disorder);
+        Pedigree pedigree = getPedigreeFamily1(disorder);
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
 
         QueryResult<Variant> variants = bioNetDbManager.getRecessiveVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
@@ -209,11 +213,13 @@ public class BioNetDbManagerTest {
     @Test
     public void xLinkedDominant() throws BioNetDBException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
-        Pedigree pedigree = getPedigree(disorder);
+        Pedigree pedigree = getPedigreeFamily1(disorder);
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
 
         QueryResult<Variant> variants = bioNetDbManager.getXLinkedDominantVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
@@ -226,11 +232,13 @@ public class BioNetDbManagerTest {
     @Test
     public void xLinkedRecessive() throws BioNetDBException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
-        Pedigree pedigree = getPedigree(disorder);
+        Pedigree pedigree = getPedigreeFamily2(disorder);
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
 
         QueryResult<Variant> variants = bioNetDbManager.getXLinkedRecessiveVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
@@ -243,11 +251,13 @@ public class BioNetDbManagerTest {
     @Test
     public void yLinked() throws BioNetDBException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
-        Pedigree pedigree = getPedigree(disorder);
+        Pedigree pedigree = getPedigreeFamily3(disorder);
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
 
         QueryResult<Variant> variants = bioNetDbManager.getYLinkedVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
@@ -257,12 +267,54 @@ public class BioNetDbManagerTest {
         }
     }
 
+    @Test
+    public void deNovo() throws BioNetDBException {
+        Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
+        Pedigree pedigree = getPedigreeFamily3(disorder);
+
+        Query query = new Query();
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("ct", "missense_variant,stop_lost,intron_variant");
+        query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
+
+        QueryResult<Variant> variants = bioNetDbManager.getDeNovoVariants(pedigree, query);
+        if (variants.getResult().size() > 0) {
+            for (Variant variant : variants.getResult()) {
+                System.out.println(variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0).getAttributes().get("sampleNames"));
+            }
+        }
+    }
+
+    @Test
+    public void compoundHeterozygous() throws BioNetDBException {
+        Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
+        Pedigree pedigree = getPedigreeFamily3(disorder);
+
+        Query query = new Query();
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("ct", "missense_variant,stop_lost,intron_variant");
+        query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
+
+        QueryResult<Map<String, List<Variant>>> variants = bioNetDbManager.getCompoundHeterozygousVariants(pedigree, query);
+        if (variants.getResult().size() > 0) {
+            Map<String, List<Variant>> variantMap = variants.getResult().get(0);
+            for (String key : variantMap.keySet()) {
+                System.out.println(key);
+                for (Variant variant : variantMap.get(key)) {
+                    System.out.println("\t" + variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0).getAttributes().get("sampleNames"));
+                }
+            }
+        }
+    }
+
     //-------------------------------------------------------------------------
     //
     //-------------------------------------------------------------------------
 
 
-    private Pedigree getPedigree(Disorder disorder) {
+    private Pedigree getPedigreeFamily1(Disorder disorder) {
         Member healthyFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
         Member illFather = new Member().setId("NA12877").setSex(Member.Sex.MALE)
                 .setDisorders(Collections.singletonList(disorder));
@@ -283,18 +335,52 @@ public class BioNetDbManagerTest {
         family1.setProband(illDaughter);
 
         return family1;
-/*
+    }
+
+    private Pedigree getPedigreeFamily2(Disorder disorder) {
+        Member healthyFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
+        Member illFather = new Member().setId("NA12877").setSex(Member.Sex.MALE)
+                .setDisorders(Collections.singletonList(disorder));
+
+        Member healthyMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE);
+        Member illMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE)
+                .setDisorders(Collections.singletonList(disorder));
+
+        Member healthyDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
+                .setMother(illMother).setFather(healthyFather);
+        Member illDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
+                .setDisorders(Collections.singletonList(disorder))
+                .setMother(illMother).setFather(healthyFather);
+
         Pedigree family2 = new Pedigree()
                 .setMembers(Arrays.asList(illFather, illMother, illDaughter))
                 .setDisorders(Collections.singletonList(disorder));
         family2.setProband(illDaughter);
 
+        return family2;
+    }
+
+    private Pedigree getPedigreeFamily3(Disorder disorder) {
+        Member healthyFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
+        Member illFather = new Member().setId("NA12877").setSex(Member.Sex.MALE)
+                .setDisorders(Collections.singletonList(disorder));
+
+        Member healthyMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE);
+        Member illMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE)
+                .setDisorders(Collections.singletonList(disorder));
+
+        Member healthyDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
+                .setMother(illMother).setFather(healthyFather);
+        Member illDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
+                .setDisorders(Collections.singletonList(disorder))
+                .setMother(illMother).setFather(healthyFather);
+
         Pedigree family3 = new Pedigree()
                 .setMembers(Arrays.asList(illFather, healthyMother, healthyDaughter))
                 .setDisorders(Collections.singletonList(disorder));
         family3.setProband(illDaughter);
-*/
 
+        return family3;
     }
 
     private void printNodes(List<Node> nodes) {

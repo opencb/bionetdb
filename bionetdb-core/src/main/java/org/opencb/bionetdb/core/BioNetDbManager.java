@@ -388,30 +388,26 @@ public class BioNetDbManager {
         return variantsResult;
     }
 
-//    //    NOT WORKING YET
-//    public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, List<String> listOfGenes, List<String> listOfChromosomes) {
-//        Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
-//        try {
-//            List<Variant> listOfVariants = ModeOfInheritance.deNovo(pedigree.getProband(), variantIterator);
-//            return tiering.getVariantsFromList(listOfVariants);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return null;
-//        }
-//    }
+    public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException {
 
-//    //    NOT WORKING YET
-//    public QueryResult<Variant> getCompoundHeterozygoteVariants(Pedigree pedigree, List<String> listOfGenes,
-//                                                                List<String> listOfChromosomes) {
-//        Neo4JVariantIterator variantIterator = tiering.variantsToIterator(listOfGenes, listOfChromosomes, pedigree.getMembers());
-//        try {
-//            List<Variant> listOfVariants = ModeOfInheritance.compoundHeterozygous(variantIterator, pedigree.getProband(),
-//                    pedigree.getProband().getMother(), pedigree.getProband().getMother());
-//            return tiering.getVariantsFromList(listOfVariants);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return null;
-//    }
+        MoIManager manager = new MoIManager(networkDBAdaptor);
+        List<Variant> variants = manager.getDeNovoVariants(pedigree, query);
+
+        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
+        variantsResult.setResult(variants);
+        return variantsResult;
+    }
+
+    public QueryResult<Map<String, List<Variant>>> getCompoundHeterozygousVariants(Pedigree pedigree, Query query)
+            throws BioNetDBException {
+
+        MoIManager manager = new MoIManager(networkDBAdaptor);
+        Map<String, List<Variant>> variants = manager.getCompoundHeterozygousVariants(pedigree, query);
+
+        QueryResult<Map<String, List<Variant>>> variantsResult = new QueryResult<>("variants");
+        variantsResult.setResult(Collections.singletonList(variants));
+        return variantsResult;
+    }
 
     public VariantContainer xQuery(FamilyFilter familyFilter, GeneFilter geneFilter) throws ExecutionException,
             InterruptedException {
