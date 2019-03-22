@@ -9,6 +9,7 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
+import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParam;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -43,6 +44,7 @@ public class MoIManager {
 
     public List<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
+        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "X");
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
@@ -51,6 +53,7 @@ public class MoIManager {
 
     public List<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
+        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "X");
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
@@ -59,6 +62,7 @@ public class MoIManager {
 
     public List<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "Y");
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());

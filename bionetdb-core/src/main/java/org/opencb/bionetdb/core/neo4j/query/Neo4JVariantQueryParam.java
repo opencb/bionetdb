@@ -15,6 +15,9 @@ public final class Neo4JVariantQueryParam  implements QueryParam {
     private static final List<Neo4JVariantQueryParam> VALUES = new ArrayList<>();
     private static final Map<String, Neo4JVariantQueryParam> VALUES_MAP = new HashMap<>();
 
+    public static final String CHROMOSOME_DESCR = "List of chromosomes";
+    public static final Neo4JVariantQueryParam CHROMOSOME = new Neo4JVariantQueryParam("chromosome", TEXT_ARRAY, CHROMOSOME_DESCR);
+
     public static final String PANEL_DESCR
             = "List of gene panels";
     public static final Neo4JVariantQueryParam PANEL = new Neo4JVariantQueryParam("panel", TEXT_ARRAY, PANEL_DESCR);

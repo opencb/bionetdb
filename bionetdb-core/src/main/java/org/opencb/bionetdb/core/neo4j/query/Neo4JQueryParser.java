@@ -357,8 +357,17 @@ public class Neo4JQueryParser {
 
         String match, where;
 
+        // Chromosome
+        String chromWhere = "";
+        String param = Neo4JVariantQueryParam.CHROMOSOME.key();
+        if (query.containsKey(param)) {
+            List<String> chromosomes = Arrays.asList(query.getString(param).split(","));
+            chromWhere = getConditionString(chromosomes, "v.chromosome", false);
+
+        }
+
         // panel
-        String param = Neo4JVariantQueryParam.PANEL.key();
+        param = Neo4JVariantQueryParam.PANEL.key();
         if (query.containsKey(param)) {
             match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
                     + "[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
@@ -366,6 +375,10 @@ public class Neo4JQueryParser {
 
             List<String> panels = Arrays.asList(query.getString(param).split(","));
             where = "WHERE " + getConditionString(panels, "p.name", false);
+            if (StringUtils.isNotEmpty(chromWhere)) {
+                where += " AND " + chromWhere;
+                chromWhere = "";
+            }
 
             param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
             if (query.containsKey(param)) {
@@ -411,7 +424,13 @@ public class Neo4JQueryParser {
                 }
                 sb.append(")");
 
+                if (StringUtils.isNotEmpty(chromWhere)) {
+                    sb.append(" AND ").append(chromWhere);
+                    chromWhere = "";
+                }
+
                 wheres.add("WHERE " + sb.toString());
+                chromWhere = "";
             }
         }
 
@@ -429,6 +448,10 @@ public class Neo4JQueryParser {
                 List<String> biotypes = Arrays.asList(query.getString(param).split(","));
                 where += (" AND " + getConditionString(biotypes, "ct.attr_biotype", false));
             }
+            if (StringUtils.isNotEmpty(chromWhere)) {
+                where += " AND " + chromWhere;
+                chromWhere = "";
+            }
             wheres.add(where);
         }
 
@@ -441,6 +464,10 @@ public class Neo4JQueryParser {
 
             List<String> biotypes = Arrays.asList(query.getString(param).split(","));
             where = "WHERE " + getConditionString(biotypes, "ct.name", false);
+            if (StringUtils.isNotEmpty(chromWhere)) {
+                where += " AND " + chromWhere;
+                chromWhere = "";
+            }
             wheres.add(where);
         }
 
@@ -451,6 +478,10 @@ public class Neo4JQueryParser {
             matches.add(match);
 
             where = "WHERE " + parsePopFreqValue(query.getString(param));
+            if (StringUtils.isNotEmpty(chromWhere)) {
+                where += " AND " + chromWhere;
+                chromWhere = "";
+            }
             wheres.add(where);
         }
 

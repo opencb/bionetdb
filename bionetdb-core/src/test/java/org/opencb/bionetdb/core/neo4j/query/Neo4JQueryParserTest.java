@@ -114,4 +114,16 @@ public class Neo4JQueryParserTest {
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
     }
+
+    @Test
+    public void parseVariantQueryGenotypesChrom() throws Exception {
+        Neo4JQueryParser parser = new Neo4JQueryParser();
+
+        Query query = new Query();
+        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "M,MT,Mt,mt");
+        query.put(Neo4JVariantQueryParam.GENOTYPE.key(), "sample1:1/0,1/1,sample2:1/0");
+
+        String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
+        System.out.println(cypher);
+    }
 }
