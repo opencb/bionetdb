@@ -180,6 +180,7 @@ public class BioNetDbManagerTest {
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("chromosome", "19");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
@@ -304,7 +305,8 @@ public class BioNetDbManagerTest {
             for (String key : variantMap.keySet()) {
                 System.out.println(key);
                 for (Variant variant : variantMap.get(key)) {
-                    System.out.println("\t" + variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0).getAttributes().get("sampleNames"));
+                    System.out.println("\t" + variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0)
+                            .getAttributes().get("sampleNames"));
                 }
             }
         }
@@ -318,6 +320,7 @@ public class BioNetDbManagerTest {
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("chromosome", "21");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");

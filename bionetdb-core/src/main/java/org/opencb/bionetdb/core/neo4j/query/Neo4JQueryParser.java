@@ -476,7 +476,7 @@ public class Neo4JQueryParser {
         String match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)";
 
         // Where1
-        String where = "WHERE " + getConditionString(panels, "p.name", false) + chromWhere;
+        String where = "WHERE " + getConditionString(panels, "p.name", false);
 
         // With1
         String with = "WITH DISTINCT tr1";
@@ -489,7 +489,9 @@ public class Neo4JQueryParser {
         // Where2
         where = "";
         if (StringUtils.isNotEmpty(biotypeValues)) {
-            where = "WHERE " + (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", false));
+            where = "WHERE " + (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", false)) + chromWhere;
+        } else if (StringUtils.isNotEmpty(chromWhere)) {
+            where = chromWhere.replace("AND", "WHERE");
         }
 
         // With2

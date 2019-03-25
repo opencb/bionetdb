@@ -93,10 +93,18 @@ public class ProteinSystemAnalysis {
             throw new IllegalArgumentException("Missing panels");
         }
 
+        // Chromosome
+        String chromWhere = "";
+        String param = Neo4JVariantQueryParam.CHROMOSOME.key();
+        if (query.containsKey(param)) {
+            List<String> chromosomes = Arrays.asList(query.getString(param).split(","));
+            chromWhere = getConditionString(chromosomes, "v.attr_chromosome", true);
+        }
+
         String nexus = complexOrReaction ? COMPLEX : REACTION;
 
-        cypher.append("MATCH (v:VARIANT)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)");
-                cypher.append("-[:TRANSCRIPT__PROTEIN]-(prot1:PROTEIN)-");
+        // Match1
+        cypher.append("MATCH (tr1:TRANSCRIPT)-[:TRANSCRIPT__PROTEIN]-(prot1:PROTEIN)-");
         if (complexOrReaction) {
             cypher.append("[:COMPONENT_OF_COMPLEX]-(nex:COMPLEX)-[:COMPONENT_OF_COMPLEX]-");
         } else {
@@ -104,18 +112,34 @@ public class ProteinSystemAnalysis {
         }
         cypher.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(g:GENE)-[:PANEL__GENE]-(p:PANEL)\n");
 
+        // Where1
         cypher.append("WHERE ").append(getConditionString(Arrays.asList(query.getString(Neo4JVariantQueryParam.PANEL.key())
-                .split(",")), "p.name", false))
-                .append(getConditionString(Arrays.asList(query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key())
-                        .split(",")), "ct.attr_biotype", true)).append("\n");
+                .split(",")), "p.name", false));
 
-        cypher.append("WITH DISTINCT v, prot1.name AS ").append(TARGET_PROTEIN).append(", nex.name AS ").append(nexus)
+        // With1
+        cypher.append("WITH DISTINCT tr1, prot1.name AS ").append(TARGET_PROTEIN).append(", nex.name AS ").append(nexus)
                 .append(", prot2.name AS ").append(PANEL_PROTEIN).append(", g.id AS ").append(PANEL_GENE).append("\n");
 
+        // Match2
+        cypher.append("MATCH (v:VARIANT)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]")
+                .append("-(tr1:TRANSCRIPT)").append("\n");
+
+        // Where2
+        String biotypeValues = query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key());
+        if (org.apache.commons.lang3.StringUtils.isNotEmpty(biotypeValues)) {
+            cypher.append("WHERE ").append(getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", false))
+                    .append(chromWhere);
+        } else if (org.apache.commons.lang3.StringUtils.isNotEmpty(chromWhere)) {
+            cypher.append(chromWhere.replace("AND", "WHERE")).append("\n");
+        }
+
+        // With2
         String systemParams = ", " + TARGET_PROTEIN + ", " + nexus + ", " + PANEL_PROTEIN + ", " + PANEL_GENE;
+        cypher.append("WITH DISTINCT v").append(systemParams).append("\n");
 
         query.remove(Neo4JVariantQueryParam.PANEL.key());
         query.remove(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key());
+        query.remove(Neo4JVariantQueryParam.CHROMOSOME.key());
         List<CypherStatement> cypherStatements = getCypherStatements(query, options);
 
         int i = 0;
