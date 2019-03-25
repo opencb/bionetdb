@@ -3,6 +3,8 @@ package org.opencb.bionetdb.core.utils.converters;
 import org.neo4j.driver.v1.Record;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
@@ -43,6 +45,9 @@ public class RecordToVariantConverter implements Converter<Record, Variant> {
         variantBuilder.setStudyId("S");
         variantBuilder.setFormat("GT");
 
+        Variant variant = variantBuilder.build();
+
+        // Add protein system info in annotation additional attributes
         Map<String, String> systemMap = new HashMap<>();
         if (!record.get(NodeBuilder.TARGET_PROTEIN).isNull()) {
             systemMap.put(NodeBuilder.TARGET_PROTEIN, record.get(NodeBuilder.TARGET_PROTEIN).asString());
@@ -59,8 +64,18 @@ public class RecordToVariantConverter implements Converter<Record, Variant> {
         if (!record.get(NodeBuilder.PANEL_GENE).isNull()) {
             systemMap.put(NodeBuilder.PANEL_GENE, record.get(NodeBuilder.PANEL_GENE).asString());
         }
-        variantBuilder.setAttributes(systemMap);
 
-        return variantBuilder.build();
+        AdditionalAttribute additionalAttribute = new AdditionalAttribute();
+        additionalAttribute.setAttribute(systemMap);
+
+        Map<String, AdditionalAttribute> additionalAttributes = new HashMap<>();
+        additionalAttributes.put("proteinSystem", additionalAttribute);
+
+        VariantAnnotation variantAnnotation = new VariantAnnotation();
+        variantAnnotation.setAdditionalAttributes(additionalAttributes);
+
+        variant.setAnnotation(variantAnnotation);
+
+        return variant;
     }
 }
