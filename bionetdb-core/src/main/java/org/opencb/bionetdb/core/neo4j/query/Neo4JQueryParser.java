@@ -10,9 +10,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.security.InvalidParameterException;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -26,6 +24,45 @@ public class Neo4JQueryParser {
     private static final Set<String> VARIANT_PSEUDO_ATTRS = new HashSet<>(Arrays.asList("popFreq", "so"));
 
     private static final Pattern POP_FREQ_PATTERN = Pattern.compile("([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
+
+    public static class CypherStatement {
+        private String match;
+        private String where;
+        private String with;
+
+        public CypherStatement() {
+        }
+
+        public CypherStatement(String match, String where, String with) {
+            this.match = match;
+            this.where = where;
+            this.with = with;
+        }
+
+        public String getMatch() {
+            return match;
+        }
+
+        public void setMatch(String match) {
+            this.match = match;
+        }
+
+        public String getWhere() {
+            return where;
+        }
+
+        public void setWhere(String where) {
+            this.where = where;
+        }
+
+        public String getWith() {
+            return with;
+        }
+
+        public void setWith(String with) {
+            this.with = with;
+        }
+    }
 
     public static String parseNodeQuery(Query query, QueryOptions options) throws BioNetDBException {
         String nameNode = "n";
@@ -351,105 +388,73 @@ public class Neo4JQueryParser {
     }
 
     public static String parseVariantQuery(Query query, QueryOptions options) {
-        List<String> matches = new LinkedList<>();
-        List<String> wheres = new LinkedList<>();
+        List<CypherStatement> cypherStatements = getCypherStatements(query, options);
 
-        String match, where;
+        int i = 0;
+        CypherStatement st;
+        StringBuilder sb = new StringBuilder();
+        for (i = 0; i < cypherStatements.size() - 1; i++) {
+            st = cypherStatements.get(i);
+            sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append(st.getWith()).append("\n");
+        }
+        st = cypherStatements.get(i);
+        sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n");
+        if (!query.getBoolean(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key())) {
+            sb.append("RETURN DISTINCT v");
+        } else {
+            sb.append("WITH DISTINCT v").append("\n")
+                    .append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT) ")
+                    .append("RETURN DISTINCT v, collect(s), collect(vc)");
+        }
+
+        System.out.println(sb);
+        return sb.toString();
+    }
+
+    public static List<CypherStatement> getCypherStatements(Query query, QueryOptions queryOptions) {
+        List<CypherStatement> cypherStatements = new ArrayList<>();
 
         // Chromosome
         String chromWhere = "";
         String param = Neo4JVariantQueryParam.CHROMOSOME.key();
         if (query.containsKey(param)) {
             List<String> chromosomes = Arrays.asList(query.getString(param).split(","));
-            chromWhere = getConditionString(chromosomes, "v.attr_chromosome", false);
+            chromWhere = getConditionString(chromosomes, "v.attr_chromosome", true);
         }
 
         // Panel
-        param = Neo4JVariantQueryParam.PANEL.key();
-        if (query.containsKey(param)) {
-            match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
-                    + "[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
-            matches.add(match);
-
-            List<String> panels = Arrays.asList(query.getString(param).split(","));
-            where = "WHERE " + getConditionString(panels, "p.name", false);
-            if (StringUtils.isNotEmpty(chromWhere)) {
-                where += " AND " + chromWhere;
-                chromWhere = "";
-            }
-
-            param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
-            if (query.containsKey(param)) {
-                List<String> biotypes = Arrays.asList(query.getString(param).split(","));
-                where += (" AND " + getConditionString(biotypes, "ct.attr_biotype", false));
-            }
-            wheres.add(where);
-        }
-
-        // Genotype (sample)
-        param = Neo4JVariantQueryParam.GENOTYPE.key();
-        if (query.containsKey(param)) {
-            HashMap<Object, List<String>> map = new LinkedHashMap<>();
-            VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils
-                    .parseGenotypeFilter(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), map);
-            List<String> samples = new ArrayList<>(map.size());
-            map.keySet().stream().map(Object::toString).forEach(samples::add);
-
-            Iterator<Object> sampleIterator = map.keySet().iterator();
-            while (sampleIterator.hasNext()) {
-                String sample = sampleIterator.next().toString();
-                if (map.get(sample).size() > 0) {
-                    match = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
-                    matches.add(match);
-
-                    where = getConditionString(Collections.singletonList(sample), "sam.id", true)
-                            + getConditionString(map.get(sample), "vc.attr_GT", false);
-                    if (StringUtils.isNotEmpty(chromWhere)) {
-                        where += " AND " + chromWhere;
-                        chromWhere = "";
-                    }
-                    wheres.add("WHERE " + where);
-                }
-            }
+        if (query.containsKey(Neo4JVariantQueryParam.PANEL.key())) {
+            cypherStatements.add(parsePanels(query.getString(Neo4JVariantQueryParam.PANEL.key()),
+                    query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key()), chromWhere));
+            chromWhere = "";
         }
 
         // SO
-        param = Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key();
-        if (query.containsKey(param)) {
-            match = "MATCH (so:SO)-[:CONSEQUENCE_TYPE__SO]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
-            matches.add(match);
-
-            List<String> connsequeneTypes = Arrays.asList(query.getString(param).split(","));
-            where = "WHERE " + getConditionString(connsequeneTypes, "so.name", false);
-
-            param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
-            if (!query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && query.containsKey(param)) {
-                List<String> biotypes = Arrays.asList(query.getString(param).split(","));
-                where += (" AND " + getConditionString(biotypes, "ct.attr_biotype", false));
+        if (query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
+            String biotypeValues = "";
+            if (!query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && query.containsKey(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key())) {
+                biotypeValues = query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key());
             }
-            if (StringUtils.isNotEmpty(chromWhere)) {
-                where += " AND " + chromWhere;
-                chromWhere = "";
-            }
-            wheres.add(where);
+            cypherStatements.add(parseConsequenceTypes(query.getString(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()), biotypeValues,
+                    chromWhere));
+            chromWhere = "";
+        }
+
+        // Genotype (sample)
+        // chromWhere should be used only once, not every genotype iteration
+        if (query.containsKey(Neo4JVariantQueryParam.GENOTYPE.key())) {
+            cypherStatements.addAll(parseGenotypes(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), chromWhere));
+            chromWhere = "";
         }
 
         // Biotype
         param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
         if (query.containsKey(param) && !query.containsKey(Neo4JVariantQueryParam.PANEL.key())
                 && !query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
-            match = "MATCH (ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
-            matches.add(match);
-
-            List<String> biotypes = Arrays.asList(query.getString(param).split(","));
-            where = "WHERE " + getConditionString(biotypes, "ct.name", false);
-            if (StringUtils.isNotEmpty(chromWhere)) {
-                where += " AND " + chromWhere;
-                chromWhere = "";
-            }
-            wheres.add(where);
+            cypherStatements.add(parseBiotypes(param, chromWhere));
         }
 
+        /*
         // Pop. freq.
         param = Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (query.containsKey(param)) {
@@ -504,24 +509,81 @@ public class Neo4JQueryParser {
                 }
             }
         }
+*/
 
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < matches.size(); i++) {
-            sb.append(matches.get(i)).append(" ").append(wheres.get(i));
-            if (i < matches.size() - 1) {
-                sb.append(" WITH DISTINCT v ");
-            } else {
-                if (!query.getBoolean(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key())) {
-                    sb.append(" RETURN DISTINCT v");
-                } else {
-                    sb.append(" WITH DISTINCT v ")
-                            .append("MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT) ")
-                            .append("RETURN DISTINCT v, collect(sam), collect(vc)");
-                }
+        return cypherStatements;
+    }
+
+    public static CypherStatement parsePanels(String panelValues, String biotypeValues, String chromWhere) {
+
+        List<String> panels = Arrays.asList(panelValues.split(","));
+        String match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
+                + "[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+
+        String where = "WHERE " + getConditionString(panels, "p.name", false) + chromWhere;
+        if (StringUtils.isNotEmpty(biotypeValues)) {
+            where += (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", true));
+        }
+
+        // With
+        String with = "WITH DISTINCT v";
+
+        return new CypherStatement(match, where, with);
+    }
+
+    private static List<CypherStatement> parseGenotypes(String genotypeValues, String chromWhere) {
+        List<CypherStatement> cypherStatements = new ArrayList<>();
+
+        HashMap<Object, List<String>> map = new LinkedHashMap<>();
+        VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(genotypeValues, map);
+        List<String> samples = new ArrayList<>(map.size());
+        map.keySet().stream().map(Object::toString).forEach(samples::add);
+
+        Iterator<Object> sampleIterator = map.keySet().iterator();
+        while (sampleIterator.hasNext()) {
+            String sample = sampleIterator.next().toString();
+            if (map.get(sample).size() > 0) {
+                // Match
+                String match = "MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
+
+                // Where
+                String where = "WHERE " + getConditionString(Collections.singletonList(sample), "s.id", false)
+                        + getConditionString(map.get(sample), "vc.attr_GT", true) + chromWhere;
+
+                // With
+                String with = "WITH DISTINCT v";
+
+                cypherStatements.add(new CypherStatement(match, where, with));
             }
         }
-        System.out.println(sb);
-        return sb.toString();
+        return cypherStatements;
+    }
+
+    private static CypherStatement parseConsequenceTypes(String ctValues, String biotypeValues, String chromWhere) {
+        List<String> cts = Arrays.asList(ctValues.split(","));
+        String match = "MATCH (so:SO)-[:CONSEQUENCE_TYPE__SO]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+
+        String where = "WHERE " + getConditionString(cts, "so.name", false) + chromWhere;
+        if (StringUtils.isNotEmpty(biotypeValues)) {
+            where += (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", true));
+        }
+
+        // With
+        String with = "WITH DISTINCT v";
+
+        return new CypherStatement(match, where, with);
+    }
+
+    private static CypherStatement parseBiotypes(String biotypeValues, String chromWhere) {
+        List<String> biotypes = Arrays.asList(biotypeValues.split(","));
+        String match = "MATCH (ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+
+        String where = "WHERE " + getConditionString(biotypes, "ct.attr_biotype", false) + chromWhere;
+
+        // With
+        String with = "WITH DISTINCT v";
+
+        return new CypherStatement(match, where, with);
     }
 
     /**
@@ -532,14 +594,14 @@ public class Neo4JQueryParser {
      *
      * @param stringList The list of elements that will compound the filter
      * @param calling    The index we want to use to call if from the database
-     * @param isNotLast  A boolean that adds an "AND" operator at the end of the substring if needed
+     * @param isNotFirst A boolean that adds an "AND" operator at the start of the substring if needed
      * @return the substring with the filter ready to use for Neo4j
      */
-    private static String getConditionString(List<String> stringList, String calling, boolean isNotLast) {
-        return getConditionString(stringList, calling, "=", " OR ", isNotLast);
+    public static String getConditionString(List<String> stringList, String calling, boolean isNotFirst) {
+        return getConditionString(stringList, calling, "=", " OR ", isNotFirst);
     }
 
-    private static String getConditionString(List<String> stringList, String calling, String op, String logicalOp, boolean isNotLast) {
+    public static String getConditionString(List<String> stringList, String calling, String op, String logicalOp, boolean isNotFirst) {
         String substring = "";
         if (stringList.size() == 0) {
             return substring;
@@ -550,8 +612,8 @@ public class Neo4JQueryParser {
             }
             substring = StringUtils.join(elements, logicalOp);
             substring = "(" + substring + ")";
-            if (isNotLast) {
-                substring = substring + " AND ";
+            if (isNotFirst) {
+                substring = " AND " + substring;
             }
             return substring;
         }

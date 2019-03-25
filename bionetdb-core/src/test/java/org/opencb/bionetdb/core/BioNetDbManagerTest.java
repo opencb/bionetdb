@@ -10,6 +10,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
@@ -305,6 +306,26 @@ public class BioNetDbManagerTest {
                 for (Variant variant : variantMap.get(key)) {
                     System.out.println("\t" + variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0).getAttributes().get("sampleNames"));
                 }
+            }
+        }
+    }
+
+    @Test
+    public void systemDominant() throws BioNetDBException {
+        Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
+        Pedigree pedigree = getPedigreeFamily3(disorder);
+        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.MONOALLELIC;
+
+        Query query = new Query();
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("ct", "missense_variant,stop_lost,intron_variant");
+        query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
+
+        QueryResult<Variant> variants = bioNetDbManager.getProteinSystemVariants(pedigree, disorder, moi, true, query);
+        if (variants.getResult().size() > 0) {
+            for (Variant variant : variants.getResult()) {
+                System.out.println(variant.toStringSimple());
             }
         }
     }
