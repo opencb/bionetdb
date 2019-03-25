@@ -426,7 +426,7 @@ public class Neo4JQueryParser {
 
         // Panel
         if (query.containsKey(Neo4JVariantQueryParam.PANEL.key())) {
-            cypherStatements.add(parsePanel(query.getString(Neo4JVariantQueryParam.PANEL.key()),
+            cypherStatements.addAll(parsePanel(query.getString(Neo4JVariantQueryParam.PANEL.key()),
                     query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key()), chromWhere));
             chromWhere = "";
         }
@@ -467,23 +467,37 @@ public class Neo4JQueryParser {
         return cypherStatements;
     }
 
-    public static CypherStatement parsePanel(String panelValues, String biotypeValues, String chromWhere) {
+    public static List<CypherStatement> parsePanel(String panelValues, String biotypeValues, String chromWhere) {
         List<String> panels = Arrays.asList(panelValues.split(","));
+        List<CypherStatement> cypherStatements = new ArrayList<>();
 
-        // Match
-        String match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
-                + "[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
 
-        // Where
+        // Match1
+        String match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)";
+
+        // Where1
         String where = "WHERE " + getConditionString(panels, "p.name", false) + chromWhere;
+
+        // With1
+        String with = "WITH DISTINCT tr1";
+
+        cypherStatements.add(new CypherStatement(match, where, with));
+
+        // Match2
+        match = "MATCH (tr1:TRANSCRIPT)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+
+        // Where2
+        where = "";
         if (StringUtils.isNotEmpty(biotypeValues)) {
-            where += (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", true));
+            where = "WHERE " + (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", false));
         }
 
-        // With
-        String with = "WITH DISTINCT v";
+        // With2
+        with = "WITH DISTINCT v";
 
-        return new CypherStatement(match, where, with);
+        cypherStatements.add(new CypherStatement(match, where, with));
+
+        return cypherStatements;
     }
 
     private static List<CypherStatement> parseGenotype(String genotypeValues, String chromWhere) {
