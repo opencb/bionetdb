@@ -7,7 +7,7 @@ import java.util.*;
 import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
-public final class Neo4JVariantQueryParam  implements QueryParam {
+public final class Neo4JVariantQueryParam implements QueryParam {
 
     private final String key;
     private final Type type;
@@ -21,6 +21,9 @@ public final class Neo4JVariantQueryParam  implements QueryParam {
 
     public static final String PANEL_DESCR = "List of gene panels";
     public static final Neo4JVariantQueryParam PANEL = new Neo4JVariantQueryParam("panel", TEXT_ARRAY, PANEL_DESCR);
+
+    public static final String GENE_DESCR = "List of genes";
+    public static final Neo4JVariantQueryParam GENE = new Neo4JVariantQueryParam("gene", TEXT_ARRAY, GENE_DESCR);
 
     public static final String GENOTYPE_DESCR
             = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)*"

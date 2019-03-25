@@ -180,7 +180,7 @@ public class BioNetDbManagerTest {
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
-        query.put("chromosome", "19");
+        query.put("gene", "BRCA1,BRCA2");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
@@ -200,6 +200,7 @@ public class BioNetDbManagerTest {
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("chromosome", "3");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
