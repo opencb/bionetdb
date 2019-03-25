@@ -116,6 +116,18 @@ public class Neo4JQueryParserTest {
     }
 
     @Test
+    public void parseVariantQueryPopFreqsORChromosome() throws Exception {
+        Neo4JQueryParser parser = new Neo4JQueryParser();
+
+        Query query = new Query();
+        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "X");
+        query.put(Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001,AFR>0.3");
+
+        String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
+        System.out.println(cypher);
+    }
+
+    @Test
     public void parseVariantQueryPopFreqsANDChromosome() throws Exception {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 

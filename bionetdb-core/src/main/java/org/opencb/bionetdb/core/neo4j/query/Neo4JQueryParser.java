@@ -10,7 +10,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
+import java.security.InvalidParameterException;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -424,7 +426,7 @@ public class Neo4JQueryParser {
 
         // Panel
         if (query.containsKey(Neo4JVariantQueryParam.PANEL.key())) {
-            cypherStatements.add(parsePanels(query.getString(Neo4JVariantQueryParam.PANEL.key()),
+            cypherStatements.add(parsePanel(query.getString(Neo4JVariantQueryParam.PANEL.key()),
                     query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key()), chromWhere));
             chromWhere = "";
         }
@@ -435,7 +437,7 @@ public class Neo4JQueryParser {
             if (!query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && query.containsKey(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key())) {
                 biotypeValues = query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key());
             }
-            cypherStatements.add(parseConsequenceTypes(query.getString(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()), biotypeValues,
+            cypherStatements.add(parseConsequenceType(query.getString(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()), biotypeValues,
                     chromWhere));
             chromWhere = "";
         }
@@ -443,7 +445,7 @@ public class Neo4JQueryParser {
         // Genotype (sample)
         // chromWhere should be used only once, not every genotype iteration
         if (query.containsKey(Neo4JVariantQueryParam.GENOTYPE.key())) {
-            cypherStatements.addAll(parseGenotypes(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), chromWhere));
+            cypherStatements.addAll(parseGenotype(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), chromWhere));
             chromWhere = "";
         }
 
@@ -451,75 +453,28 @@ public class Neo4JQueryParser {
         param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
         if (query.containsKey(param) && !query.containsKey(Neo4JVariantQueryParam.PANEL.key())
                 && !query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
-            cypherStatements.add(parseBiotypes(param, chromWhere));
+            cypherStatements.add(parseBiotype(param, chromWhere));
+            chromWhere = "";
         }
 
-        /*
-        // Pop. freq.
+
+        // Population frequency (alternate frequency)
         param = Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (query.containsKey(param)) {
-
-            String[] popFreqs = query.getString(param).split("[,;]");
-
-            Matcher matcher;
-            if (query.getString(param).contains(",")) {
-                // OR -> we need only one MATCH statement for all pop. frequencies
-                match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
-                matches.add(match);
-
-                boolean first = true;
-                StringBuilder sb = new StringBuilder();
-                for (String popFreq : popFreqs) {
-                    matcher = POP_FREQ_PATTERN.matcher(popFreq);
-                    if (matcher.find()) {
-                        if (!first) {
-                            sb.append(" OR ");
-                        }
-                        sb.append("(pf.id = '" + matcher.group(1)).append("' AND toFloat(pf.attr_altAlleleFreq)")
-                                .append(matcher.group(2)).append(matcher.group(3)).append(")");
-                        first = false;
-                    } else {
-                        throw new InvalidParameterException("Invalid population frequency parameter: " + popFreq);
-                    }
-                }
-                if (StringUtils.isNotEmpty(chromWhere)) {
-                    sb.append(" AND ").append(chromWhere);
-                    chromWhere = "";
-                }
-                wheres.add("WHERE " + sb.toString());
-            } else {
-                // AND -> we need one MATCH per population frequency
-                String logicalOp = " AND ";
-                for (String popFreq : popFreqs) {
-                    matcher = POP_FREQ_PATTERN.matcher(popFreq);
-                    if (matcher.find()) {
-                        match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
-                        matches.add(match);
-
-                        where = "(pf.id = '" + matcher.group(1) + "' AND toFloat(pf.attr_altAlleleFreq)" + matcher.group(2)
-                                + matcher.group(3) + ")";
-                        if (StringUtils.isNotEmpty(chromWhere)) {
-                            where += " AND " + chromWhere;
-                            chromWhere = "";
-                        }
-                        wheres.add("WHERE " + where);
-                    } else {
-                        throw new InvalidParameterException("Invalid population frequency parameter: " + popFreq);
-                    }
-                }
-            }
+            cypherStatements.addAll(parsePopulationFrequency(query.getString(param), chromWhere));
         }
-*/
 
         return cypherStatements;
     }
 
-    public static CypherStatement parsePanels(String panelValues, String biotypeValues, String chromWhere) {
-
+    public static CypherStatement parsePanel(String panelValues, String biotypeValues, String chromWhere) {
         List<String> panels = Arrays.asList(panelValues.split(","));
+
+        // Match
         String match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(:TRANSCRIPT)-"
                 + "[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
 
+        // Where
         String where = "WHERE " + getConditionString(panels, "p.name", false) + chromWhere;
         if (StringUtils.isNotEmpty(biotypeValues)) {
             where += (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", true));
@@ -531,7 +486,7 @@ public class Neo4JQueryParser {
         return new CypherStatement(match, where, with);
     }
 
-    private static List<CypherStatement> parseGenotypes(String genotypeValues, String chromWhere) {
+    private static List<CypherStatement> parseGenotype(String genotypeValues, String chromWhere) {
         List<CypherStatement> cypherStatements = new ArrayList<>();
 
         HashMap<Object, List<String>> map = new LinkedHashMap<>();
@@ -559,10 +514,13 @@ public class Neo4JQueryParser {
         return cypherStatements;
     }
 
-    private static CypherStatement parseConsequenceTypes(String ctValues, String biotypeValues, String chromWhere) {
+    private static CypherStatement parseConsequenceType(String ctValues, String biotypeValues, String chromWhere) {
         List<String> cts = Arrays.asList(ctValues.split(","));
+
+        // Match
         String match = "MATCH (so:SO)-[:CONSEQUENCE_TYPE__SO]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
 
+        // Where
         String where = "WHERE " + getConditionString(cts, "so.name", false) + chromWhere;
         if (StringUtils.isNotEmpty(biotypeValues)) {
             where += (getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", true));
@@ -574,16 +532,79 @@ public class Neo4JQueryParser {
         return new CypherStatement(match, where, with);
     }
 
-    private static CypherStatement parseBiotypes(String biotypeValues, String chromWhere) {
+    private static CypherStatement parseBiotype(String biotypeValues, String chromWhere) {
         List<String> biotypes = Arrays.asList(biotypeValues.split(","));
+
+        // Match
         String match = "MATCH (ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
 
+        // Where
         String where = "WHERE " + getConditionString(biotypes, "ct.attr_biotype", false) + chromWhere;
 
         // With
         String with = "WITH DISTINCT v";
 
         return new CypherStatement(match, where, with);
+    }
+
+    private static List<CypherStatement> parsePopulationFrequency(String popFreqValues, String chromWhere) {
+        List<CypherStatement> cypherStatements = new ArrayList<>();
+
+        String[] popFreqs = popFreqValues.split("[,;]");
+
+        Matcher matcher;
+        if (popFreqValues.contains(",")) {
+            // OR -> we need only one MATCH statement for all pop. frequencies
+
+            // Math
+            String match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
+
+            // Where
+            boolean first = true;
+            StringBuilder where = new StringBuilder("WHERE ");
+            for (String popFreq : popFreqs) {
+                matcher = POP_FREQ_PATTERN.matcher(popFreq);
+                if (matcher.find()) {
+                    if (!first) {
+                        where.append(" OR ");
+                    }
+                    where.append("(pf.id = '" + matcher.group(1)).append("' AND toFloat(pf.attr_altAlleleFreq)")
+                            .append(matcher.group(2)).append(matcher.group(3)).append(")");
+                    first = false;
+                } else {
+                    throw new InvalidParameterException("Invalid population frequency parameter: " + popFreq);
+                }
+            }
+            where.append(chromWhere);
+
+            // With
+            String with = "WITH DISTINCT v";
+
+            cypherStatements.add(new CypherStatement(match, where.toString(), with));
+        } else {
+            // AND -> we need one MATCH per population frequency
+
+            for (String popFreq : popFreqs) {
+                matcher = POP_FREQ_PATTERN.matcher(popFreq);
+                if (matcher.find()) {
+                    // Match
+                    String match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
+
+                    // Where
+                    String where = "WHERE (pf.id = '" + matcher.group(1) + "' AND toFloat(pf.attr_altAlleleFreq)" + matcher.group(2)
+                            + matcher.group(3) + ")" + chromWhere;
+                    chromWhere = "";
+
+                    // With
+                    String with = "WITH DISTINCT v";
+
+                    cypherStatements.add(new CypherStatement(match, where, with));
+                } else {
+                    throw new InvalidParameterException("Invalid population frequency parameter: " + popFreq);
+                }
+            }
+        }
+        return cypherStatements;
     }
 
     /**
