@@ -2,18 +2,20 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.NodeIterator;
-import org.opencb.bionetdb.core.api.RowIterator;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
+import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParam;
-import org.opencb.bionetdb.core.utils.Neo4jConverter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -79,13 +81,13 @@ public class MoIManager {
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
 
         // Get variants and genotypes
-        List<Variant> variants = queryVariantGenotypes(cypher);
+        List<Variant> variants = queryVariantsAnnotation(cypher);
         if (CollectionUtils.isEmpty(variants)) {
             return Collections.emptyList();
         } else {
-            List<String> sampleNames = Arrays.asList(variants.get(0).getStudies().get(0).getFiles().get(0).getAttributes()
-                    .get("sampleNames")
-                    .split(","));
+
+            List<String> sampleNames = Arrays.asList(variants.get(0).getAnnotation().getAdditionalAttributes().get("samples").getAttribute()
+                    .get(NodeBuilder.SAMPLE).split(","));
 
             // Filter deNovo variants
             int probandSampleIdx = sampleNames.indexOf(pedigree.getProband().getId());
@@ -100,26 +102,81 @@ public class MoIManager {
         putGenotypes(query, genotypes);
 
         query.put(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key(), true);
+        query.put(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key(), true);
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
 
         // Get variants and genotypes
-        List<Variant> variants = queryVariantGenotypes(cypher);
+        List<Variant> variants = queryVariantsAnnotation(cypher);
+
         if (CollectionUtils.isEmpty(variants)) {
             return Collections.emptyMap();
         } else {
-            List<String> sampleNames = Arrays.asList(variants.get(0).getStudies().get(0).getFiles().get(0).getAttributes()
-                    .get("sampleNames")
-                    .split(","));
 
-            // Filter compoundHeterozygous variants
+            List<String> sampleNames = Arrays.asList(variants.get(0).getAnnotation().getAdditionalAttributes().get("samples").getAttribute()
+                    .get(NodeBuilder.SAMPLE).split(","));
+
+            // Filter deNovo variants
             int probandSampleIdx = sampleNames.indexOf(pedigree.getProband().getId());
             int motherSampleIdx = sampleNames.indexOf(pedigree.getProband().getMother().getId());
             int fatherSampleIdx = sampleNames.indexOf(pedigree.getProband().getFather().getId());
-
-            System.out.println("variants size = " + variants.size());
             return ModeOfInheritance.compoundHeterozygous(variants.iterator(), probandSampleIdx, motherSampleIdx, fatherSampleIdx);
         }
     }
+
+//    This one uses queryVariantWithGenotypes
+//
+//    public List<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException {
+//        Map<String, List<String>> genotypes = ModeOfInheritance.deNovo(pedigree);
+//        putGenotypes(query, genotypes);
+//
+//        query.put(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key(), true);
+//        String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
+//
+//        // Get variants and genotypes
+//        List<Variant> variants = queryVariantWithGenotypes(cypher);
+//        if (CollectionUtils.isEmpty(variants)) {
+//            return Collections.emptyList();
+//        } else {
+//            List<String> sampleNames = Arrays.asList(variants.get(0).getStudies().get(0).getFiles().get(0).getAttributes()
+//                    .get("sampleNames")
+//                    .split(","));
+//
+//            // Filter deNovo variants
+//            int probandSampleIdx = sampleNames.indexOf(pedigree.getProband().getId());
+//            int motherSampleIdx = sampleNames.indexOf(pedigree.getProband().getMother().getId());
+//            int fatherSampleIdx = sampleNames.indexOf(pedigree.getProband().getFather().getId());
+//            return ModeOfInheritance.deNovo(variants.iterator(), probandSampleIdx, motherSampleIdx, fatherSampleIdx);
+//        }
+//    }
+
+//    This one uses queryVariantWithGenotypes
+//
+//    public Map<String, List<Variant>> getCompoundHeterozygousVariants(Pedigree pedigree, Query query) throws BioNetDBException {
+//        Map<String, List<String>> genotypes = ModeOfInheritance.compoundHeterozygous(pedigree);
+//        putGenotypes(query, genotypes);
+//
+//        query.put(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key(), true);
+//        query.put(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key(), true);
+//        String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
+//
+//        // Get variants and genotypes
+//        List<Variant> variants = queryVariantWithGenotypes(cypher);
+//        if (CollectionUtils.isEmpty(variants)) {
+//            return Collections.emptyMap();
+//        } else {
+//            List<String> sampleNames = Arrays.asList(variants.get(0).getStudies().get(0).getFiles().get(0).getAttributes()
+//                    .get("sampleNames")
+//                    .split(","));
+//
+//            // Filter compoundHeterozygous variants
+//            int probandSampleIdx = sampleNames.indexOf(pedigree.getProband().getId());
+//            int motherSampleIdx = sampleNames.indexOf(pedigree.getProband().getMother().getId());
+//            int fatherSampleIdx = sampleNames.indexOf(pedigree.getProband().getFather().getId());
+//
+//            System.out.println("variants size = " + variants.size());
+//            return ModeOfInheritance.compoundHeterozygous(variants.iterator(), probandSampleIdx, motherSampleIdx, fatherSampleIdx);
+//        }
+//    }
 
     //------------------------------------------------------------------
     //  P R I V A T E      M E T H O D S
@@ -145,50 +202,65 @@ public class MoIManager {
         return variants;
     }
 
+    private List<Variant> queryVariantsAnnotation(String cypher) throws BioNetDBException {
+
+        // Execute cypher query and convert to variants
+        Driver driver = ((Neo4JNetworkDBAdaptor) networkDBAdaptor).getDriver();
+        Session session = driver.session();
+        StatementResult result = session.run(cypher);
+        session.close();
+
+        List<Variant> variants = new ArrayList<>();
+        while (result.hasNext()) {
+            variants.add(new Neo4JVariantIterator(result).next());
+        }
+        return variants;
+    }
 
     /*
         public RowIterator rowIterator(String cypher) throws BioNetDBException {
         Session session = this.driver.session();
-//        System.out.println("Cypher query: " + cypher);
+        System.out.println("Cypher query: " + cypher);
         return new Neo4JRowIterator(session.run(cypher));
     }
-
      */
 
-    private List<Variant> queryVariantGenotypes(String cypher) throws BioNetDBException {
-        List<Variant> variants = new ArrayList<>();
-
-        String names = null;
-
-        RowIterator rowIterator = networkDBAdaptor.rowIterator(cypher);
-        while (rowIterator.hasNext()) {
-            List<Object> row = rowIterator.next();
-
-            // Variant
-            Variant variant = NodeBuilder.newVariant(Neo4jConverter.toNode((org.neo4j.driver.v1.types.Node) row.get(0)));
-
-            // Sample
-            if (names == null) {
-                List<String> sampleNames = new ArrayList<>();
-                List<org.neo4j.driver.v1.types.Node> sampleNodes = (List<org.neo4j.driver.v1.types.Node>) row.get(1);
-                for (Node sampleNode : sampleNodes) {
-                    sampleNames.add(sampleNode.get("name").asString());
-                }
-                names = StringUtils.join(sampleNames, ",");
-            }
-            variant.getStudies().get(0).setAttributes(new HashMap<>());
-            variant.getStudies().get(0).getAttributes().put("sampleNames", names);
-
-            // Genotype
-            List<org.neo4j.driver.v1.types.Node> gtNodes = (List<org.neo4j.driver.v1.types.Node>) row.get(2);
-            List<List<String>> sampleData = new ArrayList<>(gtNodes.size());
-            for (Node gtNode : gtNodes) {
-                sampleData.add(Collections.singletonList(gtNode.get("attr_GT").asString()));
-            }
-            variant.getStudies().get(0).setSamplesData(sampleData);
-
-            variants.add(variant);
-        }
-        return variants;
-    }
+//    This method was replaced by queryVariantsAnnotation when we found the need to include TR,CT and BT data in the result for CH query
+//
+//    private List<Variant> queryVariantWithGenotypes(String cypher) throws BioNetDBException {
+//        List<Variant> variants = new ArrayList<>();
+//
+//        String names = null;
+//
+//        RowIterator rowIterator = networkDBAdaptor.rowIterator(cypher);
+//        while (rowIterator.hasNext()) {
+//            List<Object> row = rowIterator.next();
+//
+//            // Variant
+//            Variant variant = NodeBuilder.newVariant(Neo4jConverter.toNode((org.neo4j.driver.v1.types.Node) row.get(0)));
+//
+//            // Sample
+//            if (names == null) {
+//                List<String> sampleNames = new ArrayList<>();
+//                List<org.neo4j.driver.v1.types.Node> sampleNodes = (List<org.neo4j.driver.v1.types.Node>) row.get(1);
+//                for (Node sampleNode : sampleNodes) {
+//                    sampleNames.add(sampleNode.get("name").asString());
+//                }
+//                names = StringUtils.join(sampleNames, ",");
+//            }
+//            variant.getStudies().get(0).setAttributes(new HashMap<>());
+//            variant.getStudies().get(0).getAttributes().put("sampleNames", names);
+//
+//            // Genotype
+//            List<org.neo4j.driver.v1.types.Node> gtNodes = (List<org.neo4j.driver.v1.types.Node>) row.get(2);
+//            List<List<String>> sampleData = new ArrayList<>(gtNodes.size());
+//            for (Node gtNode : gtNodes) {
+//                sampleData.add(Collections.singletonList(gtNode.get("attr_GT").asString()));
+//            }
+//            variant.getStudies().get(0).setSamplesData(sampleData);
+//
+//            variants.add(variant);
+//        }
+//        return variants;
+//    }
 }

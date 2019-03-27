@@ -29,14 +29,21 @@ public class NodeBuilder {
     public static final String STRAND = "strand";
     public static final String TYPE = "type";
 
-    // These attributes are added by XQueryAnalysis
-    public static final String BIONETDB_PREFIX = "bioNetDB";
-    public static final String TARGET_PROTEIN = BIONETDB_PREFIX + "TargetProtein";
-    public static final String COMPLEX = BIONETDB_PREFIX + "Complex";
-    public static final String REACTION = BIONETDB_PREFIX + "Reaction";
-    public static final String PANEL_PROTEIN = BIONETDB_PREFIX + "PanelProtein";
-    public static final String PANEL_GENE = BIONETDB_PREFIX + "PanelGene";
+    public static final String BIONETDB_PREFIX = "bioNetDB_";
 
+    // These attributes are added by Neo4JQueryParser for CH and DeNovo
+    public static final String SAMPLE = BIONETDB_PREFIX + "sample";
+    public static final String GENOTYPE = BIONETDB_PREFIX + "genotype";
+    public static final String CONSEQUENCE_TYPE = BIONETDB_PREFIX + "consequenceType";
+    public static final String TRANSCRIPT = BIONETDB_PREFIX + "transcript";
+    public static final String BIOTYPE = BIONETDB_PREFIX + "biotype";
+
+    // These attributes are added by ProteinSystemAnalysis
+    public static final String TARGET_PROTEIN = BIONETDB_PREFIX + "targetProtein";
+    public static final String COMPLEX = BIONETDB_PREFIX + "complex";
+    public static final String REACTION = BIONETDB_PREFIX + "reaction";
+    public static final String PANEL_PROTEIN = BIONETDB_PREFIX + "panelProtein";
+    public static final String PANEL_GENE = BIONETDB_PREFIX + "panelGene";
 
     public static Node newNode(long uid, Variant variant) {
         Node node = new Node(uid, variant.toString(), variant.getId(), Node.Type.VARIANT);

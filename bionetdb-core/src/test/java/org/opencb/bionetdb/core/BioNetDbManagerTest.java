@@ -27,6 +27,7 @@ import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.utils.CsvInfo;
 import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
+import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -173,13 +174,36 @@ public class BioNetDbManagerTest {
         System.out.println(queryResult.getResult().get(0).toString());
     }
 
+    //-------------------------------------------------------------------------
+    // I N T E R P R E T A T I O N
+    //-------------------------------------------------------------------------
+
     @Test
     public void dominant() throws BioNetDBException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
         Pedigree pedigree = getPedigreeFamily1(disorder);
 
         Query query = new Query();
-        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("panel", "Familial or syndromic hypoparathyroidism,Hereditary haemorrhagic telangiectasia," +
+                "Neurotransmitter disorders," +
+                "Familial Tumours Syndromes of the central & peripheral Nervous system" +
+                "Inherited non-medullary thyroid cancer" +
+                "Cytopaenias and congenital anaemias" +
+                "Ectodermal dysplasia without a known gene mutation" +
+                "Hyperammonaemia" +
+                "Neuro-endocrine Tumours- PCC and PGL" +
+                "Classical tuberous sclerosis" +
+                "Familial hypercholesterolaemia" +
+                "Pain syndromes" +
+                "Congenital myopathy" +
+                "Corneal abnormalities" +
+                "Hydrocephalus" +
+                "Infantile enterocolitis & monogenic inflammatory bowel disease" +
+                "Severe familial anorexia" +
+                "Haematological malignancies for rare disease" +
+                "Long QT syndrome" +
+                "Infantile nystagmus");
+        query.put("gene", "BRCA1,BRCA2");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
@@ -190,6 +214,7 @@ public class BioNetDbManagerTest {
                 System.out.println(variant.toStringSimple());
             }
         }
+        System.out.println(dominantVariants.first());
     }
 
     @Test
@@ -199,6 +224,7 @@ public class BioNetDbManagerTest {
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("chromosome", "3");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
@@ -282,7 +308,8 @@ public class BioNetDbManagerTest {
         QueryResult<Variant> variants = bioNetDbManager.getDeNovoVariants(pedigree, query);
         if (variants.getResult().size() > 0) {
             for (Variant variant : variants.getResult()) {
-                System.out.println(variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0).getAttributes().get("sampleNames"));
+                System.out.println(variant.toStringSimple() + " samples --> "
+                        + variant.getAnnotation().getAdditionalAttributes().get("samples").getAttribute().get(NodeBuilder.SAMPLE));
             }
         }
     }
@@ -304,7 +331,8 @@ public class BioNetDbManagerTest {
             for (String key : variantMap.keySet()) {
                 System.out.println(key);
                 for (Variant variant : variantMap.get(key)) {
-                    System.out.println("\t" + variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0).getAttributes().get("sampleNames"));
+                    System.out.println("\t" + variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0)
+                            .getAttributes().get("sampleNames"));
                 }
             }
         }
@@ -318,6 +346,8 @@ public class BioNetDbManagerTest {
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("gene", "BRCA1,BRCA2");
+        query.put("chromosome", "17");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
@@ -331,7 +361,7 @@ public class BioNetDbManagerTest {
     }
 
     //-------------------------------------------------------------------------
-    //
+    // G E T   P E D I G R E E
     //-------------------------------------------------------------------------
 
 
@@ -403,6 +433,10 @@ public class BioNetDbManagerTest {
 
         return family3;
     }
+
+    //-------------------------------------------------------------------------
+    //
+    //-------------------------------------------------------------------------
 
     private void printNodes(List<Node> nodes) {
         for (Node node : nodes) {
