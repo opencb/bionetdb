@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.api;
+package org.opencb.bionetdb.core.api.iterators;
 
 import java.util.Iterator;
 import java.util.List;

@@ -12,7 +12,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
+import org.opencb.bionetdb.core.neo4j.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 
 import java.util.*;
