@@ -5,7 +5,7 @@ import org.neo4j.driver.v1.*;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.variant.Variant;
 
-import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
+import org.opencb.bionetdb.core.neo4j.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.QueryResult;
 

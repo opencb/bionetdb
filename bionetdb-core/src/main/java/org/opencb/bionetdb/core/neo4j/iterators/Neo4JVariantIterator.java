@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.neo4j;
+package org.opencb.bionetdb.core.neo4j.iterators;
 
 import org.neo4j.driver.v1.Record;
 import org.opencb.biodata.models.variant.Variant;

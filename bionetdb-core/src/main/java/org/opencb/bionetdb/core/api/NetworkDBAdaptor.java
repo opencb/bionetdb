@@ -1,5 +1,8 @@
 package org.opencb.bionetdb.core.api;
 
+import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
+import org.opencb.bionetdb.core.api.iterators.NodeIterator;
+import org.opencb.bionetdb.core.api.iterators.RowIterator;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
