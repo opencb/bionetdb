@@ -174,42 +174,46 @@ public class BioNetDbManagerTest {
         System.out.println(queryResult.getResult().get(0).toString());
     }
 
+    //-------------------------------------------------------------------------
+    // I N T E R P R E T A T I O N
+    //-------------------------------------------------------------------------
+
     @Test
     public void dominant() throws BioNetDBException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
         Pedigree pedigree = getPedigreeFamily1(disorder);
 
         Query query = new Query();
-//        query.put("panel", "Familial or syndromic hypoparathyroidism,Hereditary haemorrhagic telangiectasia," +
-//                "Neurotransmitter disorders," +
-//                "Familial Tumours Syndromes of the central & peripheral Nervous system" +
-//                "Inherited non-medullary thyroid cancer" +
-//                "Cytopaenias and congenital anaemias" +
-//                "Ectodermal dysplasia without a known gene mutation" +
-//                "Hyperammonaemia" +
-//                "Neuro-endocrine Tumours- PCC and PGL" +
-//                "Classical tuberous sclerosis" +
-//                "Familial hypercholesterolaemia" +
-//                "Pain syndromes" +
-//                "Congenital myopathy" +
-//                "Corneal abnormalities" +
-//                "Hydrocephalus" +
-//                "Infantile enterocolitis & monogenic inflammatory bowel disease" +
-//                "Severe familial anorexia" +
-//                "Haematological malignancies for rare disease" +
-//                "Long QT syndrome" +
-//                "Infantile nystagmus");
-//        query.put("gene", "BRCA1,BRCA2");
+        query.put("panel", "Familial or syndromic hypoparathyroidism,Hereditary haemorrhagic telangiectasia," +
+                "Neurotransmitter disorders," +
+                "Familial Tumours Syndromes of the central & peripheral Nervous system" +
+                "Inherited non-medullary thyroid cancer" +
+                "Cytopaenias and congenital anaemias" +
+                "Ectodermal dysplasia without a known gene mutation" +
+                "Hyperammonaemia" +
+                "Neuro-endocrine Tumours- PCC and PGL" +
+                "Classical tuberous sclerosis" +
+                "Familial hypercholesterolaemia" +
+                "Pain syndromes" +
+                "Congenital myopathy" +
+                "Corneal abnormalities" +
+                "Hydrocephalus" +
+                "Infantile enterocolitis & monogenic inflammatory bowel disease" +
+                "Severe familial anorexia" +
+                "Haematological malignancies for rare disease" +
+                "Long QT syndrome" +
+                "Infantile nystagmus");
+        query.put("gene", "BRCA1,BRCA2");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
-//        query.put("biotype", "protein_coding");
-//        query.put("populationFrequencyAlt", "ALL<0.05");
+        query.put("biotype", "protein_coding");
+        query.put("populationFrequencyAlt", "ALL<0.05");
 
         QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(pedigree, disorder, query);
-//        if (dominantVariants.getResult().size() > 0) {
-//            for (Variant variant : dominantVariants.getResult()) {
-//                System.out.println(variant.toStringSimple());
-//            }
-//        }
+        if (dominantVariants.getResult().size() > 0) {
+            for (Variant variant : dominantVariants.getResult()) {
+                System.out.println(variant.toStringSimple());
+            }
+        }
         System.out.println(dominantVariants.first());
     }
 
@@ -357,7 +361,7 @@ public class BioNetDbManagerTest {
     }
 
     //-------------------------------------------------------------------------
-    //
+    // G E T   P E D I G R E E
     //-------------------------------------------------------------------------
 
 
@@ -429,6 +433,10 @@ public class BioNetDbManagerTest {
 
         return family3;
     }
+
+    //-------------------------------------------------------------------------
+    //
+    //-------------------------------------------------------------------------
 
     private void printNodes(List<Node> nodes) {
         for (Node node : nodes) {

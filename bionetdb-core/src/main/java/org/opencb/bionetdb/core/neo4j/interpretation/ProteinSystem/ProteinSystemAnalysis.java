@@ -11,7 +11,6 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParam;
@@ -33,7 +32,8 @@ public class ProteinSystemAnalysis {
     }
 
     public List<Variant> execute(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi, boolean complexOrReaction,
-                                 Query query) throws BioNetDBException {
+                                 Query query) {
+
         // Check moi
         Map<String, List<String>> genotypes;
         switch (moi) {
@@ -77,14 +77,22 @@ public class ProteinSystemAnalysis {
         StatementResult result = session.run(cypher);
         session.close();
 
+        // Return iterator
+        Neo4JVariantIterator neo4JVariantIterator = new Neo4JVariantIterator(result);
+
         List<Variant> variants = new ArrayList<>();
-        while (result.hasNext()) {
-            variants.add(new Neo4JVariantIterator(result).next());
+        while (neo4JVariantIterator.hasNext()) {
+            variants.add(neo4JVariantIterator.next());
         }
 
         // Return variants
         return variants;
     }
+
+
+    //---------------------------------------------------------------------
+    // P R I V A T E      M E T H O D S
+    //---------------------------------------------------------------------
 
     private static String parseVariantQuery(Query query, QueryOptions options, boolean complexOrReaction) {
         String cypher;
