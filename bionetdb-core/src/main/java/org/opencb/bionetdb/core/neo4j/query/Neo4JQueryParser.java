@@ -390,6 +390,10 @@ public class Neo4JQueryParser {
         return cypherQuery.toString();
     }
 
+    //---------------------------------------------------------------------
+    // M O I - P R O T E I N   S Y S T E M   M E T H O D S
+    //---------------------------------------------------------------------
+
     public static String parseVariantQuery(Query query, QueryOptions options) {
         String cypher;
 
