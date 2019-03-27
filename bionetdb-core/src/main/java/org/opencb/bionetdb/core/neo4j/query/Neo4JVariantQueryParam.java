@@ -50,6 +50,10 @@ public final class Neo4JVariantQueryParam implements QueryParam {
     public static final Neo4JVariantQueryParam INCLUDE_GENOTYPE
             = new Neo4JVariantQueryParam("includeGenotype", BOOLEAN, INCLUDE_GENOTYPE_DESCR);
 
+    public static final String INCLUDE_CONSEQUENCE_TYPE_DESCR = "Include consequence type, transcript and biotype in the return";
+    public static final Neo4JVariantQueryParam INCLUDE_CONSEQUENCE_TYPE
+            = new Neo4JVariantQueryParam("includeConsequenceType", BOOLEAN, INCLUDE_CONSEQUENCE_TYPE_DESCR);
+
     private Neo4JVariantQueryParam(String key, Type type, String description) {
         this.key = key;
         this.type = type;

@@ -69,7 +69,7 @@ public class ProteinSystemAnalysis {
         query.put(Neo4JVariantQueryParam.GENOTYPE.key(), gt);
 
         // Create cypher statement from query
-        String cypher = parse(query, QueryOptions.empty(), complexOrReaction);
+        String cypher = parseVariantQuery(query, QueryOptions.empty(), complexOrReaction);
 
         // Execute cypher query and convert to variants
         Driver driver = ((Neo4JNetworkDBAdaptor) networkDBAdaptor).getDriver();
@@ -86,11 +86,39 @@ public class ProteinSystemAnalysis {
         return variants;
     }
 
-    private String parse(Query query, QueryOptions options, boolean complexOrReaction) {
+    private static String parseVariantQuery(Query query, QueryOptions options, boolean complexOrReaction) {
+        String cypher;
+
+        if (query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && query.containsKey(Neo4JVariantQueryParam.GENE.key())) {
+            String geneValues = query.getString(Neo4JVariantQueryParam.GENE.key());
+            String biotypeValues = query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key());
+            String chromValues = query.getString(Neo4JVariantQueryParam.CHROMOSOME.key());
+
+            query.remove(Neo4JVariantQueryParam.GENE.key());
+
+            String panelCypherQuery = getCypherQuery(query, options, complexOrReaction);
+
+            query.remove(Neo4JVariantQueryParam.PANEL.key());
+            query.put(Neo4JVariantQueryParam.GENE.key(), geneValues);
+            query.put(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key(), biotypeValues);
+            query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), chromValues);
+
+            String geneCypherQuery = getCypherQuery(query, options, complexOrReaction);
+
+            cypher = panelCypherQuery + "\nUNION\n" + geneCypherQuery;
+        } else {
+            cypher = getCypherQuery(query, options, complexOrReaction);
+        }
+
+        System.out.println(cypher);
+        return cypher;
+    }
+
+    private static String getCypherQuery(Query query, QueryOptions options, boolean complexOrReaction) {
         StringBuilder cypher = new StringBuilder();
 
-        if (!query.containsKey(Neo4JVariantQueryParam.PANEL.key())) {
-            throw new IllegalArgumentException("Missing panels");
+        if (!query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && !query.containsKey(Neo4JVariantQueryParam.GENE.key())) {
+            throw new IllegalArgumentException("Missing panels and gene list. At leat one of them must be specified.");
         }
 
         // Chromosome
@@ -110,11 +138,16 @@ public class ProteinSystemAnalysis {
         } else {
             cypher.append("[:REACTANT|:PRODUCT]-(nex:REACTION)-[:REACTANT|:PRODUCT]-");
         }
-        cypher.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(g:GENE)-[:PANEL__GENE]-(p:PANEL)\n");
 
-        // Where1
-        cypher.append("WHERE ").append(getConditionString(Arrays.asList(query.getString(Neo4JVariantQueryParam.PANEL.key())
-                .split(",")), "p.name", false));
+        // PanelTail
+        if (query.containsKey(Neo4JVariantQueryParam.PANEL.key())) {
+            cypher.append(parsePanelTail(cypher, query));
+        }
+
+        // GeneTail
+        if (query.containsKey(Neo4JVariantQueryParam.GENE.key())) {
+            cypher.append(parseGeneTail(cypher, query));
+        }
 
         // With1
         cypher.append("WITH DISTINCT tr1, prot1.name AS ").append(TARGET_PROTEIN).append(", nex.name AS ").append(nexus)
@@ -128,7 +161,7 @@ public class ProteinSystemAnalysis {
         String biotypeValues = query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key());
         if (org.apache.commons.lang3.StringUtils.isNotEmpty(biotypeValues)) {
             cypher.append("WHERE ").append(getConditionString(Arrays.asList(biotypeValues.split(",")), "ct.attr_biotype", false))
-                    .append(chromWhere);
+                    .append(chromWhere).append("\n");
         } else if (org.apache.commons.lang3.StringUtils.isNotEmpty(chromWhere)) {
             cypher.append(chromWhere.replace("AND", "WHERE")).append("\n");
         }
@@ -138,11 +171,12 @@ public class ProteinSystemAnalysis {
         cypher.append("WITH DISTINCT v").append(systemParams).append("\n");
 
         query.remove(Neo4JVariantQueryParam.PANEL.key());
+        query.remove(Neo4JVariantQueryParam.GENE.key());
         query.remove(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key());
         query.remove(Neo4JVariantQueryParam.CHROMOSOME.key());
         List<CypherStatement> cypherStatements = getCypherStatements(query, options);
 
-        int i = 0;
+        int i;
         CypherStatement st;
         for (i = 0; i < cypherStatements.size() - 1; i++) {
             st = cypherStatements.get(i);
@@ -157,7 +191,30 @@ public class ProteinSystemAnalysis {
                 .append(NodeBuilder.ALTERNATE).append(", v.attr_type AS ").append(NodeBuilder.TYPE)
                 .append(", collect(s.id), collect(vc.attr_GT)").append(systemParams);
 
-        System.out.println(cypher);
         return cypher.toString();
+    }
+
+    private static StringBuilder parsePanelTail(StringBuilder cypher, Query query) {
+        StringBuilder panelTail = new StringBuilder();
+
+        // Match1 tail
+        panelTail.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(g:GENE)-[:PANEL__GENE]-(p:PANEL)\n");
+
+        // Where1
+        panelTail.append("WHERE ").append(getConditionString(Arrays.asList(query.getString(Neo4JVariantQueryParam.PANEL.key())
+                .split(",")), "p.name", false)).append("\n");
+        return panelTail;
+    }
+
+    private static StringBuilder parseGeneTail(StringBuilder cypher, Query query) {
+        StringBuilder panelTail = new StringBuilder();
+
+        // Match1 tail
+        panelTail.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(g:GENE)-[:XREF]-(r:XREF)\n");
+
+        // Where1
+        panelTail.append("WHERE ").append(getConditionString(Arrays.asList(query.getString(Neo4JVariantQueryParam.GENE.key())
+                .split(",")), "r.id", false)).append("\n");
+        return panelTail;
     }
 }
