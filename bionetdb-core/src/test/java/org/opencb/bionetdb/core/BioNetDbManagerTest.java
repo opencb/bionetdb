@@ -210,6 +210,8 @@ public class BioNetDbManagerTest {
 
         QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(pedigree, disorder, query);
         if (dominantVariants.getResult().size() > 0) {
+            System.out.println("\n");
+            System.out.println("Variants:");
             for (Variant variant : dominantVariants.getResult()) {
                 System.out.println(variant.toStringSimple());
             }
@@ -231,6 +233,8 @@ public class BioNetDbManagerTest {
 
         QueryResult<Variant> variants = bioNetDbManager.getRecessiveVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
+            System.out.println("\n");
+            System.out.println("Variants:");
             for (Variant variant : variants.getResult()) {
                 System.out.println(variant.toStringSimple());
             }
@@ -250,6 +254,8 @@ public class BioNetDbManagerTest {
 
         QueryResult<Variant> variants = bioNetDbManager.getXLinkedDominantVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
+            System.out.println("\n");
+            System.out.println("Variants:");
             for (Variant variant : variants.getResult()) {
                 System.out.println(variant.toStringSimple());
             }
@@ -269,6 +275,8 @@ public class BioNetDbManagerTest {
 
         QueryResult<Variant> variants = bioNetDbManager.getXLinkedRecessiveVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
+            System.out.println("\n");
+            System.out.println("Variants:");
             for (Variant variant : variants.getResult()) {
                 System.out.println(variant.toStringSimple());
             }
@@ -288,6 +296,8 @@ public class BioNetDbManagerTest {
 
         QueryResult<Variant> variants = bioNetDbManager.getYLinkedVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
+            System.out.println("\n");
+            System.out.println("Variants:");
             for (Variant variant : variants.getResult()) {
                 System.out.println(variant.toStringSimple());
             }
@@ -307,6 +317,8 @@ public class BioNetDbManagerTest {
 
         QueryResult<Variant> variants = bioNetDbManager.getDeNovoVariants(pedigree, query);
         if (variants.getResult().size() > 0) {
+            System.out.println("\n");
+            System.out.println("Variants:");
             for (Variant variant : variants.getResult()) {
                 System.out.println(variant.toStringSimple() + " samples --> "
                         + variant.getAnnotation().getAdditionalAttributes().get("samples").getAttribute().get(NodeBuilder.SAMPLE));
@@ -328,6 +340,8 @@ public class BioNetDbManagerTest {
         QueryResult<Map<String, List<Variant>>> variants = bioNetDbManager.getCompoundHeterozygousVariants(pedigree, query);
         if (variants.getResult().size() > 0) {
             Map<String, List<Variant>> variantMap = variants.getResult().get(0);
+            System.out.println("\n");
+            System.out.println("Variants:");
             for (String key : variantMap.keySet()) {
                 System.out.println(key);
                 for (Variant variant : variantMap.get(key)) {
@@ -354,6 +368,8 @@ public class BioNetDbManagerTest {
 
         QueryResult<Variant> variants = bioNetDbManager.getProteinSystemVariants(pedigree, disorder, moi, true, query);
         if (variants.getResult().size() > 0) {
+            System.out.println("\n");
+            System.out.println("Variants:");
             for (Variant variant : variants.getResult()) {
                 System.out.println(variant.toStringSimple());
             }
@@ -364,21 +380,20 @@ public class BioNetDbManagerTest {
     // G E T   P E D I G R E E
     //-------------------------------------------------------------------------
 
+    private Member healthyFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
+    private Member illFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
+
+    private Member healthyMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE);
+    private Member illMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE);
+
+    private Member healthyDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
+            .setMother(illMother).setFather(healthyFather);
+    private Member illDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
+            .setMother(illMother).setFather(healthyFather);
 
     private Pedigree getPedigreeFamily1(Disorder disorder) {
-        Member healthyFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
-        Member illFather = new Member().setId("NA12877").setSex(Member.Sex.MALE)
-                .setDisorders(Collections.singletonList(disorder));
-
-        Member healthyMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE);
-        Member illMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE)
-                .setDisorders(Collections.singletonList(disorder));
-
-        Member healthyDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
-                .setMother(illMother).setFather(healthyFather);
-        Member illDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
-                .setDisorders(Collections.singletonList(disorder))
-                .setMother(illMother).setFather(healthyFather);
+        illMother.setDisorders(Collections.singletonList(disorder));
+        illDaughter.setDisorders(Collections.singletonList(disorder));
 
         Pedigree family1 = new Pedigree()
                 .setMembers(Arrays.asList(healthyFather, illMother, illDaughter))
@@ -389,19 +404,9 @@ public class BioNetDbManagerTest {
     }
 
     private Pedigree getPedigreeFamily2(Disorder disorder) {
-        Member healthyFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
-        Member illFather = new Member().setId("NA12877").setSex(Member.Sex.MALE)
-                .setDisorders(Collections.singletonList(disorder));
-
-        Member healthyMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE);
-        Member illMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE)
-                .setDisorders(Collections.singletonList(disorder));
-
-        Member healthyDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
-                .setMother(illMother).setFather(healthyFather);
-        Member illDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
-                .setDisorders(Collections.singletonList(disorder))
-                .setMother(illMother).setFather(healthyFather);
+        illFather.setDisorders(Collections.singletonList(disorder));
+        illMother.setDisorders(Collections.singletonList(disorder));
+        illDaughter.setDisorders(Collections.singletonList(disorder));
 
         Pedigree family2 = new Pedigree()
                 .setMembers(Arrays.asList(illFather, illMother, illDaughter))
@@ -412,19 +417,7 @@ public class BioNetDbManagerTest {
     }
 
     private Pedigree getPedigreeFamily3(Disorder disorder) {
-        Member healthyFather = new Member().setId("NA12877").setSex(Member.Sex.MALE);
-        Member illFather = new Member().setId("NA12877").setSex(Member.Sex.MALE)
-                .setDisorders(Collections.singletonList(disorder));
-
-        Member healthyMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE);
-        Member illMother = new Member().setId("NA12878").setSex(Member.Sex.FEMALE)
-                .setDisorders(Collections.singletonList(disorder));
-
-        Member healthyDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
-                .setMother(illMother).setFather(healthyFather);
-        Member illDaughter = new Member().setId("NA12879").setSex(Member.Sex.FEMALE)
-                .setDisorders(Collections.singletonList(disorder))
-                .setMother(illMother).setFather(healthyFather);
+        illFather.setDisorders(Collections.singletonList(disorder));
 
         Pedigree family3 = new Pedigree()
                 .setMembers(Arrays.asList(illFather, healthyMother, healthyDaughter))

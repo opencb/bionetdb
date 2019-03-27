@@ -412,8 +412,7 @@ public class Neo4JQueryParser {
         } else {
             cypher = buildCypherStatement(query, getCypherStatements(query, options));
         }
-
-        System.out.println(cypher);
+//        System.out.println(cypher);
         return cypher;
     }
 

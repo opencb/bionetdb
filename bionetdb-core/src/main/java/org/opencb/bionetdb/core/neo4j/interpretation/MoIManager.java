@@ -2,18 +2,14 @@ package org.opencb.bionetdb.core.neo4j.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.iterators.NodeIterator;
+import org.opencb.bionetdb.core.api.iterators.VariantIterator;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
-import org.opencb.bionetdb.core.neo4j.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParam;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
@@ -35,7 +31,7 @@ public class MoIManager {
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
-        return queryVariants(cypher);
+        return queryNodes(cypher);
     }
 
     public List<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
@@ -43,7 +39,7 @@ public class MoIManager {
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
-        return queryVariants(cypher);
+        return queryNodes(cypher);
     }
 
     public List<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
@@ -52,7 +48,7 @@ public class MoIManager {
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
-        return queryVariants(cypher);
+        return queryNodes(cypher);
     }
 
     public List<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
@@ -61,7 +57,7 @@ public class MoIManager {
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
-        return queryVariants(cypher);
+        return queryNodes(cypher);
     }
 
     public List<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
@@ -70,7 +66,7 @@ public class MoIManager {
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
-        return queryVariants(cypher);
+        return queryNodes(cypher);
     }
 
     public List<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException {
@@ -81,7 +77,7 @@ public class MoIManager {
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
 
         // Get variants and genotypes
-        List<Variant> variants = queryVariantsAnnotation(cypher);
+        List<Variant> variants = queryVariants(cypher);
         if (CollectionUtils.isEmpty(variants)) {
             return Collections.emptyList();
         } else {
@@ -106,7 +102,7 @@ public class MoIManager {
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
 
         // Get variants and genotypes
-        List<Variant> variants = queryVariantsAnnotation(cypher);
+        List<Variant> variants = queryVariants(cypher);
 
         if (CollectionUtils.isEmpty(variants)) {
             return Collections.emptyMap();
@@ -191,28 +187,24 @@ public class MoIManager {
         query.put(Neo4JVariantQueryParam.GENOTYPE.key(), gt);
     }
 
-    private List<Variant> queryVariants(String cypher) throws BioNetDBException {
-        List<Variant> variants = new ArrayList<>();
+    private List<Variant> queryNodes(String cypher) throws BioNetDBException {
+        List<Variant> nodes = new ArrayList<>();
 
         NodeIterator nodeIterator = networkDBAdaptor.nodeIterator(cypher);
         while (nodeIterator.hasNext()) {
-            variants.add(NodeBuilder.newVariant(nodeIterator.next()));
+            nodes.add(NodeBuilder.newVariant(nodeIterator.next()));
         }
 
-        return variants;
+        return nodes;
     }
 
-    private List<Variant> queryVariantsAnnotation(String cypher) throws BioNetDBException {
-
-        // Execute cypher query and convert to variants
-        Driver driver = ((Neo4JNetworkDBAdaptor) networkDBAdaptor).getDriver();
-        Session session = driver.session();
-        StatementResult result = session.run(cypher);
-        session.close();
-
+    public List<Variant> queryVariants(String cypher) throws BioNetDBException {
         List<Variant> variants = new ArrayList<>();
-        while (result.hasNext()) {
-            variants.add(new Neo4JVariantIterator(result).next());
+
+        VariantIterator variantIterator = networkDBAdaptor.variantIterator(cypher);
+
+        while (variantIterator.hasNext()) {
+            variants.add(variantIterator.next());
         }
         return variants;
     }
@@ -225,7 +217,7 @@ public class MoIManager {
     }
      */
 
-//    This method was replaced by queryVariantsAnnotation when we found the need to include TR,CT and BT data in the result for CH query
+//    This method was replaced by queryVariants when we found the need to include TR,CT and BT data in the result for CH query
 //
 //    private List<Variant> queryVariantWithGenotypes(String cypher) throws BioNetDBException {
 //        List<Variant> variants = new ArrayList<>();

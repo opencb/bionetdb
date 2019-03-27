@@ -2,17 +2,14 @@ package org.opencb.bionetdb.core.neo4j.interpretation.ProteinSystem;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
-import org.opencb.bionetdb.core.neo4j.iterators.Neo4JVariantIterator;
+import org.opencb.bionetdb.core.api.iterators.VariantIterator;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParam;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.Query;
@@ -32,7 +29,7 @@ public class ProteinSystemAnalysis {
     }
 
     public List<Variant> execute(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi, boolean complexOrReaction,
-                                 Query query) {
+                                 Query query) throws BioNetDBException {
 
         // Check moi
         Map<String, List<String>> genotypes;
@@ -71,21 +68,14 @@ public class ProteinSystemAnalysis {
         // Create cypher statement from query
         String cypher = parseVariantQuery(query, QueryOptions.empty(), complexOrReaction);
 
-        // Execute cypher query and convert to variants
-        Driver driver = ((Neo4JNetworkDBAdaptor) networkDBAdaptor).getDriver();
-        Session session = driver.session();
-        StatementResult result = session.run(cypher);
-        session.close();
-
-        // Return iterator
-        Neo4JVariantIterator neo4JVariantIterator = new Neo4JVariantIterator(result);
-
+        // The next code is performed also by queryVariants method in MoIManager
         List<Variant> variants = new ArrayList<>();
-        while (neo4JVariantIterator.hasNext()) {
-            variants.add(neo4JVariantIterator.next());
-        }
 
-        // Return variants
+        VariantIterator variantIterator = networkDBAdaptor.variantIterator(cypher);
+
+        while (variantIterator.hasNext()) {
+            variants.add(variantIterator.next());
+        }
         return variants;
     }
 
@@ -148,12 +138,12 @@ public class ProteinSystemAnalysis {
 
         // PanelTail
         if (query.containsKey(Neo4JVariantQueryParam.PANEL.key())) {
-            cypher.append(parsePanelTail(cypher, query));
+            cypher.append(parsePanelTail(query));
         }
 
         // GeneTail
         if (query.containsKey(Neo4JVariantQueryParam.GENE.key())) {
-            cypher.append(parseGeneTail(cypher, query));
+            cypher.append(parseGeneTail(query));
         }
 
         // With1
@@ -201,7 +191,7 @@ public class ProteinSystemAnalysis {
         return cypher.toString();
     }
 
-    private static StringBuilder parsePanelTail(StringBuilder cypher, Query query) {
+    private static StringBuilder parsePanelTail(Query query) {
         StringBuilder panelTail = new StringBuilder();
 
         // Match1 tail
@@ -213,7 +203,7 @@ public class ProteinSystemAnalysis {
         return panelTail;
     }
 
-    private static StringBuilder parseGeneTail(StringBuilder cypher, Query query) {
+    private static StringBuilder parseGeneTail(Query query) {
         StringBuilder panelTail = new StringBuilder();
 
         // Match1 tail
