@@ -1,5 +1,9 @@
 package org.opencb.bionetdb.core.api;
 
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.iterators.NodeIterator;
 import org.opencb.bionetdb.core.api.iterators.RowIterator;
@@ -8,6 +12,7 @@ import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Network;
+import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
@@ -92,6 +97,10 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     void annotateProteins(NodeQuery query, QueryOptions options, ProteinClient proteinClient) throws BioNetDBException, IOException;
     void annotateProteins(List<String> proteinIds, ProteinClient proteinClient) throws BioNetDBException, IOException;
 
+    //========================================================================
+    // N E T W O R K
+    //========================================================================
+
     //-------------------------------------------------------------------------
     // N O D E S
     //-------------------------------------------------------------------------
@@ -103,7 +112,7 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
-    // T A B L E S
+    // T A B L E S / R O W S
     //   - a table is modeled as a list of rows, and
     //   - a row is modeled as a list of Object
     //-------------------------------------------------------------------------
@@ -111,11 +120,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     RowIterator rowIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
     RowIterator rowIterator(String cypher) throws BioNetDBException;
 
-    //-------------------------------------------------------------------------
-    // N O D E S
-    //-------------------------------------------------------------------------
+    QueryResult<List<Object>> rowQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult<List<Object>> rowQuery(String cypher) throws BioNetDBException;
 
-    VariantIterator variantIterator(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
     // N E T W O R K     P A T H S
@@ -126,6 +133,9 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     NetworkPathIterator networkPathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException;
     NetworkPathIterator networkPathIterator(String cypher) throws BioNetDBException;
 
+    QueryResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult<NetworkPath> networkPathQuery(String cypher) throws BioNetDBException;
+
     //-------------------------------------------------------------------------
     // N E T W O R K S
     //-------------------------------------------------------------------------
@@ -134,69 +144,21 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
     QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
 
-    //-------------------------------------------------------------------------
-    // A N A L Y S I S
-    //-------------------------------------------------------------------------
+    //========================================================================
+    // V A R I A N T
+    //========================================================================
 
-    // Ya no están en DBAdaptor:
+    VariantIterator variantIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    VariantIterator variantIterator(String cypher) throws BioNetDBException;
 
-//    QueryResult<Variant> getVariantsFromPedigree(List<String> listOfGenes, List<String> listOfChromosome,
-//                                             Map<String, List<String>> individualsGT);
-//
-//    Neo4JVariantIterator variantsToIterator(List<String> listOfGenes, List<String> listOfChromosome,
-//                                             List<org.opencb.biodata.models.core.pedigree.Individual> listOfIndividuals);
-//
-//    QueryResult<Variant> getVariantsFromList(List<Variant> listOfVariants);
-//
-//
-//    void xQuery(Pedigree pedigree, Phenotype phenotype, String moi, List<String> listOfGenes,
-//                List<String> listOfDiseases, List<String> populationFrequencySpecies, double populationFrequency,
-//                List<String> consequenceType, boolean onlyComplex, boolean onlyReaction);
+    QueryResult<Variant> variantQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    QueryResult<Variant> variantQuery(String cypher) throws BioNetDBException;
 
-    //-------------------------------------------------------------------------
-    // T E S T S
-    //-------------------------------------------------------------------------
+    //========================================================================
+    // I N T E R P R E T A T I O N     A N A L Y S I S
+    //========================================================================
 
-    void loadTest();
+    QueryResult<Variant> proteinNetworkInterpretationAnalysis(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
+                                                              boolean complexOrReaction, Query query) throws BioNetDBException;
 
-//    QueryResult<Node> queryNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
-//
-//    QueryResult<Network> networkQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
-//    QueryResult<Network> networkQuery(String cypher) throws BioNetDBException;
-//
-//    NodeIterator nodeIterator(Query query, QueryOptions queryOptions);
-//    NodeIterator nodeIterator(String cypher);
-//
-//    RowIterator rowIterator(Query query, QueryOptions queryOptions);
-//    RowIterator rowIterator(String cypher);
-//
-//    NetworkPathIterator networkPathIterator(NodeQuery srcQuery, Query destQuery, QueryOptions queryOptions);
-//    NetworkPathIterator networkPathIterator(String cypher);
-
-    //    void addXrefs(String nodeID, List<Xref> xrefList) throws BioNetDBException;
-//
-//    void addVariants(List<Variant> variants) throws BioNetDBException;
-//
-//    /**
-//     *
-//     * @param tissue Tissue of the current expression experiment
-//     * @param timeSeries Timeseries of the current expression experiment
-//     * @param myExpression List of expression data to be add in the database
-//     * @param options Boolean to know if nodes not found in the database have to be created and insert their expression or not
-//     */
-//    void addExpressionData(String tissue, String timeSeries, List<Expression> myExpression, QueryOptions options);
-//
-//    QueryResult getNodes(Query query, QueryOptions queryOptions) throws BioNetDBException;
-//
-//    QueryResult getNodes(Query queryN, Query queryM, QueryOptions queryOptions) throws BioNetDBException;
-//
-//    QueryResult getNetwork(Query query, QueryOptions queryOptions) throws BioNetDBException;
-//
-//    QueryResult getSummaryStats(Query query, QueryOptions queryOptions);
-//
-//    QueryResult betweenness(Query query);
-//
-//    QueryResult clusteringCoefficient(Query query);
-//
-//    QueryResult getAnnotations(Query query, String annotateField);
 }

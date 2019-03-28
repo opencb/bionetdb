@@ -1,11 +1,21 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.neo4j.driver.v1.*;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.iterators.NodeIterator;
@@ -13,18 +23,22 @@ import org.opencb.bionetdb.core.api.iterators.RowIterator;
 import org.opencb.bionetdb.core.api.iterators.VariantIterator;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
+import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.models.network.Network;
+import org.opencb.bionetdb.core.models.network.NetworkPath;
+import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.core.neo4j.iterators.Neo4JNetworkPathIterator;
 import org.opencb.bionetdb.core.neo4j.iterators.Neo4JNodeIterator;
 import org.opencb.bionetdb.core.neo4j.iterators.Neo4JRowIterator;
 import org.opencb.bionetdb.core.neo4j.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
-import org.opencb.bionetdb.core.models.network.Network;
-import org.opencb.bionetdb.core.models.network.Node;
-import org.opencb.bionetdb.core.models.network.Relation;
+import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParser;
 import org.opencb.bionetdb.core.utils.Neo4jConverter;
+import org.opencb.bionetdb.core.utils.Utils;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
@@ -134,7 +148,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-    //-----------------NodeQuery--------------------------------------------------------
+    //-------------------------------------------------------------------------
     // I N S E R T     N E T W O R K S
     //-------------------------------------------------------------------------
 
@@ -346,14 +360,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return new Neo4JRowIterator(session.run(cypher));
     }
 
-    //-------------------------------------------------------------------------
-    // T A B L E     Q U E R I E S
-    //-------------------------------------------------------------------------
+    @Override
+    public QueryResult<List<Object>> rowQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        throw new UnsupportedOperationException("rowQuery not yet supported");
+//        String cypher = Neo4JQueryParser.parseRowQuery(query, queryOptions);
+//        return nodeQuery(cypher);
+    }
 
-    public VariantIterator variantIterator(String cypher) throws BioNetDBException {
-        Session session = this.driver.session();
-        System.out.println("Cypher query: " + cypher);
-        return new Neo4JVariantIterator(session.run(cypher));
+    @Override
+    public QueryResult<List<Object>> rowQuery(String cypher) throws BioNetDBException {
+        throw new UnsupportedOperationException("rowQuery not yet supported");
     }
 
     //-------------------------------------------------------------------------
@@ -373,6 +389,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Session session = this.driver.session();
 //        System.out.println("Cypher query: " + cypher);
         return new Neo4JNetworkPathIterator(session.run(cypher));
+    }
+
+    @Override
+    public QueryResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<NetworkPath> networkPathQuery(String cypher) throws BioNetDBException {
+        return null;
     }
 
     //-------------------------------------------------------------------------
@@ -411,11 +437,187 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         return new QueryResult("networkQuery", time, 1, 1, null, null, Arrays.asList(network));
     }
 
+    @Override
+    public VariantIterator variantIterator(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        return null;
+    }
+
     //-------------------------------------------------------------------------
-    // A N A L Y S I S     Q U E R I E S
+    // V A R I A N T
     //-------------------------------------------------------------------------
 
+    public VariantIterator variantIterator(String cypher) throws BioNetDBException {
+        Session session = this.driver.session();
+        System.out.println("Cypher query: " + cypher);
+        return new Neo4JVariantIterator(session.run(cypher));
+    }
 
+    @Override
+    public QueryResult<Variant> variantQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JVariantQueryParser.parse(query, QueryOptions.empty());
+        return variantQuery(cypher);
+    }
+
+    @Override
+    public QueryResult<Variant> variantQuery(String cypher) throws BioNetDBException {
+        List<Variant> variants = new ArrayList<>();
+
+        if (org.apache.commons.lang.StringUtils.isEmpty(cypher)) {
+            throw new BioNetDBException("Missing cypher to query");
+        }
+        if (!cypher.contains("RETURN")) {
+            throw new BioNetDBException("Invalid cypher statement: missing RETURN, " + cypher);
+        }
+
+        String[] aReturn = cypher.split("RETURN");
+        if (aReturn.length != 2) {
+            throw new BioNetDBException("Invalid cypher statement: " + cypher);
+        }
+        String[] attrs = aReturn[1].split(",");
+        for (int i = 0; i < attrs.length; i++) {
+            attrs[i] = attrs[i].replace("vo.", "").replace("attr_", "");
+        }
+
+        ObjectMapper objMapper = new ObjectMapper();
+        objMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+
+        RowIterator rowIterator = rowIterator(cypher);
+        while (rowIterator.hasNext()) {
+            List<Object> row = rowIterator.next();
+
+
+            try {
+                // Create variant
+                Variant variant = Utils.uncompress(row.get(0).toString(), Variant.class, objMapper);
+
+                for (int i = 1; i < row.size(); i++) {
+                    if (row.get(i) != null) {
+                        switch (attrs[i]) {
+                            case "studies":
+                                List<StudyEntry> studies = Utils.uncompress(row.get(i).toString(), new ArrayList<StudyEntry>().getClass(),
+                                        objMapper);
+                                variant.setStudies(studies);
+                                break;
+                            case "consequenceTypes":
+                                List<ConsequenceType> ct = Utils.uncompress(row.get(i).toString(), new ArrayList<ConsequenceType>()
+                                                .getClass(), objMapper);
+                                variant.getAnnotation().setConsequenceTypes(ct);
+                                break;
+                            case "populationFrequencies":
+                                List<PopulationFrequency> popFreqs = Utils.uncompress(row.get(i).toString(),
+                                        new ArrayList<PopulationFrequency>().getClass(), objMapper);
+                                variant.getAnnotation().setPopulationFrequencies(popFreqs);
+                                break;
+                            case "conservation":
+                                List<Score> conservation = Utils.uncompress(row.get(i).toString(), new ArrayList<Score>().getClass(),
+                                        objMapper);
+                                variant.getAnnotation().setConservation(conservation);
+                                break;
+                            case "geneExpression":
+                                List<Expression> expression = Utils.uncompress(row.get(i).toString(), new ArrayList<Expression>()
+                                                .getClass(), objMapper);
+                                variant.getAnnotation().setGeneExpression(expression);
+                                break;
+                            case "geneTraitAssociation":
+                                List<GeneTraitAssociation> gta = Utils.uncompress(row.get(i).toString(),
+                                        new ArrayList<GeneTraitAssociation>().getClass(), objMapper);
+                                variant.getAnnotation().setGeneTraitAssociation(gta);
+                                break;
+                            case "geneDrugInteraction":
+                                List<GeneDrugInteraction> gdi = Utils.uncompress(row.get(i).toString(),
+                                        new ArrayList<GeneDrugInteraction>().getClass(), objMapper);
+                                variant.getAnnotation().setGeneDrugInteraction(gdi);
+                                break;
+                            case "variantTraitAssociation":
+                                VariantTraitAssociation vta = Utils.uncompress(row.get(i).toString(), VariantTraitAssociation.class,
+                                        objMapper);
+                                variant.getAnnotation().setVariantTraitAssociation(vta);
+                                break;
+                            case "traitAssociation":
+                                List<EvidenceEntry> ta = Utils.uncompress(row.get(i).toString(), new ArrayList<EvidenceEntry>().getClass(),
+                                        objMapper);
+                                variant.getAnnotation().setTraitAssociation(ta);
+                                break;
+                            case "functionalScore":
+                                List<Score> fs = Utils.uncompress(row.get(i).toString(), new ArrayList<Score>().getClass(), objMapper);
+                                variant.getAnnotation().setFunctionalScore(fs);
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+                }
+                variants.add(variant);
+            } catch (IOException e) {
+                throw new BioNetDBException("Executing variant query", e);
+            }
+        }
+
+        int dbTime = 0;
+        return new QueryResult<>("", dbTime, variants.size(), variants.size(), "", "", variants);
+    }
+
+    //-------------------------------------------------------------------------
+    // I N T E R P R  E T A T I O N     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    @Override
+    public QueryResult<Variant> proteinNetworkInterpretationAnalysis(Pedigree pedigree, Disorder disorder,
+                                                                     ClinicalProperty.ModeOfInheritance moi, boolean complexOrReaction,
+                                                                     Query query) throws BioNetDBException {
+        // Check moi
+        Map<String, List<String>> genotypes;
+        switch (moi) {
+            case MONOALLELIC:
+                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.dominant(pedigree, disorder, false);
+                break;
+            case BIALLELIC:
+                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.recessive(pedigree, disorder, false);
+                break;
+            case XLINKED_MONOALLELIC:
+                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, true);
+                break;
+            case XLINKED_BIALLELIC:
+                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, false);
+                break;
+            case YLINKED:
+                genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+                break;
+            default:
+                genotypes = new HashMap<>();
+                genotypes.put(pedigree.getProband().getId(), Collections.singletonList("NON_REF"));
+                break;
+        }
+        // yLinked or other mistakes can return empty genotype lists. The next exception aims to avoid those errors.
+        genotypes.entrySet().removeIf((entry) -> CollectionUtils.isEmpty(entry.getValue()));
+        if (genotypes.size() == 0) {
+            throw new IllegalArgumentException("Number of individuals with filled genotypes list is zero");
+        }
+        List<String> gt = new ArrayList<>();
+        for (String sample : genotypes.keySet()) {
+            gt.add(sample + ":" + org.apache.commons.lang.StringUtils.join(genotypes.get(sample), ","));
+        }
+        query.put(VariantQueryParam.GENOTYPE.key(), gt);
+
+        // Create cypher statement from query
+        String cypher = Neo4JVariantQueryParser.parseProteinNetworkInterpretation(query, QueryOptions.empty(), complexOrReaction);
+
+        // The next code is performed also by queryVariants method in MoIManager
+        List<Variant> variants = new ArrayList<>();
+
+        VariantIterator variantIterator = variantIterator(cypher);
+
+        while (variantIterator.hasNext()) {
+            variants.add(variantIterator.next());
+        }
+
+        int dbTime = 0;
+        return new QueryResult<>("", dbTime, variants.size(), variants.size(), "", "", variants);
+    }
+
+    //-------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
 
     public StatementResult addNode(Node node, Transaction tx) {

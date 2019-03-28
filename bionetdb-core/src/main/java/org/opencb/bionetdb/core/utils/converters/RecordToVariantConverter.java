@@ -10,6 +10,7 @@ import org.opencb.bionetdb.core.utils.NodeBuilder;
 
 import java.util.*;
 
+@Deprecated
 public class RecordToVariantConverter implements Converter<Record, Variant> {
 
     @Override

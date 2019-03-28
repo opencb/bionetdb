@@ -18,6 +18,7 @@ import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.bionetdb.core.analysis.VariantAnalysis;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -179,36 +180,42 @@ public class BioNetDbManagerTest {
     //-------------------------------------------------------------------------
 
     @Test
-    public void dominant() throws BioNetDBException {
+    public void variantAnalysis() {
+        VariantAnalysis variantAnalysis = bioNetDbManager.getVariantAnalysis();
+    }
+
+    @Test
+    public void dominant() throws BioNetDBException, IOException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
         Pedigree pedigree = getPedigreeFamily1(disorder);
 
         Query query = new Query();
-        query.put("panel", "Familial or syndromic hypoparathyroidism,Hereditary haemorrhagic telangiectasia," +
-                "Neurotransmitter disorders," +
-                "Familial Tumours Syndromes of the central & peripheral Nervous system" +
-                "Inherited non-medullary thyroid cancer" +
-                "Cytopaenias and congenital anaemias" +
-                "Ectodermal dysplasia without a known gene mutation" +
-                "Hyperammonaemia" +
-                "Neuro-endocrine Tumours- PCC and PGL" +
-                "Classical tuberous sclerosis" +
-                "Familial hypercholesterolaemia" +
-                "Pain syndromes" +
-                "Congenital myopathy" +
-                "Corneal abnormalities" +
-                "Hydrocephalus" +
-                "Infantile enterocolitis & monogenic inflammatory bowel disease" +
-                "Severe familial anorexia" +
-                "Haematological malignancies for rare disease" +
-                "Long QT syndrome" +
-                "Infantile nystagmus");
-        query.put("gene", "BRCA1,BRCA2");
+        query.put("panel", "Familial or syndromic hypoparathyroidism");
+//        query.put("panel", "Familial or syndromic hypoparathyroidism,Hereditary haemorrhagic telangiectasia," +
+//                "Neurotransmitter disorders," +
+//                "Familial Tumours Syndromes of the central & peripheral Nervous system" +
+//                "Inherited non-medullary thyroid cancer" +
+//                "Cytopaenias and congenital anaemias" +
+//                "Ectodermal dysplasia without a known gene mutation" +
+//                "Hyperammonaemia" +
+//                "Neuro-endocrine Tumours- PCC and PGL" +
+//                "Classical tuberous sclerosis" +
+//                "Familial hypercholesterolaemia" +
+//                "Pain syndromes" +
+//                "Congenital myopathy" +
+//                "Corneal abnormalities" +
+//                "Hydrocephalus" +
+//                "Infantile enterocolitis & monogenic inflammatory bowel disease" +
+//                "Severe familial anorexia" +
+//                "Haematological malignancies for rare disease" +
+//                "Long QT syndrome" +
+//                "Infantile nystagmus");
+        //query.put("gene", "BRCA1,BRCA2");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(pedigree, disorder, query);
+        QueryResult<Variant> dominantVariants = bioNetDbManager.getVariantAnalysis().getDominantVariants(pedigree, disorder, query);
         if (dominantVariants.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");
@@ -231,7 +238,7 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        QueryResult<Variant> variants = bioNetDbManager.getRecessiveVariants(pedigree, disorder, query);
+        QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getRecessiveVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");
@@ -252,7 +259,7 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        QueryResult<Variant> variants = bioNetDbManager.getXLinkedDominantVariants(pedigree, disorder, query);
+        QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getXLinkedDominantVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");
@@ -273,7 +280,7 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        QueryResult<Variant> variants = bioNetDbManager.getXLinkedRecessiveVariants(pedigree, disorder, query);
+        QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getXLinkedRecessiveVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");
@@ -294,7 +301,7 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        QueryResult<Variant> variants = bioNetDbManager.getYLinkedVariants(pedigree, disorder, query);
+        QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getYLinkedVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");
@@ -305,7 +312,7 @@ public class BioNetDbManagerTest {
     }
 
     @Test
-    public void deNovo() throws BioNetDBException {
+    public void deNovo() throws BioNetDBException, IOException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
         Pedigree pedigree = getPedigreeFamily3(disorder);
 
@@ -315,7 +322,7 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        QueryResult<Variant> variants = bioNetDbManager.getDeNovoVariants(pedigree, query);
+        QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getDeNovoVariants(pedigree, query);
         if (variants.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");
@@ -327,7 +334,7 @@ public class BioNetDbManagerTest {
     }
 
     @Test
-    public void compoundHeterozygous() throws BioNetDBException {
+    public void compoundHeterozygous() throws BioNetDBException, IOException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
         Pedigree pedigree = getPedigreeFamily3(disorder);
 
@@ -337,14 +344,13 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        QueryResult<Map<String, List<Variant>>> variants = bioNetDbManager.getCompoundHeterozygousVariants(pedigree, query);
-        if (variants.getResult().size() > 0) {
-            Map<String, List<Variant>> variantMap = variants.getResult().get(0);
+        QueryResult<Map<String, List<Variant>>> variantMap = bioNetDbManager.getVariantAnalysis().getCompoundHeterozygousVariants(pedigree, query);
+        if (variantMap.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");
-            for (String key : variantMap.keySet()) {
+            for (String key : variantMap.first().keySet()) {
                 System.out.println(key);
-                for (Variant variant : variantMap.get(key)) {
+                for (Variant variant : variantMap.first().get(key)) {
                     System.out.println("\t" + variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0)
                             .getAttributes().get("sampleNames"));
                 }
@@ -366,7 +372,7 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        QueryResult<Variant> variants = bioNetDbManager.getProteinSystemVariants(pedigree, disorder, moi, true, query);
+        QueryResult<Variant> variants = bioNetDbManager.getInterpretationAnalysis().proteinNetworkAnalysis(pedigree, disorder, moi, true, query);
         if (variants.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");

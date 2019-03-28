@@ -56,8 +56,12 @@ public class UtilsTest {
         System.out.println("\nVariant (after compressing and uncompressing):");
         System.out.println(variant1.toJson());
 
+        Class<? extends List> aClass = variant.getAnnotation().getConsequenceTypes().getClass();
         String ctCompress = Utils.compress(variant.getAnnotation().getConsequenceTypes(), objectMapper);
-        List<ConsequenceType> cts1 = Utils.uncompress(ctCompress, variant.getAnnotation().getConsequenceTypes().getClass(), objectMapper);
+//        List<ConsequenceType> cts1 = Utils.uncompress(ctCompress, variant.getAnnotation().getConsequenceTypes().getClass(), objectMapper);
+
+        List<ConsequenceType> cts1 = Utils.uncompress(ctCompress, new ArrayList<ConsequenceType>().getClass(), objectMapper);
+
         System.out.println(cts1);
     }
 

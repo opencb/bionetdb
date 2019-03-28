@@ -2,11 +2,12 @@ package org.opencb.bionetdb.core;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
+import org.opencb.bionetdb.core.analysis.InterpretationAnalysis;
+import org.opencb.bionetdb.core.analysis.NetworkAnalysis;
+import org.opencb.bionetdb.core.analysis.VariantAnalysis;
+import org.opencb.bionetdb.core.analysis.interpretation.TieringInterpretationAnalysis;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.iterators.NodeIterator;
@@ -16,16 +17,13 @@ import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.api.query.NodeQueryParam;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
-import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
-import org.opencb.bionetdb.core.analysis.interpretation.ProteinNetworkInterpretationAnalysis;
-import org.opencb.bionetdb.core.analysis.interpretation.TieringInterpretationAnalysis;
-import org.opencb.bionetdb.core.analysis.VariantAnalysis;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.NetworkManager;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
+import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
+import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -101,6 +99,25 @@ public class BioNetDbManager {
 
         idToUidMap = new HashMap<>();
     }
+
+    //---------------------------------------------
+    // A N A L Y S I S
+    //---------------------------------------------
+
+    public NetworkAnalysis getNetworkAnalysis() {
+        return new NetworkAnalysis(networkDBAdaptor);
+    }
+
+    public VariantAnalysis getVariantAnalysis() {
+        return new VariantAnalysis(networkDBAdaptor);
+    }
+
+    public InterpretationAnalysis getInterpretationAnalysis() {
+        return new InterpretationAnalysis(networkDBAdaptor);
+    }
+
+    //---------------------------------------------
+
 
     public void loadBioPax(java.nio.file.Path path) throws IOException, BioNetDBException {
         loadBioPax(path, null);
@@ -311,95 +328,6 @@ public class BioNetDbManager {
         return networkDBAdaptor.networkQuery(cypher);
     }
 
-    //=========================================================================
-    // A N A L Y S I S
-    //=========================================================================
-
-    //-------------------------------------------------------------------------
-    // Mode of Inheritance methods
-    //-------------------------------------------------------------------------
-
-    public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        VariantAnalysis variantAnalysis = new VariantAnalysis(networkDBAdaptor);
-        List<Variant> variants = variantAnalysis.getDominantVariants(pedigree, disorder, query);
-
-        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(variants);
-        return variantsResult;
-    }
-
-    public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
-        List<Variant> variants = manager.getRecessiveVariants(pedigree, disorder, query);
-
-        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(variants);
-        return variantsResult;
-    }
-
-    public QueryResult<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
-        List<Variant> variants = manager.getXLinkedDominantVariants(pedigree, disorder, query);
-
-        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(variants);
-        return variantsResult;
-    }
-
-    public QueryResult<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
-        List<Variant> variants = manager.getXLinkedRecessiveVariants(pedigree, disorder, query);
-
-        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(variants);
-        return variantsResult;
-    }
-
-    public QueryResult<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-
-        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
-        List<Variant> variants = manager.getYLinkedVariants(pedigree, disorder, query);
-
-        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(variants);
-        return variantsResult;
-    }
-
-    public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException {
-
-        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
-        List<Variant> variants = manager.getDeNovoVariants(pedigree, query);
-
-        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(variants);
-        return variantsResult;
-    }
-
-    public QueryResult<Map<String, List<Variant>>> getCompoundHeterozygousVariants(Pedigree pedigree, Query query)
-            throws BioNetDBException {
-
-        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
-        Map<String, List<Variant>> variants = manager.getCompoundHeterozygousVariants(pedigree, query);
-
-        QueryResult<Map<String, List<Variant>>> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(Collections.singletonList(variants));
-        return variantsResult;
-    }
-
-    //-------------------------------------------------------------------------
-    // Protein system
-    //-------------------------------------------------------------------------
-
-    public QueryResult<Variant> getProteinSystemVariants(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
-                                                         boolean complexOrReaction, Query query) throws BioNetDBException {
-        ProteinNetworkInterpretationAnalysis analysis = new ProteinNetworkInterpretationAnalysis(networkDBAdaptor);
-
-        List<Variant> variants = analysis.execute(pedigree, disorder, moi, complexOrReaction, query);
-
-        QueryResult<Variant> variantsResult = new QueryResult<>("variants");
-        variantsResult.setResult(variants);
-        return variantsResult;
-    }
 
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S

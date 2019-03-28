@@ -6,4 +6,7 @@ public class BioNetDBAnalysis {
 
     protected NetworkDBAdaptor networkDBAdaptor;
 
+    protected BioNetDBAnalysis(NetworkDBAdaptor networkDBAdaptor) {
+        this.networkDBAdaptor = networkDBAdaptor;
+    }
 }
