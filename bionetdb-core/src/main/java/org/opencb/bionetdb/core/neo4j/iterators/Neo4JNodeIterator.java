@@ -2,7 +2,7 @@ package org.opencb.bionetdb.core.neo4j.iterators;
 
 import org.neo4j.driver.v1.StatementResult;
 import org.opencb.bionetdb.core.api.iterators.NodeIterator;
-import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.utils.Neo4jConverter;
 
 import java.util.ArrayList;

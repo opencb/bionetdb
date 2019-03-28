@@ -12,7 +12,7 @@ public class DotExporter {
         Dot dot = new Dot("network", true);
 
         // Creating Nodes
-        for (org.opencb.bionetdb.core.network.Node node: network.getNodes()) {
+        for (org.opencb.bionetdb.core.models.network.Node node: network.getNodes()) {
             dot.addNode(new Node(node.getId(), new HashMap<>()));
         }
 
@@ -60,8 +60,8 @@ public class DotExporter {
         }
 
         // Creating and connecting Xrefs
-        for (org.opencb.bionetdb.core.network.Node node: network.getNodes()) {
-            if (org.opencb.bionetdb.core.network.Node.isPhysicalEntity(node)) {
+        for (org.opencb.bionetdb.core.models.network.Node node: network.getNodes()) {
+            if (org.opencb.bionetdb.core.models.network.Node.isPhysicalEntity(node)) {
                 PhysicalEntity physicalEntity = (PhysicalEntity) node;
                 for (Xref xref: physicalEntity.getXrefs()) {
                     String xrefName = xref.getSource() + "_" + xref.getId();
@@ -72,8 +72,8 @@ public class DotExporter {
         }
 
         // Creating and connecting CellularLocations
-        for (org.opencb.bionetdb.core.network.Node node: network.getNodes()) {
-            if (org.opencb.bionetdb.core.network.Node.isPhysicalEntity(node)) {
+        for (org.opencb.bionetdb.core.models.network.Node node: network.getNodes()) {
+            if (org.opencb.bionetdb.core.models.network.Node.isPhysicalEntity(node)) {
                 PhysicalEntity physicalEntity = (PhysicalEntity) node;
                 for (CellularLocation cellularLocation : physicalEntity.getCellularLocation()) {
                     dot.addNode(new Node(cellularLocation.getName(), new HashMap<>()));

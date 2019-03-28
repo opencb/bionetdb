@@ -18,7 +18,7 @@ public class Utils {
     }
 
     public static String compressString(String input, ObjectMapper objMapper) throws IOException {
-        byte[] compressed = org.opencb.commons.utils.StringUtils.gzip(input);
+        byte[] compressed = StringUtils.gzip(input);
         String output = objMapper.writer().writeValueAsString(compressed);
         return output;
     }

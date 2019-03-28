@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.SbmlParser;
 import org.opencb.bionetdb.core.io.SifParser;
-import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.BufferedWriter;

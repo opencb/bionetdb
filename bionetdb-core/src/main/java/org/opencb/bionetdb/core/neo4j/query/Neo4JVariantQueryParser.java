@@ -5,7 +5,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.api.query.VariantNodeQueryParam;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.util.ArrayList;

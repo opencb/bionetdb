@@ -18,9 +18,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.util.*;
 
-public class VariantAnalysis {
-
-    private NetworkDBAdaptor networkDBAdaptor;
+public class VariantAnalysis extends BioNetDBAnalysis {
 
     public VariantAnalysis(NetworkDBAdaptor networkDBAdaptor) {
         this.networkDBAdaptor = networkDBAdaptor;

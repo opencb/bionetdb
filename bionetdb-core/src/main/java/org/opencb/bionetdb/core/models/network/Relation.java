@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.network;
+package org.opencb.bionetdb.core.models.network;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;

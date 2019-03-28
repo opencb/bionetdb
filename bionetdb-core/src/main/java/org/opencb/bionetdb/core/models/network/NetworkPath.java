@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.network;
+package org.opencb.bionetdb.core.models.network;
 
 /**
  * Created by joaquin on 2/12/18.

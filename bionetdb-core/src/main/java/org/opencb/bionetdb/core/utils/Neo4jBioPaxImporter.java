@@ -8,8 +8,8 @@ import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
-import org.opencb.bionetdb.core.network.Node;
-import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.models.network.Relation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

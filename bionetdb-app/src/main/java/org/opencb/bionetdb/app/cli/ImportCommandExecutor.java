@@ -2,13 +2,11 @@ package org.opencb.bionetdb.app.cli;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-import org.opencb.bionetdb.core.network.Node;
-import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.core.utils.CsvInfo;
 import org.opencb.bionetdb.core.utils.Neo4jBioPaxImporter;
 import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
-import org.opencb.bionetdb.core.utils.cache.GeneCache;
-import org.opencb.bionetdb.core.utils.cache.ProteinCache;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;

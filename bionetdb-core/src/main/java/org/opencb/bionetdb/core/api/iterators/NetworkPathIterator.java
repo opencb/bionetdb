@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.api.iterators;
 
-import org.opencb.bionetdb.core.network.NetworkPath;
+import org.opencb.bionetdb.core.models.network.NetworkPath;
 
 import java.util.Iterator;
 

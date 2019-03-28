@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.io;
 
-import org.opencb.bionetdb.core.network.Network;
+import org.opencb.bionetdb.core.models.network.Network;
 //import org.sbml.libsbml.*;
 //import org.sbml.libsbml.Reaction;
 

@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.api.query;
 
-import org.opencb.bionetdb.core.network.Node;
+import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.commons.datastore.core.Query;
 
 public class NodeQuery extends Query {

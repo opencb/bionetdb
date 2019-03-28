@@ -10,10 +10,10 @@ import org.neo4j.driver.v1.util.Pair;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
-import org.opencb.bionetdb.core.network.Network;
-import org.opencb.bionetdb.core.network.NetworkPath;
-import org.opencb.bionetdb.core.network.Node;
-import org.opencb.bionetdb.core.network.Relation;
+import org.opencb.bionetdb.core.models.network.Network;
+import org.opencb.bionetdb.core.models.network.NetworkPath;
+import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.models.network.Relation;
 
 import java.util.*;
 

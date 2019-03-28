@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.network;
+package org.opencb.bionetdb.core.models.network;
 
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 
