@@ -1,8 +1,8 @@
-package org.opencb.bionetdb.core.neo4j;
+package org.opencb.bionetdb.core.neo4j.iterators;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
-import org.opencb.bionetdb.core.api.RowIterator;
+import org.opencb.bionetdb.core.api.iterators.RowIterator;
 import org.opencb.bionetdb.core.utils.Neo4jConverter;
 
 import java.util.List;
