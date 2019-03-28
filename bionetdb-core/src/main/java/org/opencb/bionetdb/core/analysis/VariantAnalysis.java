@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.neo4j.interpretation;
+package org.opencb.bionetdb.core.analysis;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -11,18 +11,18 @@ import org.opencb.bionetdb.core.api.iterators.NodeIterator;
 import org.opencb.bionetdb.core.api.iterators.RowIterator;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
-import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParam;
+import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.util.*;
 
-public class MoIManager {
+public class VariantAnalysis {
 
     private NetworkDBAdaptor networkDBAdaptor;
 
-    public MoIManager(NetworkDBAdaptor networkDBAdaptor) {
+    public VariantAnalysis(NetworkDBAdaptor networkDBAdaptor) {
         this.networkDBAdaptor = networkDBAdaptor;
     }
 
@@ -44,7 +44,7 @@ public class MoIManager {
 
     public List<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
-        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "X");
+        query.put(VariantQueryParam.CHROMOSOME.key(), "X");
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
@@ -53,7 +53,7 @@ public class MoIManager {
 
     public List<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
-        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "X");
+        query.put(VariantQueryParam.CHROMOSOME.key(), "X");
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
@@ -62,7 +62,7 @@ public class MoIManager {
 
     public List<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
-        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "Y");
+        query.put(VariantQueryParam.CHROMOSOME.key(), "Y");
         putGenotypes(query, genotypes);
 
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
@@ -73,7 +73,7 @@ public class MoIManager {
         Map<String, List<String>> genotypes = ModeOfInheritance.deNovo(pedigree);
         putGenotypes(query, genotypes);
 
-        query.put(Neo4JVariantQueryParam.INCLUDE_STUDY.key(), true);
+        query.put(VariantQueryParam.INCLUDE_STUDY.key(), true);
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
 
         // Get variants and genotypes
@@ -97,8 +97,8 @@ public class MoIManager {
         Map<String, List<String>> genotypes = ModeOfInheritance.compoundHeterozygous(pedigree);
         putGenotypes(query, genotypes);
 
-        query.put(Neo4JVariantQueryParam.INCLUDE_STUDY.key(), true);
-        query.put(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key(), true);
+        query.put(VariantQueryParam.INCLUDE_STUDY.key(), true);
+        query.put(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key(), true);
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
 
         // Get variants and genotypes
@@ -184,7 +184,7 @@ public class MoIManager {
         for (String sample : genotypes.keySet()) {
             gt.add(sample + ":" + StringUtils.join(genotypes.get(sample), ","));
         }
-        query.put(Neo4JVariantQueryParam.GENOTYPE.key(), gt);
+        query.put(VariantQueryParam.GENOTYPE.key(), gt);
     }
 
     private List<Variant> queryNodes(String cypher) throws BioNetDBException {

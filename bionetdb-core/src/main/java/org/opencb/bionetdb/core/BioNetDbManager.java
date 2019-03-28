@@ -19,10 +19,9 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
-import org.opencb.bionetdb.core.neo4j.interpretation.MoIManager;
-import org.opencb.bionetdb.core.neo4j.interpretation.ProteinSystem.ProteinSystemAnalysis;
-import org.opencb.bionetdb.core.neo4j.interpretation.Tiering;
-import org.opencb.bionetdb.core.neo4j.interpretation.XQuery.XQueryAnalysis;
+import org.opencb.bionetdb.core.analysis.interpretation.ProteinNetworkInterpretationAnalysis;
+import org.opencb.bionetdb.core.analysis.interpretation.TieringInterpretationAnalysis;
+import org.opencb.bionetdb.core.analysis.VariantAnalysis;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.NetworkManager;
 import org.opencb.bionetdb.core.network.NetworkPath;
@@ -60,8 +59,7 @@ public class BioNetDbManager {
 
     private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
-    private Tiering tiering;
-    private XQueryAnalysis xQueryAnalysis;
+    private TieringInterpretationAnalysis tieringInterpretationAnalysis;
 
     public BioNetDbManager(BioNetDBConfiguration configuration) throws BioNetDBException {
         init(null, configuration);
@@ -93,8 +91,7 @@ public class BioNetDbManager {
         // We can now create the default NetworkDBAdaptor
         boolean createIndex = false; // true
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, this.configuration, createIndex);
-        tiering = new Tiering(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
-        xQueryAnalysis = new XQueryAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
+        tieringInterpretationAnalysis = new TieringInterpretationAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
 
         // We create CellBase client
         cellbaseClientConfiguration = new ClientConfiguration();
@@ -323,8 +320,8 @@ public class BioNetDbManager {
     //-------------------------------------------------------------------------
 
     public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        MoIManager moIManager = new MoIManager(networkDBAdaptor);
-        List<Variant> variants = moIManager.getDominantVariants(pedigree, disorder, query);
+        VariantAnalysis variantAnalysis = new VariantAnalysis(networkDBAdaptor);
+        List<Variant> variants = variantAnalysis.getDominantVariants(pedigree, disorder, query);
 
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
         variantsResult.setResult(variants);
@@ -332,7 +329,7 @@ public class BioNetDbManager {
     }
 
     public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        MoIManager manager = new MoIManager(networkDBAdaptor);
+        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
         List<Variant> variants = manager.getRecessiveVariants(pedigree, disorder, query);
 
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
@@ -341,7 +338,7 @@ public class BioNetDbManager {
     }
 
     public QueryResult<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        MoIManager manager = new MoIManager(networkDBAdaptor);
+        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
         List<Variant> variants = manager.getXLinkedDominantVariants(pedigree, disorder, query);
 
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
@@ -350,7 +347,7 @@ public class BioNetDbManager {
     }
 
     public QueryResult<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        MoIManager manager = new MoIManager(networkDBAdaptor);
+        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
         List<Variant> variants = manager.getXLinkedRecessiveVariants(pedigree, disorder, query);
 
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
@@ -360,7 +357,7 @@ public class BioNetDbManager {
 
     public QueryResult<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
 
-        MoIManager manager = new MoIManager(networkDBAdaptor);
+        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
         List<Variant> variants = manager.getYLinkedVariants(pedigree, disorder, query);
 
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
@@ -370,7 +367,7 @@ public class BioNetDbManager {
 
     public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException {
 
-        MoIManager manager = new MoIManager(networkDBAdaptor);
+        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
         List<Variant> variants = manager.getDeNovoVariants(pedigree, query);
 
         QueryResult<Variant> variantsResult = new QueryResult<>("variants");
@@ -381,7 +378,7 @@ public class BioNetDbManager {
     public QueryResult<Map<String, List<Variant>>> getCompoundHeterozygousVariants(Pedigree pedigree, Query query)
             throws BioNetDBException {
 
-        MoIManager manager = new MoIManager(networkDBAdaptor);
+        VariantAnalysis manager = new VariantAnalysis(networkDBAdaptor);
         Map<String, List<Variant>> variants = manager.getCompoundHeterozygousVariants(pedigree, query);
 
         QueryResult<Map<String, List<Variant>>> variantsResult = new QueryResult<>("variants");
@@ -395,7 +392,7 @@ public class BioNetDbManager {
 
     public QueryResult<Variant> getProteinSystemVariants(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
                                                          boolean complexOrReaction, Query query) throws BioNetDBException {
-        ProteinSystemAnalysis analysis = new ProteinSystemAnalysis(networkDBAdaptor);
+        ProteinNetworkInterpretationAnalysis analysis = new ProteinNetworkInterpretationAnalysis(networkDBAdaptor);
 
         List<Variant> variants = analysis.execute(pedigree, disorder, moi, complexOrReaction, query);
 

@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.core.neo4j.query;
 
 import org.junit.Test;
+import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.network.Node;
@@ -62,9 +63,9 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.PANEL.key(), "Familial or syndromic hypoparathyroidism,Hydrocephalus,Cerebellar hypoplasia");
-        query.put(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,polymorphic_pseudogene");
-        query.put(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,intron_variant,");
+        query.put(VariantQueryParam.PANEL.key(), "Familial or syndromic hypoparathyroidism,Hydrocephalus,Cerebellar hypoplasia");
+        query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,polymorphic_pseudogene");
+        query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,intron_variant,");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -75,8 +76,8 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,polymorphic_pseudogene");
-        query.put(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,intron_variant,");
+        query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,polymorphic_pseudogene");
+        query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,intron_variant,");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -87,7 +88,7 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001");
+        query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -98,7 +99,7 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001,AFR>0.3");
+        query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001,AFR>0.3");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -109,7 +110,7 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001;AFR>0.3");
+        query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001;AFR>0.3");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -120,8 +121,8 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "X");
-        query.put(Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001,AFR>0.3");
+        query.put(VariantQueryParam.CHROMOSOME.key(), "X");
+        query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001,AFR>0.3");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -132,8 +133,8 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "X");
-        query.put(Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001;AFR>0.3");
+        query.put(VariantQueryParam.CHROMOSOME.key(), "X");
+        query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "JPN<0.001;AFR>0.3");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -144,7 +145,7 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.GENOTYPE.key(), "sample1:1/0,1/1,sample2:1/0");
+        query.put(VariantQueryParam.GENOTYPE.key(), "sample1:1/0,1/1,sample2:1/0");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -155,8 +156,8 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
 
         Query query = new Query();
-        query.put(Neo4JVariantQueryParam.CHROMOSOME.key(), "M,MT,Mt,mt");
-        query.put(Neo4JVariantQueryParam.GENOTYPE.key(), "sample1:1/0,1/1,sample2:1/0");
+        query.put(VariantQueryParam.CHROMOSOME.key(), "M,MT,Mt,mt");
+        query.put(VariantQueryParam.GENOTYPE.key(), "sample1:1/0,1/1,sample2:1/0");
 
         String cypher = parser.parseVariantQuery(query, QueryOptions.empty());
         System.out.println(cypher);

@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.neo4j.interpretation;
+package org.opencb.bionetdb.core.analysis.interpretation;
 
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.*;
@@ -14,11 +14,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class Tiering {
+public class TieringInterpretationAnalysis {
 
     private Driver driver;
 
-    public Tiering(Driver driver) {
+    public TieringInterpretationAnalysis(Driver driver) {
         this.driver = driver;
     }
 

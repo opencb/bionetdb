@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core.api.query;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
+@Deprecated
 public final class VariantNodeQueryParam extends NodeQueryParam {
 
     public static final String REGION_DESCR = "List of regions: {chr}:{start}-{end}, e.g.: 2,3:1000000-2000000";

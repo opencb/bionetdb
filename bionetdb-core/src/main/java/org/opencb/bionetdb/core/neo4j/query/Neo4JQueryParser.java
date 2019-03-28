@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.neo4j.query;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -397,8 +398,8 @@ public class Neo4JQueryParser {
 
     public static String parseVariantQuery(Query query, QueryOptions options) {
         // Check query
-        Set<Neo4JVariantQueryParam> includeMap = getIncludeMap(query);
-        Set<Neo4JVariantQueryParam> excludeMap = getExcludeMap(query);
+        Set<VariantQueryParam> includeMap = getIncludeMap(query);
+        Set<VariantQueryParam> excludeMap = getExcludeMap(query);
         if (CollectionUtils.isNotEmpty(includeMap) && CollectionUtils.isNotEmpty(excludeMap)) {
             throw new IllegalArgumentException("Invalid query: mixing INCLUDE and EXCLUDE parameters is not permitted.");
         }
@@ -454,18 +455,18 @@ public class Neo4JQueryParser {
     // P R I V A T E     M E T H O D S
     //---------------------------------------------------------------
 
-    private static List<String> getIncludeAttributes(Set<Neo4JVariantQueryParam> includeMap, Set<Neo4JVariantQueryParam> excludeMap) {
-        Map<Neo4JVariantQueryParam, String> attrMap = new HashMap<>();
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_STUDY, "attr_studies");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE, "attr_consequenceTypes");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_POPULATION_FREQUENCY, "attr_populationFrequencies");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_CONSERVATION, "attr_conservation");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_GENE_EXPRESSION, "attr_geneExpression");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_GENE_TRAIT_ASSOCIATION, "attr_geneTraitAssociation");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_GENE_DRUG_INTERACTION, "attr_geneDrugInteraction");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_VARIANT_TRAIT_ASSOCIATION, "attr_variantTraitAssociation");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_TRAIT_ASSOCIATION, "attr_traitAssociation");
-        attrMap.put(Neo4JVariantQueryParam.INCLUDE_FUNCTIONAL_SCORE, "attr_functionalScore");
+    private static List<String> getIncludeAttributes(Set<VariantQueryParam> includeMap, Set<VariantQueryParam> excludeMap) {
+        Map<VariantQueryParam, String> attrMap = new HashMap<>();
+        attrMap.put(VariantQueryParam.INCLUDE_STUDY, "attr_studies");
+        attrMap.put(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE, "attr_consequenceTypes");
+        attrMap.put(VariantQueryParam.INCLUDE_POPULATION_FREQUENCY, "attr_populationFrequencies");
+        attrMap.put(VariantQueryParam.INCLUDE_CONSERVATION, "attr_conservation");
+        attrMap.put(VariantQueryParam.INCLUDE_GENE_EXPRESSION, "attr_geneExpression");
+        attrMap.put(VariantQueryParam.INCLUDE_GENE_TRAIT_ASSOCIATION, "attr_geneTraitAssociation");
+        attrMap.put(VariantQueryParam.INCLUDE_GENE_DRUG_INTERACTION, "attr_geneDrugInteraction");
+        attrMap.put(VariantQueryParam.INCLUDE_VARIANT_TRAIT_ASSOCIATION, "attr_variantTraitAssociation");
+        attrMap.put(VariantQueryParam.INCLUDE_TRAIT_ASSOCIATION, "attr_traitAssociation");
+        attrMap.put(VariantQueryParam.INCLUDE_FUNCTIONAL_SCORE, "attr_functionalScore");
 
         if (CollectionUtils.isEmpty(includeMap) && CollectionUtils.isEmpty(excludeMap)) {
             // No include, no exclude -> include ALL
@@ -473,9 +474,9 @@ public class Neo4JQueryParser {
         } else if (CollectionUtils.isNotEmpty(includeMap)) {
             // Include
             Set<String> attrs = new HashSet<>();
-            Iterator<Neo4JVariantQueryParam> iterator = includeMap.iterator();
+            Iterator<VariantQueryParam> iterator = includeMap.iterator();
             while (iterator.hasNext()) {
-                Neo4JVariantQueryParam next = iterator.next();
+                VariantQueryParam next = iterator.next();
                 if (attrMap.containsKey(next)) {
                     attrs.add(attrMap.get(next));
                 }
@@ -483,112 +484,112 @@ public class Neo4JQueryParser {
             return new ArrayList<>(attrs);
         } else {
             // Exclude
-            Iterator<Neo4JVariantQueryParam> iterator = excludeMap.iterator();
+            Iterator<VariantQueryParam> iterator = excludeMap.iterator();
             while (iterator.hasNext()) {
-                Neo4JVariantQueryParam next = iterator.next();
-                if (next == Neo4JVariantQueryParam.EXCLUDE_STUDY) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_STUDY);
+                VariantQueryParam next = iterator.next();
+                if (next == VariantQueryParam.EXCLUDE_STUDY) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_STUDY);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE);
+                if (next == VariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_POPULATION_FREQUENCY) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_POPULATION_FREQUENCY);
+                if (next == VariantQueryParam.EXCLUDE_POPULATION_FREQUENCY) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_POPULATION_FREQUENCY);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_CONSERVATION) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_CONSERVATION);
+                if (next == VariantQueryParam.EXCLUDE_CONSERVATION) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_CONSERVATION);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_GENE_EXPRESSION) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_GENE_EXPRESSION);
+                if (next == VariantQueryParam.EXCLUDE_GENE_EXPRESSION) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_GENE_EXPRESSION);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_GENE_TRAIT_ASSOCIATION) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_GENE_TRAIT_ASSOCIATION);
+                if (next == VariantQueryParam.EXCLUDE_GENE_TRAIT_ASSOCIATION) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_GENE_TRAIT_ASSOCIATION);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_GENE_DRUG_INTERACTION) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_GENE_DRUG_INTERACTION);
+                if (next == VariantQueryParam.EXCLUDE_GENE_DRUG_INTERACTION) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_GENE_DRUG_INTERACTION);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_VARIANT_TRAIT_ASSOCIATION) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_VARIANT_TRAIT_ASSOCIATION);
+                if (next == VariantQueryParam.EXCLUDE_VARIANT_TRAIT_ASSOCIATION) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_VARIANT_TRAIT_ASSOCIATION);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_TRAIT_ASSOCIATION) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_TRAIT_ASSOCIATION);
+                if (next == VariantQueryParam.EXCLUDE_TRAIT_ASSOCIATION) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_TRAIT_ASSOCIATION);
                 }
-                if (next == Neo4JVariantQueryParam.EXCLUDE_FUNCTIONAL_SCORE) {
-                    attrMap.remove(Neo4JVariantQueryParam.INCLUDE_FUNCTIONAL_SCORE);
+                if (next == VariantQueryParam.EXCLUDE_FUNCTIONAL_SCORE) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_FUNCTIONAL_SCORE);
                 }
             }
             return new ArrayList<>(attrMap.values());
         }
     }
 
-    private static Set<Neo4JVariantQueryParam> getIncludeMap(Query query) {
-        Set<Neo4JVariantQueryParam> includes = new HashSet<>();
+    private static Set<VariantQueryParam> getIncludeMap(Query query) {
+        Set<VariantQueryParam> includes = new HashSet<>();
 
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_STUDY.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_STUDY);
+        if (query.containsKey(VariantQueryParam.INCLUDE_STUDY.key())) {
+            includes.add(VariantQueryParam.INCLUDE_STUDY);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE);
+        if (query.containsKey(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
+            includes.add(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_POPULATION_FREQUENCY.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_POPULATION_FREQUENCY);
+        if (query.containsKey(VariantQueryParam.INCLUDE_POPULATION_FREQUENCY.key())) {
+            includes.add(VariantQueryParam.INCLUDE_POPULATION_FREQUENCY);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_CONSERVATION.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_CONSERVATION);
+        if (query.containsKey(VariantQueryParam.INCLUDE_CONSERVATION.key())) {
+            includes.add(VariantQueryParam.INCLUDE_CONSERVATION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_GENE_EXPRESSION.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_GENE_EXPRESSION);
+        if (query.containsKey(VariantQueryParam.INCLUDE_GENE_EXPRESSION.key())) {
+            includes.add(VariantQueryParam.INCLUDE_GENE_EXPRESSION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_GENE_TRAIT_ASSOCIATION.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_GENE_TRAIT_ASSOCIATION);
+        if (query.containsKey(VariantQueryParam.INCLUDE_GENE_TRAIT_ASSOCIATION.key())) {
+            includes.add(VariantQueryParam.INCLUDE_GENE_TRAIT_ASSOCIATION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_GENE_DRUG_INTERACTION.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_GENE_DRUG_INTERACTION);
+        if (query.containsKey(VariantQueryParam.INCLUDE_GENE_DRUG_INTERACTION.key())) {
+            includes.add(VariantQueryParam.INCLUDE_GENE_DRUG_INTERACTION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_VARIANT_TRAIT_ASSOCIATION.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_VARIANT_TRAIT_ASSOCIATION);
+        if (query.containsKey(VariantQueryParam.INCLUDE_VARIANT_TRAIT_ASSOCIATION.key())) {
+            includes.add(VariantQueryParam.INCLUDE_VARIANT_TRAIT_ASSOCIATION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_TRAIT_ASSOCIATION.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_TRAIT_ASSOCIATION);
+        if (query.containsKey(VariantQueryParam.INCLUDE_TRAIT_ASSOCIATION.key())) {
+            includes.add(VariantQueryParam.INCLUDE_TRAIT_ASSOCIATION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.INCLUDE_FUNCTIONAL_SCORE.key())) {
-            includes.add(Neo4JVariantQueryParam.INCLUDE_FUNCTIONAL_SCORE);
+        if (query.containsKey(VariantQueryParam.INCLUDE_FUNCTIONAL_SCORE.key())) {
+            includes.add(VariantQueryParam.INCLUDE_FUNCTIONAL_SCORE);
         }
         return includes;
     }
 
-    private static Set<Neo4JVariantQueryParam> getExcludeMap(Query query) {
-        Set<Neo4JVariantQueryParam> excludes = new HashSet<>();
+    private static Set<VariantQueryParam> getExcludeMap(Query query) {
+        Set<VariantQueryParam> excludes = new HashSet<>();
 
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_STUDY.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_STUDY);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_STUDY.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_STUDY);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_POPULATION_FREQUENCY.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_POPULATION_FREQUENCY);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_POPULATION_FREQUENCY.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_POPULATION_FREQUENCY);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_CONSERVATION.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_CONSERVATION);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_CONSERVATION.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_CONSERVATION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_GENE_EXPRESSION.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_GENE_EXPRESSION);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_GENE_EXPRESSION.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_GENE_EXPRESSION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_GENE_TRAIT_ASSOCIATION.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_GENE_TRAIT_ASSOCIATION);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_GENE_TRAIT_ASSOCIATION.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_GENE_TRAIT_ASSOCIATION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_GENE_DRUG_INTERACTION.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_GENE_DRUG_INTERACTION);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_GENE_DRUG_INTERACTION.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_GENE_DRUG_INTERACTION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_VARIANT_TRAIT_ASSOCIATION.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_VARIANT_TRAIT_ASSOCIATION);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_VARIANT_TRAIT_ASSOCIATION.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_VARIANT_TRAIT_ASSOCIATION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_TRAIT_ASSOCIATION.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_TRAIT_ASSOCIATION);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_TRAIT_ASSOCIATION.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_TRAIT_ASSOCIATION);
         }
-        if (query.containsKey(Neo4JVariantQueryParam.EXCLUDE_FUNCTIONAL_SCORE.key())) {
-            excludes.add(Neo4JVariantQueryParam.EXCLUDE_FUNCTIONAL_SCORE);
+        if (query.containsKey(VariantQueryParam.EXCLUDE_FUNCTIONAL_SCORE.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_FUNCTIONAL_SCORE);
         }
         return excludes;
     }
@@ -598,55 +599,55 @@ public class Neo4JQueryParser {
 
         // Chromosome
         String chromWhere = "";
-        String param = Neo4JVariantQueryParam.CHROMOSOME.key();
+        String param = VariantQueryParam.CHROMOSOME.key();
         if (query.containsKey(param)) {
             List<String> chromosomes = Arrays.asList(query.getString(param).split(","));
             chromWhere = getConditionString(chromosomes, "v.attr_chromosome", true);
         }
 
         // Panel
-        if (query.containsKey(Neo4JVariantQueryParam.PANEL.key())) {
-            cypherStatements.addAll(parsePanel(query.getString(Neo4JVariantQueryParam.PANEL.key()),
-                    query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key()), chromWhere));
+        if (query.containsKey(VariantQueryParam.PANEL.key())) {
+            cypherStatements.addAll(parsePanel(query.getString(VariantQueryParam.PANEL.key()),
+                    query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()), chromWhere));
             chromWhere = "";
         }
 
         // Gene
-        if (query.containsKey(Neo4JVariantQueryParam.GENE.key())) {
-            cypherStatements.addAll(parseGene(query.getString(Neo4JVariantQueryParam.GENE.key()),
-                    query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key()), chromWhere));
+        if (query.containsKey(VariantQueryParam.GENE.key())) {
+            cypherStatements.addAll(parseGene(query.getString(VariantQueryParam.GENE.key()),
+                    query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()), chromWhere));
             chromWhere = "";
         }
 
         // SO
-        if (query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
+        if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
             String biotypeValues = "";
-            if (!query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && query.containsKey(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key())) {
-                biotypeValues = query.getString(Neo4JVariantQueryParam.ANNOT_BIOTYPE.key());
+            if (!query.containsKey(VariantQueryParam.PANEL.key()) && query.containsKey(VariantQueryParam.ANNOT_BIOTYPE.key())) {
+                biotypeValues = query.getString(VariantQueryParam.ANNOT_BIOTYPE.key());
             }
-            cypherStatements.add(parseConsequenceType(query.getString(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()), biotypeValues,
+            cypherStatements.add(parseConsequenceType(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()), biotypeValues,
                     chromWhere));
             chromWhere = "";
         }
 
         // Genotype (sample)
         // chromWhere should be used only once, not every genotype iteration
-        if (query.containsKey(Neo4JVariantQueryParam.GENOTYPE.key())) {
-            cypherStatements.addAll(parseGenotype(query.getString(Neo4JVariantQueryParam.GENOTYPE.key()), chromWhere));
+        if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
+            cypherStatements.addAll(parseGenotype(query.getString(VariantQueryParam.GENOTYPE.key()), chromWhere));
             chromWhere = "";
         }
 
         // Biotype
-        param = Neo4JVariantQueryParam.ANNOT_BIOTYPE.key();
-        if (query.containsKey(param) && !query.containsKey(Neo4JVariantQueryParam.PANEL.key())
-                && !query.containsKey(Neo4JVariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
+        param = VariantQueryParam.ANNOT_BIOTYPE.key();
+        if (query.containsKey(param) && !query.containsKey(VariantQueryParam.PANEL.key())
+                && !query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
             cypherStatements.add(parseBiotype(param, chromWhere));
             chromWhere = "";
         }
 
 
         // Population frequency (alternate frequency)
-        param = Neo4JVariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
+        param = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (query.containsKey(param)) {
             cypherStatements.addAll(parsePopulationFrequency(query.getString(param), chromWhere));
         }
@@ -664,11 +665,11 @@ public class Neo4JQueryParser {
         }
         st = cypherStatements.get(i);
         sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n");
-        if (!query.getBoolean(Neo4JVariantQueryParam.INCLUDE_STUDY.key())
-                && !query.getBoolean(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
+        if (!query.getBoolean(VariantQueryParam.INCLUDE_STUDY.key())
+                && !query.getBoolean(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
             sb.append("RETURN DISTINCT v");
-        } else if (query.getBoolean(Neo4JVariantQueryParam.INCLUDE_STUDY.key())
-                && !query.getBoolean(Neo4JVariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
+        } else if (query.getBoolean(VariantQueryParam.INCLUDE_STUDY.key())
+                && !query.getBoolean(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
             sb.append("WITH DISTINCT v\n")
                     .append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)\n")
                     .append("RETURN DISTINCT v.attr_chromosome AS ").append(NodeBuilder.CHROMOSOME).append(", v.attr_start AS ")
