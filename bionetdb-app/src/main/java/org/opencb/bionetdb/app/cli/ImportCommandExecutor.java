@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.app.cli;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.core.network.Node;
 import org.opencb.bionetdb.core.network.Relation;
@@ -200,7 +201,8 @@ public class ImportCommandExecutor extends CommandExecutor {
 
         sb.setLength(0);
         sb.append(neo4jHome);
-        sb.append("/bin/neo4j-admin import --id-type INTEGER --ignore-duplicate-nodes --ignore-missing-nodes");
+        sb.append("/bin/neo4j-admin import --id-type INTEGER --delimiter=\"" + StringEscapeUtils.escapeJava(CsvInfo.SEPARATOR) + "\" "
+                        + "--ignore-duplicate-nodes --ignore-missing-nodes");
 
         // Retrieving files from the input directory
         List<File> relationFiles = new ArrayList<>();
@@ -215,10 +217,12 @@ public class ImportCommandExecutor extends CommandExecutor {
                             name = getNodeName(file);
                             validNodes.add(name);
                             sb.append(" --nodes:").append(name).append(" ").append(file.getAbsolutePath());
+                        } else {
+                            logger.info("Skipping node file {} to import: file empty", file.getAbsolutePath());
                         }
                     }
                 } else {
-                    logger.info("Skipping file {} to import", file.getAbsolutePath());
+                    logger.info("Skipping node file {} to import: no CSV format", file.getAbsolutePath());
                 }
             }
         }
@@ -229,6 +233,8 @@ public class ImportCommandExecutor extends CommandExecutor {
             if (isValidRelationCsvFile(file, validNodes)) {
                 name = getRelationName(file);
                 sb.append(" --relationships:").append(name).append(" ").append(file.getAbsolutePath());
+            } else {
+                logger.info("Skipping relationship file {} to import: invalid file", file.getAbsolutePath());
             }
         }
 
@@ -334,7 +340,7 @@ public class ImportCommandExecutor extends CommandExecutor {
                     Long geneUid = importer.processGene(geneId, geneId);
                     if (geneUid != null) {
                         // Write dna-gene relation
-                        pwRel.println(node.getUid() + "," + geneUid);
+                        pwRel.println(node.getUid() + CsvInfo.SEPARATOR + geneUid);
                     }
                 }
                 // Write DNA node
@@ -377,7 +383,7 @@ public class ImportCommandExecutor extends CommandExecutor {
                     }
 
                     // Write rna-mirna relation
-                    pwRel.println(node.getUid() + "," + miRnaUid);
+                    pwRel.println(node.getUid() + CsvInfo.SEPARATOR + miRnaUid);
                 }
                 // Write RNA node
                 pwNode.println(importer.getCsvInfo().nodeLine(node));

@@ -8,7 +8,6 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.api.NodeIterator;
 import org.opencb.bionetdb.core.api.RowIterator;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
@@ -75,7 +74,7 @@ public class MoIManager {
         Map<String, List<String>> genotypes = ModeOfInheritance.deNovo(pedigree);
         putGenotypes(query, genotypes);
 
-        query.put(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key(), true);
+        query.put(Neo4JVariantQueryParam.INCLUDE_STUDY.key(), true);
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
 
         // Get variants and genotypes
@@ -99,7 +98,7 @@ public class MoIManager {
         Map<String, List<String>> genotypes = ModeOfInheritance.compoundHeterozygous(pedigree);
         putGenotypes(query, genotypes);
 
-        query.put(Neo4JVariantQueryParam.INCLUDE_GENOTYPE.key(), true);
+        query.put(Neo4JVariantQueryParam.INCLUDE_STUDY.key(), true);
         String cypher = Neo4JQueryParser.parseVariantQuery(query, QueryOptions.empty());
 
         // Get variants and genotypes
@@ -137,9 +136,14 @@ public class MoIManager {
     private List<Variant> queryVariants(String cypher) throws BioNetDBException {
         List<Variant> variants = new ArrayList<>();
 
-        NodeIterator nodeIterator = networkDBAdaptor.nodeIterator(cypher);
-        while (nodeIterator.hasNext()) {
-            variants.add(NodeBuilder.newVariant(nodeIterator.next()));
+        String aReturn = cypher.split("RETURN")[1];
+        String[] attrs = aReturn.split(",");
+
+        RowIterator rowIterator = networkDBAdaptor.rowIterator(cypher);
+        while (rowIterator.hasNext()) {
+            List<Object> next = rowIterator.next();
+            // TODO: convert "next" to variant
+            //variants.add(NodeBuilder.newVariant(nodeIterator.next()));
         }
 
         return variants;

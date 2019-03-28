@@ -85,7 +85,9 @@ public class Node {
         EXON_OVERLAP("EXON_OVERLAP"),
         PROTEIN_KEYWORD("PROTEIN_KEYWORD"),
 
-        PANEL("PANEL");
+        PANEL("PANEL"),
+
+        VARIANT_OBJECT("VARIANT_OBJECT");
 
         private final String type;
         private final String parentType;

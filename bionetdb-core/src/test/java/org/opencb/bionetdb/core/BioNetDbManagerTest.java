@@ -62,7 +62,7 @@ public class BioNetDbManagerTest {
                 System.out.println(dbConfig);
             }
 
-            bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
+//            bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
             bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
@@ -187,7 +187,7 @@ public class BioNetDbManagerTest {
         QueryResult<Variant> dominantVariants = bioNetDbManager.getDominantVariants(pedigree, disorder, query);
         if (dominantVariants.getResult().size() > 0) {
             for (Variant variant : dominantVariants.getResult()) {
-                System.out.println(variant.toStringSimple());
+                System.out.println(variant.toJson());
             }
         }
     }
@@ -524,10 +524,10 @@ public class BioNetDbManagerTest {
         mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         ObjectReader varReader = mapper.reader(Variant.class);
 
-//        String geneFilename = "/home/jtarraga/data150/load.neo/illumina_platinum.export.5k.json";
-//        String geneFilename = "/home/jtarraga/data150/platinum/illumina_platinum.export.json.gz";
-//        String variantFilename = "/home/jtarraga/data150/load.neo/10k.clinvar.json";
-        String variantFilename = "/home/jtarraga/data150/load.neo/clinvar.json";
+//        String geneFilename = "~/data150/load.neo/illumina_platinum.export.5k.json";
+//        String geneFilename = "~/data150/platinum/illumina_platinum.export.json.gz";
+//        String variantFilename = "~/data150/load.neo/10k.clinvar.json";
+        String variantFilename = "~/data150/load.neo/clinvar.json";
         BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(variantFilename));
 
         Set<String> geneIdSet = new HashSet<>();

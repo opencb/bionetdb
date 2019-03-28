@@ -1,5 +1,7 @@
 package org.opencb.bionetdb.core.utils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang.StringUtils;
@@ -127,10 +129,12 @@ public class Neo4jCsvImporter {
             }
             // Write protein node into the CSV file
             csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).println(csv.nodeLine(node));
-            return node.getUid();
-        } else {
-            return proteinUid;
+            proteinUid = node.getUid();
         }
+//        if (proteinUid == 3943776) {
+//            System.out.println("---------------> protein uid = " + proteinUid + ", id = " + proteinId + ", name = " + proteinName);
+//        }
+        return proteinUid;
     }
 
     public Long processTranscript(String transcriptId) {
@@ -164,7 +168,7 @@ public class Neo4jCsvImporter {
                 }
 
                 // Write gene-transcript relation
-                pwRel.println(uid + "," + transcrUid);
+                pwRel.println(uid + CsvInfo.SEPARATOR + transcrUid);
             }
         }
 
@@ -352,7 +356,7 @@ public class Neo4jCsvImporter {
                     }
 
                     // Write transcript-protein relation
-                    csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__PROTEIN.toString()).println(uid + "," + proteinUid);
+                    csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__PROTEIN.toString()).println(uid + CsvInfo.SEPARATOR + proteinUid);
                     break;
                 }
             }
@@ -369,16 +373,23 @@ public class Neo4jCsvImporter {
         return node;
     }
 
-    public Long processVariant(Variant variant) {
+    public Long processVariant(Variant variant) throws IOException {
+        boolean updatingVariantObjectFile = false;
         Long variantUid = csv.getLong(variant.toString());
         if (variantUid == null) {
             Node node = createVariantNode(variant);
             variantUid = node.getUid();
             csv.putLong(variant.toString(), variantUid);
+            updatingVariantObjectFile = true;
         }
 
         // Process sample info
         processSampleInfo(variant, variantUid);
+
+        // Check if we have to update the VARIANT_OBJECT.csv file
+        if (updatingVariantObjectFile) {
+            updateVariantObjectFile(variant);
+        }
 
         return variantUid;
     }
@@ -578,7 +589,7 @@ public class Neo4jCsvImporter {
                 Long fileUid = csv.getLong(fileId);
                 if (fileUid != null) {
                     pw = csv.getCsvWriters().get(Relation.Type.VARIANT_FILE_INFO__FILE.toString());
-                    pw.println(infoUid + "," + fileUid);
+                    pw.println(infoUid + CsvInfo.SEPARATOR + fileUid);
                 }
 
                 // FORMAT: GT and format attributes
@@ -590,7 +601,7 @@ public class Neo4jCsvImporter {
                     if (sampleUid == null) {
                         sampleUid = csv.getAndIncUid();
                         csv.getCsvWriters().get(Node.Type.SAMPLE.toString())
-                                .println(sampleUid + "," + sampleName + "," + sampleName);
+                                .println(sampleUid + CsvInfo.SEPARATOR + sampleName + CsvInfo.SEPARATOR + sampleName);
                         csv.putLong(sampleName, sampleUid);
                     }
                     // Variant call node
@@ -622,12 +633,12 @@ public class Neo4jCsvImporter {
         while (iterator.hasNext()) {
             String infoName = iterator.next();
             if (sb.length() > 0) {
-                sb.append(",");
+                sb.append(CsvInfo.SEPARATOR);
             }
             if (fileAttrs.containsKey(infoName)) {
-                sb.append(fileAttrs.get(infoName).replace(",", ";"));
+                sb.append(fileAttrs.get(infoName));
             } else {
-                sb.append("-");
+                sb.append(CsvInfo.MISSING_VALUE);
             }
         }
         return sb.toString();
@@ -640,13 +651,13 @@ public class Neo4jCsvImporter {
         while (iterator.hasNext()) {
             String formatName = iterator.next();
             if (sb.length() > 0) {
-                sb.append(",");
+                sb.append(CsvInfo.SEPARATOR);
             }
             if (studyEntry.getFormatPositions().containsKey(formatName)) {
                 sb.append(studyEntry.getSampleData(index).get(studyEntry.getFormatPositions()
-                        .get(formatName)).replace(",", ";"));
+                        .get(formatName)));
             } else {
-                sb.append("-");
+                sb.append(CsvInfo.MISSING_VALUE);
             }
         }
         return sb.toString();
@@ -705,7 +716,7 @@ public class Neo4jCsvImporter {
                         Long geneUid = processGene(gene.getId(), gene.getName());
                         if (geneUid != null) {
                             // Add relation to CSV file
-                            pwRel.println(node.getUid() + "," + geneUid);
+                            pwRel.println(node.getUid() + CsvInfo.SEPARATOR + geneUid);
                         }
                     }
                 }
@@ -747,7 +758,7 @@ public class Neo4jCsvImporter {
                     if (geneUid != null) {
                         if (csv.getLong(miRnaUid + "." + geneUid) == null) {
                             // Write mirna-target gene relation
-                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + subFields[1]);
+                            pwMiRnaTargetRel.println(miRnaUid + CsvInfo.SEPARATOR + geneUid + CsvInfo.SEPARATOR + subFields[1]);
                             csv.putLong(miRnaUid + "." + geneUid, 1);
                         }
                     }
@@ -761,5 +772,92 @@ public class Neo4jCsvImporter {
 
     public CsvInfo getCsvInfo() {
         return csv;
+    }
+
+    private void updateVariantObjectFile(Variant variant) throws IOException {
+        // Prepare jackson writer (object to string)
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+
+        Node node = new Node(csv.getAndIncUid(), variant.toString(), variant.getId(), Node.Type.VARIANT_OBJECT);
+
+        // Studies
+        String value = "";
+        if (ListUtils.isNotEmpty(variant.getStudies())) {
+            value = Utils.compress(variant.getStudies(), mapper);
+            variant.setStudies(Collections.emptyList());
+        }
+        node.addAttribute("studies", value);
+
+        if (variant.getAnnotation() != null) {
+            value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                value = Utils.compress(variant.getAnnotation().getConsequenceTypes(), mapper);
+                variant.getAnnotation().setConsequenceTypes(Collections.emptyList());
+            }
+            node.addAttribute("consequenceTypes", value);
+
+            value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
+                value = Utils.compress(variant.getAnnotation().getPopulationFrequencies(), mapper);
+                variant.getAnnotation().setPopulationFrequencies(Collections.emptyList());
+            }
+            node.addAttribute("populationFrequencies", value);
+
+            value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
+                value = Utils.compress(variant.getAnnotation().getConservation(), mapper);
+                variant.getAnnotation().setConservation(Collections.emptyList());
+            }
+            node.addAttribute("conservation", value);
+
+            value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getGeneExpression())) {
+                value = Utils.compress(variant.getAnnotation().getGeneExpression(), mapper);
+                variant.getAnnotation().setGeneExpression(Collections.emptyList());
+            }
+            node.addAttribute("geneExpression", value);
+
+            value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getGeneTraitAssociation())) {
+                value = Utils.compress(variant.getAnnotation().getGeneTraitAssociation(), mapper);
+                variant.getAnnotation().setGeneTraitAssociation(Collections.emptyList());
+            }
+            node.addAttribute("geneTraitAssociation", value);
+
+            value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getGeneDrugInteraction())) {
+                value = Utils.compress(variant.getAnnotation().getGeneDrugInteraction(), mapper);
+                variant.getAnnotation().setGeneDrugInteraction(Collections.emptyList());
+            }
+            node.addAttribute("geneDrugInteraction", value);
+
+            value = "";
+            if (variant.getAnnotation().getVariantTraitAssociation() != null) {
+                value = Utils.compress(variant.getAnnotation().getVariantTraitAssociation(), mapper);
+                variant.getAnnotation().setVariantTraitAssociation(null);
+            }
+            node.addAttribute("variantTraitAssociation", value);
+
+            value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
+                value = Utils.compress(variant.getAnnotation().getTraitAssociation(), mapper);
+                variant.getAnnotation().setTraitAssociation(Collections.emptyList());
+            }
+            node.addAttribute("traitAssociation", value);
+
+            value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
+                value = Utils.compress(variant.getAnnotation().getFunctionalScore(), mapper);
+                variant.getAnnotation().setFunctionalScore(Collections.emptyList());
+            }
+            node.addAttribute("functionalScore", value);
+        }
+
+        node.addAttribute("core", Utils.compress(variant, mapper));
+
+        PrintWriter pw = csv.getCsvWriters().get(Node.Type.VARIANT_OBJECT.toString());
+        pw.println(csv.nodeLine(node));
     }
 }

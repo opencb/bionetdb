@@ -30,8 +30,8 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class CsvInfo {
-    public static final String SEPARATOR = ",";
-    private static final String MISSING_VALUE = "-";
+    public static final String SEPARATOR = "\t";
+    public static final String MISSING_VALUE = ""; //"-";
 
     private static final String MIRNA_ROCKSDB = "mirnas.rocksdb";
 
@@ -428,7 +428,7 @@ public class CsvInfo {
     private String getRelationHeaderLine(String type) {
         StringBuilder sb = new StringBuilder();
         String[] split = type.split("__");
-        sb.append(":START_ID(").append(nodeAttributes.get(split[0]).get(0)).append("),:END_ID(")
+        sb.append(":START_ID(").append(nodeAttributes.get(split[0]).get(0)).append(")").append(SEPARATOR).append(":END_ID(")
                 .append(nodeAttributes.get(split[1]).get(0)).append(")");
         return sb.toString();
     }
@@ -436,10 +436,10 @@ public class CsvInfo {
     private String getBioPAXRelationHeaderLine(String type) {
         StringBuilder sb = new StringBuilder();
         String[] split = type.split("___");
-        sb.append(":START_ID(").append(nodeAttributes.get(split[1]).get(0)).append("),:END_ID(")
+        sb.append(":START_ID(").append(nodeAttributes.get(split[1]).get(0)).append(")").append(SEPARATOR).append(":END_ID(")
                 .append(nodeAttributes.get(split[2]).get(0)).append(")");
         if (type.equals(BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString())) {
-            sb.append("," + Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES + "evidence");
+            sb.append(CsvInfo.SEPARATOR + Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES + "evidence");
         }
         return sb.toString();
     }
@@ -477,7 +477,7 @@ public class CsvInfo {
 
     private String cleanString(String input) {
         if (StringUtils.isNotEmpty(input)) {
-            return input.replace(",", ";").replace("\"", "");
+            return input.replace("\"", "");
         } else {
             return null;
         }
@@ -559,6 +559,11 @@ public class CsvInfo {
         attrs = Arrays.asList("variantId", "id", "name", "alternativeNames", "chromosome", "start", "end", "strand",
                 "reference", "alternate", "type");
         nodeAttributes.put(Node.Type.VARIANT.toString(), new ArrayList<>(attrs));
+
+        attrs = Arrays.asList("variantObjectId", "id", "name", "core", "studies", "consequenceTypes", "populationFrequencies",
+                "conservation", "geneExpression", "geneTraitAssociation", "geneDrugInteraction", "variantTraitAssociation",
+                "traitAssociation", "functionalScore");
+        nodeAttributes.put(Node.Type.VARIANT_OBJECT.toString(), new ArrayList<>(attrs));
 
         // Population frequency
         attrs = Arrays.asList("popFreqId", "id", "name", "study", "population", "refAlleleFreq", "altAlleleFreq");

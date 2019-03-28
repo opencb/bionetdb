@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
@@ -21,6 +22,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
+@Deprecated
 public class Neo4jImporter {
 
     private final int VARIANT_BATCH_SIZE = 200;
@@ -325,6 +327,12 @@ public class Neo4jImporter {
         // Ontology
         attrs = Arrays.asList("ontologyId", "id", "name", "source");
         nodeAttributes.put(Node.Type.ONTOLOGY.toString(), new ArrayList<>(attrs));
+
+        // Variant object (GZ JSON for that variant)
+        attrs = Arrays.asList("variantObjectId", "id", "core", "studies", "consequenceTypes", "populationFrequencies", "conservation",
+                "geneExpression", "geneTraitAssociation", "geneDrugInteraction", "variantTraitAssociation", "traitAssociation",
+                "functionalScore");
+        nodeAttributes.put(Node.Type.VARIANT_OBJECT.toString(), new ArrayList<>(attrs));
     }
 
     public void generateCSV(Path inputPath, Path outPath) throws IOException {
@@ -450,7 +458,7 @@ public class Neo4jImporter {
         }
     }
 
-    public void generateCSVFromVCF(Path vcfPath, Path outDir) throws FileNotFoundException {
+    public void generateCSVFromVCF(Path vcfPath, Path outDir) throws FileNotFoundException, JsonProcessingException {
         // VCF File objReader management
         VcfFileReader vcfFileReader = new VcfFileReader(vcfPath.toString(), false);
         vcfFileReader.open();
@@ -519,7 +527,7 @@ public class Neo4jImporter {
         // TODO
     }
 
-    private void updateCSVVariantFiles(List<Variant> variants, CSVforVariant csv) {
+    private void updateCSVVariantFiles(List<Variant> variants, CSVforVariant csv) throws JsonProcessingException {
         Node node;
         PrintWriter pw;
         StringBuilder sb = new StringBuilder();
@@ -930,6 +938,7 @@ public class Neo4jImporter {
 //                        }
 //                    }
 //                }
+
     private String getNodeHeaderLine(List<String> attrs) {
         StringBuilder sb = new StringBuilder();
         sb.append("uid:ID(").append(attrs.get(0)).append(")");
