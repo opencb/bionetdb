@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.api;
 import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.iterators.NodeIterator;
 import org.opencb.bionetdb.core.api.iterators.RowIterator;
+import org.opencb.bionetdb.core.api.iterators.VariantIterator;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -109,6 +110,12 @@ public interface NetworkDBAdaptor extends AutoCloseable {
 
     RowIterator rowIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
     RowIterator rowIterator(String cypher) throws BioNetDBException;
+
+    //-------------------------------------------------------------------------
+    // N O D E S
+    //-------------------------------------------------------------------------
+
+    VariantIterator variantIterator(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
     // N E T W O R K     P A T H S

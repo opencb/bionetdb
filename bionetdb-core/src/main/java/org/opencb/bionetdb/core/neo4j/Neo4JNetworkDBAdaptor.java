@@ -10,6 +10,7 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.core.api.iterators.NodeIterator;
 import org.opencb.bionetdb.core.api.iterators.RowIterator;
+import org.opencb.bionetdb.core.api.iterators.VariantIterator;
 import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.core.api.query.NodeQuery;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -18,6 +19,7 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.neo4j.iterators.Neo4JNetworkPathIterator;
 import org.opencb.bionetdb.core.neo4j.iterators.Neo4JNodeIterator;
 import org.opencb.bionetdb.core.neo4j.iterators.Neo4JRowIterator;
+import org.opencb.bionetdb.core.neo4j.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.network.Network;
 import org.opencb.bionetdb.core.network.Node;
@@ -303,6 +305,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public NodeIterator nodeIterator(String cypher) throws BioNetDBException {
         Session session = this.driver.session();
+        System.out.println("Cypher query: " + cypher);
         return new Neo4JNodeIterator(session.run(cypher));
     }
 
@@ -339,8 +342,18 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public RowIterator rowIterator(String cypher) throws BioNetDBException {
         Session session = this.driver.session();
-//        System.out.println("Cypher query: " + cypher);
+        System.out.println("Cypher query: " + cypher);
         return new Neo4JRowIterator(session.run(cypher));
+    }
+
+    //-------------------------------------------------------------------------
+    // T A B L E     Q U E R I E S
+    //-------------------------------------------------------------------------
+
+    public VariantIterator variantIterator(String cypher) throws BioNetDBException {
+        Session session = this.driver.session();
+        System.out.println("Cypher query: " + cypher);
+        return new Neo4JVariantIterator(session.run(cypher));
     }
 
     //-------------------------------------------------------------------------
