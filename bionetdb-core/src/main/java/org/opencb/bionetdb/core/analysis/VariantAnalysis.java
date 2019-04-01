@@ -10,7 +10,6 @@ import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.iterators.NodeIterator;
 import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParser;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -70,9 +69,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
     public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException, IOException {
         Map<String, List<String>> genotypes = ModeOfInheritance.deNovo(pedigree);
         putGenotypes(query, genotypes);
-
-        query.put(VariantQueryParam.INCLUDE_STUDY.key(), true);
-        String cypher = Neo4JVariantQueryParser.parse(query, QueryOptions.empty());
+        query.put(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
 
         // Get variants and genotypes
         QueryResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
@@ -101,9 +98,8 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         Map<String, List<String>> genotypes = ModeOfInheritance.compoundHeterozygous(pedigree);
         putGenotypes(query, genotypes);
 
-        query.put(VariantQueryParam.INCLUDE_STUDY.key(), true);
+        query.put(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
         query.put(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key(), true);
-        String cypher = Neo4JVariantQueryParser.parse(query, QueryOptions.empty());
 
         // Get variants and genotypes
         QueryResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());

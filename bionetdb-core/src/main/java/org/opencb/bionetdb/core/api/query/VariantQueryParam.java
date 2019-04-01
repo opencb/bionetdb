@@ -16,6 +16,8 @@ public final class VariantQueryParam implements QueryParam {
     private static final List<VariantQueryParam> VALUES = new ArrayList<>();
     private static final Map<String, VariantQueryParam> VALUES_MAP = new HashMap<>();
 
+    // FILTERS
+
     public static final String CHROMOSOME_DESCR = "List of chromosomes";
     public static final VariantQueryParam CHROMOSOME = new VariantQueryParam("chromosome", TEXT_ARRAY, CHROMOSOME_DESCR);
 
@@ -47,6 +49,14 @@ public final class VariantQueryParam implements QueryParam {
             = new VariantQueryParam("populationFrequencyAlt", TEXT_ARRAY, ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR);
 
     // INCLUDE
+
+    public static final String INCLUDE_GENOTYPE_DESCR = "Include genotype for the given sample names in genotype parameter";
+    public static final VariantQueryParam INCLUDE_GENOTYPE = new VariantQueryParam("includeGenotype", BOOLEAN,
+            INCLUDE_GENOTYPE_DESCR);
+
+    public static final String INCLUDE_XREF_DESCR = "Include Xrefs";
+    public static final VariantQueryParam INCLUDE_XREF
+            = new VariantQueryParam("includeXref", BOOLEAN, INCLUDE_XREF_DESCR);
 
     public static final String INCLUDE_STUDY_DESCR = "Include study";
     public static final VariantQueryParam INCLUDE_STUDY
@@ -89,6 +99,13 @@ public final class VariantQueryParam implements QueryParam {
             = new VariantQueryParam("includeFunctionalScore", BOOLEAN, INCLUDE_FUNCTIONAL_SCORE_DESCR);
 
     // EXCLUDE
+
+    public static final String EXCLUDE_ALL_DESCR = "Exclude all";
+    public static final VariantQueryParam EXCLUDE_ALL = new VariantQueryParam("excludeAll", BOOLEAN, EXCLUDE_ALL_DESCR);
+
+    public static final String EXCLUDE_XREF_DESCR = "Exclude Xrefs";
+    public static final VariantQueryParam EXCLUDE_XREF
+            = new VariantQueryParam("excludeXref", BOOLEAN, EXCLUDE_XREF_DESCR);
 
     public static final String EXCLUDE_STUDY_DESCR = "Exclude studies";
     public static final VariantQueryParam EXCLUDE_STUDY

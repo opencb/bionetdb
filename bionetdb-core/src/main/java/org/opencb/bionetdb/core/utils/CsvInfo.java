@@ -560,7 +560,7 @@ public class CsvInfo {
                 "reference", "alternate", "type");
         nodeAttributes.put(Node.Type.VARIANT.toString(), new ArrayList<>(attrs));
 
-        attrs = Arrays.asList("variantObjectId", "id", "name", "core", "studies", "consequenceTypes", "populationFrequencies",
+        attrs = Arrays.asList("variantObjectId", "id", "name", "core", "studies", "consequenceTypes", "xrefs", "populationFrequencies",
                 "conservation", "geneExpression", "geneTraitAssociation", "geneDrugInteraction", "variantTraitAssociation",
                 "traitAssociation", "functionalScore");
         nodeAttributes.put(Node.Type.VARIANT_OBJECT.toString(), new ArrayList<>(attrs));

@@ -32,47 +32,26 @@ public class Neo4JVariantQueryParser {
         List<String> includeAttrs = getIncludeAttributes(includeMap, excludeMap);
 
         // Get Cypher statements in order to build the Cypher query
-        List<Neo4JQueryParser.CypherStatement> cypherStatements = getCypherStatements(query, options);
+        String cypher;
+        if (query.containsKey(VariantQueryParam.PANEL.key()) && query.containsKey(VariantQueryParam.GENE.key())) {
+            String geneValues = query.getString(VariantQueryParam.GENE.key());
+            query.remove(VariantQueryParam.GENE.key());
 
-        int i = 0;
-        Neo4JQueryParser.CypherStatement st;
-        StringBuilder sb = new StringBuilder();
-        for (i = 0; i < cypherStatements.size() - 1; i++) {
-            st = cypherStatements.get(i);
-            sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append(st.getWith()).append("\n");
+            List<Neo4JQueryParser.CypherStatement> panelCypherStatements = getCypherStatements(query, options);
+
+            query.remove(VariantQueryParam.PANEL.key());
+            query.put(VariantQueryParam.GENE.key(), geneValues);
+
+            List<Neo4JQueryParser.CypherStatement> geneCypherStatements = getCypherStatements(query, options);
+
+            cypher = buildCypherStatement(query, includeAttrs, panelCypherStatements)
+                    + "\nUNION\n"
+                    + buildCypherStatement(query, includeAttrs, geneCypherStatements);
+        } else {
+            cypher = buildCypherStatement(query, includeAttrs, getCypherStatements(query, options));
         }
-        st = cypherStatements.get(i);
-        sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append(st.getWith()).append("\n");
 
-        sb.append("MATCH (vo:VARIANT_OBJECT) WHERE vo.id = v.id ");
-        sb.append("RETURN vo.attr_core");
-        for (String includeAttr : includeAttrs) {
-            sb.append(", ").append("vo.").append(includeAttr);
-        }
-
-        return sb.toString();
-
-        // TODO: include UNION to support GENE and PANEL
-
-//        String cypher;
-//
-//        if (query.containsKey(Neo4JVariantQueryParam.PANEL.key()) && query.containsKey(Neo4JVariantQueryParam.GENE.key())) {
-//            String geneValues = query.getString(Neo4JVariantQueryParam.GENE.key());
-//            query.remove(Neo4JVariantQueryParam.GENE.key());
-//
-//            List<CypherStatement> panelCypherStatements = getCypherStatements(query, options);
-//
-//            query.remove(Neo4JVariantQueryParam.PANEL.key());
-//            query.put(Neo4JVariantQueryParam.GENE.key(), geneValues);
-//
-//            List<CypherStatement> geneCypherStatements = getCypherStatements(query, options);
-//
-//            cypher = buildCypherStatement(query, panelCypherStatements) + "\nUNION\n" + buildCypherStatement(query, geneCypherStatements);
-//        } else {
-//            cypher = buildCypherStatement(query, getCypherStatements(query, options));
-//        }
-//        System.out.println(cypher);
-//        return cypher;
+        return cypher;
     }
 
     public static String parseProteinNetworkInterpretation(Query query, QueryOptions options, boolean complexOrReaction) {
@@ -85,18 +64,18 @@ public class Neo4JVariantQueryParser {
 
             query.remove(VariantQueryParam.GENE.key());
 
-            String panelCypherQuery = getCypherQuery(query, options, complexOrReaction);
+            String panelCypherQuery = getProteinNetworkCypher(query, options, complexOrReaction);
 
             query.remove(VariantQueryParam.PANEL.key());
             query.put(VariantQueryParam.GENE.key(), geneValues);
             query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), biotypeValues);
             query.put(VariantQueryParam.CHROMOSOME.key(), chromValues);
 
-            String geneCypherQuery = getCypherQuery(query, options, complexOrReaction);
+            String geneCypherQuery = getProteinNetworkCypher(query, options, complexOrReaction);
 
             cypher = panelCypherQuery + "\nUNION\n" + geneCypherQuery;
         } else {
-            cypher = getCypherQuery(query, options, complexOrReaction);
+            cypher = getProteinNetworkCypher(query, options, complexOrReaction);
         }
 
         System.out.println(cypher);
@@ -111,6 +90,7 @@ public class Neo4JVariantQueryParser {
         Map<VariantQueryParam, String> attrMap = new HashMap<>();
         attrMap.put(VariantQueryParam.INCLUDE_STUDY, "attr_studies");
         attrMap.put(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE, "attr_consequenceTypes");
+        attrMap.put(VariantQueryParam.INCLUDE_XREF, "attr_xrefs");
         attrMap.put(VariantQueryParam.INCLUDE_POPULATION_FREQUENCY, "attr_populationFrequencies");
         attrMap.put(VariantQueryParam.INCLUDE_CONSERVATION, "attr_conservation");
         attrMap.put(VariantQueryParam.INCLUDE_GENE_EXPRESSION, "attr_geneExpression");
@@ -144,6 +124,9 @@ public class Neo4JVariantQueryParser {
                 }
                 if (next == VariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE) {
                     attrMap.remove(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE);
+                }
+                if (next == VariantQueryParam.EXCLUDE_XREF) {
+                    attrMap.remove(VariantQueryParam.INCLUDE_XREF);
                 }
                 if (next == VariantQueryParam.EXCLUDE_POPULATION_FREQUENCY) {
                     attrMap.remove(VariantQueryParam.INCLUDE_POPULATION_FREQUENCY);
@@ -183,6 +166,9 @@ public class Neo4JVariantQueryParser {
         if (query.containsKey(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
             includes.add(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE);
         }
+        if (query.containsKey(VariantQueryParam.INCLUDE_XREF.key())) {
+            includes.add(VariantQueryParam.INCLUDE_XREF);
+        }
         if (query.containsKey(VariantQueryParam.INCLUDE_POPULATION_FREQUENCY.key())) {
             includes.add(VariantQueryParam.INCLUDE_POPULATION_FREQUENCY);
         }
@@ -218,6 +204,9 @@ public class Neo4JVariantQueryParser {
         }
         if (query.containsKey(VariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE.key())) {
             excludes.add(VariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE);
+        }
+        if (query.containsKey(VariantQueryParam.EXCLUDE_XREF.key())) {
+            excludes.add(VariantQueryParam.EXCLUDE_XREF);
         }
         if (query.containsKey(VariantQueryParam.EXCLUDE_POPULATION_FREQUENCY.key())) {
             excludes.add(VariantQueryParam.EXCLUDE_POPULATION_FREQUENCY);
@@ -297,7 +286,6 @@ public class Neo4JVariantQueryParser {
             chromWhere = "";
         }
 
-
         // Population frequency (alternate frequency)
         param = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (query.containsKey(param)) {
@@ -307,7 +295,9 @@ public class Neo4JVariantQueryParser {
         return cypherStatements;
     }
 
-    private static String buildCypherStatement(Query query, List<Neo4JQueryParser.CypherStatement> cypherStatements) {
+    private static String buildCypherStatement(Query query, List<String> includeAttrs,
+                                               List<Neo4JQueryParser.CypherStatement> cypherStatements) {
+
         int i = 0;
         Neo4JQueryParser.CypherStatement st;
         StringBuilder sb = new StringBuilder();
@@ -316,32 +306,23 @@ public class Neo4JVariantQueryParser {
             sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append(st.getWith()).append("\n");
         }
         st = cypherStatements.get(i);
-        sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n");
-        if (!query.getBoolean(VariantQueryParam.INCLUDE_STUDY.key())
-                && !query.getBoolean(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
-            sb.append("RETURN DISTINCT v");
-        } else if (query.getBoolean(VariantQueryParam.INCLUDE_STUDY.key())
-                && !query.getBoolean(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key())) {
-            sb.append("WITH DISTINCT v\n")
-                    .append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)\n")
-                    .append("RETURN DISTINCT v.attr_chromosome AS ").append(NodeBuilder.CHROMOSOME).append(", v.attr_start AS ")
-                    .append(NodeBuilder.START).append(", v.attr_reference AS ").append(NodeBuilder.REFERENCE)
-                    .append(", v.attr_alternate AS ").append(NodeBuilder.ALTERNATE).append(", v.attr_type AS ").append(NodeBuilder.TYPE)
-                    .append(", collect(s.id) AS ").append(NodeBuilder.SAMPLE).append(", collect(vc.attr_GT) AS ")
-                    .append(NodeBuilder.GENOTYPE);
-        } else {
-            sb.append("WITH DISTINCT v\n")
-                    .append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)\n")
-                    .append("WITH DISTINCT v, collect(s.id) AS ").append(NodeBuilder.SAMPLE).append(", collect(vc.attr_GT) AS ")
-                    .append(NodeBuilder.GENOTYPE).append("\n")
-                    .append("MATCH (v:VARIANT)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__SO]-(so:SO)\n")
-                    .append("RETURN DISTINCT v.attr_chromosome AS ").append(NodeBuilder.CHROMOSOME).append(", v.attr_start AS ")
-                    .append(NodeBuilder.START).append(", v.attr_reference AS ").append(NodeBuilder.REFERENCE)
-                    .append(", v.attr_alternate AS ").append(NodeBuilder.ALTERNATE).append(", v.attr_type AS ").append(NodeBuilder.TYPE)
-                    .append(", ").append(NodeBuilder.SAMPLE).append(", ").append(NodeBuilder.GENOTYPE).append(", ct.attr_transcript AS ")
-                    .append(NodeBuilder.TRANSCRIPT).append(", ct.attr_biotype AS ").append(NodeBuilder.BIOTYPE)
-                    .append(", collect(so.name) AS ").append(NodeBuilder.CONSEQUENCE_TYPE).append(" ORDER BY ")
-                    .append(NodeBuilder.CHROMOSOME).append(", ").append(NodeBuilder.START).append(", ").append(NodeBuilder.TRANSCRIPT);
+        sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append(st.getWith()).append("\n");
+
+        if (query.containsKey(VariantQueryParam.GENOTYPE.key()) && query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
+            sb.append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)\n")
+                    .append("WITH DISTINCT v, collect(s.id) AS ").append(NodeBuilder.SAMPLE)
+                    .append(", collect(vc.attr_GT) AS ").append(NodeBuilder.GENOTYPE)
+                    .append("\n");
+        }
+
+        sb.append("MATCH (vo:VARIANT_OBJECT) WHERE vo.id = v.id ");
+        sb.append("RETURN vo.attr_core AS attr_core");
+        for (String includeAttr : includeAttrs) {
+            sb.append(", ").append("vo.").append(includeAttr).append(" AS ").append(includeAttr);
+        }
+
+        if (query.containsKey(VariantQueryParam.GENOTYPE.key()) && query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
+            sb.append(", ").append(NodeBuilder.SAMPLE).append(", ").append(NodeBuilder.GENOTYPE);
         }
         return sb.toString();
     }
@@ -560,7 +541,7 @@ public class Neo4JVariantQueryParser {
         }
     }
 
-    private static String getCypherQuery(Query query, QueryOptions options, boolean complexOrReaction) {
+    private static String getProteinNetworkCypher(Query query, QueryOptions options, boolean complexOrReaction) {
         StringBuilder cypher = new StringBuilder();
 
         if (!query.containsKey(VariantQueryParam.PANEL.key()) && !query.containsKey(VariantQueryParam.GENE.key())) {

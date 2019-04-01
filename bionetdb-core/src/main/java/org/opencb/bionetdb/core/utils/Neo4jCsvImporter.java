@@ -799,6 +799,13 @@ public class Neo4jCsvImporter {
             node.addAttribute("consequenceTypes", value);
 
             value = "";
+            if (ListUtils.isNotEmpty(variant.getAnnotation().getXrefs())) {
+                value = Utils.compress(variant.getAnnotation().getXrefs(), mapper);
+                variant.getAnnotation().setXrefs(Collections.emptyList());
+            }
+            node.addAttribute("xrefs", value);
+
+            value = "";
             if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
                 value = Utils.compress(variant.getAnnotation().getPopulationFrequencies(), mapper);
                 variant.getAnnotation().setPopulationFrequencies(Collections.emptyList());

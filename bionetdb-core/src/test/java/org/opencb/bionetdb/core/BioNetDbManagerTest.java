@@ -20,6 +20,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.bionetdb.core.analysis.VariantAnalysis;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -238,6 +239,8 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
+        excludeAll(query);
+
         QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getRecessiveVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
             System.out.println("\n");
@@ -258,6 +261,8 @@ public class BioNetDbManagerTest {
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
+
+        excludeAll(query);
 
         QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getXLinkedDominantVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
@@ -301,6 +306,8 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
+        excludeAll(query);
+
         QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getYLinkedVariants(pedigree, disorder, query);
         if (variants.getResult().size() > 0) {
             System.out.println("\n");
@@ -321,6 +328,8 @@ public class BioNetDbManagerTest {
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
+
+        excludeAll(query);
 
         QueryResult<Variant> variants = bioNetDbManager.getVariantAnalysis().getDeNovoVariants(pedigree, query);
         if (variants.getResult().size() > 0) {
@@ -343,6 +352,8 @@ public class BioNetDbManagerTest {
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
+
+        excludeAll(query);
 
         QueryResult<Map<String, List<Variant>>> variantMap = bioNetDbManager.getVariantAnalysis().getCompoundHeterozygousVariants(pedigree, query);
         if (variantMap.getResult().size() > 0) {
@@ -607,5 +618,19 @@ public class BioNetDbManagerTest {
 //        while (iterator.hasNext()) {
 //            System.out.println(iterator.next());
 //        }
+    }
+
+    private void excludeAll(Query query) {
+        query.put(VariantQueryParam.EXCLUDE_CONSEQUENCE_TYPE.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_XREF.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_CONSERVATION.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_FUNCTIONAL_SCORE.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_GENE_DRUG_INTERACTION.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_GENE_EXPRESSION.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_GENE_TRAIT_ASSOCIATION.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_POPULATION_FREQUENCY.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_STUDY.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_TRAIT_ASSOCIATION.key(), false);
+        query.put(VariantQueryParam.EXCLUDE_VARIANT_TRAIT_ASSOCIATION.key(), false);
     }
 }

@@ -1,30 +1,27 @@
 package org.opencb.bionetdb.core.neo4j.iterators;
 
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.StatementResult;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.iterators.VariantIterator;
-import org.opencb.bionetdb.core.utils.converters.RecordToVariantConverter;
-
-import java.util.Iterator;
+import org.opencb.bionetdb.core.neo4j.converters.Neo4JRecordToVariantConverter;
 
 public class Neo4JVariantIterator implements VariantIterator {
 
-    private final Iterator<Record> recordIterator;
-    private final RecordToVariantConverter converter;
+    private StatementResult statementResult;
+    private Neo4JRecordToVariantConverter converter;
 
-    public Neo4JVariantIterator(Iterator<Record> recordIterator) {
-        this.recordIterator = recordIterator;
-        converter = new RecordToVariantConverter();
+    public Neo4JVariantIterator(StatementResult statementResult) {
+        this.statementResult = statementResult;
+        this.converter = new Neo4JRecordToVariantConverter();
     }
 
     @Override
     public boolean hasNext() {
-        return recordIterator.hasNext();
+        return statementResult.hasNext();
     }
 
     @Override
     public Variant next() {
-        Record next = recordIterator.next();
-        return converter.convert(next);
+        return converter.convert(statementResult.next());
     }
 }

@@ -1,8 +1,5 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -12,9 +9,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
@@ -38,7 +33,6 @@ import org.opencb.bionetdb.core.neo4j.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParser;
 import org.opencb.bionetdb.core.utils.Neo4jConverter;
-import org.opencb.bionetdb.core.utils.Utils;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
 import org.opencb.cellbase.client.rest.VariationClient;
@@ -460,98 +454,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     @Override
     public QueryResult<Variant> variantQuery(String cypher) throws BioNetDBException {
-        List<Variant> variants = new ArrayList<>();
-
         if (org.apache.commons.lang.StringUtils.isEmpty(cypher)) {
             throw new BioNetDBException("Missing cypher to query");
         }
-        if (!cypher.contains("RETURN")) {
-            throw new BioNetDBException("Invalid cypher statement: missing RETURN, " + cypher);
-        }
 
-        String[] aReturn = cypher.split("RETURN");
-        if (aReturn.length != 2) {
-            throw new BioNetDBException("Invalid cypher statement: " + cypher);
-        }
-        String[] attrs = aReturn[1].split(",");
-        for (int i = 0; i < attrs.length; i++) {
-            attrs[i] = attrs[i].replace("vo.", "").replace("attr_", "");
-        }
-
-        ObjectMapper objMapper = new ObjectMapper();
-        objMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-
-        RowIterator rowIterator = rowIterator(cypher);
-        while (rowIterator.hasNext()) {
-            List<Object> row = rowIterator.next();
-
-
-            try {
-                // Create variant
-                Variant variant = Utils.uncompress(row.get(0).toString(), Variant.class, objMapper);
-
-                for (int i = 1; i < row.size(); i++) {
-                    if (row.get(i) != null) {
-                        switch (attrs[i]) {
-                            case "studies":
-                                List<StudyEntry> studies = Utils.uncompress(row.get(i).toString(), new ArrayList<StudyEntry>().getClass(),
-                                        objMapper);
-                                variant.setStudies(studies);
-                                break;
-                            case "consequenceTypes":
-                                List<ConsequenceType> ct = Utils.uncompress(row.get(i).toString(), new ArrayList<ConsequenceType>()
-                                                .getClass(), objMapper);
-                                variant.getAnnotation().setConsequenceTypes(ct);
-                                break;
-                            case "populationFrequencies":
-                                List<PopulationFrequency> popFreqs = Utils.uncompress(row.get(i).toString(),
-                                        new ArrayList<PopulationFrequency>().getClass(), objMapper);
-                                variant.getAnnotation().setPopulationFrequencies(popFreqs);
-                                break;
-                            case "conservation":
-                                List<Score> conservation = Utils.uncompress(row.get(i).toString(), new ArrayList<Score>().getClass(),
-                                        objMapper);
-                                variant.getAnnotation().setConservation(conservation);
-                                break;
-                            case "geneExpression":
-                                List<Expression> expression = Utils.uncompress(row.get(i).toString(), new ArrayList<Expression>()
-                                                .getClass(), objMapper);
-                                variant.getAnnotation().setGeneExpression(expression);
-                                break;
-                            case "geneTraitAssociation":
-                                List<GeneTraitAssociation> gta = Utils.uncompress(row.get(i).toString(),
-                                        new ArrayList<GeneTraitAssociation>().getClass(), objMapper);
-                                variant.getAnnotation().setGeneTraitAssociation(gta);
-                                break;
-                            case "geneDrugInteraction":
-                                List<GeneDrugInteraction> gdi = Utils.uncompress(row.get(i).toString(),
-                                        new ArrayList<GeneDrugInteraction>().getClass(), objMapper);
-                                variant.getAnnotation().setGeneDrugInteraction(gdi);
-                                break;
-                            case "variantTraitAssociation":
-                                VariantTraitAssociation vta = Utils.uncompress(row.get(i).toString(), VariantTraitAssociation.class,
-                                        objMapper);
-                                variant.getAnnotation().setVariantTraitAssociation(vta);
-                                break;
-                            case "traitAssociation":
-                                List<EvidenceEntry> ta = Utils.uncompress(row.get(i).toString(), new ArrayList<EvidenceEntry>().getClass(),
-                                        objMapper);
-                                variant.getAnnotation().setTraitAssociation(ta);
-                                break;
-                            case "functionalScore":
-                                List<Score> fs = Utils.uncompress(row.get(i).toString(), new ArrayList<Score>().getClass(), objMapper);
-                                variant.getAnnotation().setFunctionalScore(fs);
-                                break;
-
-                            default:
-                                break;
-                        }
-                    }
-                }
+        List<Variant> variants = new ArrayList<>();
+        VariantIterator variantIterator = variantIterator(cypher);
+        while (variantIterator.hasNext()) {
+            Variant variant = variantIterator.next();
+            if (variant != null) {
                 variants.add(variant);
-            } catch (IOException e) {
-                throw new BioNetDBException("Executing variant query", e);
             }
         }
 
@@ -1006,6 +918,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
+
+//    private String fixString(String in) {
+//        return "\"" + in + "\"";
+//    }
 
     private String cleanValue(String value) {
         return value.replace("\"", ",").replace("\\", "|");
