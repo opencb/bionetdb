@@ -564,43 +564,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
 
     @Override
-    public QueryResult<Variant> proteinNetworkInterpretationAnalysis(Pedigree pedigree, Disorder disorder,
-                                                                     ClinicalProperty.ModeOfInheritance moi, boolean complexOrReaction,
-                                                                     Query query) throws BioNetDBException {
-        // Check moi
-        Map<String, List<String>> genotypes;
-        switch (moi) {
-            case MONOALLELIC:
-                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.dominant(pedigree, disorder, false);
-                break;
-            case BIALLELIC:
-                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.recessive(pedigree, disorder, false);
-                break;
-            case XLINKED_MONOALLELIC:
-                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, true);
-                break;
-            case XLINKED_BIALLELIC:
-                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, false);
-                break;
-            case YLINKED:
-                genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
-                break;
-            default:
-                genotypes = new HashMap<>();
-                genotypes.put(pedigree.getProband().getId(), Collections.singletonList("NON_REF"));
-                break;
-        }
-        // yLinked or other mistakes can return empty genotype lists. The next exception aims to avoid those errors.
-        genotypes.entrySet().removeIf((entry) -> CollectionUtils.isEmpty(entry.getValue()));
-        if (genotypes.size() == 0) {
-            throw new IllegalArgumentException("Number of individuals with filled genotypes list is zero");
-        }
-        List<String> gt = new ArrayList<>();
-        for (String sample : genotypes.keySet()) {
-            gt.add(sample + ":" + org.apache.commons.lang.StringUtils.join(genotypes.get(sample), ","));
-        }
-        query.put(VariantQueryParam.GENOTYPE.key(), gt);
-
+    public QueryResult<Variant> proteinNetworkInterpretationAnalysis(boolean complexOrReaction, Query query) throws BioNetDBException {
         // Create cypher statement from query
         String cypher = Neo4JVariantQueryParser.parseProteinNetworkInterpretation(query, QueryOptions.empty(), complexOrReaction);
 
