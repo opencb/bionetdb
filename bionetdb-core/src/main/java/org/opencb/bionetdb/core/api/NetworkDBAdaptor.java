@@ -158,7 +158,5 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     // I N T E R P R E T A T I O N     A N A L Y S I S
     //========================================================================
 
-    QueryResult<Variant> proteinNetworkInterpretationAnalysis(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
-                                                              boolean complexOrReaction, Query query) throws BioNetDBException;
-
+    QueryResult<Variant> proteinNetworkInterpretationAnalysis(boolean complexOrReaction, Query query) throws BioNetDBException;
 }
