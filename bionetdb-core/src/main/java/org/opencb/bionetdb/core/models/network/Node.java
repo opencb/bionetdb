@@ -87,7 +87,9 @@ public class Node {
 
         PANEL("PANEL"),
 
-        VARIANT_OBJECT("VARIANT_OBJECT");
+        VARIANT_OBJECT("VARIANT_OBJECT"),
+        GENE_OBJECT("GENE_OBJECT"),
+        PROTEIN_OBJECT("PROTEIN_OBJECT");
 
         private final String type;
         private final String parentType;

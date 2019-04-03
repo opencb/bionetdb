@@ -597,6 +597,10 @@ public class CsvInfo {
                 "source", "status");
         nodeAttributes.put(Node.Type.GENE.toString(), new ArrayList<>(attrs));
 
+        // Gene object  (object = gz json)
+        attrs = Arrays.asList("geneObjectId", "id", "name", "object");
+        nodeAttributes.put(Node.Type.GENE_OBJECT.toString(), new ArrayList<>(attrs));
+
         // Panel
         attrs = Arrays.asList("panelId", "id", "name", "description", "phenotypeNames", "sourceId", "sourceName",
                 "sourceAuthor", "sourceProject", "sourceVersion", "creationDate", "modificationDate");
@@ -635,8 +639,12 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.XREF.toString(), new ArrayList<>(attrs));
 
         // Protein
-        attrs = Arrays.asList("protId", "id", "name", "accession", "dataset", "proteinExistence", "evidence");
+        attrs = Arrays.asList("protId", "id", "name", "accession", "dataset", "proteinExistence", "evidence", "object");
         nodeAttributes.put(Node.Type.PROTEIN.toString(), new ArrayList<>(attrs));
+
+        // Protein object  (object = gz json)
+        attrs = Arrays.asList("proteinObjectId", "id", "name", "object");
+        nodeAttributes.put(Node.Type.PROTEIN_OBJECT.toString(), new ArrayList<>(attrs));
 
         // Protein keyword
         attrs = Arrays.asList("kwId", "id", "name", "evidence");

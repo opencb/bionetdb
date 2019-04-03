@@ -65,7 +65,7 @@ public class BioNetDbManagerTest {
                 System.out.println(dbConfig);
             }
 
-//            bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
+            bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
             bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
