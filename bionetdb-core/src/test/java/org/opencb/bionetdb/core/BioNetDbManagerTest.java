@@ -65,7 +65,8 @@ public class BioNetDbManagerTest {
                 System.out.println(dbConfig);
             }
 
-            bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
+            //bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
+            bioNetDBConfiguration.getDatabases().get(0).setPort(27687);
             bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
@@ -191,40 +192,42 @@ public class BioNetDbManagerTest {
         Pedigree pedigree = getPedigreeFamily1(disorder);
 
         Query query = new Query();
-        query.put("panel", "Familial or syndromic hypoparathyroidism");
-//        query.put("panel", "Familial or syndromic hypoparathyroidism,Hereditary haemorrhagic telangiectasia," +
-//                "Neurotransmitter disorders," +
-//                "Familial Tumours Syndromes of the central & peripheral Nervous system" +
-//                "Inherited non-medullary thyroid cancer" +
-//                "Cytopaenias and congenital anaemias" +
-//                "Ectodermal dysplasia without a known gene mutation" +
-//                "Hyperammonaemia" +
-//                "Neuro-endocrine Tumours- PCC and PGL" +
-//                "Classical tuberous sclerosis" +
-//                "Familial hypercholesterolaemia" +
-//                "Pain syndromes" +
-//                "Congenital myopathy" +
-//                "Corneal abnormalities" +
-//                "Hydrocephalus" +
-//                "Infantile enterocolitis & monogenic inflammatory bowel disease" +
-//                "Severe familial anorexia" +
-//                "Haematological malignancies for rare disease" +
-//                "Long QT syndrome" +
-//                "Infantile nystagmus");
-        //query.put("gene", "BRCA1,BRCA2");
+//        query.put("panel", "Familial or syndromic hypoparathyroidism");
+        query.put("panel", "Familial or syndromic hypoparathyroidism,Hereditary haemorrhagic telangiectasia," +
+                "Neurotransmitter disorders," +
+                "Familial Tumours Syndromes of the central & peripheral Nervous system" +
+                "Inherited non-medullary thyroid cancer" +
+                "Cytopaenias and congenital anaemias" +
+                "Ectodermal dysplasia without a known gene mutation" +
+                "Hyperammonaemia" +
+                "Neuro-endocrine Tumours- PCC and PGL" +
+                "Classical tuberous sclerosis" +
+                "Familial hypercholesterolaemia" +
+                "Pain syndromes" +
+                "Congenital myopathy" +
+                "Corneal abnormalities" +
+                "Hydrocephalus" +
+                "Infantile enterocolitis & monogenic inflammatory bowel disease" +
+                "Severe familial anorexia" +
+                "Haematological malignancies for rare disease" +
+                "Long QT syndrome" +
+                "Infantile nystagmus");
+        query.put("gene", "BRCA1,BRCA2");
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
+
+        excludeAll(query);
 
         QueryResult<Variant> dominantVariants = bioNetDbManager.getVariantAnalysis().getDominantVariants(pedigree, disorder, query);
         if (dominantVariants.getResult().size() > 0) {
             System.out.println("\n");
             System.out.println("Variants:");
             for (Variant variant : dominantVariants.getResult()) {
-                System.out.println(variant.toJson());
+                System.out.println(variant.toStringSimple());
             }
         }
-        System.out.println(dominantVariants.first());
+//        System.out.println(dominantVariants.first());
     }
 
     @Test
@@ -353,8 +356,6 @@ public class BioNetDbManagerTest {
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
 
-        excludeAll(query);
-
         QueryResult<Map<String, List<Variant>>> variantMap = bioNetDbManager.getVariantAnalysis().getCompoundHeterozygousVariants(pedigree, query);
         if (variantMap.getResult().size() > 0) {
             System.out.println("\n");
@@ -382,6 +383,8 @@ public class BioNetDbManagerTest {
         query.put("ct", "missense_variant,stop_lost,intron_variant");
         query.put("biotype", "protein_coding");
         query.put("populationFrequencyAlt", "ALL<0.05");
+
+        excludeAll(query);
 
         QueryResult<Variant> variants = bioNetDbManager.getInterpretationAnalysis().proteinNetworkAnalysis(pedigree, disorder, moi, true, query);
         if (variants.getResult().size() > 0) {

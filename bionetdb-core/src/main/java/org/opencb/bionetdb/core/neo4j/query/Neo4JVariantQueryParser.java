@@ -55,6 +55,16 @@ public class Neo4JVariantQueryParser {
     }
 
     public static String parseProteinNetworkInterpretation(Query query, QueryOptions options, boolean complexOrReaction) {
+        // Check query
+        Set<VariantQueryParam> includeMap = getIncludeMap(query);
+        Set<VariantQueryParam> excludeMap = getExcludeMap(query);
+        if (CollectionUtils.isNotEmpty(includeMap) && CollectionUtils.isNotEmpty(excludeMap)) {
+            throw new IllegalArgumentException("Invalid query: mixing INCLUDE and EXCLUDE parameters is not permitted.");
+        }
+
+        // Include attributes
+        List<String> includeAttrs = getIncludeAttributes(includeMap, excludeMap);
+
         String cypher;
 
         if (query.containsKey(VariantQueryParam.PANEL.key()) && query.containsKey(VariantQueryParam.GENE.key())) {
@@ -64,18 +74,18 @@ public class Neo4JVariantQueryParser {
 
             query.remove(VariantQueryParam.GENE.key());
 
-            String panelCypherQuery = getProteinNetworkCypher(query, options, complexOrReaction);
+            String panelCypherQuery = getProteinNetworkCypher(query, options, includeAttrs, complexOrReaction);
 
             query.remove(VariantQueryParam.PANEL.key());
             query.put(VariantQueryParam.GENE.key(), geneValues);
             query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), biotypeValues);
             query.put(VariantQueryParam.CHROMOSOME.key(), chromValues);
 
-            String geneCypherQuery = getProteinNetworkCypher(query, options, complexOrReaction);
+            String geneCypherQuery = getProteinNetworkCypher(query, options, includeAttrs, complexOrReaction);
 
             cypher = panelCypherQuery + "\nUNION\n" + geneCypherQuery;
         } else {
-            cypher = getProteinNetworkCypher(query, options, complexOrReaction);
+            cypher = getProteinNetworkCypher(query, options, includeAttrs, complexOrReaction);
         }
 
         System.out.println(cypher);
@@ -315,8 +325,8 @@ public class Neo4JVariantQueryParser {
                     .append("\n");
         }
 
-        sb.append("MATCH (vo:VARIANT_OBJECT) WHERE vo.id = v.id ");
-        sb.append("RETURN vo.attr_core AS attr_core");
+        sb.append("MATCH (v)-[:VARIANT__VARIANT_OBJECT]-(vo:VARIANT_OBJECT) ");
+        sb.append("RETURN DISTINCT vo.attr_core AS attr_core");
         for (String includeAttr : includeAttrs) {
             sb.append(", ").append("vo.").append(includeAttr).append(" AS ").append(includeAttr);
         }
@@ -541,7 +551,7 @@ public class Neo4JVariantQueryParser {
         }
     }
 
-    private static String getProteinNetworkCypher(Query query, QueryOptions options, boolean complexOrReaction) {
+    private static String getProteinNetworkCypher(Query query, QueryOptions options, List<String> includeAttrs, boolean complexOrReaction) {
         StringBuilder cypher = new StringBuilder();
 
         if (!query.containsKey(VariantQueryParam.PANEL.key()) && !query.containsKey(VariantQueryParam.GENE.key())) {
@@ -613,10 +623,16 @@ public class Neo4JVariantQueryParser {
         st = cypherStatements.get(i);
         cypher.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append("WITH DISTINCT v").append(systemParams)
                 .append("\n").append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)")
-                .append("\n").append("RETURN DISTINCT v.attr_chromosome AS ").append(NodeBuilder.CHROMOSOME).append(", v.attr_start AS ")
-                .append(NodeBuilder.START).append(", v.attr_reference AS ").append(NodeBuilder.REFERENCE).append(", v.attr_alternate AS ")
-                .append(NodeBuilder.ALTERNATE).append(", v.attr_type AS ").append(NodeBuilder.TYPE)
-                .append(", collect(s.id), collect(vc.attr_GT)").append(systemParams);
+                .append("\n").append("WITH DISTINCT v, collect(s.id) AS ").append(NodeBuilder.SAMPLE)
+                .append(", collect(vc.attr_GT) AS ").append(NodeBuilder.GENOTYPE)
+                .append("\n");
+
+        cypher.append("MATCH (v)-[:VARIANT__VARIANT_OBJECT]-(vo:VARIANT_OBJECT) ");
+        cypher.append("RETURN DISTINCT vo.attr_core AS attr_core");
+        for (String includeAttr : includeAttrs) {
+            cypher.append(", ").append("vo.").append(includeAttr).append(" AS ").append(includeAttr);
+        }
+        cypher.append(", ").append(NodeBuilder.SAMPLE).append(", ").append(NodeBuilder.GENOTYPE);
 
         return cypher.toString();
     }

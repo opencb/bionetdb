@@ -3,8 +3,6 @@ package org.opencb.bionetdb.core.neo4j.converters;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.driver.v1.Record;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -32,90 +30,78 @@ public class Neo4JRecordToVariantConverter implements Converter<Record, Variant>
     @Override
     public Variant convert(Record record) {
         try {
-            List<List<String>> sampleGT = new ArrayList<>();
-            Map<String, String> sampleMap = new HashMap<>();
+            // Create variant and prepare additional attributes
+            Variant variant = Utils.uncompress(fixString(record.get("attr_core").asString()), Variant.class, objMapper);
             Map<String, AdditionalAttribute> additionalAttributes = new HashMap<>();
 
-            // Create variant
-            Variant variant = Utils.uncompress(fixString(record.get("attr_core").asString()), Variant.class, objMapper);
+            // For sample attributes
+            String sampleNames = null;
+            String sampleGenotypes = null;
 
             for (String attr : record.keys()) {
-                if (record.get(attr) != null) {
-                    attr = attr.replace("attr_", "");
+                if (!record.get(attr).isNull() && !"null".equals(record.get(attr).toString())) {
                     switch (attr) {
-                        case "studies":
+                        case "attr_studies":
                             List<org.opencb.biodata.models.variant.StudyEntry> studies =
                                     Utils.uncompressList(fixString(record.get(attr).asString()), StudyEntry.class, objMapper);
                             variant.setStudies(studies);
                             break;
-                        case "consequenceTypes":
+                        case "attr_consequenceTypes":
                             List<ConsequenceType> ct = Utils.uncompressList(fixString(record.get(attr).asString()), ConsequenceType.class,
                                     objMapper);
                             variant.getAnnotation().setConsequenceTypes(ct);
                             break;
-                        case "xrefs":
+                        case "attr_xrefs":
                             List<Xref> xrefs = Utils.uncompressList(fixString(record.get(attr).asString()), Xref.class, objMapper);
                             variant.getAnnotation().setXrefs(xrefs);
                             break;
-                        case "populationFrequencies":
+                        case "attr_populationFrequencies":
                             List<PopulationFrequency> popFreqs = Utils.uncompressList(fixString(record.get(attr).asString()),
                                     PopulationFrequency.class, objMapper);
                             variant.getAnnotation().setPopulationFrequencies(popFreqs);
                             break;
-                        case "conservation":
+                        case "attr_conservation":
                             List<Score> conservation = Utils.uncompressList(fixString(record.get(attr).asString()), Score.class, objMapper);
                             variant.getAnnotation().setConservation(conservation);
                             break;
-                        case "geneExpression":
+                        case "attr_geneExpression":
                             List<Expression> expression = Utils.uncompressList(fixString(record.get(attr).asString()), Expression.class,
                                     objMapper);
                             variant.getAnnotation().setGeneExpression(expression);
                             break;
-                        case "geneTraitAssociation":
+                        case "attr_geneTraitAssociation":
                             List<GeneTraitAssociation> gta = Utils.uncompressList(fixString(record.get(attr).asString()),
                                     GeneTraitAssociation.class, objMapper);
                             variant.getAnnotation().setGeneTraitAssociation(gta);
                             break;
-                        case "geneDrugInteraction":
+                        case "attr_geneDrugInteraction":
                             List<GeneDrugInteraction> gdi = Utils.uncompressList(fixString(record.get(attr).asString()),
                                     GeneDrugInteraction.class, objMapper);
                             variant.getAnnotation().setGeneDrugInteraction(gdi);
                             break;
-                        case "variantTraitAssociation":
+                        case "attr_variantTraitAssociation":
                             VariantTraitAssociation vta = Utils.uncompress(fixString(record.get(attr).asString()),
                                     VariantTraitAssociation.class, objMapper);
                             variant.getAnnotation().setVariantTraitAssociation(vta);
                             break;
-                        case "traitAssociation":
+                        case "attr_traitAssociation":
                             List<EvidenceEntry> ta = Utils.uncompressList(fixString(record.get(attr).asString()), EvidenceEntry.class,
                                     objMapper);
                             variant.getAnnotation().setTraitAssociation(ta);
                             break;
-                        case "functionalScore":
+                        case "attr_functionalScore":
                             List<Score> fs = Utils.uncompressList(fixString(record.get(attr).asString()), Score.class, objMapper);
                             variant.getAnnotation().setFunctionalScore(fs);
                             break;
                         case NodeBuilder.SAMPLE:
-                            if (!record.get(NodeBuilder.SAMPLE).isNull()) {
-                                List<String> sampleNames = new ArrayList<>();
-                                String sampleString;
-                                for (Object sample : record.get(NodeBuilder.SAMPLE).asList()) {
-                                    sampleNames.add(sample.toString());
-                                }
-                                sampleString = StringUtils.join(sampleNames, ",");
-                                sampleMap.put(NodeBuilder.SAMPLE, sampleString);
-                            }
+                            sampleNames = StringUtils.join(record.get(NodeBuilder.SAMPLE).asList(), ",");
                             break;
                         case NodeBuilder.GENOTYPE:
-                            if (!record.get(NodeBuilder.GENOTYPE).isNull()) {
-                                for (Object gt : record.get(NodeBuilder.GENOTYPE).asList()) {
-                                    sampleGT.add(Collections.singletonList(gt.toString()));
-                                }
-                            }
+                            sampleGenotypes = StringUtils.join(record.get(NodeBuilder.GENOTYPE).asList(), ",");
                             break;
 
                         default:
-                            if (!attr.equals("core")) {
+                            if (!attr.equals("attr_core")) {
                                 String[] split = attr.split("_");
                                 String mainKey = attr;
                                 String subKey = attr;
@@ -136,18 +122,23 @@ public class Neo4JRecordToVariantConverter implements Converter<Record, Variant>
             }
 
             // Set additional attributes and return variant
-            if (MapUtils.isNotEmpty(sampleMap)) {
-                AdditionalAttribute samplesAttribute = new AdditionalAttribute();
-                samplesAttribute.setAttribute(sampleMap);
-                additionalAttributes.put("samples", samplesAttribute);
+            if (StringUtils.isNotEmpty(sampleNames) && StringUtils.isNotEmpty(sampleGenotypes)) {
+                AdditionalAttribute sampleAttrs = new AdditionalAttribute();
+                Map<String, String> map = new HashMap<>();
+                map.put(NodeBuilder.SAMPLE, sampleNames);
+                map.put(NodeBuilder.GENOTYPE, sampleGenotypes);
+                sampleAttrs.setAttribute(map);
+                additionalAttributes.put("samples", sampleAttrs);
 
-            }
-            if (CollectionUtils.isNotEmpty(sampleGT)) {
-                List<StudyEntry> studies = new ArrayList<>();
+                // And set sample data
                 StudyEntry studyEntry = new StudyEntry();
-                studyEntry.setFormat(Collections.singletonList("GT")).setSamplesData(sampleGT);
-                studies.add(studyEntry);
-                variant.setStudies(studies);
+                studyEntry.setFormat(Collections.singletonList("GT"));
+                List<List<String>> sampleData = new ArrayList<>();
+                for (String gt : sampleGenotypes.split(",")) {
+                    sampleData.add(Collections.singletonList(gt));
+                }
+                studyEntry.setSamplesData(sampleData);
+                variant.setStudies(Collections.singletonList(studyEntry));
             }
             variant.getAnnotation().setAdditionalAttributes(additionalAttributes);
             return variant;

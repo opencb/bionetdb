@@ -94,7 +94,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
     }
 
     public QueryResult<Map<String, List<Variant>>> getCompoundHeterozygousVariants(Pedigree pedigree, Query query)
-            throws BioNetDBException, IOException {
+            throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.compoundHeterozygous(pedigree);
         putGenotypes(query, genotypes);
 
