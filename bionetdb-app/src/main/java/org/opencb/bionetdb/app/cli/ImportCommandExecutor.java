@@ -2,6 +2,7 @@ package org.opencb.bionetdb.app.cli;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.core.utils.CsvInfo;
@@ -27,20 +28,31 @@ import java.util.*;
  */
 public class ImportCommandExecutor extends CommandExecutor {
 
+    private CliOptionsParser.CreateCsvCommandOptions createCsvCommandOptions;
     private CliOptionsParser.ImportCommandOptions importCommandOptions;
+
+    public ImportCommandExecutor(CliOptionsParser.CreateCsvCommandOptions createCsvCommandOptions) {
+        super(createCsvCommandOptions.commonOptions.logLevel, createCsvCommandOptions.commonOptions.conf);
+
+        this.createCsvCommandOptions = createCsvCommandOptions;
+        this.importCommandOptions = null;
+    }
 
     public ImportCommandExecutor(CliOptionsParser.ImportCommandOptions importCommandOptions) {
         super(importCommandOptions.commonOptions.logLevel, importCommandOptions.commonOptions.conf);
 
+        this.createCsvCommandOptions = null;
         this.importCommandOptions = importCommandOptions;
     }
 
     @Override
-    public void execute() {
-        if (importCommandOptions.createCsvFiles) {
+    public void execute() throws BioNetDBException {
+        if (createCsvCommandOptions != null) {
             createCsvFiles();
-        } else {
+        } else if (importCommandOptions != null) {
             importCsvFiles();
+        } else {
+            throw new BioNetDBException("Import commandline error");
         }
     }
 
@@ -49,10 +61,10 @@ public class ImportCommandExecutor extends CommandExecutor {
             long start;
 
             // Check input and output directories
-            Path inputPath = Paths.get(importCommandOptions.input);
+            Path inputPath = Paths.get(createCsvCommandOptions.input);
             FileUtils.checkDirectory(inputPath);
 
-            Path outputPath = Paths.get(importCommandOptions.output);
+            Path outputPath = Paths.get(createCsvCommandOptions.output);
             FileUtils.checkDirectory(outputPath);
 
             // Prepare CSV object
@@ -107,7 +119,7 @@ public class ImportCommandExecutor extends CommandExecutor {
                 FileUtils.checkFile(geneFile.toPath());
             }
             start = System.currentTimeMillis();
-            importer.indexingGenes(geneFile.toPath(), outputPath);
+            importer.indexingGenes(geneFile.toPath());
             geneIndexingTime = (System.currentTimeMillis() - start) / 1000;
             logger.info("Gene indexing done in {} s", geneIndexingTime);
 
@@ -119,7 +131,7 @@ public class ImportCommandExecutor extends CommandExecutor {
                 FileUtils.checkFile(proteinFile.toPath());
             }
             start = System.currentTimeMillis();
-            importer.indexingProteins(proteinFile.toPath(), outputPath);
+            importer.indexingProteins(proteinFile.toPath());
             proteinIndexingTime = (System.currentTimeMillis() - start) / 1000;
             logger.info("Protein indexing done in {} s", proteinIndexingTime);
 
@@ -144,7 +156,7 @@ public class ImportCommandExecutor extends CommandExecutor {
             }
 
             // Parse BioPAX files
-            Map<String, Set<String>> filters = parseFilters(importCommandOptions.exclude);
+            Map<String, Set<String>> filters = parseFilters(createCsvCommandOptions.exclude);
             BPAXProcessing bpaxProcessing = new BPAXProcessing(importer);
             Neo4jBioPaxImporter bioPAXImporter = new Neo4jBioPaxImporter(csv, filters, bpaxProcessing);
             start = System.currentTimeMillis();
@@ -153,10 +165,15 @@ public class ImportCommandExecutor extends CommandExecutor {
             bioPaxTime = (System.currentTimeMillis() - start) / 1000;
 
 
-            // Parse JSON variant files
-            start =  System.currentTimeMillis();
-            importer.addVariantFiles(jsonFiles);
-            long variantTime = (System.currentTimeMillis() - start) / 1000;
+            start = System.currentTimeMillis();
+            if (createCsvCommandOptions.clinicalAnalysis) {
+                // Parse JSON variant files
+                importer.addClinicalAnalysisFiles(jsonFiles);
+            } else {
+                // Parse JSON variant files
+                importer.addVariantFiles(jsonFiles);
+            }
+            long jsonTime = (System.currentTimeMillis() - start) / 1000;
 
             // Close CSV files
             csv.close();
@@ -166,7 +183,7 @@ public class ImportCommandExecutor extends CommandExecutor {
             logger.info("Gene panels processing in {} s", genePanelsTime);
             logger.info("miRNA indexing in {} s", miRnaIndexingTime);
             logger.info("BioPAX processing in {} s", bioPaxTime);
-            logger.info("Variant processing in {} s", variantTime);
+            logger.info((createCsvCommandOptions.clinicalAnalysis ? "Clinical analysis" : "Variant") + " processing in {} s", jsonTime);
         } catch (IOException e) {
             logger.error("Error generation CSV files: {}", e.getMessage());
             e.printStackTrace();
@@ -200,7 +217,7 @@ public class ImportCommandExecutor extends CommandExecutor {
         sb.setLength(0);
         sb.append(neo4jHome);
         sb.append("/bin/neo4j-admin import --id-type INTEGER --delimiter=\"" + StringEscapeUtils.escapeJava(CsvInfo.SEPARATOR) + "\" "
-                        + "--ignore-duplicate-nodes --ignore-missing-nodes");
+                + "--ignore-duplicate-nodes --ignore-missing-nodes");
 
         // Retrieving files from the input directory
         List<File> relationFiles = new ArrayList<>();
@@ -307,9 +324,9 @@ public class ImportCommandExecutor extends CommandExecutor {
         return name;
     }
 
-    //-------------------------------------------------------------------------
-    //  BioPAX importer callback object
-    //-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+//  BioPAX importer callback object
+//-------------------------------------------------------------------------
 
     public class BPAXProcessing implements Neo4jBioPaxImporter.BioPAXProcessing {
         private Neo4jCsvImporter importer;

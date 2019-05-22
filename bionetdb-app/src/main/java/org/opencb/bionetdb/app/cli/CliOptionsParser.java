@@ -18,6 +18,7 @@ public class CliOptionsParser {
 
     private BuildCommandOptions buildCommandOptions;
     private LoadCommandOptions loadCommandOptions;
+    private CreateCsvCommandOptions createCsvCommandOptions;
     private ImportCommandOptions importCommandOptions;
     private QueryCommandOptions queryCommandOptions;
     private VariantAnnotationCommandOptions variantAnnotationCommandOptions;
@@ -34,6 +35,7 @@ public class CliOptionsParser {
 
         buildCommandOptions = new BuildCommandOptions();
         loadCommandOptions = new LoadCommandOptions();
+        createCsvCommandOptions = new CreateCsvCommandOptions();
         importCommandOptions = new ImportCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
         variantAnnotationCommandOptions = new VariantAnnotationCommandOptions();
@@ -41,6 +43,7 @@ public class CliOptionsParser {
 
         jcommander.addCommand("build", buildCommandOptions);
         jcommander.addCommand("load", loadCommandOptions);
+        jcommander.addCommand("create-csv", createCsvCommandOptions);
         jcommander.addCommand("import", importCommandOptions);
         jcommander.addCommand("query", queryCommandOptions);
         jcommander.addCommand("annotation", variantAnnotationCommandOptions);
@@ -120,8 +123,34 @@ public class CliOptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "Input directory", required = true, arity = 1)
         public String input;
 
+        @Parameter(names = {"-d", "--data-type"}, description = "Data type. Valid values: clinical-analysis", required = true, arity = 1)
+        public String dataType;
+
         @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", arity = 1)
         public String database;
+//
+//        @Parameter(names = {"--exclude"}, description = "Exclude information separated by comma, e.g.:'XREF_DBNAME:Reactome Database ID Release 63'", arity = 1)
+//        public List<String> exclude;
+
+        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+        public Map<String, String> loaderParams = new HashMap<>();
+
+    }
+
+    @Parameters(commandNames = {"create-csv"}, commandDescription = "Create CSV filesImport the built data models in format CSV files into the database")
+    public class CreateCsvCommandOptions {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-i", "--input"}, description = "Input directory that contains the biological files to convert to CSV files)", required = true, arity = 1)
+        public String input;
+
+        @Parameter(names = {"-o", "--output"}, description = "Output directory where to save the CSV files to import", arity = 1)
+        public String output;
+
+        @Parameter(names = {"--clinical-analysis"}, description = "Input JSON files contains clinical analysis (otherwise, variants)", arity = 0)
+        public boolean clinicalAnalysis = false;
 
         @Parameter(names = {"--exclude"}, description = "Exclude information separated by comma, e.g.:'XREF_DBNAME:Reactome Database ID Release 63'", arity = 1)
         public List<String> exclude;
@@ -137,14 +166,9 @@ public class CliOptionsParser {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-i", "--input"}, description = "Input directory where the CSV files are located (when used with --create-csv-files parameter, it contains the biological files to convert to CSV files)", required = true, arity = 1)
+        @Parameter(names = {"-i", "--input"}, description = "Input directory where the CSV files are located", required = true, arity = 1)
         public String input;
 
-        @Parameter(names = {"-o", "--output"}, description = "Output directory where to save the CSV files to import (used with the --create-csv-files parameter)", arity = 1)
-        public String output;
-
-        @Parameter(names = {"--create-csv-files"}, description = "Create the CSV files from the input biological files", arity = 0)
-        public boolean createCsvFiles = false;
 
         @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", arity = 1)
         public String database;
@@ -341,9 +365,9 @@ public class CliOptionsParser {
         return loadCommandOptions;
     }
 
-    public ImportCommandOptions getImportCommandOptions() {
-        return importCommandOptions;
-    }
+    public CreateCsvCommandOptions getCreateCsvCommandOptions() { return createCsvCommandOptions; }
+
+    public ImportCommandOptions getImportCommandOptions() { return importCommandOptions; }
 
     public QueryCommandOptions getQueryCommandOptions() {
         return queryCommandOptions;

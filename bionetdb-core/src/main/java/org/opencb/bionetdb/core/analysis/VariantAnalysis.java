@@ -18,6 +18,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import java.io.IOException;
 import java.util.*;
 
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance.COMPLETE;
+
 public class VariantAnalysis extends BioNetDBAnalysis {
 
     public VariantAnalysis(NetworkDBAdaptor networkDBAdaptor) {
@@ -26,7 +28,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
 
     public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, Query query)
             throws BioNetDBException, IOException {
-        Map<String, List<String>> genotypes = ModeOfInheritance.dominant(pedigree, disorder, false);
+        Map<String, List<String>> genotypes = ModeOfInheritance.dominant(pedigree, disorder, COMPLETE);
         putGenotypes(query, genotypes);
 
         return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
@@ -34,7 +36,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
 
     public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query)
             throws BioNetDBException {
-        Map<String, List<String>> genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
+        Map<String, List<String>> genotypes = ModeOfInheritance.recessive(pedigree, disorder, COMPLETE);
         putGenotypes(query, genotypes);
 
         return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
@@ -42,7 +44,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
 
     public QueryResult<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query)
             throws BioNetDBException {
-        Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
+        Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, COMPLETE);
         query.put(VariantQueryParam.CHROMOSOME.key(), "X");
         putGenotypes(query, genotypes);
 
@@ -51,7 +53,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
 
     public QueryResult<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query)
             throws BioNetDBException {
-        Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
+        Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, COMPLETE);
         query.put(VariantQueryParam.CHROMOSOME.key(), "X");
         putGenotypes(query, genotypes);
 
@@ -59,7 +61,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
     }
 
     public QueryResult<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
-        Map<String, List<String>> genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+        Map<String, List<String>> genotypes = ModeOfInheritance.yLinked(pedigree, disorder, COMPLETE);
         query.put(VariantQueryParam.CHROMOSOME.key(), "Y");
         putGenotypes(query, genotypes);
 

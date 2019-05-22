@@ -1,9 +1,12 @@
 package org.opencb.bionetdb.core.utils;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.*;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
+import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
+import org.opencb.biodata.models.commons.*;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
@@ -14,13 +17,16 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Interpretation;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class NodeBuilder {
-
     public static final String CHROMOSOME = "chromosome";
     public static final String START = "start";
     public static final String END = "end";
@@ -46,7 +52,7 @@ public class NodeBuilder {
     public static final String PANEL_GENE = BIONETDB_PREFIX + "panelGene";
 
     public static Node newNode(long uid, Variant variant) {
-        Node node = new Node(uid, variant.toString(), variant.getId(), Node.Type.VARIANT);
+        Node node = new Node(uid, variant.toStringSimple(), variant.getId(), Node.Type.VARIANT);
         if (ListUtils.isNotEmpty(variant.getNames())) {
             node.addAttribute("alternativeNames", StringUtils.join(variant.getNames(), ";"));
         }
@@ -74,32 +80,25 @@ public class NodeBuilder {
 
     public static Variant newVariant(Node node) {
         VariantBuilder variantBuilder = Variant.newBuilder();
-
         ObjectMap attrs = node.getAttributes();
         if (attrs.containsKey(NodeBuilder.CHROMOSOME)) {
             variantBuilder.setChromosome(attrs.getString(NodeBuilder.CHROMOSOME));
         }
-
         if (attrs.containsKey(NodeBuilder.START)) {
             variantBuilder.setStart(attrs.getInt(NodeBuilder.START));
         }
-
         if (attrs.containsKey(NodeBuilder.END)) {
             variantBuilder.setEnd(attrs.getInt(NodeBuilder.END));
         }
-
         if (attrs.containsKey(NodeBuilder.REFERENCE)) {
             variantBuilder.setReference(attrs.getString(NodeBuilder.REFERENCE));
         }
-
         if (attrs.containsKey(NodeBuilder.ALTERNATE)) {
             variantBuilder.setAlternate(attrs.getString(NodeBuilder.ALTERNATE));
         }
-
         if (attrs.containsKey(NodeBuilder.TYPE)) {
             variantBuilder.setType(VariantType.valueOf(attrs.getString(NodeBuilder.TYPE)));
         }
-
         variantBuilder.setStudyId("S");
         variantBuilder.setFormat("GT");
 
@@ -184,12 +183,10 @@ public class NodeBuilder {
         node.addAttribute("strand", ct.getStrand());
         node.addAttribute("gene", ct.getEnsemblGeneId());
         node.addAttribute("transcript", ct.getEnsemblTranscriptId());
-
         // Transcript annotation flags
         if (ListUtils.isNotEmpty(ct.getTranscriptAnnotationFlags())) {
             node.addAttribute("transcriptAnnotationFlags", StringUtils.join(ct.getTranscriptAnnotationFlags(), ","));
         }
-
         // Exon overlap
         if (ListUtils.isNotEmpty(ct.getExonOverlap())) {
             StringBuilder overlaps = new StringBuilder();
@@ -200,7 +197,6 @@ public class NodeBuilder {
             }
             node.addAttribute("exonOverlap", overlaps.toString());
         }
-
         return node;
     }
 
@@ -301,6 +297,12 @@ public class NodeBuilder {
         return node;
     }
 
+    public static Node newNode(long uid, DbReferenceType xref) {
+        Node node = new Node(uid, xref.getId(), null, Node.Type.XREF);
+        node.addAttribute("dbName", xref.getType());
+        return node;
+    }
+
     public static Node newNode(long uid, Entry protein) {
         String id = (ListUtils.isNotEmpty(protein.getAccession()) ? protein.getAccession().get(0) : null);
         String name = (ListUtils.isNotEmpty(protein.getName()) ? protein.getName().get(0) : null);
@@ -332,6 +334,7 @@ public class NodeBuilder {
 //        if (ListUtils.isNotEmpty(protein.getGene())) {
 //            protein.getGene().get(0).getName().get(0).
 //        }
+
         return node;
     }
 
@@ -357,38 +360,511 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, DbReferenceType xref) {
-        Node node = new Node(uid, xref.getId(), null, Node.Type.XREF);
-        node.addAttribute("dbName", xref.getType());
-        return node;
-    }
-
     public static Node newNode(long uid, DiseasePanel panel) {
+        // IMPORTANT: phenotypes, variant, genes, STRs, regions must be created by the caller of this function!
+
         Node node = new Node(uid, panel.getId(), panel.getName(), Node.Type.PANEL);
-        node.addAttribute("description", panel.getDescription());
-        node.addAttribute("creationDate", panel.getCreationDate());
-        node.addAttribute("modificationDate", panel.getModificationDate());
-        if (ListUtils.isNotEmpty(panel.getPhenotypes())) {
-            StringBuilder sb = new StringBuilder();
-            for (Phenotype phenotype : panel.getPhenotypes()) {
-                if (StringUtils.isNotEmpty(phenotype.getName())) {
-                    if (sb.length() > 0) {
-                        sb.append("--");
-                    }
-                    sb.append(phenotype.getName());
-                }
-            }
-            if (sb.length() > 0) {
-                node.addAttribute("phenotypeNames", sb.toString());
+        if (CollectionUtils.isNotEmpty(panel.getCategories())) {
+            node.addAttribute("categories", panel.getCategories().stream().map(DiseasePanel.PanelCategory::getName)
+                    .collect(Collectors.joining(",")));
+        }
+        if (CollectionUtils.isNotEmpty(panel.getTags())) {
+            node.addAttribute("tags", StringUtils.join(panel.getTags(), ","));
+        }
+        if (MapUtils.isNotEmpty(panel.getStats())) {
+            for (String key : panel.getStats().keySet()) {
+                node.addAttribute("stats_" + key, String.valueOf(panel.getStats().get(key)));
             }
         }
         if (panel.getSource() != null) {
-            node.addAttribute("sourceId", panel.getSource().getId());
-            node.addAttribute("sourceName", panel.getSource().getId());
-            node.addAttribute("sourceAuthor", panel.getSource().getAuthor());
-            node.addAttribute("sourceProject", panel.getSource().getProject());
-            node.addAttribute("sourceVersion", panel.getSource().getVersion());
+            node.addAttribute("source_id", panel.getSource().getId());
+            node.addAttribute("source_name", panel.getSource().getId());
+            node.addAttribute("source_author", panel.getSource().getAuthor());
+            node.addAttribute("source_project", panel.getSource().getProject());
+            node.addAttribute("source_version", panel.getSource().getVersion());
+        }
+        node.addAttribute("creationDate", panel.getCreationDate());
+        node.addAttribute("modificationDate", panel.getModificationDate());
+        node.addAttribute("description", panel.getDescription());
+        if (MapUtils.isNotEmpty(panel.getAttributes())) {
+            for (String key : panel.getAttributes().keySet()) {
+                node.addAttribute("attributes_" + key, panel.getAttributes().get(key).toString());
+            }
         }
         return node;
+    }
+
+    public static Node newNode(long uid, ClinicalAnalysis clinicalAnalysis) {
+        Node node = new Node(uid, clinicalAnalysis.getId(), clinicalAnalysis.getName(), Node.Type.CLINICAL_ANALYSIS);
+        node.addAttribute("uuid", clinicalAnalysis.getUuid());
+        node.addAttribute("description", clinicalAnalysis.getDescription());
+        if (clinicalAnalysis.getType() != null) {
+            node.addAttribute("type", clinicalAnalysis.getType().name());
+        }
+        if (clinicalAnalysis.getPriority() != null) {
+            node.addAttribute("priority", clinicalAnalysis.getPriority().name());
+        }
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getFlags())) {
+            node.addAttribute("flags", StringUtils.join(clinicalAnalysis.getFlags(), ";"));
+        }
+        node.addAttribute("creationDate", clinicalAnalysis.getCreationDate());
+        node.addAttribute("modificationDate", clinicalAnalysis.getModificationDate());
+        node.addAttribute("dueDate", clinicalAnalysis.getModificationDate());
+        addStatus(clinicalAnalysis.getStatus(), node);
+        if (clinicalAnalysis.getConsent() != null) {
+            node.addAttribute("consent_primaryFindings", clinicalAnalysis.getConsent().getPrimaryFindings().name());
+            node.addAttribute("consent_secondaryFindings", clinicalAnalysis.getConsent().getSecondaryFindings().name());
+            node.addAttribute("consent_carrierFindings", clinicalAnalysis.getConsent().getCarrierFindings().name());
+            node.addAttribute("consent_researchFindings",  clinicalAnalysis.getConsent().getResearchFindings().name());
+        }
+        node.addAttribute("release", clinicalAnalysis.getRelease());
+        return node;
+    }
+
+    public static Node newNode(long uid, Comment comment) {
+        Node node = new Node(uid, "" + uid, "" + uid, Node.Type.COMMENT);
+        node.addAttribute("author", comment.getAuthor());
+        node.addAttribute("type", comment.getType());
+        node.addAttribute("text", comment.getText());
+        node.addAttribute("date", comment.getDate());
+        return node;
+    }
+
+    public static Node newNode(long uid, ClinicalAnalysis.ClinicalAnalyst analyst) {
+        Node node = new Node(uid, "" + uid, "" + uid, Node.Type.CLINICAL_ANALYST);
+        node.addAttribute("assignedBy", analyst.getAssignedBy());
+        node.addAttribute("assignee", analyst.getAssignee());
+        node.addAttribute("date", analyst.getDate());
+        return node;
+    }
+
+    public static Node newNode(long uid, Interpretation interpretation) {
+        Node node = new Node(uid, "" + uid, "" + uid, Node.Type.INTERPRETATION);
+        node.addAttribute("uuid", interpretation.getUuid());
+        node.addAttribute("description", interpretation.getDescription());
+        node.addAttribute("status", interpretation.getStatus().name());
+        node.addAttribute("creationDate", interpretation.getCreationDate());
+        node.addAttribute("version", interpretation.getVersion());
+        addObjectMap(interpretation.getFilters(), node, "filters_");
+        return node;
+    }
+
+    public static Node newNode(long uid, Software software) {
+        String id = getSoftwareId(software);
+        Node node = new Node(uid, id, software.getName(), Node.Type.SOFTWARE);
+        node.addAttribute("version", software.getVersion());
+        node.addAttribute("repository", software.getRepository());
+        node.addAttribute("commit", software.getCommit());
+        node.addAttribute("website", software.getWebsite());
+        addMap(software.getParams(), node, "params_");
+        return node;
+    }
+
+    public static Node newNode(long uid, ReportedVariant reportedVariant) {
+        Node node = new Node(uid, reportedVariant.toStringSimple(), reportedVariant.getId(), Node.Type.REPORTED_VARIANT);
+        node.addAttribute("deNovoQualityScore", reportedVariant.getDeNovoQualityScore());
+        node.addAttribute("status", reportedVariant.getStatus().name());
+        addObjectMap(reportedVariant.getAttributes(), node);
+        return node;
+    }
+
+    public static Node newNode(long uid, ReportedLowCoverage reportedLowCoverage) {
+        Node node = new Node(uid, reportedLowCoverage.getId(), "" + uid, Node.Type.LOW_COVERAGE_REGION);
+        node.addAttribute("geneName", reportedLowCoverage.getGeneName());
+        node.addAttribute("chromosome", reportedLowCoverage.getChromosome());
+        node.addAttribute("start", reportedLowCoverage.getStart());
+        node.addAttribute("end", reportedLowCoverage.getEnd());
+        node.addAttribute("meanCoverage", reportedLowCoverage.getMeanCoverage());
+        node.addAttribute("type", reportedLowCoverage.getType());
+        return node;
+    }
+
+    public static Node newNode(long uid, Analyst analyst) {
+        Node node = new Node(uid, analyst.getName(), analyst.getName(), Node.Type.ANALYST);
+        node.addAttribute("company", analyst.getCompany());
+        node.addAttribute("email", analyst.getEmail());
+        return node;
+    }
+
+    public static Node newNode(long uid, ReportedEvent reportedEvent) {
+        Node node = new Node(uid, reportedEvent.getId(), reportedEvent.getId(), Node.Type.REPORTED_EVENT);
+        if (reportedEvent.getModeOfInheritance() != null) {
+            node.addAttribute("modeOfInheritance", reportedEvent.getModeOfInheritance().name());
+        }
+        if (reportedEvent.getPenetrance() != null) {
+            node.addAttribute("penetrance", reportedEvent.getPenetrance().name());
+        }
+        if (CollectionUtils.isNotEmpty(reportedEvent.getCompoundHeterozygousVariantIds())) {
+            node.addAttribute("compoundHeterozygousVariantIds", StringUtils.join(reportedEvent.getCompoundHeterozygousVariantIds(), ","));
+        }
+        node.addAttribute("score", reportedEvent.getScore());
+        node.addAttribute("fullyExplainPhenotypes", reportedEvent.isFullyExplainPhenotypes());
+        if (reportedEvent.getRoleInCancer() != null) {
+            node.addAttribute("roleInCancer", reportedEvent.getRoleInCancer().name());
+        }
+        node.addAttribute("actionable", reportedEvent.isActionable());
+        node.addAttribute("justification", reportedEvent.getJustification());
+        if (reportedEvent.getClassification() != null) {
+            VariantClassification classification = reportedEvent.getClassification();
+            // Tier
+            if (StringUtils.isNotEmpty(classification.getTier())) {
+                node.addAttribute("classification_tier", classification.getTier());
+            }
+            // ACMG
+            if (CollectionUtils.isNotEmpty(classification.getAcmg())) {
+                node.addAttribute("classification_acmg", StringUtils.join(classification.getAcmg(), ","));
+            }
+            // Clinical significance
+            if (classification.getClinicalSignificance() != null) {
+                node.addAttribute("classification_clinicalSignificance", classification.getClinicalSignificance().name());
+            }
+            // Drug response
+            if (classification.getDrugResponse() != null) {
+                node.addAttribute("classification_drugResponse", classification.getDrugResponse().name());
+            }
+            // Trait association
+            if (classification.getTraitAssociation() != null) {
+                node.addAttribute("classification_traitAssociation", classification.getTraitAssociation().name());
+            }
+            // Functional effect
+            if (classification.getFunctionalEffect() != null) {
+                node.addAttribute("classification_functionalEffect", classification.getFunctionalEffect().name());
+            }
+            // Tumorigenesis
+            if (classification.getTumorigenesis() != null) {
+                node.addAttribute("classification_tumorigenesis", classification.getTumorigenesis().name());
+            }
+            // Other
+            if (CollectionUtils.isNotEmpty(classification.getOther())) {
+                node.addAttribute("classification_other", StringUtils.join(classification.getOther(), "---"));
+            }
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, GenomicFeature genomicFeature) {
+        Node node = new Node(uid, genomicFeature.getId(), genomicFeature.getId(), Node.Type.GENOMIC_FEATURE);
+        node.addAttribute("type", genomicFeature.getType());
+        node.addAttribute("geneName", genomicFeature.getGeneName());
+        node.addAttribute("transcriptId", genomicFeature.getTranscriptId());
+        // TODO: xrefs
+        return node;
+    }
+
+    public static Node newNode(long uid, Phenotype phenotype) {
+        // IMPORTANT: ontology term node and relation must be created by the caller!
+
+        Node node = new Node(uid, phenotype.getId(), phenotype.getName(), Node.Type.PHENOTYPE);
+        node.addAttribute("ageOfOnset", phenotype.getAgeOfOnset());
+        if (phenotype.getStatus() != null) {
+            node.addAttribute("status", phenotype.getStatus().name());
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, OntologyTerm ontologyTerm) {
+        Node node = new Node(uid, ontologyTerm.getId(), ontologyTerm.getName(), Node.Type.ONTOLOGY_TERM);
+        node.addAttribute("source", ontologyTerm.getSource());
+        if (MapUtils.isNotEmpty(ontologyTerm.getAttributes())) {
+            for (String key : ontologyTerm.getAttributes().keySet()) {
+                node.addAttribute("attributes_" + key, ontologyTerm.getAttributes().get(key));
+            }
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, Disorder disorder) {
+        // IMPORTANT: phenotype nodes and relations must be created by the caller of this function!!!
+
+        Node node = new Node(uid, disorder.getId(), disorder.getName(), Node.Type.DISORDER);
+        node.addAttribute("description", disorder.getDescription());
+        node.addAttribute("source", disorder.getSource());
+        if (MapUtils.isNotEmpty(disorder.getAttributes())) {
+            for (String key : disorder.getAttributes().keySet()) {
+                node.addAttribute("attributes_" + key, disorder.getAttributes().get(key));
+            }
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, Individual individual) {
+        // IMPORTANT: father, mother, phenotypes, disorders, samples nodes and relations must be created by the caller of this
+        // function!!!
+
+        Node node = new Node(uid, individual.getId(), individual.getName(), Node.Type.INDIVIDUAL);
+        node.addAttribute("uuid", individual.getUuid());
+        if (individual.getLocation() != null) {
+            node.addAttribute("location_address", individual.getLocation().getAddress());
+            node.addAttribute("location_city", individual.getLocation().getCity());
+            node.addAttribute("location_postalCode", individual.getLocation().getPostalCode());
+            node.addAttribute("location_state", individual.getLocation().getState());
+            node.addAttribute("location_country", individual.getLocation().getCountry());
+        }
+        if (individual.getSex() != null) {
+            node.addAttribute("sex", individual.getSex().name());
+        }
+        if (individual.getKaryotypicSex() != null) {
+            node.addAttribute("karyotypicSex", individual.getKaryotypicSex().name());
+        }
+        node.addAttribute("ethnicity", individual.getEthnicity());
+        if (individual.getPopulation() != null) {
+            node.addAttribute("population_name", individual.getPopulation().getName());
+            node.addAttribute("population_subpopulation", individual.getPopulation().getSubpopulation());
+            node.addAttribute("population_description", individual.getPopulation().getDescription());
+        }
+        if (individual.getMultiples() != null) {
+            node.addAttribute("multiples_type", individual.getMultiples().getType());
+            node.addAttribute("multiples_siblings", StringUtils.join(individual.getMultiples().getSiblings(), ","));
+        }
+        node.addAttribute("dateOfBirth", individual.getDateOfBirth());
+        node.addAttribute("release", individual.getRelease());
+        node.addAttribute("version", individual.getRelease());
+        node.addAttribute("creationDate", individual.getCreationDate());
+        node.addAttribute("modificationDate", individual.getModificationDate());
+        addStatus(individual.getStatus(), node);
+        if (individual.getLifeStatus() != null) {
+            node.addAttribute("lifeStatus", individual.getLifeStatus().name());
+        }
+        node.addAttribute("parentalConsanguinity", individual.isParentalConsanguinity());
+        if (MapUtils.isNotEmpty(individual.getAttributes())) {
+            for (String key : individual.getAttributes().keySet()) {
+                node.addAttribute("attributes_" + key, individual.getAttributes().get(key).toString());
+            }
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, Sample sample) {
+        // IMPORTANT: phenotypes nodes and relations must be created by the caller of this function!!!
+
+        Node node = new Node(uid, sample.getId(), sample.getName(), Node.Type.SAMPLE);
+        node.addAttribute("uuid", sample.getUuid());
+        node.addAttribute("source", sample.getSource());
+        if (sample.getProcessing() != null) {
+            node.addAttribute("processing_product", sample.getProcessing().getProduct());
+            node.addAttribute("processing_preparationMethod", sample.getProcessing().getPreparationMethod());
+            node.addAttribute("processing_extractionMethod", sample.getProcessing().getExtractionMethod());
+            node.addAttribute("processing_labSampleId", sample.getProcessing().getLabSampleId());
+            node.addAttribute("processing_quantity", sample.getProcessing().getQuantity());
+            node.addAttribute("processing_date", sample.getProcessing().getDate());
+            // TODO: sample.getProcessing().getAttributes()
+        }
+        if (sample.getCollection() != null) {
+            node.addAttribute("collection_tissue", sample.getCollection().getTissue());
+            node.addAttribute("collection_organ", sample.getCollection().getOrgan());
+            node.addAttribute("collection_quantity", sample.getCollection().getQuantity());
+            node.addAttribute("collection_method", sample.getCollection().getMethod());
+            node.addAttribute("collection_date", sample.getCollection().getDate());
+            // TODO: sample.getCollection().getAttributes()
+        }
+        node.addAttribute("release", sample.getRelease());
+        node.addAttribute("version", sample.getRelease());
+        node.addAttribute("creationDate", sample.getCreationDate());
+        node.addAttribute("modificationDate", sample.getModificationDate());
+        addStatus(sample.getStatus(), node);
+        node.addAttribute("description", sample.getDescription());
+        node.addAttribute("type", sample.getType());
+        node.addAttribute("somatic", sample.isSomatic());
+        if (MapUtils.isNotEmpty(sample.getAttributes())) {
+            for (String key : sample.getAttributes().keySet()) {
+                node.addAttribute("attributes_" + key, sample.getAttributes().get(key).toString());
+            }
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, Alert alert) {
+        Node node = new Node(uid, null, null, Node.Type.ALERT);
+        node.addAttribute("author", alert.getAuthor());
+        node.addAttribute("date", alert.getDate());
+        node.addAttribute("message", alert.getMessage());
+        if (alert.getRisk() != null) {
+            node.addAttribute("risk", alert.getRisk().name());
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, Family family) {
+        // IMPORTANT: phenotypes, disorder and members, nodes and relations must be created by the caller!
+
+        Node node = new Node(uid, family.getId(), family.getName(), Node.Type.FAMILY);
+        node.addAttribute("uuid", family.getUuid());
+        node.addAttribute("creationDate", family.getCreationDate());
+        node.addAttribute("modificationDate", family.getModificationDate());
+        addStatus(family.getStatus(), node);
+        node.addAttribute("expectedSize", family.getExpectedSize());
+        node.addAttribute("description", family.getDescription());
+        node.addAttribute("release", family.getRelease());
+        node.addAttribute("version", family.getRelease());
+        if (MapUtils.isNotEmpty(family.getAttributes())) {
+            for (String key : family.getAttributes().keySet()) {
+                node.addAttribute("attributes_" + key, family.getAttributes().get(key).toString());
+            }
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, DiseasePanel.GenePanel panelGene) {
+        // IMPORTANT: phenotypes nodes and relations must be created by the caller!
+
+        Node node = new Node(uid, panelGene.getId(), panelGene.getName(), Node.Type.PANEL_GENE);
+        addDiseasePanelCommon(panelGene, node);
+        return node;
+    }
+
+    public static Node newNode(long uid, DiseasePanel.VariantPanel panelVariant) {
+        // IMPORTANT: phenotypes nodes and relations must be created by the caller!
+
+        Node node = new Node(uid, panelVariant.getId(), panelVariant.getId(), Node.Type.PANEL_VARIANT);
+        node.addAttribute("alternate", panelVariant.getAlternate());
+        node.addAttribute("reference", panelVariant.getReference());
+        addDiseasePanelCommon(panelVariant, node);
+        return node;
+    }
+
+    public static Node newNode(long uid, DiseasePanel.STR panelStr) {
+        // IMPORTANT: phenotypes nodes and relations must be created by the caller!
+
+        Node node = new Node(uid, panelStr.getId(), panelStr.getId(), Node.Type.PANEL_STR);
+        node.addAttribute("repeatedSequence", panelStr.getRepeatedSequence());
+        node.addAttribute("normalRepeats", String.valueOf(panelStr.getNormalRepeats()));
+        node.addAttribute("pathogenicRepeats", String.valueOf(panelStr.getPathogenicRepeats()));
+        addDiseasePanelCommon(panelStr, node);
+        return node;
+    }
+
+    public static Node newNode(long uid, DiseasePanel.RegionPanel panelRegion) {
+        // IMPORTANT: phenotypes nodes and relations must be created by the caller!
+
+        Node node = new Node(uid, panelRegion.getId(), panelRegion.getId(), Node.Type.PANEL_REGION);
+        node.addAttribute("description", panelRegion.getDescription());
+        if (panelRegion.getTypeOfVariants() != null) {
+            node.addAttribute("typeOfVariants", panelRegion.getTypeOfVariants().name());
+        }
+        node.addAttribute("haploinsufficiencyScore", panelRegion.getHaploinsufficiencyScore());
+        node.addAttribute("triplosensitivityScore", panelRegion.getTriplosensitivityScore());
+        node.addAttribute("requiredOverlapPercentage", String.valueOf(panelRegion.getRequiredOverlapPercentage()));
+        addDiseasePanelCommon(panelRegion, node);
+        return node;
+    }
+
+    public static Node newNode(long uid, File file) {
+        // IMPORTANT: software, experiment and sample nodes and relations must be created by the caller!
+
+        Node node = new Node(uid, file.getId(), file.getName(), Node.Type.FILE);
+        node.addAttribute("uuid", file.getUuid());
+        if (file.getType() != null) {
+            node.addAttribute("type", file.getType().name());
+        }
+        if (file.getFormat() != null) {
+            node.addAttribute("format", file.getFormat().name());
+        }
+        if (file.getBioformat() != null) {
+            node.addAttribute("bioformat", file.getBioformat().name());
+        }
+        node.addAttribute("checksum", file.getChecksum());
+        if (file.getUri() != null) {
+            node.addAttribute("uri", file.getUri().toString());
+        }
+        node.addAttribute("path", file.getPath());
+        node.addAttribute("release", String.valueOf(file.getRelease()));
+        node.addAttribute("creationDate", String.valueOf(file.getCreationDate()));
+        node.addAttribute("modificationDate", String.valueOf(file.getModificationDate()));
+        node.addAttribute("description", String.valueOf(file.getDescription()));
+        addStatus(file.getStatus(), node);
+        node.addAttribute("external", file.isExternal());
+        node.addAttribute("size", String.valueOf(file.getSize()));
+        if (CollectionUtils.isNotEmpty(file.getTags())) {
+            node.addAttribute("tags", StringUtils.join(file.getTags(), ","));
+        }
+        // TODO: file.getRelatedFiles(), File.RelatedFile
+        // TODO: file.getIndex(), FileIndex
+        addObjectMap(file.getStats(), node, "stats_");
+        addObjectMap(file.getAttributes(), node);
+        return node;
+    }
+
+    public static Node newNode(long uid, Experiment experiment) {
+        Node node = new Node(uid, "", "", Node.Type.EXPERIMENT);
+        node.addAttribute("type", experiment.getType());
+        node.addAttribute("platform", experiment.getPlatform());
+        node.addAttribute("manufacturer", experiment.getManufacturer());
+        node.addAttribute("date", experiment.getDate());
+        node.addAttribute("lab", experiment.getLab());
+        node.addAttribute("center", experiment.getCenter());
+        node.addAttribute("responsible", experiment.getResponsible());
+        node.addAttribute("description", experiment.getDescription());
+        addObjectMap(experiment.getAttributes(), node);
+        return node;
+    }
+
+    public static String getSoftwareId(Software software) {
+        StringBuilder id = new StringBuilder();
+        id.append(software.getName() != null ? software.getName() : "").append("-");
+        id.append(software.getVersion() != null ? software.getVersion() : "").append("-");
+        id.append(software.getCommit() != null ? software.getCommit() : "");
+        return id.toString();
+    }
+
+    //-------------------------------------------------------------------------
+    // P R I V A T E     M E T H O D S
+    //-------------------------------------------------------------------------
+
+//    private static void addAttributes(Map<String, Object> attributes, Node node) {
+//        if (MapUtils.isNotEmpty(attributes)) {
+//            for (String key : attributes.keySet()) {
+//                node.addAttribute("attributes_" + key, attributes.get(key).toString());
+//            }
+//        }
+//    }
+
+    private static void addObjectMap(Map<String, Object> attributes, Node node) {
+        addObjectMap(attributes, node, "attributes_");
+    }
+
+    private static void addObjectMap(Map<String, Object> attributes, Node node, String prefix) {
+        if (MapUtils.isNotEmpty(attributes)) {
+            for (String key : attributes.keySet()) {
+                node.addAttribute(prefix + key, attributes.get(key).toString());
+            }
+        }
+    }
+
+    private static void addMap(Map<String, String> attributes, Node node) {
+        addMap(attributes, node, "attributes_");
+    }
+
+    private static void addMap(Map<String, String> attributes, Node node, String prefix) {
+        if (MapUtils.isNotEmpty(attributes)) {
+            for (String key : attributes.keySet()) {
+                node.addAttribute(prefix + key, attributes.get(key));
+            }
+        }
+    }
+
+    private static void addStatus(Status status, Node node) {
+        if (status != null) {
+            node.addAttribute("status_name", status.getName());
+            node.addAttribute("status_message", status.getMessage());
+            node.addAttribute("status_date", status.getDate());
+        }
+    }
+
+    private static void addDiseasePanelCommon(DiseasePanel.Common common, Node node) {
+        node.addAttribute("modeOfInheritance", common.getModeOfInheritance());
+        if (common.getPenetrance() != null) {
+            node.addAttribute("penetrance", common.getPenetrance().name());
+        }
+        node.addAttribute("confidence", common.getConfidence());
+        if (CollectionUtils.isNotEmpty(common.getEvidences())) {
+            node.addAttribute("evidences", StringUtils.join(common.getEvidences(), ","));
+        }
+        if (CollectionUtils.isNotEmpty(common.getPublications())) {
+            node.addAttribute("publications", StringUtils.join(common.getPublications(), ","));
+        }
+        if (CollectionUtils.isNotEmpty(common.getCoordinates())) {
+            node.addAttribute("coordinates", common.getCoordinates().stream().map(c -> c.getAssembly() + "+" + c.getLocation() + "+"
+                    + c.getSource()).collect(Collectors.joining(",")));
+        }
     }
 }

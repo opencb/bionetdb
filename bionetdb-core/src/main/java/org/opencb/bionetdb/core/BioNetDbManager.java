@@ -2,6 +2,7 @@ package org.opencb.bionetdb.core;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.driver.v1.Session;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.analysis.InterpretationAnalysis;
@@ -33,12 +34,16 @@ import org.opencb.cellbase.client.rest.VariationClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+
+import static org.neo4j.driver.v1.Values.parameters;
 
 /**
  * Created by joaquin on 1/29/18.
@@ -133,6 +138,30 @@ public class BioNetDbManager {
         // VCF loader
         Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
         neo4JVariantLoader.loadVCFFile(path);
+    }
+
+    public void loadClinicalAnalysis(Path inputPath) throws IOException {
+        Session session = ((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver().session();
+
+        // Reading file line by line, each line a JSON object (corresponding to a clinical analysis)
+        BufferedReader reader = FileUtils.newBufferedReader(inputPath);
+
+        long counter = 0;
+        String line = reader.readLine();
+        while (line != null) {
+            counter++;
+            System.out.println("Loading clinical analysis #" + counter + ". Size: " + line.length() + " bytes");
+
+            // Call user defined procedure: loadClinicalAnalysis
+            session.run("CALL org.opencb.bionetdb.core.neo4j.loadClinicalAnalysis($caJson)",
+                    parameters("caJson", line));
+
+            // Read next line
+            line = reader.readLine();
+        }
+        System.out.println("Loaded " + counter + " clinical analysis");
+
+        reader.close();
     }
 
     public void importFiles(Path inputPath, Path outputPath, Path neo4jHome) throws BioNetDBException, IOException, InterruptedException {

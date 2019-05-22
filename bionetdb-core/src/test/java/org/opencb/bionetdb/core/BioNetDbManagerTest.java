@@ -24,9 +24,9 @@ import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.utils.CsvInfo;
 import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
@@ -492,76 +492,6 @@ public class BioNetDbManagerTest {
                 }
             }
         }
-    }
-
-    @Test
-    public void getGenes() throws IOException {
-        String assembly = "GRCh38"; // "GRCh37", "GRCh38"
-        // CellBase client
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", assembly, clientConfiguration);
-
-        GeneClient geneClient = cellBaseClient.getGeneClient();
-        Query query = new Query();
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,transcripts.cDnaSequence,annotation.expression");
-        QueryResponse<Long> countResponse = geneClient.count(query);
-        long numGenes = countResponse.firstResult();
-        int bufferSize = 400;
-        options.put(QueryOptions.LIMIT, bufferSize);
-        System.out.println("Num. genes: " + numGenes);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        ObjectWriter writer = mapper.writer();
-        PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".genes.json").toString());
-        for (int i = 0; i < numGenes; i += bufferSize) {
-            options.put(QueryOptions.SKIP, i);
-            QueryResponse<Gene> geneResponse = geneClient.search(query, options);
-            for (Gene gene : geneResponse.allResults()) {
-                String json = writer.writeValueAsString(gene);
-                pw.println(json);
-            }
-            System.out.println("Processing " + i + " of " + numGenes);
-        }
-        pw.close();
-    }
-
-    @Test
-    public void getProteins() throws IOException {
-        String assembly = "GRCh38"; // "GRCh37", "GRCh38"
-        // CellBase client
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", assembly, clientConfiguration);
-
-        ProteinClient proteinClient = cellBaseClient.getProteinClient();
-        Query query = new Query();
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "reference,comment,sequence,evidence");
-        long numProteins = 100000;
-        int bufferSize = 400;
-        options.put(QueryOptions.LIMIT, bufferSize);
-        System.out.println("Num. proteins: " + numProteins);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        ObjectWriter writer = mapper.writer();
-        PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".proteins.json").toString());
-        for (int i = 0; i < numProteins; i += bufferSize) {
-            options.put(QueryOptions.SKIP, i);
-            QueryResponse<Entry> proteinResponse = proteinClient.search(query, options);
-            if (proteinResponse.allResults().size() == 0) {
-                break;
-            }
-            for (Entry entry : proteinResponse.allResults()) {
-                String json = writer.writeValueAsString(entry);
-                pw.println(json);
-            }
-            System.out.println("Processing " + i + " of " + numProteins);
-        }
-        pw.close();
     }
 
     @Test

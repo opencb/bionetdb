@@ -11,29 +11,43 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public abstract class Cache<T> {
-    protected ObjectMapper objMapper;
-    protected ObjectReader objReader;
+    protected String objFilename;
+    protected String xrefObjFilename;
 
     protected RocksDB objRocksDb;
     protected RocksDB xrefObjRocksDb;
     protected RocksDbManager rocksDbManager;
 
+    protected ObjectMapper objMapper;
+    protected ObjectReader objReader;
+
     private static Logger logger;
 
-    public Cache() {
+    public Cache(String objFilename, String xrefObjFilename) {
+        this.objFilename = objFilename;
+        this.xrefObjFilename = xrefObjFilename;
+
+        rocksDbManager = new RocksDbManager();
+
+        // Delete protein RocksDB files
+        Paths.get(objFilename).toFile().delete();
+        Paths.get(xrefObjFilename).toFile().delete();
+
+        // Create gene RocksDB files (protein and xrefs)
+        objRocksDb = rocksDbManager.getDBConnection(objFilename, true);
+        xrefObjRocksDb = rocksDbManager.getDBConnection(xrefObjFilename, true);
+
         objMapper = new ObjectMapper();
         objMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
 
-        rocksDbManager = new RocksDbManager();
-
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public abstract void index(Path input, Path output) throws IOException;
+//    public abstract void index(Path input, Path output) throws IOException;
 
     public String getPrimaryId(String id) {
         return rocksDbManager.getString(id, xrefObjRocksDb);
@@ -58,5 +72,25 @@ public abstract class Cache<T> {
         }
 
         return obj;
+    }
+
+    public void saveObject(String id, String json) {
+        rocksDbManager.putString(id, json, objRocksDb);
+    }
+
+    public void saveXref(String xref, String id) {
+        rocksDbManager.putString(xref, id, xrefObjRocksDb);
+    }
+
+    public RocksDB getObjRocksDb() {
+        return objRocksDb;
+    }
+
+    public RocksDB getXrefObjRocksDb() {
+        return xrefObjRocksDb;
+    }
+
+    public ObjectReader getObjReader() {
+        return objReader;
     }
 }

@@ -51,6 +51,9 @@ public class BioNetDBMain {
                     case "load":
                         commandExecutor = new LoadCommandExecutor(cliOptionsParser.getLoadCommandOptions());
                         break;
+                    case "create-csv":
+                        commandExecutor = new ImportCommandExecutor(cliOptionsParser.getCreateCsvCommandOptions());
+                        break;
                     case "import":
                         commandExecutor = new ImportCommandExecutor(cliOptionsParser.getImportCommandOptions());
                         break;

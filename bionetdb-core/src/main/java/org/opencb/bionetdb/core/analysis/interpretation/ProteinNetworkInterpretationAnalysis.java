@@ -14,6 +14,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.*;
 
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance.COMPLETE;
+
 public class ProteinNetworkInterpretationAnalysis {
 
     private NetworkDBAdaptor networkDBAdaptor;
@@ -28,19 +30,19 @@ public class ProteinNetworkInterpretationAnalysis {
         Map<String, List<String>> genotypes;
         switch (moi) {
             case MONOALLELIC:
-                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.dominant(pedigree, disorder, false);
+                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.dominant(pedigree, disorder, COMPLETE);
                 break;
             case BIALLELIC:
-                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.recessive(pedigree, disorder, false);
+                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.recessive(pedigree, disorder, COMPLETE);
                 break;
             case XLINKED_MONOALLELIC:
-                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, true);
+                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, true, COMPLETE);
                 break;
             case XLINKED_BIALLELIC:
-                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, false);
+                genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, false, COMPLETE);
                 break;
             case YLINKED:
-                genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+                genotypes = ModeOfInheritance.yLinked(pedigree, disorder, COMPLETE);
                 break;
             default:
                 genotypes = new HashMap<>();

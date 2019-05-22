@@ -14,11 +14,12 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
+import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.utils.cache.GeneCache;
 import org.opencb.bionetdb.core.utils.cache.ProteinCache;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.rocksdb.RocksDB;
@@ -160,7 +161,6 @@ public class CsvInfo {
         infoFields = new HashSet<>();
         formatFields = new HashSet<>();
 
-
         csvWriters = new HashMap<>();
         csvAnnotatedWriters = new HashMap<>();
         nodeAttributes = createNodeAttributes();
@@ -169,8 +169,8 @@ public class CsvInfo {
         rocksDbManager = new RocksDbManager();
         uidRocksDb = this.rocksDbManager.getDBConnection(outputPath.toString() + "/uidRocksDB", true);
 
-        geneCache = new GeneCache();
-        proteinCache = new ProteinCache();
+        geneCache = new GeneCache(outputPath);
+        proteinCache = new ProteinCache(outputPath);
 
         mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -287,6 +287,7 @@ public class CsvInfo {
                 }
             }
         }
+
 
         // Variant call
         String strType;
@@ -412,7 +413,7 @@ public class CsvInfo {
         rocksDbManager.putString(key, value, uidRocksDb);
     }
 
-    private String getNodeHeaderLine(List<String> attrs) {
+    protected String getNodeHeaderLine(List<String> attrs) {
         StringBuilder sb = new StringBuilder();
         sb.append("uid:ID(").append(attrs.get(0)).append(")");
         for (int i = 1; i < attrs.size(); i++) {
@@ -425,11 +426,32 @@ public class CsvInfo {
         return sb.toString();
     }
 
-    private String getRelationHeaderLine(String type) {
+    protected String getRelationHeaderLine(String type) {
         StringBuilder sb = new StringBuilder();
-        String[] split = type.split("__");
-        sb.append(":START_ID(").append(nodeAttributes.get(split[0]).get(0)).append(")").append(SEPARATOR).append(":END_ID(")
-                .append(nodeAttributes.get(split[1]).get(0)).append(")");
+
+        String source;
+        String dest;
+        if (type.contains("___")) {
+            String[] split = type.split("___");
+            source = split[1];
+            dest = split[2];
+        } else {
+            String[] split = type.split("__");
+            source = split[0];
+            dest = split[1];
+        }
+
+        if (CollectionUtils.isNotEmpty(nodeAttributes.get(source)) && CollectionUtils.isNotEmpty(nodeAttributes.get(dest))) {
+            sb.append(":START_ID(").append(nodeAttributes.get(source).get(0)).append(")").append(SEPARATOR).append(":END_ID(")
+                    .append(nodeAttributes.get(dest).get(0)).append(")");
+        } else {
+            if (CollectionUtils.isEmpty(nodeAttributes.get(source))) {
+                logger.info("Attributes empty for " + source + ", from getRelationHeaderLine: " + type);
+            }
+            if (CollectionUtils.isEmpty(nodeAttributes.get(dest))) {
+                logger.info("Attributes empty for " + dest + ", from getRelationHeaderLine: " + type);
+            }
+        }
         return sb.toString();
     }
 
@@ -483,13 +505,74 @@ public class CsvInfo {
         }
     }
 
-    public void indexingGenes(Path inputPath, Path indexPath) throws IOException {
-        geneCache.index(inputPath, indexPath);
-    }
+//    public void indexingGenes(Path inputPath) throws IOException {
+////        geneCache.index(inputPath, indexPath);
+//
+////        String objFilename = output.toString() + "/genes.rocksdb";
+////        String xrefObjFilename = output.toString() + "/xref.genes.rocksdb";
+//
+////        if (Paths.get(objFilename).toFile().exists()
+////                && Paths.get(xrefObjFilename).toFile().exists()) {
+////            objRocksDb = rocksDbManager.getDBConnection(objFilename, true);
+////            xrefObjRocksDb = rocksDbManager.getDBConnection(xrefObjFilename, true);
+////            logger.info("\tGene index already created!");
+////            return;
+////        }
+//
+////        // Delete protein RocksDB files
+////        Paths.get(objFilename).toFile().delete();
+////        Paths.get(xrefObjFilename).toFile().delete();
+////
+////        // Create gene RocksDB files (protein and xrefs)
+////        RocksDB objRocksDb = rocksDbManager.getDBConnection(objFilename, true);
+////        RocksDB xrefObjRocksDb = rocksDbManager.getDBConnection(xrefObjFilename, true);
+//
+//        BufferedReader reader = org.opencb.commons.utils.FileUtils.newBufferedReader(inputPath);
+//        String jsonGene = reader.readLine();
+//        long geneCounter = 0;
+//        while (jsonGene != null) {
+//            Gene gene = geneCache.getObjReader().readValue(jsonGene);
+//            String geneId = gene.getId();
+//            if (org.apache.commons.lang3.StringUtils.isNotEmpty(geneId)) {
+//                geneCounter++;
+//                if (geneCounter % 5000 == 0) {
+//                    logger.info("Indexing {} genes...", geneCounter);
+//                }
+//                // Save gene
+//                rocksDbManager.putString(geneId, jsonGene, geneCache.getObjRocksDb());
+//
+//                // Save xrefs for that gene
+//                rocksDbManager.putString(geneId, geneId, geneCache.getXrefObjRocksDb());
+//                if (org.apache.commons.lang3.StringUtils.isNotEmpty(gene.getName())) {
+//                    rocksDbManager.putString(gene.getName(), geneId, geneCache.getXrefObjRocksDb());
+//                }
+//
+//                if (ListUtils.isNotEmpty(gene.getTranscripts())) {
+//                    for (Transcript transcr : gene.getTranscripts()) {
+//                        if (ListUtils.isNotEmpty(transcr.getXrefs())) {
+//                            for (Xref xref: transcr.getXrefs()) {
+//                                if (org.apache.commons.lang3.StringUtils.isNotEmpty(xref.getId())) {
+//                                    rocksDbManager.putString(xref.getId(), geneId, geneCache.getXrefObjRocksDb());
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            } else {
+//                logger.info("Skipping indexing gene: missing gene ID from JSON file");
+//            }
+//
+//            // Next line
+//            jsonGene = reader.readLine();
+//        }
+//        logger.info("Indexing {} genes. Done.", geneCounter);
+//
+//        reader.close();
+//    }
 
-    public void indexingProteins(Path inputPath, Path indexPath) throws IOException {
-        proteinCache.index(inputPath, indexPath);
-    }
+//    public void indexingProteins(Path inputPath, Path indexPath) throws IOException {
+//        proteinCache.index(inputPath, indexPath);
+//    }
 
     public void indexingMiRnas(Path miRnaPath, Path indexPath) throws IOException {
         RocksDbManager rocksDbManager = new RocksDbManager();
@@ -719,8 +802,53 @@ public class CsvInfo {
         attrs = Arrays.asList("regulationId", "id", "name");
         nodeAttributes.put(Node.Type.REGULATION.toString(), new ArrayList<>(attrs));
 
+        // Clinical Analysis
+        attrs = Arrays.asList("clinicalAnalysisId", "id", "name", "uuid", "description", "type", "priority", "flags", "creationDate",
+                "modificationDate", "dueDate", "statusName", "statusDate", "statusMessage", "consentPrimaryFindings",
+                "consentSecondaryFindings", "consentCarrierFindings", "consentResearchFindings", "release");
+        nodeAttributes.put(Node.Type.CLINICAL_ANALYSIS.toString(), new ArrayList<>(attrs));
+
+        // Clinical analyst
+        attrs = Arrays.asList("clinicalAnalystId", "id", "name", "assignedBy", "assignee", "date");
+        nodeAttributes.put(Node.Type.CLINICAL_ANALYST.toString(), new ArrayList<>(attrs));
+
+        // Comment
+        attrs = Arrays.asList("commentId", "id", "name", "author", "type", "text", "date");
+        nodeAttributes.put(Node.Type.COMMENT.toString(), new ArrayList<>(attrs));
+
+        // Interpretation
+        attrs = Arrays.asList("interpretationId", "id", "name", "uuid", "description", "status", "creationDate", "version");
+        nodeAttributes.put(Node.Type.INTERPRETATION.toString(), new ArrayList<>(attrs));
+
+        // Software
+        attrs = Arrays.asList("softwareId", "id", "name", "version", "repository", "commit", "website", "params");
+        nodeAttributes.put(Node.Type.SOFTWARE.toString(), new ArrayList<>(attrs));
+
+        // Reported variant
+        attrs = Arrays.asList("reportedVariantId", "id", "name", "deNovoQualityScore", "status", "attributes");
+        nodeAttributes.put(Node.Type.REPORTED_VARIANT.toString(), new ArrayList<>(attrs));
+
+        // Low covarage
+        attrs = Arrays.asList("lowCoverageId", "id", "name", "geneName", "chromosome", "start", "end", "meanCoverage", "type");
+        nodeAttributes.put(Node.Type.LOW_COVERAGE_REGION.toString(), new ArrayList<>(attrs));
+
+        // Analyst
+        attrs = Arrays.asList("analystId", "id", "name", "company", "email");
+        nodeAttributes.put(Node.Type.ANALYST.toString(), new ArrayList<>(attrs));
+
+        // Reported event
+        attrs = Arrays.asList("reportedVariantId", "id", "name", "modeOfInheritance", "penetrance", "score", "fullyExplainPhenotypes",
+                "roleInCancer", "actionable", "justification", "tier");
+        nodeAttributes.put(Node.Type.REPORTED_EVENT.toString(), new ArrayList<>(attrs));
+
+        // Variant classification
+        attrs = Arrays.asList("variantClassificationId", "id", "name", "acmg", "clinicalSignificance", "drugResponse", "traitAssociation",
+                "functionalEffect", "tumorigenesis");
+        nodeAttributes.put(Node.Type.VARIANT_CLASSIFICATION.toString(), new ArrayList<>(attrs));
+
         return nodeAttributes;
     }
+
     private Set<String> createNoAttributes() {
         Set<String> noAttributes = new HashSet<>();
         noAttributes.add("id");
@@ -728,7 +856,6 @@ public class CsvInfo {
         noAttributes.add("source");
         return noAttributes;
     }
-
 
     public long getUid() {
         return uid;

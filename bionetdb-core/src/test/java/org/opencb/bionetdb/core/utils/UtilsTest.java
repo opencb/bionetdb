@@ -14,9 +14,15 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.StringUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
