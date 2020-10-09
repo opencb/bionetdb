@@ -46,7 +46,7 @@ public class Neo4JLoader {
     }
 
     public Node loadClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
-        Node caNode = graphDb.findNode(Label.label("CLINICAL_ANALYSIS"), "id", clinicalAnalysis.getId());
+        Node caNode = graphDb.findNode(Label.label(CLINICAL_ANALYSIS.name()), "id", clinicalAnalysis.getId());
         if (caNode != null) {
             //log.info("Clinical analysis ID " + clinicalAnalysis.getId() + " already loaded. Skip.");
             return caNode;
@@ -281,7 +281,7 @@ public class Neo4JLoader {
     }
 
     public Node loadVariant(Variant variant) {
-        Node variantNode = graphDb.findNode(Label.label("VARIANT"), "id", variant.toString());
+        Node variantNode = graphDb.findNode(Label.label(VARIANT.name()), "id", variant.toString());
         if (variantNode != null) {
             //log.info("Variant ID " + variant.toString() + " already loaded. Skip.");
             return variantNode;
