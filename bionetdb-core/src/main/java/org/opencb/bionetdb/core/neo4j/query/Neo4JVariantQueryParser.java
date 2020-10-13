@@ -6,7 +6,7 @@ import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.security.InvalidParameterException;
 import java.util.*;
@@ -14,7 +14,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.opencb.bionetdb.core.utils.NodeBuilder.*;
-import static org.opencb.bionetdb.core.utils.NodeBuilder.PANEL_GENE;
 
 public class Neo4JVariantQueryParser {
 

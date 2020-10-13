@@ -4,16 +4,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
@@ -34,10 +32,10 @@ import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.cellbase.client.rest.ProteinClient;
+import org.opencb.cellbase.core.CellBaseDataResponse;
+import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -45,7 +43,6 @@ import org.opencb.commons.utils.ListUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -364,7 +361,7 @@ public class BioNetDbManagerTest {
                 System.out.println(key);
                 for (Variant variant : variantMap.first().get(key)) {
                     System.out.println("\t" + variant.toStringSimple() + " samples --> " + variant.getStudies().get(0).getFiles().get(0)
-                            .getAttributes().get("sampleNames"));
+                            .getData().get("sampleNames"));
                 }
             }
         }
@@ -374,7 +371,7 @@ public class BioNetDbManagerTest {
     public void systemDominant() throws BioNetDBException {
         Disorder disorder = new Disorder("disease1", "disease1", "", "", null, null);
         Pedigree pedigree = getPedigreeFamily3(disorder);
-        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.MONOALLELIC;
+        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT;
 
         Query query = new Query();
         query.put("panel", "Familial or syndromic hypoparathyroidism");
@@ -480,9 +477,9 @@ public class BioNetDbManagerTest {
         QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,transcripts.cDnaSequence,annotation.expression");
         List<String> ids = new ArrayList<>();
         ids.add(geneId);
-        QueryResponse<Gene> geneQueryResponse = geneClient.get(ids, options);
-        for (QueryResult<Gene> result : geneQueryResponse.getResponse()) {
-            for (Gene gene : result.getResult()) {
+        CellBaseDataResponse<Gene> geneQueryResponse = geneClient.get(ids, options);
+        for (CellBaseDataResult<Gene> responses : geneQueryResponse.getResponses()) {
+            for (Gene gene : responses.getResults()) {
                 System.out.println(gene.getId() + ", " + gene.getName());
                 for (Transcript transcript : gene.getTranscripts()) {
                     System.out.println("\t" + transcript.getId() + ", " + transcript.getName());

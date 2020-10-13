@@ -1,15 +1,16 @@
 package org.opencb.bionetdb.core.utils;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.*;
+import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.*;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
 import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
-import org.opencb.biodata.models.commons.*;
-import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.core.Transcript;
-import org.opencb.biodata.models.core.TranscriptTfbs;
+import org.opencb.biodata.models.core.*;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -17,10 +18,14 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.Interpretation;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileExperiment;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.List;
 import java.util.Map;
@@ -100,17 +105,17 @@ public class NodeBuilder {
             variantBuilder.setType(VariantType.valueOf(attrs.getString(NodeBuilder.TYPE)));
         }
         variantBuilder.setStudyId("S");
-        variantBuilder.setFormat("GT");
+//        variantBuilder.setFormat("GT");
 
         return variantBuilder.build();
     }
 
     public static Node newNode(long uid, StudyEntry studyEntry, Node variantNode) {
         Node node = new Node(uid, variantNode.getId() + "_" + variantNode.getSource(), "", Node.Type.VARIANT_FILE_INFO);
-        Map<String, String> fileAttrs = studyEntry.getFiles().get(0).getAttributes();
+        Map<String, String> fileData = studyEntry.getFiles().get(0).getData();
         node.addAttribute("filename", studyEntry.getFiles().get(0).getFileId());
-        for (String key : fileAttrs.keySet()) {
-            node.addAttribute(key, fileAttrs.get(key));
+        for (String key : fileData.keySet()) {
+            node.addAttribute(key, fileData.get(key));
         }
         return node;
     }
@@ -257,7 +262,7 @@ public class NodeBuilder {
 
     public static Node newNode(long uid, Transcript transcript) {
         Node node = new Node(uid, transcript.getId(), transcript.getName(), Node.Type.TRANSCRIPT);
-        node.addAttribute("proteinId", transcript.getProteinID());
+        node.addAttribute("proteinId", transcript.getProteinId());
         node.addAttribute("biotype", transcript.getBiotype());
         node.addAttribute("chromosome", transcript.getChromosome());
         node.addAttribute("start", transcript.getStart());
@@ -270,8 +275,8 @@ public class NodeBuilder {
         node.addAttribute("genomicCodingEnd", transcript.getGenomicCodingEnd());
         node.addAttribute("cdsLength", transcript.getCdsLength());
         node.addAttribute("description", transcript.getDescription());
-        if (ListUtils.isNotEmpty(transcript.getAnnotationFlags())) {
-            node.addAttribute("annotationFlags", StringUtils.join(transcript.getAnnotationFlags(), ","));
+        if (CollectionUtils.isNotEmpty(transcript.getFlags())) {
+            node.addAttribute("annotationFlags", StringUtils.join(transcript.getFlags(), ","));
         }
         return node;
     }
@@ -395,7 +400,7 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, ClinicalAnalysis clinicalAnalysis) {
-        Node node = new Node(uid, clinicalAnalysis.getId(), clinicalAnalysis.getName(), Node.Type.CLINICAL_ANALYSIS);
+        Node node = new Node(uid, clinicalAnalysis.getId(), clinicalAnalysis.getId(), Node.Type.CLINICAL_ANALYSIS);
         node.addAttribute("uuid", clinicalAnalysis.getUuid());
         node.addAttribute("description", clinicalAnalysis.getDescription());
         if (clinicalAnalysis.getType() != null) {
@@ -421,19 +426,23 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, Comment comment) {
+    public static Node newNode(long uid, ClinicalComment comment) {
         Node node = new Node(uid, "" + uid, "" + uid, Node.Type.COMMENT);
         node.addAttribute("author", comment.getAuthor());
-        node.addAttribute("type", comment.getType());
-        node.addAttribute("text", comment.getText());
+        if (CollectionUtils.isNotEmpty(comment.getTags())) {
+            node.addAttribute("tags", StringUtils.join(comment.getTags(), ","));
+        }
+        node.addAttribute("message", comment.getMessage());
         node.addAttribute("date", comment.getDate());
         return node;
     }
 
-    public static Node newNode(long uid, ClinicalAnalysis.ClinicalAnalyst analyst) {
+    public static Node newNode(long uid, ClinicalAnalyst analyst) {
         Node node = new Node(uid, "" + uid, "" + uid, Node.Type.CLINICAL_ANALYST);
         node.addAttribute("assignedBy", analyst.getAssignedBy());
-        node.addAttribute("assignee", analyst.getAssignee());
+        node.addAttribute("id", analyst.getId());
+        node.addAttribute("name", analyst.getName());
+        node.addAttribute("email", analyst.getEmail());
         node.addAttribute("date", analyst.getDate());
         return node;
     }
@@ -442,10 +451,10 @@ public class NodeBuilder {
         Node node = new Node(uid, "" + uid, "" + uid, Node.Type.INTERPRETATION);
         node.addAttribute("uuid", interpretation.getUuid());
         node.addAttribute("description", interpretation.getDescription());
-        node.addAttribute("status", interpretation.getStatus().name());
+        node.addAttribute("status", interpretation.getStatus());
         node.addAttribute("creationDate", interpretation.getCreationDate());
         node.addAttribute("version", interpretation.getVersion());
-        addObjectMap(interpretation.getFilters(), node, "filters_");
+        //addObjectMap(interpretation.getFilters(), node, "filters_");
         return node;
     }
 
@@ -460,52 +469,41 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, ReportedVariant reportedVariant) {
-        Node node = new Node(uid, reportedVariant.toStringSimple(), reportedVariant.getId(), Node.Type.REPORTED_VARIANT);
-        node.addAttribute("deNovoQualityScore", reportedVariant.getDeNovoQualityScore());
-        node.addAttribute("status", reportedVariant.getStatus().name());
-        addObjectMap(reportedVariant.getAttributes(), node);
+    public static Node newNode(long uid, ClinicalVariant clinicalVariant) {
+        Node node = new Node(uid, clinicalVariant.toStringSimple(), clinicalVariant.getId(), Node.Type.REPORTED_VARIANT);
+        node.addAttribute("status", clinicalVariant.getStatus().name());
+        addObjectMap(clinicalVariant.getAttributes(), node);
         return node;
     }
 
-    public static Node newNode(long uid, ReportedLowCoverage reportedLowCoverage) {
-        Node node = new Node(uid, reportedLowCoverage.getId(), "" + uid, Node.Type.LOW_COVERAGE_REGION);
-        node.addAttribute("geneName", reportedLowCoverage.getGeneName());
-        node.addAttribute("chromosome", reportedLowCoverage.getChromosome());
-        node.addAttribute("start", reportedLowCoverage.getStart());
-        node.addAttribute("end", reportedLowCoverage.getEnd());
-        node.addAttribute("meanCoverage", reportedLowCoverage.getMeanCoverage());
-        node.addAttribute("type", reportedLowCoverage.getType());
-        return node;
-    }
+//    public static Node newNode(long uid, Analyst analyst) {
+//        Node node = new Node(uid, analyst.getName(), analyst.getName(), Node.Type.ANALYST);
+//        node.addAttribute("company", analyst.getCompany());
+//        node.addAttribute("email", analyst.getEmail());
+//        return node;
+//    }
 
-    public static Node newNode(long uid, Analyst analyst) {
-        Node node = new Node(uid, analyst.getName(), analyst.getName(), Node.Type.ANALYST);
-        node.addAttribute("company", analyst.getCompany());
-        node.addAttribute("email", analyst.getEmail());
-        return node;
-    }
-
-    public static Node newNode(long uid, ReportedEvent reportedEvent) {
-        Node node = new Node(uid, reportedEvent.getId(), reportedEvent.getId(), Node.Type.REPORTED_EVENT);
-        if (reportedEvent.getModeOfInheritance() != null) {
-            node.addAttribute("modeOfInheritance", reportedEvent.getModeOfInheritance().name());
+    public static Node newNode(long uid, ClinicalVariantEvidence clinicalVariantEvidence) {
+        Node node = new Node(uid, "" + uid, "" + uid, Node.Type.REPORTED_EVENT);
+        if (clinicalVariantEvidence.getModeOfInheritance() != null) {
+            node.addAttribute("modeOfInheritance", clinicalVariantEvidence.getModeOfInheritance().name());
         }
-        if (reportedEvent.getPenetrance() != null) {
-            node.addAttribute("penetrance", reportedEvent.getPenetrance().name());
+        if (clinicalVariantEvidence.getPenetrance() != null) {
+            node.addAttribute("penetrance", clinicalVariantEvidence.getPenetrance().name());
         }
-        if (CollectionUtils.isNotEmpty(reportedEvent.getCompoundHeterozygousVariantIds())) {
-            node.addAttribute("compoundHeterozygousVariantIds", StringUtils.join(reportedEvent.getCompoundHeterozygousVariantIds(), ","));
+        if (CollectionUtils.isNotEmpty(clinicalVariantEvidence.getCompoundHeterozygousVariantIds())) {
+            node.addAttribute("compoundHeterozygousVariantIds", StringUtils.join(clinicalVariantEvidence
+                    .getCompoundHeterozygousVariantIds(), ","));
         }
-        node.addAttribute("score", reportedEvent.getScore());
-        node.addAttribute("fullyExplainPhenotypes", reportedEvent.isFullyExplainPhenotypes());
-        if (reportedEvent.getRoleInCancer() != null) {
-            node.addAttribute("roleInCancer", reportedEvent.getRoleInCancer().name());
+        node.addAttribute("score", clinicalVariantEvidence.getScore());
+        node.addAttribute("fullyExplainPhenotypes", clinicalVariantEvidence.isFullyExplainPhenotypes());
+        if (clinicalVariantEvidence.getRoleInCancer() != null) {
+            node.addAttribute("roleInCancer", clinicalVariantEvidence.getRoleInCancer().name());
         }
-        node.addAttribute("actionable", reportedEvent.isActionable());
-        node.addAttribute("justification", reportedEvent.getJustification());
-        if (reportedEvent.getClassification() != null) {
-            VariantClassification classification = reportedEvent.getClassification();
+        node.addAttribute("actionable", clinicalVariantEvidence.isActionable());
+        node.addAttribute("justification", clinicalVariantEvidence.getJustification());
+        if (clinicalVariantEvidence.getClassification() != null) {
+            VariantClassification classification = clinicalVariantEvidence.getClassification();
             // Tier
             if (StringUtils.isNotEmpty(classification.getTier())) {
                 node.addAttribute("classification_tier", classification.getTier());
@@ -562,7 +560,7 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, OntologyTerm ontologyTerm) {
+    public static Node newNode(long uid, OntologyTermAnnotation ontologyTerm) {
         Node node = new Node(uid, ontologyTerm.getId(), ontologyTerm.getName(), Node.Type.ONTOLOGY_TERM);
         node.addAttribute("source", ontologyTerm.getSource());
         if (MapUtils.isNotEmpty(ontologyTerm.getAttributes())) {
@@ -573,19 +571,19 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, Disorder disorder) {
-        // IMPORTANT: phenotype nodes and relations must be created by the caller of this function!!!
-
-        Node node = new Node(uid, disorder.getId(), disorder.getName(), Node.Type.DISORDER);
-        node.addAttribute("description", disorder.getDescription());
-        node.addAttribute("source", disorder.getSource());
-        if (MapUtils.isNotEmpty(disorder.getAttributes())) {
-            for (String key : disorder.getAttributes().keySet()) {
-                node.addAttribute("attributes_" + key, disorder.getAttributes().get(key));
-            }
-        }
-        return node;
-    }
+//    public static Node newNode(long uid, Disorder disorder) {
+//        // IMPORTANT: phenotype nodes and relations must be created by the caller of this function!!!
+//
+//        Node node = new Node(uid, disorder.getId(), disorder.getName(), Node.Type.DISORDER);
+//        node.addAttribute("description", disorder.getDescription());
+//        node.addAttribute("source", disorder.getSource());
+//        if (MapUtils.isNotEmpty(disorder.getAttributes())) {
+//            for (String key : disorder.getAttributes().keySet()) {
+//                node.addAttribute("attributes_" + key, disorder.getAttributes().get(key));
+//            }
+//        }
+//        return node;
+//    }
 
     public static Node newNode(long uid, Individual individual) {
         // IMPORTANT: father, mother, phenotypes, disorders, samples nodes and relations must be created by the caller of this
@@ -612,10 +610,10 @@ public class NodeBuilder {
             node.addAttribute("population_subpopulation", individual.getPopulation().getSubpopulation());
             node.addAttribute("population_description", individual.getPopulation().getDescription());
         }
-        if (individual.getMultiples() != null) {
-            node.addAttribute("multiples_type", individual.getMultiples().getType());
-            node.addAttribute("multiples_siblings", StringUtils.join(individual.getMultiples().getSiblings(), ","));
-        }
+//        if (individual.getMultiples() != null) {
+//            node.addAttribute("multiples_type", individual.getMultiples().getType());
+//            node.addAttribute("multiples_siblings", StringUtils.join(individual.getMultiples().getSiblings(), ","));
+//        }
         node.addAttribute("dateOfBirth", individual.getDateOfBirth());
         node.addAttribute("release", individual.getRelease());
         node.addAttribute("version", individual.getRelease());
@@ -637,9 +635,8 @@ public class NodeBuilder {
     public static Node newNode(long uid, Sample sample) {
         // IMPORTANT: phenotypes nodes and relations must be created by the caller of this function!!!
 
-        Node node = new Node(uid, sample.getId(), sample.getName(), Node.Type.SAMPLE);
+        Node node = new Node(uid, sample.getId(), sample.getId(), Node.Type.SAMPLE);
         node.addAttribute("uuid", sample.getUuid());
-        node.addAttribute("source", sample.getSource());
         if (sample.getProcessing() != null) {
             node.addAttribute("processing_product", sample.getProcessing().getProduct());
             node.addAttribute("processing_preparationMethod", sample.getProcessing().getPreparationMethod());
@@ -663,23 +660,12 @@ public class NodeBuilder {
         node.addAttribute("modificationDate", sample.getModificationDate());
         addStatus(sample.getStatus(), node);
         node.addAttribute("description", sample.getDescription());
-        node.addAttribute("type", sample.getType());
+//        node.addAttribute("type", sample.getType());
         node.addAttribute("somatic", sample.isSomatic());
         if (MapUtils.isNotEmpty(sample.getAttributes())) {
             for (String key : sample.getAttributes().keySet()) {
                 node.addAttribute("attributes_" + key, sample.getAttributes().get(key).toString());
             }
-        }
-        return node;
-    }
-
-    public static Node newNode(long uid, Alert alert) {
-        Node node = new Node(uid, null, null, Node.Type.ALERT);
-        node.addAttribute("author", alert.getAuthor());
-        node.addAttribute("date", alert.getDate());
-        node.addAttribute("message", alert.getMessage());
-        if (alert.getRisk() != null) {
-            node.addAttribute("risk", alert.getRisk().name());
         }
         return node;
     }
@@ -784,9 +770,9 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, Experiment experiment) {
+    public static Node newNode(long uid, FileExperiment experiment) {
         Node node = new Node(uid, "", "", Node.Type.EXPERIMENT);
-        node.addAttribute("type", experiment.getType());
+        node.addAttribute("library", experiment.getLibrary());
         node.addAttribute("platform", experiment.getPlatform());
         node.addAttribute("manufacturer", experiment.getManufacturer());
         node.addAttribute("date", experiment.getDate());
@@ -842,10 +828,10 @@ public class NodeBuilder {
         }
     }
 
-    private static void addStatus(Status status, Node node) {
+    private static void addStatus(CustomStatus status, Node node) {
         if (status != null) {
             node.addAttribute("status_name", status.getName());
-            node.addAttribute("status_message", status.getMessage());
+            node.addAttribute("status_description", status.getDescription());
             node.addAttribute("status_date", status.getDate());
         }
     }

@@ -8,7 +8,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 
 import java.io.IOException;
 

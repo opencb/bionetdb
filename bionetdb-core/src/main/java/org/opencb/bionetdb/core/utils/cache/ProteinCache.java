@@ -1,6 +1,6 @@
 package org.opencb.bionetdb.core.utils.cache;
 
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

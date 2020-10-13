@@ -1,8 +1,8 @@
 package org.opencb.bionetdb.core.analysis;
 
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.analysis.interpretation.ProteinNetworkInterpretationAnalysis;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;

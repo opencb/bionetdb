@@ -1,9 +1,10 @@
 package org.opencb.bionetdb.core.neo4j;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.neo4j.driver.v1.*;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -29,9 +30,13 @@ import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParser;
 import org.opencb.bionetdb.core.utils.Neo4jConverter;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
-import org.opencb.cellbase.client.rest.VariationClient;
-import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.utils.ListUtils;
+import org.opencb.cellbase.client.rest.VariantClient;
+import org.opencb.cellbase.core.CellBaseDataResponse;
+import org.opencb.cellbase.core.result.CellBaseDataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
 import java.util.*;
@@ -174,7 +179,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     // A N N O T A T I O N     M E T H O D s
     //-------------------------------------------------------------------------
 
-    public void annotateVariants(NodeQuery query, QueryOptions options, VariationClient variationClient) throws BioNetDBException,
+    public void annotateVariants(NodeQuery query, QueryOptions options, VariantClient variantClient) throws BioNetDBException,
             IOException {
         NodeIterator nodeIterator = nodeIterator(query, options);
         List<String> variantIds = new ArrayList<>(1000);
@@ -182,21 +187,21 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             Node variantNode = nodeIterator.next();
             variantIds.add(variantNode.getId());
             if (variantIds.size() >= 1000) {
-                annotateVariants(variantIds, variationClient);
+                annotateVariants(variantIds, variantClient);
                 variantIds.clear();
             }
         }
-        if (ListUtils.isNotEmpty(variantIds)) {
-            annotateVariants(variantIds, variationClient);
+        if (CollectionUtils.isNotEmpty(variantIds)) {
+            annotateVariants(variantIds, variantClient);
         }
     }
 
-    public void annotateVariants(List<String> variantIds, VariationClient variationClient) throws BioNetDBException, IOException {
+    public void annotateVariants(List<String> variantIds, VariantClient variantClient) throws BioNetDBException, IOException {
         Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
-        QueryResponse<Variant> entryQueryResponse = variationClient.get(variantIds, QueryOptions.empty());
-        for (QueryResult<Variant> queryResult : entryQueryResponse.getResponse()) {
-            if (ListUtils.isNotEmpty(queryResult.getResult())) {
-                variantLoader.loadVariants(queryResult.getResult());
+        CellBaseDataResponse<Variant> entryQueryResponse = variantClient.get(variantIds, QueryOptions.empty());
+        for (CellBaseDataResult<Variant> queryResult : entryQueryResponse.getResponses()) {
+            if (CollectionUtils.isNotEmpty(queryResult.getResults())) {
+                variantLoader.loadVariants(queryResult.getResults());
             }
         }
     }
@@ -215,7 +220,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 geneIds.clear();
             }
         }
-        if (ListUtils.isNotEmpty(geneIds)) {
+        if (CollectionUtils.isNotEmpty(geneIds)) {
             annotateGenes(geneIds, geneClient);
         }
     }
@@ -223,10 +228,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public void annotateGenes(List<String> geneIds, GeneClient geneClient) throws BioNetDBException, IOException {
         Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
         QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
-        QueryResponse<Gene> entryQueryResponse = geneClient.get(geneIds, options);
-        for (QueryResult<Gene> queryResult : entryQueryResponse.getResponse()) {
-            if (ListUtils.isNotEmpty(queryResult.getResult())) {
-                variantLoader.loadGenes(queryResult.getResult());
+        CellBaseDataResponse<Gene> entryQueryResponse = geneClient.get(geneIds, options);
+        for (CellBaseDataResult<Gene> queryResult : entryQueryResponse.getResponses()) {
+            if (CollectionUtils.isNotEmpty(queryResult.getResults())) {
+                variantLoader.loadGenes(queryResult.getResults());
             }
         }
     }
@@ -245,7 +250,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 proteinIds.clear();
             }
         }
-        if (ListUtils.isNotEmpty(proteinIds)) {
+        if (CollectionUtils.isNotEmpty(proteinIds)) {
             annotateProteins(proteinIds, proteinClient);
         }
     }
@@ -253,10 +258,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public void annotateProteins(List<String> proteinIds, ProteinClient proteinClient) throws BioNetDBException, IOException {
         Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
         QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
-        QueryResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, options);
-        for (QueryResult<Entry> queryResult : entryQueryResponse.getResponse()) {
-            if (ListUtils.isNotEmpty(queryResult.getResult())) {
-                variantLoader.loadProteins(queryResult.getResult());
+        CellBaseDataResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, options);
+        for (CellBaseDataResult<Entry> responses : entryQueryResponse.getResponses()) {
+            if (CollectionUtils.isNotEmpty(responses.getResults())) {
+                variantLoader.loadProteins(responses.getResults());
             }
         }
     }
@@ -518,11 +523,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         // Create the desired node
         StringBuilder cypher = new StringBuilder("CREATE (n");
-        if (ListUtils.isNotEmpty(node.getTags())) {
+        if (CollectionUtils.isNotEmpty(node.getTags())) {
             cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
         }
         cypher.append(")");
-        if (ListUtils.isNotEmpty(props)) {
+        if (CollectionUtils.isNotEmpty(props)) {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
         }
         //cypher.append(" RETURN ID(n) AS UID");
@@ -651,7 +656,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 .append(relation.getDestUid()).append("}) USING INDEX d:").append(relation.getDestType())
                 .append("(uid) MERGE (o)-[r:")
                 .append(StringUtils.join(relation.getTags(), ":"));
-        if (ListUtils.isNotEmpty(props)) {
+        if (CollectionUtils.isNotEmpty(props)) {
             statementTemplate.append(propsJoined);
         }
         statementTemplate.append("]->(d)");

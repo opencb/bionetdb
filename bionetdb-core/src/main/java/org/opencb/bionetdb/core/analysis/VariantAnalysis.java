@@ -2,8 +2,8 @@ package org.opencb.bionetdb.core.analysis;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -18,7 +18,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance.COMPLETE;
+import static org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance.COMPLETE;
 
 public class VariantAnalysis extends BioNetDBAnalysis {
 

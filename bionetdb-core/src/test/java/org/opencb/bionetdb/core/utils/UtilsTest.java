@@ -3,9 +3,7 @@ package org.opencb.bionetdb.core.utils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.codehaus.jackson.type.TypeReference;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -14,20 +12,10 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.commons.utils.FileUtils;
-import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.fasterxml.jackson.databind.node.JsonNodeType.POJO;
-import static org.junit.Assert.*;
 
 public class UtilsTest {
 

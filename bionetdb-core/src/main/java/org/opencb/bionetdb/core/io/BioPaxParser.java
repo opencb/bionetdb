@@ -1,12 +1,12 @@
 package org.opencb.bionetdb.core.io;
 
+import org.apache.commons.lang3.StringUtils;
 import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
-import org.sqlite.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;

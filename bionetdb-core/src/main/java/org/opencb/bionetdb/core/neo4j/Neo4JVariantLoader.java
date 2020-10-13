@@ -2,12 +2,13 @@ package org.opencb.bionetdb.core.neo4j;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
+import org.apache.commons.collections.CollectionUtils;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.DbReferenceType;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.FeatureType;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.KeywordType;
+import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.DbReferenceType;
+import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
+import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.FeatureType;
+import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.KeywordType;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.core.TranscriptTfbs;
@@ -23,10 +24,11 @@ import org.opencb.bionetdb.core.utils.Neo4jConverter;
 import org.opencb.bionetdb.core.utils.Neo4jImporter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.cellbase.client.rest.ClinicalVariantClient;
-import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
+import org.opencb.cellbase.core.CellBaseDataResponse;
+import org.opencb.cellbase.core.api.core.ClinicalDBAdaptor;
+import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
@@ -113,7 +115,7 @@ public class Neo4JVariantLoader {
         long neoTime = 0;
         long tic, tac;
 
-        QueryResponse<Variant> search;
+        CellBaseDataResponse<Variant> search;
         do {
             queryOptions.put(QueryOptions.SKIP, skip);
             tic = System.currentTimeMillis();
@@ -123,9 +125,9 @@ public class Neo4JVariantLoader {
             System.out.println("Cellbase batch: " + tac + " s, total: " + cellbaseTime + " s");
 
             tic = System.currentTimeMillis();
-            for (QueryResult<Variant> queryResult : search.getResponse()) {
-                if (ListUtils.isNotEmpty(queryResult.getResult())) {
-                    loadVariants(queryResult.getResult());
+            for (CellBaseDataResult<Variant> responses : search.getResponses()) {
+                if (CollectionUtils.isNotEmpty(responses.getResults())) {
+                    loadVariants(responses.getResults());
                 }
             }
             tac = (System.currentTimeMillis() - tic) / 1000;
@@ -203,40 +205,40 @@ public class Neo4JVariantLoader {
             networkDBAdaptor.mergeNode(variantNode, "name", tx);
 
             // Sample management
-            if (ListUtils.isNotEmpty(variant.getStudies())) {
+            if (CollectionUtils.isNotEmpty(variant.getStudies())) {
                 // Only one single study is supported
                 StudyEntry studyEntry = variant.getStudies().get(0);
 
-                if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
+                if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
                     // Create the variant call info node adding all file attributes (FILTER, QUAL, INFO fields...)
                     Node fileEntryNode = NodeBuilder.newNode(++uidCounter, variant.getStudies().get(0), variantNode);
                     networkDBAdaptor.addNode(fileEntryNode, tx);
 
-                    for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
+                    for (int i = 0; i < studyEntry.getSamples().size(); i++) {
                         String sampleName = sampleNames == null ? "sample_" + i : sampleNames.get(i);
                         // Create the sample node
                         Node sampleNode = new Node(uidCounter, sampleName, sampleName, Node.Type.SAMPLE);
                         networkDBAdaptor.mergeNode(sampleNode, "id", tx);
 
                         // And the call node for that sample adding the format attributes
-                        Node callNode = NodeBuilder.newCallNode(++uidCounter, studyEntry.getFormat(), studyEntry.getSampleData(i));
-                        networkDBAdaptor.addNode(callNode, tx);
-
-                        // Relation: sample - variant call
-                        Relation sVCallRel = new Relation(++uidCounter, sampleNode.getId() + "_" + callNode.getId(), sampleNode.getUid(),
-                                sampleNode.getType(), callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_CALL);
-                        networkDBAdaptor.mergeRelation(sVCallRel, tx);
-
-                        // Relation: variant call - variant file info
-                        Relation vFileInfoRel = new Relation(++uidCounter, callNode.getId() + "_" + fileEntryNode.getId(),
-                                callNode.getUid(), callNode.getType(), fileEntryNode.getUid(), fileEntryNode.getType(),
-                                Relation.Type.VARIANT_FILE_INFO);
-                        networkDBAdaptor.mergeRelation(vFileInfoRel, tx);
-
-                        // Relation: variant - variant call
-                        Relation vCallRel = new Relation(++uidCounter, null, variantNode.getUid(), variantNode.getType(),
-                                callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_CALL);
-                        networkDBAdaptor.addRelation(vCallRel, tx);
+//                        Node callNode = NodeBuilder.newCallNode(++uidCounter, studyEntry.getFormat(), studyEntry.getSampleData(i));
+//                        networkDBAdaptor.addNode(callNode, tx);
+//
+//                        // Relation: sample - variant call
+//                        Relation sVCallRel = new Relation(++uidCounter, sampleNode.getId() + "_" + callNode.getId(), sampleNode.getUid(),
+//                                sampleNode.getType(), callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_CALL);
+//                        networkDBAdaptor.mergeRelation(sVCallRel, tx);
+//
+//                        // Relation: variant call - variant file info
+//                        Relation vFileInfoRel = new Relation(++uidCounter, callNode.getId() + "_" + fileEntryNode.getId(),
+//                                callNode.getUid(), callNode.getType(), fileEntryNode.getUid(), fileEntryNode.getType(),
+//                                Relation.Type.VARIANT_FILE_INFO);
+//                        networkDBAdaptor.mergeRelation(vFileInfoRel, tx);
+//
+//                        // Relation: variant - variant call
+//                        Relation vCallRel = new Relation(++uidCounter, null, variantNode.getUid(), variantNode.getType(),
+//                                callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_CALL);
+//                        networkDBAdaptor.addRelation(vCallRel, tx);
                     }
                 }
             }
@@ -244,7 +246,7 @@ public class Neo4JVariantLoader {
             // Variant annotation
             if (variant.getAnnotation() != null) {
                 // Consequence types
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                if (CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
                     // Consequence type nodes
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         Node ctNode = NodeBuilder.newNode(++uidCounter, ct);
@@ -257,7 +259,7 @@ public class Neo4JVariantLoader {
 
 
                         // SO
-                        if (ListUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
+                        if (CollectionUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
                             for (SequenceOntologyTerm so: ct.getSequenceOntologyTerms()) {
                                 Node soNode = new Node(uidCounter, so.getAccession(), so.getName(), Node.Type.SO);
                                 networkDBAdaptor.mergeNode(soNode, "id", tx);
@@ -315,7 +317,7 @@ public class Neo4JVariantLoader {
                             }
 
                             // Protein substitution scores
-                            if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getSubstitutionScores())) {
+                            if (CollectionUtils.isNotEmpty(ct.getProteinVariantAnnotation().getSubstitutionScores())) {
                                 for (Score score: ct.getProteinVariantAnnotation().getSubstitutionScores()) {
                                     Node subsNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.SUBSTITUTION_SCORE);
                                     networkDBAdaptor.addNode(subsNode, tx);
@@ -328,7 +330,7 @@ public class Neo4JVariantLoader {
                             }
 
                             // Protein keywords
-                            if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getKeywords())) {
+                            if (CollectionUtils.isNotEmpty(ct.getProteinVariantAnnotation().getKeywords())) {
                                 for (String keyword: ct.getProteinVariantAnnotation().getKeywords()) {
                                     Node kwNode = new Node(++uidCounter, null, keyword, Node.Type.PROTEIN_KEYWORD);
                                     networkDBAdaptor.mergeNode(kwNode, "name", tx);
@@ -341,7 +343,7 @@ public class Neo4JVariantLoader {
                             }
 
                             // Protein features
-                            if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getFeatures())) {
+                            if (CollectionUtils.isNotEmpty(ct.getProteinVariantAnnotation().getFeatures())) {
                                 for (ProteinFeature feature : ct.getProteinVariantAnnotation().getFeatures()) {
                                     Node featureNode = NodeBuilder.newNode(++uidCounter, feature);
                                     networkDBAdaptor.addNode(featureNode, tx);
@@ -379,7 +381,7 @@ public class Neo4JVariantLoader {
                 }
 
                 // Population frequencies
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
+                if (CollectionUtils.isNotEmpty(variant.getAnnotation().getPopulationFrequencies())) {
                     for (PopulationFrequency popFreq : variant.getAnnotation().getPopulationFrequencies()) {
                         Node popFreqNode = NodeBuilder.newNode(++uidCounter, popFreq);
                         networkDBAdaptor.addNode(popFreqNode, tx);
@@ -392,7 +394,7 @@ public class Neo4JVariantLoader {
                 }
 
                 // Conservation values
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
+                if (CollectionUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
                     for (Score score: variant.getAnnotation().getConservation()) {
                         Node consNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.CONSERVATION);
                         networkDBAdaptor.addNode(consNode, tx);
@@ -405,7 +407,7 @@ public class Neo4JVariantLoader {
                 }
 
                 // Trait associations
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
+                if (CollectionUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
                     for (EvidenceEntry evidence : variant.getAnnotation().getTraitAssociation()) {
                         Node evNode = NodeBuilder.newNode(++uidCounter, evidence, Node.Type.TRAIT_ASSOCIATION);
                         networkDBAdaptor.addNode(evNode, tx);
@@ -418,7 +420,7 @@ public class Neo4JVariantLoader {
                 }
 
                 // Functional scores
-                if (ListUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
+                if (CollectionUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
                     for (Score score: variant.getAnnotation().getFunctionalScore()) {
                         Node funcNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.FUNCTIONAL_SCORE);
                         networkDBAdaptor.addNode(funcNode, tx);
@@ -440,7 +442,7 @@ public class Neo4JVariantLoader {
             networkDBAdaptor.mergeNode(geneNode, "id", tx);
 
             // Transcripts
-            if (ListUtils.isNotEmpty(gene.getTranscripts())) {
+            if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
                 for (Transcript transcript: gene.getTranscripts()) {
                     Node tNode = NodeBuilder.newNode(uidCounter, transcript);
                     networkDBAdaptor.mergeNode(tNode, "id", tx);
@@ -451,7 +453,7 @@ public class Neo4JVariantLoader {
                     networkDBAdaptor.mergeRelation(gTRel, tx);
 
                     // Tfbs
-                    if (ListUtils.isNotEmpty(transcript.getTfbs())) {
+                    if (CollectionUtils.isNotEmpty(transcript.getTfbs())) {
                         for (TranscriptTfbs tfbs: transcript.getTfbs()) {
                             Node tfbsNode = NodeBuilder.newNode(++uidCounter, tfbs);
                             networkDBAdaptor.addNode(tfbsNode, tx);
@@ -464,7 +466,7 @@ public class Neo4JVariantLoader {
                     }
 
                     // Xrefs
-                    if (ListUtils.isNotEmpty(transcript.getXrefs())) {
+                    if (CollectionUtils.isNotEmpty(transcript.getXrefs())) {
                         for (org.opencb.biodata.models.core.Xref xref: transcript.getXrefs()) {
                             Node xrefNode = NodeBuilder.newNode(uidCounter, xref);
                             networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);
@@ -480,7 +482,7 @@ public class Neo4JVariantLoader {
 
             if (gene.getAnnotation() != null) {
                 // Drug
-                if (ListUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
+                if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
                     for (GeneDrugInteraction drug: gene.getAnnotation().getDrugs()) {
                         Node drugNode = NodeBuilder.newNode(uidCounter, drug);
                         networkDBAdaptor.mergeNode(drugNode, "name", tx);
@@ -493,7 +495,7 @@ public class Neo4JVariantLoader {
                 }
 
                 // Disease
-                if (ListUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
+                if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
                     for (GeneTraitAssociation disease: gene.getAnnotation().getDiseases()) {
                         Node diseaseNode = NodeBuilder.newNode(uidCounter, disease);
                         networkDBAdaptor.mergeNode(diseaseNode, "id", tx);
@@ -514,7 +516,7 @@ public class Neo4JVariantLoader {
             networkDBAdaptor.mergeNode(proteinNode, "id", tx);
 
             // Protein keywords
-            if (ListUtils.isNotEmpty(protein.getKeyword())) {
+            if (CollectionUtils.isNotEmpty(protein.getKeyword())) {
                 for (KeywordType keyword: protein.getKeyword()) {
                     Node kwNode = NodeBuilder.newNode(uidCounter, keyword);
                     networkDBAdaptor.mergeNode(kwNode, "name", tx);
@@ -527,7 +529,7 @@ public class Neo4JVariantLoader {
             }
 
             // Protein features
-            if (ListUtils.isNotEmpty(protein.getFeature())) {
+            if (CollectionUtils.isNotEmpty(protein.getFeature())) {
                 for (FeatureType feature : protein.getFeature()) {
                     Node featureNode = NodeBuilder.newNode(++uidCounter, feature);
                     networkDBAdaptor.addNode(featureNode, tx);
@@ -540,7 +542,7 @@ public class Neo4JVariantLoader {
             }
 
             // Xrefs
-            if (ListUtils.isNotEmpty(protein.getDbReference())) {
+            if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
                 for (DbReferenceType xref : protein.getDbReference()) {
                     Node xrefNode = NodeBuilder.newNode(uidCounter, xref);
                     networkDBAdaptor.mergeNode(xrefNode, "id", "dbName", tx);

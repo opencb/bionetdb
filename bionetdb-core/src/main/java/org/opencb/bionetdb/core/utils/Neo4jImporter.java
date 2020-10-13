@@ -552,7 +552,7 @@ public class Neo4jImporter {
                     // INFO management: FILTER, QUAL and info fields
                     String filename = studyEntry.getFiles().get(0).getFileId();
                     String infoId = variantId + "_" + filename;
-                    Map<String, String> fileAttrs = studyEntry.getFiles().get(0).getAttributes();
+                    Map<String, String> fileData = studyEntry.getFiles().get(0).getData();
 
                     sb.setLength(0);
                     Iterator<String> iterator = csv.infoSet.iterator();
@@ -561,8 +561,8 @@ public class Neo4jImporter {
                         if (sb.length() > 0) {
                             sb.append(",");
                         }
-                        if (fileAttrs.containsKey(infoName)) {
-                            sb.append(fileAttrs.get(infoName).replace(",", ";"));
+                        if (fileData.containsKey(infoName)) {
+                            sb.append(fileData.get(infoName).replace(",", ";"));
                         } else {
                             sb.append("-");
                         }
@@ -577,7 +577,7 @@ public class Neo4jImporter {
                     }
 
                     // FORMAT: GT and format attributes
-                    for (int i = 0; i < studyEntry.getSamplesData().size(); i++) {
+                    for (int i = 0; i < studyEntry.getSamples().size(); i++) {
                         sb.setLength(0);
                         String sampleName = sampleNames == null ? "sample_" + i : sampleNames.get(i);
                         String formatId = variantId + "_" + sampleName;
@@ -589,12 +589,12 @@ public class Neo4jImporter {
                             if (sb.length() > 0) {
                                 sb.append(",");
                             }
-                            if (studyEntry.getFormatPositions().containsKey(formatName)) {
-                                sb.append(studyEntry.getSampleData(i).get(studyEntry.getFormatPositions()
-                                        .get(formatName)).replace(",", ";"));
-                            } else {
-                                sb.append("-");
-                            }
+//                            if (studyEntry.getFormatPositions().containsKey(formatName)) {
+//                                sb.append(studyEntry.getSampleData(i).get(studyEntry.getFormatPositions()
+//                                        .get(formatName)).replace(",", ";"));
+//                            } else {
+//                                sb.append("-");
+//                            }
                         }
                         pw = csv.csvWriterMap.get(Node.Type.VARIANT_CALL.toString());
                         pw.print(formatId + "," + formatId);

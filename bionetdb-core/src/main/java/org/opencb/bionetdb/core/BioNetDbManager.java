@@ -27,10 +27,7 @@ import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
-import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.cellbase.client.rest.ProteinClient;
-import org.opencb.cellbase.client.rest.VariationClient;
+import org.opencb.cellbase.client.rest.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -190,12 +187,12 @@ public class BioNetDbManager {
     }
 
     public void annotateVariants(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
-        VariationClient variationClient = cellBaseClient.getVariationClient();
+        VariantClient variationClient = cellBaseClient.getVariantClient();
         networkDBAdaptor.annotateVariants(query, options, variationClient);
     }
 
     public void annotateVariants(List<String> variantIds) throws IOException, BioNetDBException {
-        VariationClient variationClient = cellBaseClient.getVariationClient();
+        VariantClient variationClient = cellBaseClient.getVariantClient();
         networkDBAdaptor.annotateVariants(variantIds, variationClient);
     }
 

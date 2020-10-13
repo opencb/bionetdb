@@ -8,12 +8,14 @@ import org.neo4j.driver.v1.Record;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.biodata.tools.Converter;
+import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.bionetdb.core.utils.Utils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Neo4JRecordToVariantConverter implements Converter<Record, Variant> {
 
@@ -79,11 +81,6 @@ public class Neo4JRecordToVariantConverter implements Converter<Record, Variant>
                                     GeneDrugInteraction.class, objMapper);
                             variant.getAnnotation().setGeneDrugInteraction(gdi);
                             break;
-                        case "attr_variantTraitAssociation":
-                            VariantTraitAssociation vta = Utils.uncompress(fixString(record.get(attr).asString()),
-                                    VariantTraitAssociation.class, objMapper);
-                            variant.getAnnotation().setVariantTraitAssociation(vta);
-                            break;
                         case "attr_traitAssociation":
                             List<EvidenceEntry> ta = Utils.uncompressList(fixString(record.get(attr).asString()), EvidenceEntry.class,
                                     objMapper);
@@ -130,15 +127,15 @@ public class Neo4JRecordToVariantConverter implements Converter<Record, Variant>
                 sampleAttrs.setAttribute(map);
                 additionalAttributes.put("samples", sampleAttrs);
 
-                // And set sample data
-                StudyEntry studyEntry = new StudyEntry();
-                studyEntry.setFormat(Collections.singletonList("GT"));
-                List<List<String>> sampleData = new ArrayList<>();
-                for (String gt : sampleGenotypes.split(",")) {
-                    sampleData.add(Collections.singletonList(gt));
-                }
-                studyEntry.setSamplesData(sampleData);
-                variant.setStudies(Collections.singletonList(studyEntry));
+//                // And set sample data
+//                StudyEntry studyEntry = new StudyEntry();
+//                studyEntry.setFormat(Collections.singletonList("GT"));
+//                List<List<String>> sampleData = new ArrayList<>();
+//                for (String gt : sampleGenotypes.split(",")) {
+//                    sampleData.add(Collections.singletonList(gt));
+//                }
+//                studyEntry.setSamplesData(sampleData);
+//                variant.setStudies(Collections.singletonList(studyEntry));
             }
             variant.getAnnotation().setAdditionalAttributes(additionalAttributes);
             return variant;

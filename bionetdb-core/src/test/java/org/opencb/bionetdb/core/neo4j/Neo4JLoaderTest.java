@@ -11,13 +11,14 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.opencb.biodata.formats.protein.uniprot.v201504jaxb.Entry;
+import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.cellbase.client.rest.ProteinClient;
+import org.opencb.cellbase.core.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -89,7 +90,7 @@ public class Neo4JLoaderTest {
         GeneClient geneClient = cellBaseClient.getGeneClient();
         Query query = new Query();
         QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,transcripts.cDnaSequence,annotation.expression");
-        QueryResponse<Long> countResponse = geneClient.count(query);
+        CellBaseDataResponse<Long> countResponse = geneClient.count(query);
         long numGenes = countResponse.firstResult();
         int bufferSize = 400;
         options.put(QueryOptions.LIMIT, bufferSize);
@@ -101,7 +102,7 @@ public class Neo4JLoaderTest {
         PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".genes.json").toString());
         for (int i = 0; i < numGenes; i += bufferSize) {
             options.put(QueryOptions.SKIP, i);
-            QueryResponse<Gene> geneResponse = geneClient.search(query, options);
+            CellBaseDataResponse<Gene> geneResponse = geneClient.search(query, options);
             for (Gene gene : geneResponse.allResults()) {
                 String json = writer.writeValueAsString(gene);
                 pw.println(json);
@@ -134,7 +135,7 @@ public class Neo4JLoaderTest {
         PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".proteins.json").toString());
         for (int i = 0; i < numProteins; i += bufferSize) {
             options.put(QueryOptions.SKIP, i);
-            QueryResponse<Entry> proteinResponse = proteinClient.search(query, options);
+            CellBaseDataResponse<Entry> proteinResponse = proteinClient.search(query, options);
             if (proteinResponse.allResults().size() == 0) {
                 break;
             }

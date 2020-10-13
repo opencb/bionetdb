@@ -1,9 +1,9 @@
 package org.opencb.bionetdb.core.analysis.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
@@ -14,7 +14,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.*;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance.COMPLETE;
+import static org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance.COMPLETE;
 
 public class ProteinNetworkInterpretationAnalysis {
 
@@ -29,19 +29,19 @@ public class ProteinNetworkInterpretationAnalysis {
         // Check moi
         Map<String, List<String>> genotypes;
         switch (moi) {
-            case MONOALLELIC:
+            case AUTOSOMAL_DOMINANT:
                 genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.dominant(pedigree, disorder, COMPLETE);
                 break;
-            case BIALLELIC:
+            case AUTOSOMAL_RECESSIVE:
                 genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.recessive(pedigree, disorder, COMPLETE);
                 break;
-            case XLINKED_MONOALLELIC:
+            case X_LINKED_DOMINANT:
                 genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, true, COMPLETE);
                 break;
-            case XLINKED_BIALLELIC:
+            case X_LINKED_RECESSIVE:
                 genotypes = org.opencb.biodata.tools.pedigree.ModeOfInheritance.xLinked(pedigree, disorder, false, COMPLETE);
                 break;
-            case YLINKED:
+            case Y_LINKED:
                 genotypes = ModeOfInheritance.yLinked(pedigree, disorder, COMPLETE);
                 break;
             default:
