@@ -22,6 +22,7 @@ public class BioNetDBConfiguration {
     private String logFile;
 
     private List<DatabaseConfiguration> databases;
+    private DownloadProperties download;
 
     protected static Logger logger = LoggerFactory.getLogger(BioNetDBConfiguration.class);
 
@@ -128,43 +129,55 @@ public class BioNetDBConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BioNetDBConfiguration{");
-//        sb.append("defaultDatabase='").append(defaultDatabase).append('\'');
-        sb.append(", logLevel='").append(logLevel).append('\'');
+        sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", databases=").append(databases);
+        sb.append(", download=").append(download);
         sb.append('}');
         return sb.toString();
     }
-
-//    public String getDefaultDatabase() {
-//        return defaultDatabase;
-//    }
-//
-//    public void setDefaultDatabase(String defaultDatabase) {
-//        this.defaultDatabase = defaultDatabase;
-//    }
 
     public String getLogLevel() {
         return logLevel;
     }
 
-    public void setLogLevel(String logLevel) {
+    public BioNetDBConfiguration setLogLevel(String logLevel) {
         this.logLevel = logLevel;
+        return this;
     }
 
     public String getLogFile() {
         return logFile;
     }
 
-    public void setLogFile(String logFile) {
+    public BioNetDBConfiguration setLogFile(String logFile) {
         this.logFile = logFile;
+        return this;
     }
 
     public List<DatabaseConfiguration> getDatabases() {
         return databases;
     }
 
-    public void setDatabases(List<DatabaseConfiguration> databases) {
+    public BioNetDBConfiguration setDatabases(List<DatabaseConfiguration> databases) {
         this.databases = databases;
+        return this;
+    }
+
+    public DownloadProperties getDownload() {
+        return download;
+    }
+
+    public BioNetDBConfiguration setDownload(DownloadProperties download) {
+        this.download = download;
+        return this;
+    }
+
+    public static Logger getLogger() {
+        return logger;
+    }
+
+    public static void setLogger(Logger logger) {
+        BioNetDBConfiguration.logger = logger;
     }
 }

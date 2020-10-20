@@ -1,7 +1,9 @@
-package org.opencb.bionetdb.app;
+package org.opencb.bionetdb.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
-import org.opencb.bionetdb.app.cli.*;
+import org.opencb.bionetdb.app.cli.CommandExecutor;
+import org.opencb.bionetdb.app.cli.main.executors.ExpressionCommandExecutor;
+import org.opencb.bionetdb.app.cli.main.executors.QueryCommandExecutor;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 
 import java.io.IOException;
@@ -15,56 +17,41 @@ public class BioNetDBMain {
 
     public static void main(String[] args) {
 
-        CliOptionsParser cliOptionsParser = new CliOptionsParser();
+        BioNetDBCliOptionsParser bioNetDBCliOptionsParser = new BioNetDBCliOptionsParser();
         try {
-            cliOptionsParser.parse(args);
+            bioNetDBCliOptionsParser.parse(args);
         } catch (ParameterException e) {
             System.err.println(e.getMessage());
-            cliOptionsParser.printUsage();
+            bioNetDBCliOptionsParser.printUsage();
             System.exit(1);
         }
 
-        String parsedCommand = cliOptionsParser.getCommand();
+        String parsedCommand = bioNetDBCliOptionsParser.getCommand();
         if (parsedCommand == null || parsedCommand.isEmpty()) {
-            if (cliOptionsParser.getGeneralOptions().help) {
-                cliOptionsParser.printUsage();
+            if (bioNetDBCliOptionsParser.getGeneralOptions().help) {
+                bioNetDBCliOptionsParser.printUsage();
                 System.exit(0);
             } else {
-                if (cliOptionsParser.getGeneralOptions().version) {
+                if (bioNetDBCliOptionsParser.getGeneralOptions().version) {
                     System.out.println("Version " + VERSION);
                     System.exit(0);
                 } else {
-                    cliOptionsParser.printUsage();
+                    bioNetDBCliOptionsParser.printUsage();
                     System.exit(1);
                 }
             }
         } else {
             CommandExecutor commandExecutor = null;
-            if (cliOptionsParser.isHelp()) {
-                cliOptionsParser.printUsage();
+            if (bioNetDBCliOptionsParser.isHelp()) {
+                bioNetDBCliOptionsParser.printUsage();
                 System.exit(0);
             } else {
                 switch (parsedCommand) {
-                    case "build":
-                        commandExecutor = new BuildCommandExecutor(cliOptionsParser.getBuildCommandOptions());
-                        break;
-                    case "load":
-                        commandExecutor = new LoadCommandExecutor(cliOptionsParser.getLoadCommandOptions());
-                        break;
-                    case "create-csv":
-                        commandExecutor = new ImportCommandExecutor(cliOptionsParser.getCreateCsvCommandOptions());
-                        break;
-                    case "import":
-                        commandExecutor = new ImportCommandExecutor(cliOptionsParser.getImportCommandOptions());
-                        break;
                     case "query":
-                        commandExecutor = new QueryCommandExecutor(cliOptionsParser.getQueryCommandOptions());
-                        break;
-                    case "annotation":
-                        commandExecutor = new AnnotateCommandExecutor(cliOptionsParser.getVariantAnnotationCommandOptions());
+                        commandExecutor = new QueryCommandExecutor(bioNetDBCliOptionsParser.getQueryCommandOptions());
                         break;
                     case "expression":
-                        commandExecutor = new ExpressionCommandExecutor(cliOptionsParser.getExpressionCommandOptions());
+                        commandExecutor = new ExpressionCommandExecutor(bioNetDBCliOptionsParser.getExpressionCommandOptions());
                         break;
                     default:
                         break;

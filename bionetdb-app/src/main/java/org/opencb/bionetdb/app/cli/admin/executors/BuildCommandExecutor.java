@@ -1,7 +1,9 @@
-package org.opencb.bionetdb.app.cli;
+package org.opencb.bionetdb.app.cli.admin.executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.opencb.bionetdb.app.cli.CommandExecutor;
+import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.SbmlParser;
 import org.opencb.bionetdb.core.io.SifParser;
@@ -19,9 +21,9 @@ import java.nio.file.Paths;
  */
 public class BuildCommandExecutor extends CommandExecutor {
 
-    private CliOptionsParser.BuildCommandOptions buildCommandOptions;
+    private AdminCliOptionsParser.BuildCommandOptions buildCommandOptions;
 
-    public BuildCommandExecutor(CliOptionsParser.BuildCommandOptions buildCommandOptions) {
+    public BuildCommandExecutor(AdminCliOptionsParser.BuildCommandOptions buildCommandOptions) {
         super(buildCommandOptions.commonOptions.logLevel, buildCommandOptions.commonOptions.conf);
 
         this.buildCommandOptions = buildCommandOptions;

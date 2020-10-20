@@ -83,8 +83,12 @@
                     <extraJvmArguments>-Djava.library.path=build/libs</extraJvmArguments>
                     <programs>
                         <program>
+                            <name>bionetdb-admin.sh</name>
+                            <mainClass>org.opencb.bionetdb.app.cli.admin.AdminMain</mainClass>
+                        </program>
+                        <program>
                             <name>bionetdb.sh</name>
-                            <mainClass>org.opencb.bionetdb.app.BioNetDBMain</mainClass>
+                            <mainClass>org.opencb.bionetdb.app.cli.main.BioNetDBMain</mainClass>
                         </program>
                     </programs>
                 </configuration>

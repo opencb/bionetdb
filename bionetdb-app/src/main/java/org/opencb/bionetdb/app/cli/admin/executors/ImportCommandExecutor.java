@@ -1,7 +1,9 @@
-package org.opencb.bionetdb.app.cli;
+package org.opencb.bionetdb.app.cli.admin.executors;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.opencb.bionetdb.app.cli.CommandExecutor;
+import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
@@ -28,26 +30,26 @@ import java.util.*;
  */
 public class ImportCommandExecutor extends CommandExecutor {
 
-    private CliOptionsParser.CreateCsvCommandOptions createCsvCommandOptions;
-    private CliOptionsParser.ImportCommandOptions importCommandOptions;
+    private AdminCliOptionsParser.BuildCommandOptions buildCommandOptions;
+    private AdminCliOptionsParser.ImportCommandOptions importCommandOptions;
 
-    public ImportCommandExecutor(CliOptionsParser.CreateCsvCommandOptions createCsvCommandOptions) {
+    public ImportCommandExecutor(AdminCliOptionsParser.BuildCommandOptions createCsvCommandOptions) {
         super(createCsvCommandOptions.commonOptions.logLevel, createCsvCommandOptions.commonOptions.conf);
 
-        this.createCsvCommandOptions = createCsvCommandOptions;
+        this.buildCommandOptions = createCsvCommandOptions;
         this.importCommandOptions = null;
     }
 
-    public ImportCommandExecutor(CliOptionsParser.ImportCommandOptions importCommandOptions) {
+    public ImportCommandExecutor(AdminCliOptionsParser.ImportCommandOptions importCommandOptions) {
         super(importCommandOptions.commonOptions.logLevel, importCommandOptions.commonOptions.conf);
 
-        this.createCsvCommandOptions = null;
+        this.buildCommandOptions = null;
         this.importCommandOptions = importCommandOptions;
     }
 
     @Override
     public void execute() throws BioNetDBException {
-        if (createCsvCommandOptions != null) {
+        if (buildCommandOptions != null) {
             createCsvFiles();
         } else if (importCommandOptions != null) {
             importCsvFiles();
@@ -61,10 +63,10 @@ public class ImportCommandExecutor extends CommandExecutor {
             long start;
 
             // Check input and output directories
-            Path inputPath = Paths.get(createCsvCommandOptions.input);
+            Path inputPath = Paths.get(buildCommandOptions.input);
             FileUtils.checkDirectory(inputPath);
 
-            Path outputPath = Paths.get(createCsvCommandOptions.output);
+            Path outputPath = Paths.get(buildCommandOptions.output);
             FileUtils.checkDirectory(outputPath);
 
             // Prepare CSV object
@@ -156,7 +158,7 @@ public class ImportCommandExecutor extends CommandExecutor {
             }
 
             // Parse BioPAX files
-            Map<String, Set<String>> filters = parseFilters(createCsvCommandOptions.exclude);
+            Map<String, Set<String>> filters = parseFilters(buildCommandOptions.exclude);
             BPAXProcessing bpaxProcessing = new BPAXProcessing(importer);
             Neo4jBioPaxImporter bioPAXImporter = new Neo4jBioPaxImporter(csv, filters, bpaxProcessing);
             start = System.currentTimeMillis();
@@ -166,7 +168,7 @@ public class ImportCommandExecutor extends CommandExecutor {
 
 
             start = System.currentTimeMillis();
-            if (createCsvCommandOptions.clinicalAnalysis) {
+            if (buildCommandOptions.clinicalAnalysis) {
                 // Parse JSON variant files
                 importer.addClinicalAnalysisFiles(jsonFiles);
             } else {
@@ -183,7 +185,7 @@ public class ImportCommandExecutor extends CommandExecutor {
             logger.info("Gene panels processing in {} s", genePanelsTime);
             logger.info("miRNA indexing in {} s", miRnaIndexingTime);
             logger.info("BioPAX processing in {} s", bioPaxTime);
-            logger.info((createCsvCommandOptions.clinicalAnalysis ? "Clinical analysis" : "Variant") + " processing in {} s", jsonTime);
+            logger.info((buildCommandOptions.clinicalAnalysis ? "Clinical analysis" : "Variant") + " processing in {} s", jsonTime);
         } catch (IOException e) {
             logger.error("Error generation CSV files: {}", e.getMessage());
             e.printStackTrace();

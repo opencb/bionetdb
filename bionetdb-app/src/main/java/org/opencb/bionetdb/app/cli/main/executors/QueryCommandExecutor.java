@@ -1,6 +1,8 @@
-package org.opencb.bionetdb.app.cli;
+package org.opencb.bionetdb.app.cli.main.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.bionetdb.app.cli.CommandExecutor;
+import org.opencb.bionetdb.app.cli.main.BioNetDBCliOptionsParser;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
@@ -16,9 +18,9 @@ import java.util.List;
  */
 public class QueryCommandExecutor extends CommandExecutor {
 
-    private CliOptionsParser.QueryCommandOptions queryCommandOptions;
+    private BioNetDBCliOptionsParser.QueryCommandOptions queryCommandOptions;
 
-    public QueryCommandExecutor(CliOptionsParser.QueryCommandOptions queryCommandOptions) {
+    public QueryCommandExecutor(BioNetDBCliOptionsParser.QueryCommandOptions queryCommandOptions) {
         super(queryCommandOptions.commonOptions.logLevel, queryCommandOptions.commonOptions.conf);
 
         this.queryCommandOptions = queryCommandOptions;

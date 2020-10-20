@@ -1,5 +1,7 @@
-package org.opencb.bionetdb.app.cli;
+package org.opencb.bionetdb.app.cli.main.executors;
 
+import org.opencb.bionetdb.app.cli.main.BioNetDBCliOptionsParser;
+import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.ExpressionParser;
@@ -19,9 +21,9 @@ import java.util.Map;
  */
 public class ExpressionCommandExecutor extends CommandExecutor {
 
-    private CliOptionsParser.ExpressionCommandOptions expressionCommandOptions;
+    private BioNetDBCliOptionsParser.ExpressionCommandOptions expressionCommandOptions;
 
-    public ExpressionCommandExecutor(CliOptionsParser.ExpressionCommandOptions expressionCommandOptions) {
+    public ExpressionCommandExecutor(BioNetDBCliOptionsParser.ExpressionCommandOptions expressionCommandOptions) {
         super(expressionCommandOptions.commonOptions.logLevel, expressionCommandOptions.commonOptions.conf);
 
         this.expressionCommandOptions = expressionCommandOptions;

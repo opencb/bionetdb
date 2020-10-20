@@ -12,3 +12,14 @@ databases:
   user: "${BIONETDB.DB.USER}"
   password: "${BIONETDB.DB.PASSWORD}"
   options: null                         ## map containing specific database options
+download:
+    gene:
+      host: ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/by_organism/
+    protein:
+      host: ftp://ftp.ebi.ac.uk/pub/databases/microarray/data/gxa/allgenes_updown_in_organism_part_2.0.14.tab.gz
+    panel:
+      host: ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.xls.gz
+    clinvar:
+      host: http://www.reactome.org/download/current/biopax.zip
+    reactome:
+      host: http://www.reactome.org/download/current/biopax.zip

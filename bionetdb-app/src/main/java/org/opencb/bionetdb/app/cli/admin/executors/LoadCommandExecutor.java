@@ -1,19 +1,17 @@
-package org.opencb.bionetdb.app.cli;
+package org.opencb.bionetdb.app.cli.admin.executors;
 
 import org.apache.commons.lang.StringUtils;
+import org.opencb.bionetdb.app.cli.CommandExecutor;
+import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.neo4j.Neo4JLoader;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.commons.utils.ListUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-
-import static org.neo4j.driver.v1.Values.parameters;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by imedina on 12/08/15.
@@ -23,9 +21,9 @@ public class LoadCommandExecutor extends CommandExecutor {
     private final String CLINICAL_ANALYSIS = "clinical-analysis";
     private final Set<String> dataTypes = new HashSet<>(Arrays.asList(CLINICAL_ANALYSIS));
 
-    private CliOptionsParser.LoadCommandOptions loadCommandOptions;
+    private AdminCliOptionsParser.LoadCommandOptions loadCommandOptions;
 
-    public LoadCommandExecutor(CliOptionsParser.LoadCommandOptions loadCommandOptions) {
+    public LoadCommandExecutor(AdminCliOptionsParser.LoadCommandOptions loadCommandOptions) {
         super(loadCommandOptions.commonOptions.logLevel, loadCommandOptions.commonOptions.conf);
 
         this.loadCommandOptions = loadCommandOptions;
