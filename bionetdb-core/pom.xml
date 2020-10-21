@@ -74,17 +74,17 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>3.2.8-SNAPSHOT</version>
+            <version>3.5.22</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>3.2.8-SNAPSHOT</version>
+            <version>3.5.22</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>3.2.8-SNAPSHOT</version>
+            <version>3.5.22</version>
         </dependency>
     </dependencies>
 
