@@ -4,6 +4,7 @@ import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.bionetdb.core.config.DownloadProperties;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.utils.Downloader;
 import org.opencb.commons.utils.URLUtils;
 
 import java.io.IOException;
@@ -34,52 +35,7 @@ public class DownloadCommandExecutor extends CommandExecutor {
             throw new BioNetDBException("Missing the download section in BioNetDB configuration file");
         }
 
-        Path outDir = Paths.get(downloadCommandOptions.outDir);
-        DownloadProperties download = configuration.getDownload();
-
-        // Gene
-        if (download.getGene() != null) {
-            try {
-                URLUtils.download(new URL(download.getGene().getHost()), outDir);
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
-
-        // Protein
-        if (download.getProtein() != null) {
-            try {
-                URLUtils.download(new URL(download.getProtein().getHost()), outDir);
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
-
-        // Panel
-        if (download.getPanel() != null) {
-            try {
-                URLUtils.download(new URL(download.getPanel().getHost()), outDir);
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
-
-        // Clinvar
-        if (download.getClinvar() != null) {
-            try {
-                URLUtils.download(new URL(download.getClinvar().getHost()), outDir);
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
-
-        // Reactome
-        if (download.getReactome() != null) {
-            try {
-                URLUtils.download(new URL(download.getReactome().getHost()), outDir);
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
+        Downloader downloader = new Downloader(configuration.getDownload(), Paths.get(downloadCommandOptions.outDir));
+        downloader.download();
     }
 }

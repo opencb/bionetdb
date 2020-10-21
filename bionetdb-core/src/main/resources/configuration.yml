@@ -14,12 +14,12 @@ databases:
   options: null                         ## map containing specific database options
 download:
     gene:
-      host: ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/by_organism/
+      host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/gene.json.gz
     protein:
-      host: ftp://ftp.ebi.ac.uk/pub/databases/microarray/data/gxa/allgenes_updown_in_organism_part_2.0.14.tab.gz
-    panel:
-      host: ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.xls.gz
+      host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/protein.json.gz
+##    panel:
+##      host: ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.xls.gz
     clinvar:
-      host: http://www.reactome.org/download/current/biopax.zip
+      host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/clinical_variants.json.gz
     reactome:
-      host: http://www.reactome.org/download/current/biopax.zip
+      host: https://www.reactome.org/download/current/biopax.zip
