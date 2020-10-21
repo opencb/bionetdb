@@ -25,9 +25,6 @@ import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.neo4j.Neo4JVariantLoader;
-import org.opencb.cellbase.client.config.ClientConfiguration;
-import org.opencb.cellbase.client.config.RestConfig;
-import org.opencb.cellbase.client.rest.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -49,8 +46,8 @@ public class BioNetDbManager {
 
     private String database;
     private BioNetDBConfiguration configuration;
-    private ClientConfiguration cellbaseClientConfiguration;
-    private CellBaseClient cellBaseClient;
+//    private ClientConfiguration cellbaseClientConfiguration;
+//    private CellBaseClient cellBaseClient;
 
     private NetworkDBAdaptor networkDBAdaptor;
     private Logger logger;
@@ -93,11 +90,11 @@ public class BioNetDbManager {
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, this.configuration, createIndex);
         tieringInterpretationAnalysis = new TieringInterpretationAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
 
-        // We create CellBase client
-        cellbaseClientConfiguration = new ClientConfiguration();
-        cellbaseClientConfiguration.setVersion("v4");
-        cellbaseClientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        cellBaseClient = new CellBaseClient(this.configuration.findDatabase(database).getSpecies(), cellbaseClientConfiguration);
+//        // We create CellBase client
+//        cellbaseClientConfiguration = new ClientConfiguration();
+//        cellbaseClientConfiguration.setVersion("v4");
+//        cellbaseClientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+//        cellBaseClient = new CellBaseClient(this.configuration.findDatabase(database).getSpecies(), cellbaseClientConfiguration);
 
         idToUidMap = new HashMap<>();
     }
@@ -167,44 +164,44 @@ public class BioNetDbManager {
         neo4JVariantLoader.importFiles(inputPath, outputPath, neo4jHome);
     }
 
-    public void loadClinicalVariant() throws IOException, BioNetDBException {
-        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
-        neo4JVariantLoader.loadClinivalVariants(cellBaseClient.getClinicalClient());
-    }
+//    public void loadClinicalVariant() throws IOException, BioNetDBException {
+//        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
+//        neo4JVariantLoader.loadClinivalVariants(cellBaseClient.getClinicalClient());
+//    }
 
     public void annotate() {
 
     }
 
-    public void annotateGenes(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
-        GeneClient geneClient = cellBaseClient.getGeneClient();
-        networkDBAdaptor.annotateGenes(query, options, geneClient);
-    }
-
-    public void annotateGenes(List<String> geneIds) throws IOException, BioNetDBException {
-        GeneClient geneClient = cellBaseClient.getGeneClient();
-        networkDBAdaptor.annotateGenes(geneIds, geneClient);
-    }
-
-    public void annotateVariants(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
-        VariantClient variationClient = cellBaseClient.getVariantClient();
-        networkDBAdaptor.annotateVariants(query, options, variationClient);
-    }
-
-    public void annotateVariants(List<String> variantIds) throws IOException, BioNetDBException {
-        VariantClient variationClient = cellBaseClient.getVariantClient();
-        networkDBAdaptor.annotateVariants(variantIds, variationClient);
-    }
-
-    public void annotateProteins(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
-        ProteinClient proteinClient = cellBaseClient.getProteinClient();
-        networkDBAdaptor.annotateProteins(query, options, proteinClient);
-    }
-
-    public void annotateProteins(List<String> proteinIds) throws IOException, BioNetDBException {
-        ProteinClient proteinClient = cellBaseClient.getProteinClient();
-        networkDBAdaptor.annotateProteins(proteinIds, proteinClient);
-    }
+//    public void annotateGenes(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
+//        GeneClient geneClient = cellBaseClient.getGeneClient();
+//        networkDBAdaptor.annotateGenes(query, options, geneClient);
+//    }
+//
+//    public void annotateGenes(List<String> geneIds) throws IOException, BioNetDBException {
+//        GeneClient geneClient = cellBaseClient.getGeneClient();
+//        networkDBAdaptor.annotateGenes(geneIds, geneClient);
+//    }
+//
+//    public void annotateVariants(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
+//        VariantClient variationClient = cellBaseClient.getVariantClient();
+//        networkDBAdaptor.annotateVariants(query, options, variationClient);
+//    }
+//
+//    public void annotateVariants(List<String> variantIds) throws IOException, BioNetDBException {
+//        VariantClient variationClient = cellBaseClient.getVariantClient();
+//        networkDBAdaptor.annotateVariants(variantIds, variationClient);
+//    }
+//
+//    public void annotateProteins(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
+//        ProteinClient proteinClient = cellBaseClient.getProteinClient();
+//        networkDBAdaptor.annotateProteins(query, options, proteinClient);
+//    }
+//
+//    public void annotateProteins(List<String> proteinIds) throws IOException, BioNetDBException {
+//        ProteinClient proteinClient = cellBaseClient.getProteinClient();
+//        networkDBAdaptor.annotateProteins(proteinIds, proteinClient);
+//    }
 
     /*
         long uidCounter = getUidCounter();

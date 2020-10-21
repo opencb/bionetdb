@@ -4,8 +4,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.neo4j.driver.v1.*;
-import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
-import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
@@ -28,17 +26,11 @@ import org.opencb.bionetdb.core.neo4j.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.neo4j.query.Neo4JVariantQueryParser;
 import org.opencb.bionetdb.core.utils.Neo4jConverter;
-import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.cellbase.client.rest.ProteinClient;
-import org.opencb.cellbase.client.rest.VariantClient;
-import org.opencb.cellbase.core.CellBaseDataResponse;
-import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -179,92 +171,92 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     // A N N O T A T I O N     M E T H O D s
     //-------------------------------------------------------------------------
 
-    public void annotateVariants(NodeQuery query, QueryOptions options, VariantClient variantClient) throws BioNetDBException,
-            IOException {
-        NodeIterator nodeIterator = nodeIterator(query, options);
-        List<String> variantIds = new ArrayList<>(1000);
-        while (nodeIterator.hasNext()) {
-            Node variantNode = nodeIterator.next();
-            variantIds.add(variantNode.getId());
-            if (variantIds.size() >= 1000) {
-                annotateVariants(variantIds, variantClient);
-                variantIds.clear();
-            }
-        }
-        if (CollectionUtils.isNotEmpty(variantIds)) {
-            annotateVariants(variantIds, variantClient);
-        }
-    }
-
-    public void annotateVariants(List<String> variantIds, VariantClient variantClient) throws BioNetDBException, IOException {
-        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
-        CellBaseDataResponse<Variant> entryQueryResponse = variantClient.get(variantIds, QueryOptions.empty());
-        for (CellBaseDataResult<Variant> queryResult : entryQueryResponse.getResponses()) {
-            if (CollectionUtils.isNotEmpty(queryResult.getResults())) {
-                variantLoader.loadVariants(queryResult.getResults());
-            }
-        }
-    }
-
-    //-------------------------------------------------------------------------
-
-    public void annotateGenes(NodeQuery query, QueryOptions options, GeneClient geneClient) throws BioNetDBException,
-            IOException {
-        NodeIterator nodeIterator = nodeIterator(query, options);
-        List<String> geneIds = new ArrayList<>(1000);
-        while (nodeIterator.hasNext()) {
-            Node geneNode = nodeIterator.next();
-            geneIds.add(geneNode.getId());
-            if (geneIds.size() >= 1000) {
-                annotateGenes(geneIds, geneClient);
-                geneIds.clear();
-            }
-        }
-        if (CollectionUtils.isNotEmpty(geneIds)) {
-            annotateGenes(geneIds, geneClient);
-        }
-    }
-
-    public void annotateGenes(List<String> geneIds, GeneClient geneClient) throws BioNetDBException, IOException {
-        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
-        QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
-        CellBaseDataResponse<Gene> entryQueryResponse = geneClient.get(geneIds, options);
-        for (CellBaseDataResult<Gene> queryResult : entryQueryResponse.getResponses()) {
-            if (CollectionUtils.isNotEmpty(queryResult.getResults())) {
-                variantLoader.loadGenes(queryResult.getResults());
-            }
-        }
-    }
+//    public void annotateVariants(NodeQuery query, QueryOptions options, VariantClient variantClient) throws BioNetDBException,
+//            IOException {
+//        NodeIterator nodeIterator = nodeIterator(query, options);
+//        List<String> variantIds = new ArrayList<>(1000);
+//        while (nodeIterator.hasNext()) {
+//            Node variantNode = nodeIterator.next();
+//            variantIds.add(variantNode.getId());
+//            if (variantIds.size() >= 1000) {
+//                annotateVariants(variantIds, variantClient);
+//                variantIds.clear();
+//            }
+//        }
+//        if (CollectionUtils.isNotEmpty(variantIds)) {
+//            annotateVariants(variantIds, variantClient);
+//        }
+//    }
+//
+//    public void annotateVariants(List<String> variantIds, VariantClient variantClient) throws BioNetDBException, IOException {
+//        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
+//        CellBaseDataResponse<Variant> entryQueryResponse = variantClient.get(variantIds, QueryOptions.empty());
+//        for (CellBaseDataResult<Variant> queryResult : entryQueryResponse.getResponses()) {
+//            if (CollectionUtils.isNotEmpty(queryResult.getResults())) {
+//                variantLoader.loadVariants(queryResult.getResults());
+//            }
+//        }
+//    }
 
     //-------------------------------------------------------------------------
 
-    public void annotateProteins(NodeQuery query, QueryOptions options, ProteinClient proteinClient) throws BioNetDBException,
-            IOException {
-        NodeIterator nodeIterator = nodeIterator(query, options);
-        List<String> proteinIds = new ArrayList<>(1000);
-        while (nodeIterator.hasNext()) {
-            Node geneNode = nodeIterator.next();
-            proteinIds.add(geneNode.getId());
-            if (proteinIds.size() >= 1000) {
-                annotateProteins(proteinIds, proteinClient);
-                proteinIds.clear();
-            }
-        }
-        if (CollectionUtils.isNotEmpty(proteinIds)) {
-            annotateProteins(proteinIds, proteinClient);
-        }
-    }
+//    public void annotateGenes(NodeQuery query, QueryOptions options, GeneClient geneClient) throws BioNetDBException,
+//            IOException {
+//        NodeIterator nodeIterator = nodeIterator(query, options);
+//        List<String> geneIds = new ArrayList<>(1000);
+//        while (nodeIterator.hasNext()) {
+//            Node geneNode = nodeIterator.next();
+//            geneIds.add(geneNode.getId());
+//            if (geneIds.size() >= 1000) {
+//                annotateGenes(geneIds, geneClient);
+//                geneIds.clear();
+//            }
+//        }
+//        if (CollectionUtils.isNotEmpty(geneIds)) {
+//            annotateGenes(geneIds, geneClient);
+//        }
+//    }
 
-    public void annotateProteins(List<String> proteinIds, ProteinClient proteinClient) throws BioNetDBException, IOException {
-        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
-        QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
-        CellBaseDataResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, options);
-        for (CellBaseDataResult<Entry> responses : entryQueryResponse.getResponses()) {
-            if (CollectionUtils.isNotEmpty(responses.getResults())) {
-                variantLoader.loadProteins(responses.getResults());
-            }
-        }
-    }
+//    public void annotateGenes(List<String> geneIds, GeneClient geneClient) throws BioNetDBException, IOException {
+//        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
+//        QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
+//        CellBaseDataResponse<Gene> entryQueryResponse = geneClient.get(geneIds, options);
+//        for (CellBaseDataResult<Gene> queryResult : entryQueryResponse.getResponses()) {
+//            if (CollectionUtils.isNotEmpty(queryResult.getResults())) {
+//                variantLoader.loadGenes(queryResult.getResults());
+//            }
+//        }
+//    }
+
+    //-------------------------------------------------------------------------
+
+//    public void annotateProteins(NodeQuery query, QueryOptions options, ProteinClient proteinClient) throws BioNetDBException,
+//            IOException {
+//        NodeIterator nodeIterator = nodeIterator(query, options);
+//        List<String> proteinIds = new ArrayList<>(1000);
+//        while (nodeIterator.hasNext()) {
+//            Node geneNode = nodeIterator.next();
+//            proteinIds.add(geneNode.getId());
+//            if (proteinIds.size() >= 1000) {
+//                annotateProteins(proteinIds, proteinClient);
+//                proteinIds.clear();
+//            }
+//        }
+//        if (CollectionUtils.isNotEmpty(proteinIds)) {
+//            annotateProteins(proteinIds, proteinClient);
+//        }
+//    }
+
+//    public void annotateProteins(List<String> proteinIds, ProteinClient proteinClient) throws BioNetDBException, IOException {
+//        Neo4JVariantLoader variantLoader = new Neo4JVariantLoader(this);
+//        QueryOptions options = new QueryOptions("EXCLUDE", "transcripts.exons,transcripts.cDnaSequence");
+//        CellBaseDataResponse<Entry> entryQueryResponse = proteinClient.get(proteinIds, options);
+//        for (CellBaseDataResult<Entry> responses : entryQueryResponse.getResponses()) {
+//            if (CollectionUtils.isNotEmpty(responses.getResults())) {
+//                variantLoader.loadProteins(responses.getResults());
+//            }
+//        }
+//    }
 
 //    public void annotateProtein(ProteinClient proteinClient) throws BioNetDBException, IOException {
 //        // First, get all proteins from the network

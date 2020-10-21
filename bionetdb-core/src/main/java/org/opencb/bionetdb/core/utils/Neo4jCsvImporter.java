@@ -21,8 +21,6 @@ import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.core.utils.cache.GeneCache;
 import org.opencb.bionetdb.core.utils.cache.ProteinCache;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,30 +85,30 @@ public class Neo4jCsvImporter {
         }
     }
 
-    public void addClinicalAnalysisFiles(List<File> files) throws IOException {
-        for (int i = 0; i < files.size(); i++) {
-            File file = files.get(i);
-            if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
-                if (file.getName().contains("clinvar")) {
-                    // JSON file
-                    addVariantJsonFile(file);
-                }
-            }
-        }
-
-
-        for (int i = 0; i < files.size(); i++) {
-            File file = files.get(i);
-            if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
-                if (!file.getName().contains("clinvar") && !file.getName().contains("meta.json")) {
-                    // JSON file
-                    addClinicalAnalysisJsonFile(file);
-                }
-            } else {
-                logger.info("Unknown file type, skipping (only JSON format are accepted for Clinical Analysis data!!");
-            }
-        }
-    }
+//    public void addClinicalAnalysisFiles(List<File> files) throws IOException {
+//        for (int i = 0; i < files.size(); i++) {
+//            File file = files.get(i);
+//            if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
+//                if (file.getName().contains("clinvar")) {
+//                    // JSON file
+//                    addVariantJsonFile(file);
+//                }
+//            }
+//        }
+//
+//
+//        for (int i = 0; i < files.size(); i++) {
+//            File file = files.get(i);
+//            if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
+//                if (!file.getName().contains("clinvar") && !file.getName().contains("meta.json")) {
+//                    // JSON file
+//                    addClinicalAnalysisJsonFile(file);
+//                }
+//            } else {
+//                logger.info("Unknown file type, skipping (only JSON format are accepted for Clinical Analysis data!!");
+//            }
+//        }
+//    }
 
     public Long processGene(String geneId, String geneName) {
         if (StringUtils.isEmpty(geneId)) {
@@ -597,29 +595,29 @@ public class Neo4jCsvImporter {
 
         return varNode;
     }
-
-    public Long processClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) throws IOException {
-        Node clinicalAnalysisNode = null;
-        Long clinicalAnalysisUid = csv.getLong(clinicalAnalysis.getId());
-        if (clinicalAnalysisUid == null) {
-            clinicalAnalysisNode = createClinicalAnalysisNode(clinicalAnalysis);
-            clinicalAnalysisUid = clinicalAnalysisNode.getUid();
-            csv.putLong(clinicalAnalysis.getId(), clinicalAnalysisUid);
-        }
-
-        return clinicalAnalysisUid;
-    }
-
-    public Node createClinicalAnalysisNode(ClinicalAnalysis clinicalAnalysis) throws IOException {
-        return createClinicalAnalysisNode(clinicalAnalysis, csv.getAndIncUid());
-    }
-
-    public Node createClinicalAnalysisNode(ClinicalAnalysis clinicalAnalysis, Long caUid) throws IOException {
-        Node caNode = NodeBuilder.newNode(caUid, clinicalAnalysis);
-        PrintWriter pw = csv.getCsvWriters().get(Node.Type.CLINICAL_ANALYSIS.toString());
-        pw.println(csv.nodeLine(caNode));
-
-        // Comments
+//
+//    public Long processClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) throws IOException {
+//        Node clinicalAnalysisNode = null;
+//        Long clinicalAnalysisUid = csv.getLong(clinicalAnalysis.getId());
+//        if (clinicalAnalysisUid == null) {
+//            clinicalAnalysisNode = createClinicalAnalysisNode(clinicalAnalysis);
+//            clinicalAnalysisUid = clinicalAnalysisNode.getUid();
+//            csv.putLong(clinicalAnalysis.getId(), clinicalAnalysisUid);
+//        }
+//
+//        return clinicalAnalysisUid;
+//    }
+//
+//    public Node createClinicalAnalysisNode(ClinicalAnalysis clinicalAnalysis) throws IOException {
+//        return createClinicalAnalysisNode(clinicalAnalysis, csv.getAndIncUid());
+//    }
+//
+//    public Node createClinicalAnalysisNode(ClinicalAnalysis clinicalAnalysis, Long caUid) throws IOException {
+//        Node caNode = NodeBuilder.newNode(caUid, clinicalAnalysis);
+//        PrintWriter pw = csv.getCsvWriters().get(Node.Type.CLINICAL_ANALYSIS.toString());
+//        pw.println(csv.nodeLine(caNode));
+//
+//        // Comments
 //        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getComments())) {
 //            for (Comment comment : clinicalAnalysis.getComments()) {
 //                Node commentNode = NodeBuilder.newNode(csv.getAndIncUid(), comment);
@@ -685,10 +683,10 @@ public class Neo4jCsvImporter {
 //                }
 //            }
 //        }
-
-
-        return caNode;
-    }
+//
+//
+//        return caNode;
+//    }
 
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
@@ -855,42 +853,42 @@ public class Neo4jCsvImporter {
     //-------------------------------------------------------------------------
 
 
-    private void addClinicalAnalysisJsonFile(File file) throws IOException {
-        // Reading file line by line, each line a JSON object
-        BufferedReader reader;
-        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-
-        // TODO: how to get metadata from clinical analysis (format field, sample names,...)
-        boolean done = false;
-
-        long counter = 0;
-        logger.info("Processing JSON file {}", file.getPath());
-        reader = FileUtils.newBufferedReader(file.toPath());
-        String line = reader.readLine();
-        while (line != null) {
-            ClinicalAnalysis clinicalAnalysis = mapper.readValue(line, ClinicalAnalysis.class);
-            if (!done) {
-                done = processMetadataFromClinicalAnalysis(clinicalAnalysis);
-            }
-            processClinicalAnalysis(clinicalAnalysis);
-
-            // read next line
-            line = reader.readLine();
-            if (++counter % 5000 == 0) {
-                logger.info("Parsing {} clinical analsysis...", counter);
-            }
-        }
-        reader.close();
-        logger.info("Parsed {} clinical analysis from {}. Done!!!", counter, file.toString());
-    }
-
-    private boolean processMetadataFromClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
-        boolean done = false;
-        int counter = 0;
-
-        Set<String> formats = new HashSet<>();
-        Set<String> info = new HashSet<>();
-
+//    private void addClinicalAnalysisJsonFile(File file) throws IOException {
+//        // Reading file line by line, each line a JSON object
+//        BufferedReader reader;
+//        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+//
+//        // TODO: how to get metadata from clinical analysis (format field, sample names,...)
+//        boolean done = false;
+//
+//        long counter = 0;
+//        logger.info("Processing JSON file {}", file.getPath());
+//        reader = FileUtils.newBufferedReader(file.toPath());
+//        String line = reader.readLine();
+//        while (line != null) {
+//            ClinicalAnalysis clinicalAnalysis = mapper.readValue(line, ClinicalAnalysis.class);
+//            if (!done) {
+//                done = processMetadataFromClinicalAnalysis(clinicalAnalysis);
+//            }
+//            processClinicalAnalysis(clinicalAnalysis);
+//
+//            // read next line
+//            line = reader.readLine();
+//            if (++counter % 5000 == 0) {
+//                logger.info("Parsing {} clinical analsysis...", counter);
+//            }
+//        }
+//        reader.close();
+//        logger.info("Parsed {} clinical analysis from {}. Done!!!", counter, file.toString());
+//    }
+//
+//    private boolean processMetadataFromClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
+//        boolean done = false;
+//        int counter = 0;
+//
+//        Set<String> formats = new HashSet<>();
+//        Set<String> info = new HashSet<>();
+//
 //        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretations())) {
 //            for (Interpretation interpretation : clinicalAnalysis.getInterpretations()) {
 //                if (org.apache.commons.collections.CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
@@ -921,46 +919,46 @@ public class Neo4jCsvImporter {
 //                }
 //            }
 //        }
-
-        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(info)
-                && org.apache.commons.collections.CollectionUtils.isNotEmpty(formats)) {
-
-            // Variant call
-            String strType;
-            List<String> attrs = new ArrayList<>();
-            attrs.add("variantCallId");
-            Iterator<String> iterator = formats.iterator();
-            while (iterator.hasNext()) {
-                attrs.add(iterator.next());
-            }
-            strType = Node.Type.VARIANT_CALL.toString();
-            Map<String, List<String>> nodeAttributes = csv.getNodeAttributes();
-            nodeAttributes.put(strType, attrs);
-            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));
-            strType = Relation.Type.VARIANT__VARIANT_CALL.toString();
-            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-            strType = Relation.Type.SAMPLE__VARIANT_CALL.toString();
-            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-
-            // Variant file info
-            attrs = new ArrayList<>();
-            attrs.add("variantFileInfoId");
-            iterator = info.iterator();
-            while (iterator.hasNext()) {
-                attrs.add(iterator.next());
-            }
-            strType = Node.Type.VARIANT_FILE_INFO.toString();
-            nodeAttributes.put(strType, attrs);
-            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));
-            strType = Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString();
-            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-            strType = Relation.Type.VARIANT_FILE_INFO__FILE.toString();
-            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-
-            done = true;
-        }
-        return done;
-    }
+//
+//        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(info)
+//                && org.apache.commons.collections.CollectionUtils.isNotEmpty(formats)) {
+//
+//            // Variant call
+//            String strType;
+//            List<String> attrs = new ArrayList<>();
+//            attrs.add("variantCallId");
+//            Iterator<String> iterator = formats.iterator();
+//            while (iterator.hasNext()) {
+//                attrs.add(iterator.next());
+//            }
+//            strType = Node.Type.VARIANT_CALL.toString();
+//            Map<String, List<String>> nodeAttributes = csv.getNodeAttributes();
+//            nodeAttributes.put(strType, attrs);
+//            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));
+//            strType = Relation.Type.VARIANT__VARIANT_CALL.toString();
+//            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
+//            strType = Relation.Type.SAMPLE__VARIANT_CALL.toString();
+//            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
+//
+//            // Variant file info
+//            attrs = new ArrayList<>();
+//            attrs.add("variantFileInfoId");
+//            iterator = info.iterator();
+//            while (iterator.hasNext()) {
+//                attrs.add(iterator.next());
+//            }
+//            strType = Node.Type.VARIANT_FILE_INFO.toString();
+//            nodeAttributes.put(strType, attrs);
+//            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));
+//            strType = Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString();
+//            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
+//            strType = Relation.Type.VARIANT_FILE_INFO__FILE.toString();
+//            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
+//
+//            done = true;
+//        }
+//        return done;
+//    }
 
     private void updateCSVFiles(long startUid, Node node, String relationType) {
         updateCSVFiles(startUid, node, relationType, false);

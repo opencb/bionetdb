@@ -16,11 +16,6 @@ import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.parboiled.common.StringUtils;
 
 import java.util.List;
@@ -28,9 +23,9 @@ import java.util.Map;
 
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.opencb.bionetdb.core.models.network.Node.Type.CONSERVATION;
-import static org.opencb.bionetdb.core.models.network.Node.Type.*;
 import static org.opencb.bionetdb.core.models.network.Node.Type.FUNCTIONAL_SCORE;
 import static org.opencb.bionetdb.core.models.network.Node.Type.GENE;
+import static org.opencb.bionetdb.core.models.network.Node.Type.*;
 import static org.opencb.bionetdb.core.models.network.Node.Type.TRAIT_ASSOCIATION;
 import static org.opencb.bionetdb.core.models.network.Relation.Type.*;
 import static org.opencb.bionetdb.core.models.network.Relation.Type.PROTEIN;
@@ -47,14 +42,14 @@ public class Neo4JLoader {
         this.log = log;
     }
 
-    public Node loadClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
-        Node caNode = graphDb.findNode(Label.label(CLINICAL_ANALYSIS.name()), "id", clinicalAnalysis.getId());
-        if (caNode != null) {
-            //log.info("Clinical analysis ID " + clinicalAnalysis.getId() + " already loaded. Skip.");
-            return caNode;
-        }
-
-        caNode = createNeo4JNode(NodeBuilder.newNode(0, clinicalAnalysis));
+//    public Node loadClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
+//        Node caNode = graphDb.findNode(Label.label(CLINICAL_ANALYSIS.name()), "id", clinicalAnalysis.getId());
+//        if (caNode != null) {
+//            //log.info("Clinical analysis ID " + clinicalAnalysis.getId() + " already loaded. Skip.");
+//            return caNode;
+//        }
+//
+//        caNode = createNeo4JNode(NodeBuilder.newNode(0, clinicalAnalysis));
 //
 //        // Disorder
 //        if (clinicalAnalysis.getDisorder() != null) {
@@ -124,8 +119,8 @@ public class Neo4JLoader {
 //                caNode.createRelationshipTo(interpretationNode, withName(CLINICAL_ANALYSIS__INTERPRETATION.toString()));
 //            }
 //        }
-        return caNode;
-    }
+//        return caNode;
+//    }
 //
 //    public Node loadInterpretation(Interpretation interpretation) {
 //        Node interpretationNode = graphDb.findNode(Label.label(INTERPRETATION.name()), "id", interpretation.getId());
@@ -403,123 +398,123 @@ public class Neo4JLoader {
         return variantNode;
     }
 
-    public Node loadFile(File file) {
-        Node fileNode = graphDb.findNode(Label.label(FILE.name()), "id", file.getId());
-        if (fileNode != null) {
-            return fileNode;
-        }
+//    public Node loadFile(File file) {
+//        Node fileNode = graphDb.findNode(Label.label(FILE.name()), "id", file.getId());
+//        if (fileNode != null) {
+//            return fileNode;
+//        }
+//
+//        fileNode = createNeo4JNode(NodeBuilder.newNode(0, file));
+//
+//        // Software
+//        if (file.getSoftware() != null) {
+//            Node softwareNode = loadSoftware(file.getSoftware());
+//            fileNode.createRelationshipTo(softwareNode, withName(FILE__SOFTWARE.toString()));
+//        }
+//
+//        // Experiment
+//        if (file.getExperiment() != null) {
+//            Node experimentNode = createNeo4JNode(NodeBuilder.newNode(0, file.getExperiment()));
+//            fileNode.createRelationshipTo(experimentNode, withName(FILE__EXPERIMENT.toString()));
+//        }
+//
+//        // Samples
+//        if (CollectionUtils.isNotEmpty(file.getSamples())) {
+//            for (Sample sample : file.getSamples()) {
+//                Node sampleNode = loadSample(sample);
+//                fileNode.createRelationshipTo(sampleNode, withName(FILE__SAMPLE.toString()));
+//            }
+//        }
+//
+//        return fileNode;
+//    }
 
-        fileNode = createNeo4JNode(NodeBuilder.newNode(0, file));
+//    public Node loadFamily(Family family) {
+//        Node familyNode = graphDb.findNode(Label.label(FAMILY.name()), "id", family.getId());
+//        if (familyNode != null) {
+//            return familyNode;
+//        }
+//
+//        //log.info("Family " + family.getId() + ", " + family.getName() + " not found. Create it!");
+//        familyNode = createNeo4JNode(NodeBuilder.newNode(0, family));
+//
+//        // Phenotypes
+//        //log.info("Family: loading phenotypes...");
+//        if (CollectionUtils.isNotEmpty(family.getPhenotypes())) {
+//            for (Phenotype phenotype : family.getPhenotypes()) {
+//                Node phenotypeNode = loadPhenotype(phenotype);
+//                familyNode.createRelationshipTo(phenotypeNode, withName(FAMILY__PHENOTYPE.toString()));
+//            }
+//        }
+//
+//        // Disorders
+//        //log.info("Family: loading disorders...");
+//        if (CollectionUtils.isNotEmpty(family.getDisorders())) {
+//            for (Disorder disorder : family.getDisorders()) {
+//                Node disorderNode = loadDisorder(disorder);
+//                familyNode.createRelationshipTo(disorderNode, withName(FAMILY__DISORDER.toString()));
+//            }
+//        }
+//
+//        // Members
+//        //log.info("Family: loading members...");
+//        if (CollectionUtils.isNotEmpty(family.getMembers())) {
+//            for (Individual member : family.getMembers()) {
+//                Node memberNode = loadIndividual(member);
+//                familyNode.createRelationshipTo(memberNode, withName(FAMILY__INDIVIDUAL.toString()));
+//            }
+//        }
+//
+//        return familyNode;
+//    }
 
-        // Software
-        if (file.getSoftware() != null) {
-            Node softwareNode = loadSoftware(file.getSoftware());
-            fileNode.createRelationshipTo(softwareNode, withName(FILE__SOFTWARE.toString()));
-        }
-
-        // Experiment
-        if (file.getExperiment() != null) {
-            Node experimentNode = createNeo4JNode(NodeBuilder.newNode(0, file.getExperiment()));
-            fileNode.createRelationshipTo(experimentNode, withName(FILE__EXPERIMENT.toString()));
-        }
-
-        // Samples
-        if (CollectionUtils.isNotEmpty(file.getSamples())) {
-            for (Sample sample : file.getSamples()) {
-                Node sampleNode = loadSample(sample);
-                fileNode.createRelationshipTo(sampleNode, withName(FILE__SAMPLE.toString()));
-            }
-        }
-
-        return fileNode;
-    }
-
-    public Node loadFamily(Family family) {
-        Node familyNode = graphDb.findNode(Label.label(FAMILY.name()), "id", family.getId());
-        if (familyNode != null) {
-            return familyNode;
-        }
-
-        //log.info("Family " + family.getId() + ", " + family.getName() + " not found. Create it!");
-        familyNode = createNeo4JNode(NodeBuilder.newNode(0, family));
-
-        // Phenotypes
-        //log.info("Family: loading phenotypes...");
-        if (CollectionUtils.isNotEmpty(family.getPhenotypes())) {
-            for (Phenotype phenotype : family.getPhenotypes()) {
-                Node phenotypeNode = loadPhenotype(phenotype);
-                familyNode.createRelationshipTo(phenotypeNode, withName(FAMILY__PHENOTYPE.toString()));
-            }
-        }
-
-        // Disorders
-        //log.info("Family: loading disorders...");
-        if (CollectionUtils.isNotEmpty(family.getDisorders())) {
-            for (Disorder disorder : family.getDisorders()) {
-                Node disorderNode = loadDisorder(disorder);
-                familyNode.createRelationshipTo(disorderNode, withName(FAMILY__DISORDER.toString()));
-            }
-        }
-
-        // Members
-        //log.info("Family: loading members...");
-        if (CollectionUtils.isNotEmpty(family.getMembers())) {
-            for (Individual member : family.getMembers()) {
-                Node memberNode = loadIndividual(member);
-                familyNode.createRelationshipTo(memberNode, withName(FAMILY__INDIVIDUAL.toString()));
-            }
-        }
-
-        return familyNode;
-    }
-
-    public Node loadIndividual(Individual individual) {
-        Node individualNode = graphDb.findNode(Label.label(INDIVIDUAL.name()), "id", individual.getId());
-
-        if (individualNode != null) {
-            return individualNode;
-        }
-
-        //log.info("Individual " + individual.getId() + ", " + individual.getName() + " not found. Create it!");
-        individualNode = createNeo4JNode(NodeBuilder.newNode(0, individual));
-
-        // Father
-        if (individual.getFather() != null) {
-            Node fatherNode = loadIndividual(individual.getFather());
-            fatherNode.createRelationshipTo(individualNode, withName(FATHER_OF___INDIVIDUAL___INDIVIDUAL.toString()));
-        }
-
-        // Mother
-        if (individual.getMother() != null) {
-            Node motherNode = loadIndividual(individual.getMother());
-            motherNode.createRelationshipTo(individualNode, withName(MOTHER_OF___INDIVIDUAL___INDIVIDUAL.toString()));
-        }
-
-        // Phenotypes
-        if (CollectionUtils.isNotEmpty(individual.getPhenotypes())) {
-            for (Phenotype phenotype : individual.getPhenotypes()) {
-                Node phenotypeNode = loadPhenotype(phenotype);
-                individualNode.createRelationshipTo(phenotypeNode, withName(INDIVIDUAL__PHENOTYPE.toString()));
-            }
-        }
-
-        // Disorders
-        if (CollectionUtils.isNotEmpty(individual.getDisorders())) {
-            for (Disorder disorder : individual.getDisorders()) {
-                Node disorderNode = loadDisorder(disorder);
-                individualNode.createRelationshipTo(disorderNode, withName(INDIVIDUAL__DISORDER.toString()));
-            }
-        }
-
-        // Samples
-        if (CollectionUtils.isNotEmpty(individual.getSamples())) {
-            for (Sample sample : individual.getSamples()) {
-                Node sampleNode = loadSample(sample);
-                individualNode.createRelationshipTo(sampleNode, withName(INDIVIDUAL__SAMPLE.toString()));
-            }
-        }
-        return individualNode;
-    }
+//    public Node loadIndividual(Individual individual) {
+//        Node individualNode = graphDb.findNode(Label.label(INDIVIDUAL.name()), "id", individual.getId());
+//
+//        if (individualNode != null) {
+//            return individualNode;
+//        }
+//
+//        //log.info("Individual " + individual.getId() + ", " + individual.getName() + " not found. Create it!");
+//        individualNode = createNeo4JNode(NodeBuilder.newNode(0, individual));
+//
+//        // Father
+//        if (individual.getFather() != null) {
+//            Node fatherNode = loadIndividual(individual.getFather());
+//            fatherNode.createRelationshipTo(individualNode, withName(FATHER_OF___INDIVIDUAL___INDIVIDUAL.toString()));
+//        }
+//
+//        // Mother
+//        if (individual.getMother() != null) {
+//            Node motherNode = loadIndividual(individual.getMother());
+//            motherNode.createRelationshipTo(individualNode, withName(MOTHER_OF___INDIVIDUAL___INDIVIDUAL.toString()));
+//        }
+//
+//        // Phenotypes
+//        if (CollectionUtils.isNotEmpty(individual.getPhenotypes())) {
+//            for (Phenotype phenotype : individual.getPhenotypes()) {
+//                Node phenotypeNode = loadPhenotype(phenotype);
+//                individualNode.createRelationshipTo(phenotypeNode, withName(INDIVIDUAL__PHENOTYPE.toString()));
+//            }
+//        }
+//
+//        // Disorders
+//        if (CollectionUtils.isNotEmpty(individual.getDisorders())) {
+//            for (Disorder disorder : individual.getDisorders()) {
+//                Node disorderNode = loadDisorder(disorder);
+//                individualNode.createRelationshipTo(disorderNode, withName(INDIVIDUAL__DISORDER.toString()));
+//            }
+//        }
+//
+//        // Samples
+//        if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+//            for (Sample sample : individual.getSamples()) {
+//                Node sampleNode = loadSample(sample);
+//                individualNode.createRelationshipTo(sampleNode, withName(INDIVIDUAL__SAMPLE.toString()));
+//            }
+//        }
+//        return individualNode;
+//    }
 
     public Node loadDisorder(Disorder disorder) {
         // Disorder node
@@ -564,24 +559,24 @@ public class Neo4JLoader {
 //        return ontologyTermNode;
 //    }
 
-    public Node loadSample(Sample sample) {
-        Node sampleNode = graphDb.findNode(Label.label(SAMPLE.name()), "id", sample.getId());
-        if (sampleNode != null) {
-            return sampleNode;
-        }
-
-        //log.info("Sample " + sample.getId() + ", " + sample.getName() + " not found. Create it!");
-        sampleNode = createNeo4JNode(NodeBuilder.newNode(0, sample));
-
-        if (CollectionUtils.isNotEmpty(sample.getPhenotypes())) {
-            for (Phenotype phenotype : sample.getPhenotypes()) {
-                // Phenotype node and relation sample - phenotype
-                Node phenotypeNode = loadPhenotype(phenotype);
-                sampleNode.createRelationshipTo(phenotypeNode, withName(SAMPLE__PHENOTYPE.name()));
-            }
-        }
-        return sampleNode;
-    }
+//    public Node loadSample(Sample sample) {
+//        Node sampleNode = graphDb.findNode(Label.label(SAMPLE.name()), "id", sample.getId());
+//        if (sampleNode != null) {
+//            return sampleNode;
+//        }
+//
+//        //log.info("Sample " + sample.getId() + ", " + sample.getName() + " not found. Create it!");
+//        sampleNode = createNeo4JNode(NodeBuilder.newNode(0, sample));
+//
+//        if (CollectionUtils.isNotEmpty(sample.getPhenotypes())) {
+//            for (Phenotype phenotype : sample.getPhenotypes()) {
+//                // Phenotype node and relation sample - phenotype
+//                Node phenotypeNode = loadPhenotype(phenotype);
+//                sampleNode.createRelationshipTo(phenotypeNode, withName(SAMPLE__PHENOTYPE.name()));
+//            }
+//        }
+//        return sampleNode;
+//    }
 
     public Node loadPanel(DiseasePanel panel) {
         Node panelNode = graphDb.findNode(Label.label(PANEL.name()), "id", panel.getId());

@@ -10,9 +10,6 @@ import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.core.utils.CsvInfo;
 import org.opencb.bionetdb.core.utils.Neo4jBioPaxImporter;
 import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
-import org.opencb.cellbase.client.config.ClientConfiguration;
-import org.opencb.cellbase.client.config.RestConfig;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -76,12 +73,12 @@ public class ImportCommandExecutor extends CommandExecutor {
             csv.openCSVFiles();
             Neo4jCsvImporter importer = new Neo4jCsvImporter(csv);
 
-            // CellBase client
-            // TODO: maybe it should be created from the configuration file
-            ClientConfiguration clientConfiguration = new ClientConfiguration();
-            clientConfiguration.setVersion("v4");
-            clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-            CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh38", clientConfiguration);
+//            // CellBase client
+//            // TODO: maybe it should be created from the configuration file
+//            ClientConfiguration clientConfiguration = new ClientConfiguration();
+//            clientConfiguration.setVersion("v4");
+//            clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+//            CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh38", clientConfiguration);
 
             // Retrieving files from the input directory
             List<File> reactomeFiles = new ArrayList<>();
@@ -168,13 +165,13 @@ public class ImportCommandExecutor extends CommandExecutor {
 
 
             start = System.currentTimeMillis();
-            if (buildCommandOptions.clinicalAnalysis) {
-                // Parse JSON variant files
-                importer.addClinicalAnalysisFiles(jsonFiles);
-            } else {
+//            if (buildCommandOptions.clinicalAnalysis) {
+//                // Parse JSON variant files
+//                importer.addClinicalAnalysisFiles(jsonFiles);
+//            } else {
                 // Parse JSON variant files
                 importer.addVariantFiles(jsonFiles);
-            }
+//            }
             long jsonTime = (System.currentTimeMillis() - start) / 1000;
 
             // Close CSV files

@@ -1,9 +1,5 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,25 +7,12 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
-import org.opencb.biodata.models.core.Gene;
-import org.opencb.cellbase.client.config.ClientConfiguration;
-import org.opencb.cellbase.client.config.RestConfig;
-import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.cellbase.client.rest.ProteinClient;
-import org.opencb.cellbase.core.CellBaseDataResponse;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.utils.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -78,73 +61,73 @@ public class Neo4JLoaderTest {
         reader.close();
     }
 
-    @Test
-    public void getGenes() throws IOException {
-        String assembly = "GRCh38"; // "GRCh37", "GRCh38"
-        // CellBase client
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", assembly, clientConfiguration);
-
-        GeneClient geneClient = cellBaseClient.getGeneClient();
-        Query query = new Query();
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,transcripts.cDnaSequence,annotation.expression");
-        CellBaseDataResponse<Long> countResponse = geneClient.count(query);
-        long numGenes = countResponse.firstResult();
-        int bufferSize = 400;
-        options.put(QueryOptions.LIMIT, bufferSize);
-        System.out.println("Num. genes: " + numGenes);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        ObjectWriter writer = mapper.writer();
-        PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".genes.json").toString());
-        for (int i = 0; i < numGenes; i += bufferSize) {
-            options.put(QueryOptions.SKIP, i);
-            CellBaseDataResponse<Gene> geneResponse = geneClient.search(query, options);
-            for (Gene gene : geneResponse.allResults()) {
-                String json = writer.writeValueAsString(gene);
-                pw.println(json);
-            }
-            System.out.println("Processing " + i + " of " + numGenes);
-        }
-        pw.close();
-    }
-
-    @Test
-    public void getProteins() throws IOException {
-        String assembly = "GRCh38"; // "GRCh37", "GRCh38"
-        // CellBase client
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", assembly, clientConfiguration);
-
-        ProteinClient proteinClient = cellBaseClient.getProteinClient();
-        Query query = new Query();
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "reference,comment,sequence,evidence");
-        long numProteins = 100000;
-        int bufferSize = 400;
-        options.put(QueryOptions.LIMIT, bufferSize);
-        System.out.println("Num. proteins: " + numProteins);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        ObjectWriter writer = mapper.writer();
-        PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".proteins.json").toString());
-        for (int i = 0; i < numProteins; i += bufferSize) {
-            options.put(QueryOptions.SKIP, i);
-            CellBaseDataResponse<Entry> proteinResponse = proteinClient.search(query, options);
-            if (proteinResponse.allResults().size() == 0) {
-                break;
-            }
-            for (Entry entry : proteinResponse.allResults()) {
-                String json = writer.writeValueAsString(entry);
-                pw.println(json);
-            }
-            System.out.println("Processing " + i + " of " + numProteins);
-        }
-        pw.close();
-    }
+//    @Test
+//    public void getGenes() throws IOException {
+//        String assembly = "GRCh38"; // "GRCh37", "GRCh38"
+//        // CellBase client
+//        ClientConfiguration clientConfiguration = new ClientConfiguration();
+//        clientConfiguration.setVersion("v4");
+//        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+//        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", assembly, clientConfiguration);
+//
+//        GeneClient geneClient = cellBaseClient.getGeneClient();
+//        Query query = new Query();
+//        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,transcripts.cDnaSequence,annotation.expression");
+//        CellBaseDataResponse<Long> countResponse = geneClient.count(query);
+//        long numGenes = countResponse.firstResult();
+//        int bufferSize = 400;
+//        options.put(QueryOptions.LIMIT, bufferSize);
+//        System.out.println("Num. genes: " + numGenes);
+//        ObjectMapper mapper = new ObjectMapper();
+//        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+//        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+//        ObjectWriter writer = mapper.writer();
+//        PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".genes.json").toString());
+//        for (int i = 0; i < numGenes; i += bufferSize) {
+//            options.put(QueryOptions.SKIP, i);
+//            CellBaseDataResponse<Gene> geneResponse = geneClient.search(query, options);
+//            for (Gene gene : geneResponse.allResults()) {
+//                String json = writer.writeValueAsString(gene);
+//                pw.println(json);
+//            }
+//            System.out.println("Processing " + i + " of " + numGenes);
+//        }
+//        pw.close();
+//    }
+//
+//    @Test
+//    public void getProteins() throws IOException {
+//        String assembly = "GRCh38"; // "GRCh37", "GRCh38"
+//        // CellBase client
+//        ClientConfiguration clientConfiguration = new ClientConfiguration();
+//        clientConfiguration.setVersion("v4");
+//        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+//        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", assembly, clientConfiguration);
+//
+//        ProteinClient proteinClient = cellBaseClient.getProteinClient();
+//        Query query = new Query();
+//        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "reference,comment,sequence,evidence");
+//        long numProteins = 100000;
+//        int bufferSize = 400;
+//        options.put(QueryOptions.LIMIT, bufferSize);
+//        System.out.println("Num. proteins: " + numProteins);
+//        ObjectMapper mapper = new ObjectMapper();
+//        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+//        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+//        ObjectWriter writer = mapper.writer();
+//        PrintWriter pw = new PrintWriter(Paths.get("/tmp/" + assembly + ".proteins.json").toString());
+//        for (int i = 0; i < numProteins; i += bufferSize) {
+//            options.put(QueryOptions.SKIP, i);
+//            CellBaseDataResponse<Entry> proteinResponse = proteinClient.search(query, options);
+//            if (proteinResponse.allResults().size() == 0) {
+//                break;
+//            }
+//            for (Entry entry : proteinResponse.allResults()) {
+//                String json = writer.writeValueAsString(entry);
+//                pw.println(json);
+//            }
+//            System.out.println("Processing " + i + " of " + numProteins);
+//        }
+//        pw.close();
+//    }
 }

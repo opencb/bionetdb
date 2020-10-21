@@ -6,7 +6,6 @@ import org.opencb.bionetdb.core.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.security.InvalidParameterException;
 import java.util.*;
@@ -282,10 +281,10 @@ public class Neo4JVariantQueryParser {
 
         // Genotype (sample)
         // chromWhere should be used only once, not every genotype iteration
-        if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
-            cypherStatements.addAll(parseGenotype(query.getString(VariantQueryParam.GENOTYPE.key()), chromWhere));
-            chromWhere = "";
-        }
+//        if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
+//            cypherStatements.addAll(parseGenotype(query.getString(VariantQueryParam.GENOTYPE.key()), chromWhere));
+//            chromWhere = "";
+//        }
 
         // Biotype
         param = VariantQueryParam.ANNOT_BIOTYPE.key();
@@ -396,33 +395,33 @@ public class Neo4JVariantQueryParser {
         return new Neo4JQueryParser.CypherStatement(match, where, with);
     }
 
-    private static List<Neo4JQueryParser.CypherStatement> parseGenotype(String genotypeValues, String chromWhere) {
-        List<Neo4JQueryParser.CypherStatement> cypherStatements = new ArrayList<>();
-
-        HashMap<Object, List<String>> map = new LinkedHashMap<>();
-        VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(genotypeValues, map);
-        List<String> samples = new ArrayList<>(map.size());
-        map.keySet().stream().map(Object::toString).forEach(samples::add);
-
-        Iterator<Object> sampleIterator = map.keySet().iterator();
-        while (sampleIterator.hasNext()) {
-            String sample = sampleIterator.next().toString();
-            if (map.get(sample).size() > 0) {
-                // Match
-                String match = "MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
-
-                // Where
-                String where = "WHERE " + getConditionString(Collections.singletonList(sample), "s.id", false)
-                        + getConditionString(map.get(sample), "vc.attr_GT", true) + chromWhere;
-
-                // With
-                String with = "WITH DISTINCT v";
-
-                cypherStatements.add(new Neo4JQueryParser.CypherStatement(match, where, with));
-            }
-        }
-        return cypherStatements;
-    }
+//    private static List<Neo4JQueryParser.CypherStatement> parseGenotype(String genotypeValues, String chromWhere) {
+//        List<Neo4JQueryParser.CypherStatement> cypherStatements = new ArrayList<>();
+//
+//        HashMap<Object, List<String>> map = new LinkedHashMap<>();
+//        VariantQueryUtils.QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(genotypeValues, map);
+//        List<String> samples = new ArrayList<>(map.size());
+//        map.keySet().stream().map(Object::toString).forEach(samples::add);
+//
+//        Iterator<Object> sampleIterator = map.keySet().iterator();
+//        while (sampleIterator.hasNext()) {
+//            String sample = sampleIterator.next().toString();
+//            if (map.get(sample).size() > 0) {
+//                // Match
+//                String match = "MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
+//
+//                // Where
+//                String where = "WHERE " + getConditionString(Collections.singletonList(sample), "s.id", false)
+//                        + getConditionString(map.get(sample), "vc.attr_GT", true) + chromWhere;
+//
+//                // With
+//                String with = "WITH DISTINCT v";
+//
+//                cypherStatements.add(new Neo4JQueryParser.CypherStatement(match, where, with));
+//            }
+//        }
+//        return cypherStatements;
+//    }
 
     private static Neo4JQueryParser.CypherStatement parseConsequenceType(String ctValues, String biotypeValues, String chromWhere) {
         List<String> cts = Arrays.asList(ctValues.split(","));

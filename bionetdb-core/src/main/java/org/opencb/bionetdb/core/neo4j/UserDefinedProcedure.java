@@ -1,18 +1,8 @@
 package org.opencb.bionetdb.core.neo4j;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
-import org.neo4j.procedure.Name;
-import org.neo4j.procedure.Procedure;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-
-import java.io.IOException;
-
-import static org.neo4j.procedure.Mode.SCHEMA;
 
 public class UserDefinedProcedure {
 
@@ -46,19 +36,19 @@ public class UserDefinedProcedure {
      *
      * @param caJson JSON string for the clinical analysis to load
      */
-    @Procedure(name = "org.opencb.bionetdb.core.neo4j.loadClinicalAnalysis", mode = SCHEMA)
-    public void loadClinicalAnalysis(@Name("caJson") String caJson) {
-        Neo4JLoader neo4JLoader = new Neo4JLoader(db, log);
-
-        try (Transaction tx = db.beginTx()) {
-            ObjectMapper defaultObjectMapper = JacksonUtils.getDefaultObjectMapper();
-            ClinicalAnalysis ca = defaultObjectMapper.readValue(caJson, ClinicalAnalysis.class);
-            neo4JLoader.loadClinicalAnalysis(ca);
-
-            tx.success();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        log.info("Done!");
-    }
+//    @Procedure(name = "org.opencb.bionetdb.core.neo4j.loadClinicalAnalysis", mode = SCHEMA)
+//    public void loadClinicalAnalysis(@Name("caJson") String caJson) {
+//        Neo4JLoader neo4JLoader = new Neo4JLoader(db, log);
+//
+//        try (Transaction tx = db.beginTx()) {
+//            ObjectMapper defaultObjectMapper = JacksonUtils.getDefaultObjectMapper();
+//            ClinicalAnalysis ca = defaultObjectMapper.readValue(caJson, ClinicalAnalysis.class);
+//            neo4JLoader.loadClinicalAnalysis(ca);
+//
+//            tx.success();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        log.info("Done!");
+//    }
 }

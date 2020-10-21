@@ -20,8 +20,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterDescription;
 import com.beust.jcommander.ParameterException;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.bionetdb.core.BioNetDbManager;
+import org.opencb.commons.utils.GitRepositoryState;
 
+import java.io.InputStream;
 import java.util.Map;
 
 /**
@@ -76,10 +78,13 @@ public abstract class CliOptionsParser {
     }
 
     public void printVersion() {
+        InputStream stream = BioNetDbManager.class.getClassLoader().getResourceAsStream("/org/opencb/bionetdb/core/git.properties");
+//        System.out.println("--->" + stream);
+
         System.err.println("");
         System.err.println("Program:     BioNetDB (OpenCB)");
-        System.err.println("Version:     " + org.opencb.opencga.core.common.GitRepositoryState.get().getBuildVersion());
-        System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
+//        System.err.println("Version:     " + GitRepositoryState.get(stream).getBuildVersion());
+//        System.err.println("Git commit:  " + GitRepositoryState.get(stream).getCommitId());
         System.err.println("");
     }
 

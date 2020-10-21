@@ -12,8 +12,6 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.bionetdb.core.analysis.VariantAnalysis;
@@ -28,12 +26,6 @@ import org.opencb.bionetdb.core.neo4j.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.utils.CsvInfo;
 import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
-import org.opencb.cellbase.client.config.ClientConfiguration;
-import org.opencb.cellbase.client.config.RestConfig;
-import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.cellbase.core.CellBaseDataResponse;
-import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -462,34 +454,34 @@ public class BioNetDbManagerTest {
         }
     }
 
-    @Test
-    public void getGene() throws IOException {
-        String geneId = "ENSG00000164053";
-        String transcriptId = "ENST00000424906";
-
-        // CellBase client
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-        clientConfiguration.setVersion("v4");
-        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh37", clientConfiguration);
-        GeneClient geneClient = cellBaseClient.getGeneClient();
-
-        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,transcripts.cDnaSequence,annotation.expression");
-        List<String> ids = new ArrayList<>();
-        ids.add(geneId);
-        CellBaseDataResponse<Gene> geneQueryResponse = geneClient.get(ids, options);
-        for (CellBaseDataResult<Gene> responses : geneQueryResponse.getResponses()) {
-            for (Gene gene : responses.getResults()) {
-                System.out.println(gene.getId() + ", " + gene.getName());
-                for (Transcript transcript : gene.getTranscripts()) {
-                    System.out.println("\t" + transcript.getId() + ", " + transcript.getName());
-                    if (transcript.getId().equals(transcriptId)) {
-                        System.out.println("\t\tFOUND !!!!");
-                    }
-                }
-            }
-        }
-    }
+//    @Test
+//    public void getGene() throws IOException {
+//        String geneId = "ENSG00000164053";
+//        String transcriptId = "ENST00000424906";
+//
+//        // CellBase client
+//        ClientConfiguration clientConfiguration = new ClientConfiguration();
+//        clientConfiguration.setVersion("v4");
+//        clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+//        CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh37", clientConfiguration);
+//        GeneClient geneClient = cellBaseClient.getGeneClient();
+//
+//        QueryOptions options = new QueryOptions(QueryOptions.EXCLUDE, "transcripts.exons,transcripts.cDnaSequence,annotation.expression");
+//        List<String> ids = new ArrayList<>();
+//        ids.add(geneId);
+//        CellBaseDataResponse<Gene> geneQueryResponse = geneClient.get(ids, options);
+//        for (CellBaseDataResult<Gene> responses : geneQueryResponse.getResponses()) {
+//            for (Gene gene : responses.getResults()) {
+//                System.out.println(gene.getId() + ", " + gene.getName());
+//                for (Transcript transcript : gene.getTranscripts()) {
+//                    System.out.println("\t" + transcript.getId() + ", " + transcript.getName());
+//                    if (transcript.getId().equals(transcriptId)) {
+//                        System.out.println("\t\tFOUND !!!!");
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     @Test
     public void countGenes() throws IOException {

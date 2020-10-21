@@ -23,12 +23,6 @@ import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.core.utils.Neo4jConverter;
 import org.opencb.bionetdb.core.utils.Neo4jImporter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
-import org.opencb.cellbase.client.rest.ClinicalVariantClient;
-import org.opencb.cellbase.core.CellBaseDataResponse;
-import org.opencb.cellbase.core.api.core.ClinicalDBAdaptor;
-import org.opencb.cellbase.core.result.CellBaseDataResult;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
@@ -102,42 +96,42 @@ public class Neo4JVariantLoader {
         //importer.importCSV(neo4jHome);
     }
 
-    public void loadClinivalVariants(ClinicalVariantClient clinicalClient) throws IOException {
-        int skip = 0;
-
-        Query query = new Query();
-        query.put(ClinicalDBAdaptor.QueryParams.SOURCE.key(), "clinvar");
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(QueryOptions.LIMIT, VARIANT_BATCH_SIZE);
-
-        long cellbaseTime = 0;
-        long neoTime = 0;
-        long tic, tac;
-
-        CellBaseDataResponse<Variant> search;
-        do {
-            queryOptions.put(QueryOptions.SKIP, skip);
-            tic = System.currentTimeMillis();
-            search = clinicalClient.search(query, queryOptions);
-            tac = (System.currentTimeMillis() - tic) / 1000;
-            cellbaseTime += tac;
-            System.out.println("Cellbase batch: " + tac + " s, total: " + cellbaseTime + " s");
-
-            tic = System.currentTimeMillis();
-            for (CellBaseDataResult<Variant> responses : search.getResponses()) {
-                if (CollectionUtils.isNotEmpty(responses.getResults())) {
-                    loadVariants(responses.getResults());
-                }
-            }
-            tac = (System.currentTimeMillis() - tic) / 1000;
-            neoTime += tac;
-            System.out.println("Neo4J batch: " + tac + " s, total: " + neoTime + " s");
-            skip += VARIANT_BATCH_SIZE;
-            System.out.println("");
-            //if (skip > 1000) break;
-        } while (VARIANT_BATCH_SIZE == search.allResultsSize());
-    }
+//    public void loadClinivalVariants(ClinicalVariantClient clinicalClient) throws IOException {
+//        int skip = 0;
+//
+//        Query query = new Query();
+//        query.put(ClinicalDBAdaptor.QueryParams.SOURCE.key(), "clinvar");
+//
+//        QueryOptions queryOptions = new QueryOptions();
+//        queryOptions.put(QueryOptions.LIMIT, VARIANT_BATCH_SIZE);
+//
+//        long cellbaseTime = 0;
+//        long neoTime = 0;
+//        long tic, tac;
+//
+//        CellBaseDataResponse<Variant> search;
+//        do {
+//            queryOptions.put(QueryOptions.SKIP, skip);
+//            tic = System.currentTimeMillis();
+//            search = clinicalClient.search(query, queryOptions);
+//            tac = (System.currentTimeMillis() - tic) / 1000;
+//            cellbaseTime += tac;
+//            System.out.println("Cellbase batch: " + tac + " s, total: " + cellbaseTime + " s");
+//
+//            tic = System.currentTimeMillis();
+//            for (CellBaseDataResult<Variant> responses : search.getResponses()) {
+//                if (CollectionUtils.isNotEmpty(responses.getResults())) {
+//                    loadVariants(responses.getResults());
+//                }
+//            }
+//            tac = (System.currentTimeMillis() - tic) / 1000;
+//            neoTime += tac;
+//            System.out.println("Neo4J batch: " + tac + " s, total: " + neoTime + " s");
+//            skip += VARIANT_BATCH_SIZE;
+//            System.out.println("");
+//            //if (skip > 1000) break;
+//        } while (VARIANT_BATCH_SIZE == search.allResultsSize());
+//    }
 
     public void loadVariants(List<Variant> variants) {
         // First, initialize uidCounter

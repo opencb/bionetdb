@@ -11,15 +11,11 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.core.models.network.Node;
-import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.cellbase.client.rest.ProteinClient;
-import org.opencb.cellbase.client.rest.VariantClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 
-import java.io.IOException;
 import java.util.List;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -85,14 +81,14 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     // A N N O T A T I O N     M E T H O D s
     //-------------------------------------------------------------------------
 
-    void annotateVariants(NodeQuery query, QueryOptions options, VariantClient variantClient) throws BioNetDBException, IOException;
-    void annotateVariants(List<String> variantIds, VariantClient variantClient) throws BioNetDBException, IOException;
-
-    void annotateGenes(NodeQuery query, QueryOptions options, GeneClient geneClient) throws BioNetDBException, IOException;
-    void annotateGenes(List<String> geneIds, GeneClient geneClient) throws BioNetDBException, IOException;
-
-    void annotateProteins(NodeQuery query, QueryOptions options, ProteinClient proteinClient) throws BioNetDBException, IOException;
-    void annotateProteins(List<String> proteinIds, ProteinClient proteinClient) throws BioNetDBException, IOException;
+//    void annotateVariants(NodeQuery query, QueryOptions options, VariantClient variantClient) throws BioNetDBException, IOException;
+//    void annotateVariants(List<String> variantIds, VariantClient variantClient) throws BioNetDBException, IOException;
+//
+//    void annotateGenes(NodeQuery query, QueryOptions options, GeneClient geneClient) throws BioNetDBException, IOException;
+//    void annotateGenes(List<String> geneIds, GeneClient geneClient) throws BioNetDBException, IOException;
+//
+//    void annotateProteins(NodeQuery query, QueryOptions options, ProteinClient proteinClient) throws BioNetDBException, IOException;
+//    void annotateProteins(List<String> proteinIds, ProteinClient proteinClient) throws BioNetDBException, IOException;
 
     //========================================================================
     // N E T W O R K
