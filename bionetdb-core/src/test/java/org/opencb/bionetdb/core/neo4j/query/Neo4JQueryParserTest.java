@@ -1,9 +1,9 @@
 package org.opencb.bionetdb.core.neo4j.query;
 
 import org.junit.Test;
-import org.opencb.bionetdb.core.api.query.VariantQueryParam;
-import org.opencb.bionetdb.core.api.query.NetworkPathQuery;
-import org.opencb.bionetdb.core.api.query.NodeQuery;
+import org.opencb.bionetdb.lib.api.iterators.query.VariantQueryParam;
+import org.opencb.bionetdb.lib.api.iterators.query.NetworkPathQuery;
+import org.opencb.bionetdb.lib.api.iterators.query.NodeQuery;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;

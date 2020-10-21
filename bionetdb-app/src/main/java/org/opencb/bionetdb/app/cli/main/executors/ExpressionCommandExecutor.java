@@ -2,11 +2,11 @@ package org.opencb.bionetdb.app.cli.main.executors;
 
 import org.opencb.bionetdb.app.cli.main.BioNetDBCliOptionsParser;
 import org.opencb.bionetdb.app.cli.CommandExecutor;
-import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.io.ExpressionParser;
 import org.opencb.bionetdb.core.models.Expression;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
+import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 

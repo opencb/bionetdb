@@ -17,6 +17,8 @@
         <module>bionetdb-app</module>
         <module>bionetdb-core</module>
         <module>bionetdb-server</module>
+        <module>bionetdb-lib</module>
+        <module>bionetdb-client</module>
     </modules>
 
     <properties>
@@ -26,6 +28,8 @@
         <biodata.version>2.1.0-SNAPSHOT</biodata.version>
         <jackson.version>2.10.1</jackson.version>
         <jersey.version>2.29.1</jersey.version>
+        <junit.jupiter.version>5.5.2</junit.jupiter.version>
+        <junit.platform.version>1.5.2</junit.platform.version>
         <build.dir>build</build.dir>
     </properties>
 
@@ -74,6 +78,11 @@
             <dependency>
                 <groupId>org.opencb.bionetdb</groupId>
                 <artifactId>bionetdb-core</artifactId>
+                <version>${bionetdb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.bionetdb</groupId>
+                <artifactId>bionetdb-lib</artifactId>
                 <version>${bionetdb.version}</version>
             </dependency>
             <dependency>
@@ -153,6 +162,11 @@
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
                 <version>3.5</version>
@@ -161,6 +175,24 @@
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>4.12</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-engine</artifactId>
+                <version>${junit.platform.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.jupiter.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

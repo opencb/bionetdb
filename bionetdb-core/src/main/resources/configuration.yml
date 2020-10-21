@@ -4,22 +4,25 @@ logFile: null
 
 ## More than one database can be defined, you can pass the database id to BioNetDbManager.
 ## If not passed the default database will always be the first one.
-databases:
-- id: "${BIONETDB.DB.DATABASE}"
-  species: "${BIONETDB.DB.SPECIES}"     ## examples: hsapiens, mmusculus, ...
+database:
   host: "${BIONETDB.DB.HOST}"
   port: "${BIONETDB.DB.PORT}"
   user: "${BIONETDB.DB.USER}"
   password: "${BIONETDB.DB.PASSWORD}"
-  options: null                         ## map containing specific database options
+#  options: null                         ## map containing specific database options
+
+
+## Raw data download URLs
 download:
+    network:
+      ## In this version we are loading Ractome as default network
+      host: https://www.reactome.org/download/current/biopax.zip
     gene:
       host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/gene.json.gz
     protein:
       host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/protein.json.gz
 ##    panel:
 ##      host: ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.xls.gz
-    clinvar:
+    clinicalVariant:
       host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/clinical_variants.json.gz
-    reactome:
-      host: https://www.reactome.org/download/current/biopax.zip
+

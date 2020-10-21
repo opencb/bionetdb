@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterDescription;
 import com.beust.jcommander.ParameterException;
-import org.opencb.bionetdb.core.BioNetDbManager;
+import org.opencb.bionetdb.lib.BioNetDbManager;
 
 import java.io.InputStream;
 import java.util.Map;

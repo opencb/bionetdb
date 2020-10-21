@@ -3,7 +3,7 @@ package org.opencb.bionetdb.app.cli.admin.executors;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.bionetdb.core.BioNetDbManager;
+import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.utils.FileUtils;
 

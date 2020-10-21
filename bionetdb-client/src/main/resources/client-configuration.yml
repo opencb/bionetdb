@@ -1,0 +1,8 @@
+---
+version: "v1"
+
+## These are the RESTful configurations parameters
+rest:
+  host: "localhost:8080/bionetdb"
+  timeout: 2000
+

@@ -2,9 +2,9 @@ package org.opencb.bionetdb.server.rest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.opencb.bionetdb.core.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.api.iterators.NetworkPathIterator;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
+import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
+import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.QueryResult;
