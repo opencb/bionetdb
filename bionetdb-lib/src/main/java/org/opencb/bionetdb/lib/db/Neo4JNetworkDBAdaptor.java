@@ -34,6 +34,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES;
+
 /**
  * Created by imedina on 05/08/15.
  */
@@ -41,8 +43,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private Driver driver;
     private BioNetDBConfiguration configuration;
-
-    public static final String PREFIX_ATTRIBUTES = "attr_";
 
     public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
         this(database, configuration, false);

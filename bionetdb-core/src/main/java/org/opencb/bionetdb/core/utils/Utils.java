@@ -10,6 +10,9 @@ import java.util.List;
 
 public class Utils {
 
+    public static final String PREFIX_ATTRIBUTES = "attr_";
+    public static final int PREFIX_ATTRIBUTES_LENGTH = PREFIX_ATTRIBUTES.length();
+
     public static String compress(Object obj, ObjectMapper objMapper) throws IOException {
         String json = objMapper.writer().writeValueAsString(obj);
         return compressString(json, objMapper);

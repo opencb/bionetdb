@@ -9,7 +9,6 @@ import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.util.Pair;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.core.models.network.Node;
@@ -18,9 +17,10 @@ import org.opencb.bionetdb.core.models.network.Relation;
 import java.util.*;
 
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
+import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES;
+import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES_LENGTH;
 
 public class Neo4jConverter {
-    private static int pos = Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES.length();
 
     public static List<Node> toNodeList(Record record) {
         List<Node> nodes = new ArrayList<>();
@@ -98,7 +98,7 @@ public class Neo4jConverter {
                     nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
             for (String k: neoRelation.asMap().keySet()) {
-                relation.addAttribute(k.substring(pos), neoRelation.get(k).asObject());
+                relation.addAttribute(k.substring(PREFIX_ATTRIBUTES_LENGTH), neoRelation.get(k).asObject());
             }
             network.addRelation(relation);
         }
@@ -148,8 +148,8 @@ public class Neo4jConverter {
 
         // Set attributes
         for (String k: neoNode.keys()) {
-            if (k.startsWith(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES)) {
-                    node.addAttribute(k.substring(pos), neoNode.get(k).asObject());
+            if (k.startsWith(PREFIX_ATTRIBUTES)) {
+                    node.addAttribute(k.substring(PREFIX_ATTRIBUTES_LENGTH), neoNode.get(k).asObject());
             }
         }
         return node;
@@ -187,8 +187,8 @@ public class Neo4jConverter {
                     nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
                     Relation.Type.valueOf(neoRelation.type()));
             for (String k: neoRelation.asMap().keySet()) {
-                if (k.startsWith(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES)) {
-                    relation.addAttribute(k.substring(pos), neoRelation.get(k).asObject());
+                if (k.startsWith(PREFIX_ATTRIBUTES)) {
+                    relation.addAttribute(k.substring(PREFIX_ATTRIBUTES_LENGTH), neoRelation.get(k).asObject());
                 }
             }
             networkPath.addRelation(relation);

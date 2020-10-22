@@ -16,7 +16,6 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
-import org.opencb.bionetdb.core.neo4j.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.core.utils.cache.GeneCache;
 import org.opencb.bionetdb.core.utils.cache.ProteinCache;
 import org.opencb.commons.utils.CollectionUtils;
@@ -29,6 +28,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
+
+import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES;
 
 public class CsvInfo {
     public static final String SEPARATOR = "\t";
@@ -419,7 +420,7 @@ public class CsvInfo {
         for (int i = 1; i < attrs.size(); i++) {
             sb.append(SEPARATOR);
             if (!noAttributes.contains(attrs.get(i))) {
-                sb.append(Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES);
+                sb.append(PREFIX_ATTRIBUTES);
             }
             sb.append(attrs.get(i));
         }
@@ -461,7 +462,7 @@ public class CsvInfo {
         sb.append(":START_ID(").append(nodeAttributes.get(split[1]).get(0)).append(")").append(SEPARATOR).append(":END_ID(")
                 .append(nodeAttributes.get(split[2]).get(0)).append(")");
         if (type.equals(BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString())) {
-            sb.append(CsvInfo.SEPARATOR + Neo4JNetworkDBAdaptor.PREFIX_ATTRIBUTES + "evidence");
+            sb.append(CsvInfo.SEPARATOR + PREFIX_ATTRIBUTES + "evidence");
         }
         return sb.toString();
     }

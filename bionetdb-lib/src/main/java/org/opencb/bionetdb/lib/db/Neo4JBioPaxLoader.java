@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
+import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES;
+
 public class Neo4JBioPaxLoader {
 
     private static final String REACTOME_FEAT = "reactome.";
@@ -306,13 +308,13 @@ public class Neo4JBioPaxLoader {
                 n.put("source", node.getSource());
             }
             if (node.getAttributes().containsKey("uidCounter")) {
-                n.put(networkDBAdaptor.PREFIX_ATTRIBUTES + "uidCounter", node.getAttributes().get("uidCounter"));
+                n.put(PREFIX_ATTRIBUTES + "uidCounter", node.getAttributes().get("uidCounter"));
             }
             for (String key: node.getAttributes().keySet()) {
                 if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
-                    n.put(networkDBAdaptor.PREFIX_ATTRIBUTES + key, node.getAttributes().get(key));
+                    n.put(PREFIX_ATTRIBUTES + key, node.getAttributes().get(key));
                 } else {
-                    n.put(networkDBAdaptor.PREFIX_ATTRIBUTES + key, cleanValue(node.getAttributes().getString(key)));
+                    n.put(PREFIX_ATTRIBUTES + key, cleanValue(node.getAttributes().getString(key)));
                 }
             }
 
@@ -360,9 +362,9 @@ public class Neo4JBioPaxLoader {
             }
             for (String key : relation.getAttributes().keySet()) {
                 if (StringUtils.isNumeric(relation.getAttributes().getString(key))) {
-                    r.put(networkDBAdaptor.PREFIX_ATTRIBUTES + key, relation.getAttributes().get(key));
+                    r.put(PREFIX_ATTRIBUTES + key, relation.getAttributes().get(key));
                 } else {
-                    r.put(networkDBAdaptor.PREFIX_ATTRIBUTES + key, cleanValue(relation.getAttributes().getString(key)));
+                    r.put(PREFIX_ATTRIBUTES + key, cleanValue(relation.getAttributes().getString(key)));
                 }
             }
 
@@ -412,13 +414,13 @@ public class Neo4JBioPaxLoader {
             props.add("n.source=\"" + node.getSource() + "\"");
         }
         if (node.getAttributes().containsKey("uidCounter")) {
-            props.add("n." + networkDBAdaptor.PREFIX_ATTRIBUTES + "uidCounter=" + node.getAttributes().get("uidCounter"));
+            props.add("n." + PREFIX_ATTRIBUTES + "uidCounter=" + node.getAttributes().get("uidCounter"));
         }
         for (String key: node.getAttributes().keySet()) {
             if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
-                props.add("n." + networkDBAdaptor.PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
+                props.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
             } else {
-                props.add("n." + networkDBAdaptor.PREFIX_ATTRIBUTES + key + "=\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
+                props.add("n." + PREFIX_ATTRIBUTES + key + "=\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
             }
         }
         //String propsJoined = "{" + String.join(",", props) + "}";

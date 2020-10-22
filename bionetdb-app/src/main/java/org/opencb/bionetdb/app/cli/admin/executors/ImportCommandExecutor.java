@@ -8,7 +8,7 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.core.utils.CsvInfo;
-import org.opencb.bionetdb.core.utils.Neo4jBioPaxImporter;
+import org.opencb.bionetdb.lib.db.Neo4jBioPaxImporter;
 import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;

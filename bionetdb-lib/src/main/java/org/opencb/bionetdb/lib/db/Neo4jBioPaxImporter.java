@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.utils;
+package org.opencb.bionetdb.lib.db;
 
 import org.apache.commons.lang3.StringUtils;
 import org.biopax.paxtools.io.BioPAXIOHandler;
@@ -7,9 +7,9 @@ import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
-import org.opencb.bionetdb.core.neo4j.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
+import org.opencb.bionetdb.core.utils.CsvInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

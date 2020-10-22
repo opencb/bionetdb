@@ -1,7 +1,7 @@
 package org.opencb.bionetdb.lib.db.query;
 
-import org.opencb.bionetdb.lib.api.iterators.query.NodeQuery;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.lib.api.query.NodeQuery;
 import org.opencb.commons.datastore.core.QueryOptions;
 
 public class Neo4JGeneQueryParser {
