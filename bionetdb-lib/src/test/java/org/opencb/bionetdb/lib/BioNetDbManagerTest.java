@@ -14,18 +14,17 @@ import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.bionetdb.lib.analysis.VariantAnalysis;
-import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.lib.api.query.VariantQueryParam;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
-import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.Node;
-import org.opencb.bionetdb.lib.db.query.Neo4JQueryParser;
 import org.opencb.bionetdb.core.utils.CsvInfo;
 import org.opencb.bionetdb.core.utils.Neo4jCsvImporter;
 import org.opencb.bionetdb.core.utils.NodeBuilder;
+import org.opencb.bionetdb.lib.analysis.VariantAnalysis;
+import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.lib.api.query.VariantQueryParam;
+import org.opencb.bionetdb.lib.db.query.Neo4JQueryParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -50,12 +49,10 @@ public class BioNetDbManagerTest {
     public void setUp() throws Exception {
         try {
             BioNetDBConfiguration bioNetDBConfiguration = BioNetDBConfiguration.load(getClass().getResourceAsStream("/configuration.yml"));
-            for (DatabaseConfiguration dbConfig : bioNetDBConfiguration.getDatabases()) {
-                System.out.println(dbConfig);
-            }
+            System.out.println(bioNetDBConfiguration.getDatabase());
 
             //bioNetDBConfiguration.getDatabases().get(0).setPort(6660);
-            bioNetDBConfiguration.getDatabases().get(0).setPort(27687);
+            bioNetDBConfiguration.getDatabase().setPort(27687);
             bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
         } catch (IOException e) {
             e.printStackTrace();

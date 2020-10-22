@@ -9,11 +9,10 @@ import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
-import org.opencb.bionetdb.core.config.DatabaseConfiguration;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.*;
 import org.slf4j.Logger;
@@ -74,7 +73,7 @@ public class GenericRestWSServer {
 
     @Deprecated
     protected static NetworkDBAdaptor networkDBAdaptor;
-    protected static Map<String, BioNetDbManager> bioNetDBManagers;
+    protected static BioNetDbManager bioNetDBManager;
 
     protected static AtomicBoolean initialized;
 
@@ -150,13 +149,10 @@ public class GenericRestWSServer {
         }
 
         // Init the manager map with the managers, this will allow methods to query the right database
-        bioNetDBManagers = new HashMap<>();
-        if (bioNetDBConfiguration != null && bioNetDBConfiguration.getDatabases().size() > 0) {
+//        bioNetDBManagers = new HashMap<>();
+        if (bioNetDBConfiguration != null) {
             try {
-                for (DatabaseConfiguration databaseConfiguration : bioNetDBConfiguration.getDatabases()) {
-                    BioNetDbManager bioNetDbManager = new BioNetDbManager(databaseConfiguration.getId(), bioNetDBConfiguration);
-                    bioNetDBManagers.put(databaseConfiguration.getId(), bioNetDbManager);
-                }
+                bioNetDBManager = new BioNetDbManager(bioNetDBConfiguration);
             } catch (BioNetDBException e) {
                 e.printStackTrace();
             }
@@ -175,9 +171,9 @@ public class GenericRestWSServer {
         }
 
         // Default database is the first one in the configuration file
-        if (bioNetDBConfiguration != null && bioNetDBConfiguration.getDatabases().size() > 0) {
-            this.database = bioNetDBConfiguration.getDatabases().get(0).getId();
-        }
+//        if (bioNetDBConfiguration != null && bioNetDBConfiguration.getDatabases().size() > 0) {
+//            this.database = bioNetDBConfiguration.getDatabases().get(0).getId();
+//        }
 
         // We parse the rest of URL params
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();

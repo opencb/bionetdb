@@ -20,10 +20,9 @@ public class BioNetDBConfigurationTest {
 
 //        bioNetDBConfiguration.setDefaultDatabase("testDB");
 
-        List<DatabaseConfiguration> databases = new ArrayList<>();
-        databases.add(new DatabaseConfiguration("testDB",  null));
+        DatabaseConfiguration database = new DatabaseConfiguration("testDB",  null);
 
-        bioNetDBConfiguration.setDatabases(databases);
+        bioNetDBConfiguration.setDatabase(database);
 
         bioNetDBConfiguration.serialize(new FileOutputStream("/tmp/bionetdb-configuration-test.yml"));
     }

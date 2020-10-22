@@ -6,7 +6,10 @@ import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -76,7 +79,7 @@ public class NetworkWSServer extends GenericRestWSServer {
             @ApiParam(value = "Cypher query")
             @QueryParam("query") String cypherQuery) {
         try {
-            QueryResult<Network> networkQueryResult = bioNetDBManagers.get(this.database).networkQuery(cypherQuery);
+            QueryResult<Network> networkQueryResult = bioNetDBManager.networkQuery(cypherQuery);
             return createOkResponse(networkQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

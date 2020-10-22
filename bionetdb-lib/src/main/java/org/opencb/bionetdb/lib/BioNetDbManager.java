@@ -1,10 +1,15 @@
 package org.opencb.bionetdb.lib;
 
 import htsjdk.variant.variantcontext.VariantContext;
-import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.v1.Session;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
+import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.models.network.Network;
+import org.opencb.bionetdb.core.models.network.NetworkManager;
+import org.opencb.bionetdb.core.models.network.NetworkPath;
+import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.lib.analysis.InterpretationAnalysis;
 import org.opencb.bionetdb.lib.analysis.NetworkAnalysis;
 import org.opencb.bionetdb.lib.analysis.VariantAnalysis;
@@ -16,12 +21,6 @@ import org.opencb.bionetdb.lib.api.iterators.RowIterator;
 import org.opencb.bionetdb.lib.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.lib.api.query.NodeQuery;
 import org.opencb.bionetdb.lib.api.query.NodeQueryParam;
-import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.network.Network;
-import org.opencb.bionetdb.core.models.network.NetworkManager;
-import org.opencb.bionetdb.core.models.network.NetworkPath;
-import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.lib.db.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.lib.db.Neo4JVariantLoader;
@@ -44,7 +43,6 @@ import static org.neo4j.driver.v1.Values.parameters;
  */
 public class BioNetDbManager {
 
-    private String database;
     private BioNetDBConfiguration configuration;
 //    private ClientConfiguration cellbaseClientConfiguration;
 //    private CellBaseClient cellBaseClient;
@@ -59,35 +57,23 @@ public class BioNetDbManager {
     private TieringInterpretationAnalysis tieringInterpretationAnalysis;
 
     public BioNetDbManager(BioNetDBConfiguration configuration) throws BioNetDBException {
-        init(null, configuration);
+        init(configuration);
     }
 
-    public BioNetDbManager(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
-        init(database, configuration);
-    }
-
-    private void init(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
+    private void init(BioNetDBConfiguration configuration) throws BioNetDBException {
         // We first create te logger to debug next actions
         logger = LoggerFactory.getLogger(BioNetDbManager.class);
 
         // We check that the configuration exists and the databases are not empty
-        if (configuration == null || configuration.getDatabases() == null || configuration.getDatabases().size() == 0) {
-            logger.error("BioNetDB configuration is null or databases are empty");
-            throw new BioNetDBException("BioNetDBConfiguration is null or databases are empty");
+        if (configuration == null || configuration.getDatabase() == null) {
+            logger.error("BioNetDB configuration is null or database is empty");
+            throw new BioNetDBException("BioNetDBConfiguration is null or database is empty");
         }
         this.configuration = configuration;
 
-        // If database parameter is empty then we use take the first database
-        if (StringUtils.isNotEmpty(database)) {
-            this.database = database;
-        } else {
-            logger.debug("Empty database parameter: {}, using the first instance of 'databases'", database);
-            this.database = this.configuration.getDatabases().get(0).getId();
-        }
-
         // We can now create the default NetworkDBAdaptor
         boolean createIndex = false; // true
-        networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.database, this.configuration, createIndex);
+        networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.configuration, createIndex);
         tieringInterpretationAnalysis = new TieringInterpretationAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
 
 //        // We create CellBase client

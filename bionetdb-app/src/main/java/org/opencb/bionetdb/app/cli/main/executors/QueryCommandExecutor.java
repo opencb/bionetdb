@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.main.BioNetDBCliOptionsParser;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,15 +28,15 @@ public class QueryCommandExecutor extends CommandExecutor {
     @Override
     public void execute() {
         try {
-            if (queryCommandOptions.database == null || queryCommandOptions.database.isEmpty()) {
-                if (queryCommandOptions.database == null || queryCommandOptions.database.isEmpty()) {
-                    DatabaseConfiguration databaseConfiguration = createDatabaseConfigurationFromCLI("unknown", queryCommandOptions.host,
-                            queryCommandOptions.port, queryCommandOptions.user, queryCommandOptions.password);
-                    configuration.getDatabases().add(databaseConfiguration);
-                }
-            }
+//            if (queryCommandOptions.database == null || queryCommandOptions.database.isEmpty()) {
+//                if (queryCommandOptions.database == null || queryCommandOptions.database.isEmpty()) {
+//                    DatabaseConfiguration databaseConfiguration = createDatabaseConfigurationFromCLI("unknown", queryCommandOptions.host,
+//                            queryCommandOptions.port, queryCommandOptions.user, queryCommandOptions.password);
+//                    configuration.getDatabases().add(databaseConfiguration);
+//                }
+//            }
 
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor("unknown", configuration);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(configuration);
 
             if (queryCommandOptions.betweenness) {
                 Query query = new Query("id", queryCommandOptions.id);

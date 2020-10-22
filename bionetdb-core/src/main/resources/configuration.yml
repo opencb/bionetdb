@@ -16,7 +16,7 @@ database:
 download:
     network:
       ## In this version we are loading Ractome as default network
-      host: https://www.reactome.org/download/current/biopax.zip
+      host: http://resources.opencb.org/datasets/reactome/Homo_sapiens.owl
     gene:
       host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/gene.json.gz
     protein:

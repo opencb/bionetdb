@@ -48,31 +48,31 @@ public class Downloader {
             }
         }
 
-        // Panel
-        if (downloadProperties.getPanel() != null) {
-            try {
-                System.out.println("Downloading " + downloadProperties.getPanel().getHost() + "...");
-                URLUtils.download(new URL(downloadProperties.getPanel().getHost()), outDir);
-            } catch (IOException e) {
-                logger.error(e.getMessage());
-            }
-        }
+//        // Panel
+//        if (downloadProperties.getPanel() != null) {
+//            try {
+//                System.out.println("Downloading " + downloadProperties.getPanel().getHost() + "...");
+//                URLUtils.download(new URL(downloadProperties.getPanel().getHost()), outDir);
+//            } catch (IOException e) {
+//                logger.error(e.getMessage());
+//            }
+//        }
 
-        // Clinvar
-        if (downloadProperties.getClinvar() != null) {
+        // Clinical variant
+        if (downloadProperties.getClinicalVariant() != null) {
             try {
-                System.out.println("Downloading " + downloadProperties.getClinvar().getHost() + "...");
-                URLUtils.download(new URL(downloadProperties.getClinvar().getHost()), outDir);
+                System.out.println("Downloading " + downloadProperties.getClinicalVariant().getHost() + "...");
+                URLUtils.download(new URL(downloadProperties.getClinicalVariant().getHost()), outDir);
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }
         }
 
         // Reactome
-        if (downloadProperties.getReactome() != null) {
+        if (downloadProperties.getNetwork() != null) {
             try {
-                System.out.println("Downloading " + downloadProperties.getReactome().getHost() + "...");
-                URLUtils.download(new URL(downloadProperties.getReactome().getHost()), outDir);
+                System.out.println("Downloading " + downloadProperties.getNetwork().getHost() + "...");
+                URLUtils.download(new URL(downloadProperties.getNetwork().getHost()), outDir);
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }

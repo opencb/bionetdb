@@ -2,7 +2,6 @@ package org.opencb.bionetdb.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,8 +9,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by imedina on 05/10/15.
@@ -21,17 +18,15 @@ public class BioNetDBConfiguration {
     private String logLevel;
     private String logFile;
 
-    private List<DatabaseConfiguration> databases;
+    private DatabaseConfiguration database;
     private DownloadProperties download;
 
     protected static Logger logger = LoggerFactory.getLogger(BioNetDBConfiguration.class);
 
-    public BioNetDBConfiguration() {
-        this(new ArrayList<>());
-    }
+    public BioNetDBConfiguration() { }
 
-    public BioNetDBConfiguration(List<DatabaseConfiguration> databaseConfigurations) {
-        this.databases = databaseConfigurations;
+    public BioNetDBConfiguration(DatabaseConfiguration databaseConfiguration) {
+        database = databaseConfiguration;
 
     }
 
@@ -85,53 +80,53 @@ public class BioNetDBConfiguration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
     }
 
-    public DatabaseConfiguration findDatabase(String database) {
-        DatabaseConfiguration databaseConfiguration = null;
-        if (StringUtils.isNotEmpty(database)) {
-            for (DatabaseConfiguration databaseConf : databases) {
-                if (databaseConf.getId().equals(database)) {
-                    databaseConfiguration = databaseConf;
-                    break;
-                }
-            }
-        } else {
-            databaseConfiguration = this.databases.get(0);
-        }
-
-        return databaseConfiguration;
-    }
-
-    public void addDatabase(InputStream configurationInputStream) throws IOException {
-        addDatabase(configurationInputStream, "yaml");
-    }
-
-    public void addDatabase(InputStream configurationInputStream, String format) throws IOException {
-        DatabaseConfiguration databaseConfiguration;
-        ObjectMapper objectMapper;
-        switch (format) {
-            case "json":
-                objectMapper = new ObjectMapper();
-                databaseConfiguration = objectMapper.readValue(configurationInputStream, DatabaseConfiguration.class);
-                break;
-            case "yml":
-            case "yaml":
-            default:
-                objectMapper = new ObjectMapper(new YAMLFactory());
-                databaseConfiguration = objectMapper.readValue(configurationInputStream, DatabaseConfiguration.class);
-                break;
-        }
-
-        if (databaseConfiguration != null) {
-            this.databases.add(databaseConfiguration);
-        }
-    }
+//    public DatabaseConfiguration findDatabase(String database) {
+//        DatabaseConfiguration databaseConfiguration = null;
+//        if (StringUtils.isNotEmpty(database)) {
+//            for (DatabaseConfiguration databaseConf : databases) {
+//                if (databaseConf.getId().equals(database)) {
+//                    databaseConfiguration = databaseConf;
+//                    break;
+//                }
+//            }
+//        } else {
+//            databaseConfiguration = this.databases.get(0);
+//        }
+//
+//        return databaseConfiguration;
+//    }
+//
+//    public void addDatabase(InputStream configurationInputStream) throws IOException {
+//        addDatabase(configurationInputStream, "yaml");
+//    }
+//
+//    public void addDatabase(InputStream configurationInputStream, String format) throws IOException {
+//        DatabaseConfiguration databaseConfiguration;
+//        ObjectMapper objectMapper;
+//        switch (format) {
+//            case "json":
+//                objectMapper = new ObjectMapper();
+//                databaseConfiguration = objectMapper.readValue(configurationInputStream, DatabaseConfiguration.class);
+//                break;
+//            case "yml":
+//            case "yaml":
+//            default:
+//                objectMapper = new ObjectMapper(new YAMLFactory());
+//                databaseConfiguration = objectMapper.readValue(configurationInputStream, DatabaseConfiguration.class);
+//                break;
+//        }
+//
+//        if (databaseConfiguration != null) {
+//            this.databases.add(databaseConfiguration);
+//        }
+//    }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BioNetDBConfiguration{");
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
-        sb.append(", databases=").append(databases);
+        sb.append(", database=").append(database);
         sb.append(", download=").append(download);
         sb.append('}');
         return sb.toString();
@@ -155,12 +150,12 @@ public class BioNetDBConfiguration {
         return this;
     }
 
-    public List<DatabaseConfiguration> getDatabases() {
-        return databases;
+    public DatabaseConfiguration getDatabase() {
+        return database;
     }
 
-    public BioNetDBConfiguration setDatabases(List<DatabaseConfiguration> databases) {
-        this.databases = databases;
+    public BioNetDBConfiguration setDatabase(DatabaseConfiguration database) {
+        this.database = database;
         return this;
     }
 

@@ -3,8 +3,8 @@ package org.opencb.bionetdb.app.cli.admin.executors;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.commons.utils.FileUtils;
 
 import java.nio.file.Path;
@@ -32,16 +32,16 @@ public class LoadCommandExecutor extends CommandExecutor {
     @Override
     public void execute() {
         try {
-            if (configuration == null || configuration.getDatabases() == null || configuration.getDatabases().size() == 0) {
-                logger.error("Configuration objects is null or databases are empty");
-                return;
-            }
+//            if (configuration == null || configuration.getDatabases() == null || configuration.getDatabases().size() == 0) {
+//                logger.error("Configuration objects is null or databases are empty");
+//                return;
+//            }
 
             Path inputPath = Paths.get(loadCommandOptions.input);
             FileUtils.checkFile(inputPath);
 
             // BioNetDbManager checks if database parameter is empty
-            BioNetDbManager bioNetDbManager = new BioNetDbManager(loadCommandOptions.database, configuration);
+            BioNetDbManager bioNetDbManager = new BioNetDbManager(configuration);
 
             if (dataTypes.contains(loadCommandOptions.dataType)) {
                 if (CLINICAL_ANALYSIS.equals(loadCommandOptions.dataType)) {

@@ -23,11 +23,11 @@ import java.util.List;
  */
 public class DownloadProperties {
 
+    private URLProperties network;
     private URLProperties gene;
     private URLProperties protein;
-    private URLProperties panel;
-    private URLProperties clinvar;
-    private URLProperties reactome;
+//    private URLProperties panel;
+    private URLProperties clinicalVariant;
 
     public URLProperties getGene() {
         return gene;
@@ -47,30 +47,30 @@ public class DownloadProperties {
         return this;
     }
 
-    public URLProperties getPanel() {
-        return panel;
+//    public URLProperties getPanel() {
+//        return panel;
+//    }
+//
+//    public DownloadProperties setPanel(URLProperties panel) {
+//        this.panel = panel;
+//        return this;
+//    }
+
+    public URLProperties getClinicalVariant() {
+        return clinicalVariant;
     }
 
-    public DownloadProperties setPanel(URLProperties panel) {
-        this.panel = panel;
+    public DownloadProperties setClinicalVariant(URLProperties clinicalVariant) {
+        this.clinicalVariant = clinicalVariant;
         return this;
     }
 
-    public URLProperties getClinvar() {
-        return clinvar;
+    public URLProperties getNetwork() {
+        return network;
     }
 
-    public DownloadProperties setClinvar(URLProperties clinvar) {
-        this.clinvar = clinvar;
-        return this;
-    }
-
-    public URLProperties getReactome() {
-        return reactome;
-    }
-
-    public DownloadProperties setReactome(URLProperties reactome) {
-        this.reactome = reactome;
+    public DownloadProperties setNetwork(URLProperties network) {
+        this.network = network;
         return this;
     }
 

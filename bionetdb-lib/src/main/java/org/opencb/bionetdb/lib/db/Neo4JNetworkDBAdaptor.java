@@ -44,18 +44,16 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private Driver driver;
     private BioNetDBConfiguration configuration;
 
-    public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration) throws BioNetDBException {
-        this(database, configuration, false);
+    public Neo4JNetworkDBAdaptor(BioNetDBConfiguration configuration) {
+        this(configuration, false);
     }
 
-    public Neo4JNetworkDBAdaptor(String database, BioNetDBConfiguration configuration, boolean createIndex) throws BioNetDBException {
+    public Neo4JNetworkDBAdaptor(BioNetDBConfiguration configuration, boolean createIndex) {
         this.configuration = configuration;
 
         // configuration class checks if database is null or empty
-        DatabaseConfiguration databaseConfiguration = configuration.findDatabase(database);
-        if (databaseConfiguration == null) {
-            throw new BioNetDBException("No database found with name: \"" + database + "\"");
-        }
+        DatabaseConfiguration databaseConfiguration = configuration.getDatabase();
+
         String databaseURI = databaseConfiguration.getHost() + ":" + databaseConfiguration.getPort();
         String user = databaseConfiguration.getUser();
         String password = databaseConfiguration.getPassword();

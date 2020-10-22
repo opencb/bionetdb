@@ -42,7 +42,7 @@ public class NodeWSServer extends GenericRestWSServer {
                              @ApiParam(value = "Comma-separated list of node labels") @QueryParam("label") String label
     ) {
         try {
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(bioNetDBConfiguration);
             Query query = new Query();
             if (StringUtils.isNotEmpty(id)) {
                 List<String> ids = Arrays.asList(id.split(","));
@@ -84,7 +84,7 @@ public class NodeWSServer extends GenericRestWSServer {
     @ApiOperation(httpMethod = "GET", value = "Get Nodes by Cypher statement")
     public Response getNodesByCypher(@QueryParam("cypher") String cypher) {
         try {
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(bioNetDBConfiguration);
             QueryResult queryResult = networkDBAdaptor.nodeQuery(cypher);
             return createOkResponse(queryResult);
         } catch (Exception e) {

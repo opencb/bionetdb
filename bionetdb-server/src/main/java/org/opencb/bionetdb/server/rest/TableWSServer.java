@@ -10,7 +10,10 @@ import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -37,7 +40,7 @@ public class TableWSServer extends GenericRestWSServer {
         try {
             logger.info(cypher);
 
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(database, bioNetDBConfiguration);
+            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(bioNetDBConfiguration);
             RowIterator rowIterator = networkDBAdaptor.rowIterator(cypher);
             List<List<Object>> rows = new ArrayList<>();
             while (rowIterator.hasNext()) {
