@@ -4,13 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.StringUtils;
-import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.Record;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.commons.Converter;
-import org.opencb.bionetdb.core.utils.NodeBuilder;
-import org.opencb.bionetdb.core.utils.Utils;
+import org.opencb.bionetdb.lib.utils.NodeBuilder;
+import org.opencb.bionetdb.lib.utils.Utils;
 
 import java.io.IOException;
 import java.util.HashMap;

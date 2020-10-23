@@ -3,8 +3,8 @@ package org.opencb.bionetdb.lib.db;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.collections.CollectionUtils;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Transaction;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.DbReferenceType;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.FeatureType;
@@ -20,9 +20,9 @@ import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantC
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
-import org.opencb.bionetdb.core.utils.Neo4jConverter;
-import org.opencb.bionetdb.core.utils.Neo4jImporter;
-import org.opencb.bionetdb.core.utils.NodeBuilder;
+import org.opencb.bionetdb.lib.utils.Neo4jConverter;
+import org.opencb.bionetdb.lib.utils.Neo4jImporter;
+import org.opencb.bionetdb.lib.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 
@@ -142,7 +142,7 @@ public class Neo4JVariantLoader {
             for (Variant variant: variants) {
                 loadVariant(variant, tx);
             }
-            tx.success();
+//            tx.success();
         }
         session.close();
 
@@ -159,7 +159,7 @@ public class Neo4JVariantLoader {
             for (Gene gene : genes) {
                 loadGene(gene, tx);
             }
-            tx.success();
+//            tx.success();
         }
         session.close();
 
@@ -176,7 +176,7 @@ public class Neo4JVariantLoader {
             for (Entry protein: proteins) {
                 loadProtein(protein, tx);
             }
-            tx.success();
+//            tx.success();
         }
         session.close();
 

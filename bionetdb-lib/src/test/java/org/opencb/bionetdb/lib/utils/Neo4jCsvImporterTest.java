@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.neo4j;
+package org.opencb.bionetdb.lib.utils;
 
 public class Neo4jCsvImporterTest {
     //-----------------------------------------

@@ -9,7 +9,7 @@ import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
-import org.opencb.bionetdb.core.utils.CsvInfo;
+import org.opencb.bionetdb.lib.utils.CsvInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

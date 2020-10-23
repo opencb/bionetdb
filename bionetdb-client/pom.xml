@@ -8,6 +8,7 @@
         <artifactId>bionetdb</artifactId>
         <groupId>org.opencb.bionetdb</groupId>
         <version>0.2.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>bionetdb-client</artifactId>

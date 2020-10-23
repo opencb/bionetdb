@@ -3,7 +3,7 @@ package org.opencb.bionetdb.lib.db;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.neo4j.driver.v1.*;
+import org.neo4j.driver.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
@@ -12,7 +12,6 @@ import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
-import org.opencb.bionetdb.core.utils.Neo4jConverter;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
@@ -26,6 +25,7 @@ import org.opencb.bionetdb.lib.db.iterators.Neo4JRowIterator;
 import org.opencb.bionetdb.lib.db.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.lib.db.query.Neo4JQueryParser;
 import org.opencb.bionetdb.lib.db.query.Neo4JVariantQueryParser;
+import org.opencb.bionetdb.lib.utils.Neo4jConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -34,7 +34,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES;
+import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
 
 /**
  * Created by imedina on 05/08/15.
@@ -126,7 +126,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
                 tx.run("CREATE INDEX ON :" + Node.Type.CONFIG + "(uid)");
 
-                tx.success();
+//                tx.success();
             }
             session.close();
         }
@@ -409,7 +409,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Session session = this.driver.session();
 
         long startTime = System.currentTimeMillis();
-        StatementResult run = session.run(cypher);
+        Result run = session.run(cypher);
         Network network = Neo4jConverter.toNetwork(run);
         long stopTime = System.currentTimeMillis();
 
@@ -486,7 +486,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------------------------
 
-    public StatementResult addNode(Node node, Transaction tx) {
+    public Result addNode(Node node, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
         List<String> props = new ArrayList<>();
         props.add("n.uid=" + node.getUid());
@@ -521,7 +521,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
         }
         //cypher.append(" RETURN ID(n) AS UID");
-        StatementResult ret = tx.run(cypher.toString());
+        Result ret = tx.run(cypher.toString());
         //node.setUid(ret.peek().get("UID").asLong());
         return ret;
     }
@@ -554,7 +554,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         cypher.append(" RETURN n");
 
-        StatementResult ret = tx.run(cypher.toString());
+        Result ret = tx.run(cypher.toString());
         if (ret.hasNext()) {
             node.setUid(ret.next().get(0).asNode().get("uid").asLong());
         } else {
@@ -613,7 +613,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
         cypher.append(" RETURN n");
 
-        StatementResult ret = tx.run(cypher.toString());
+        Result ret = tx.run(cypher.toString());
         if (ret.hasNext()) {
             node.setUid(ret.next().get(0).asNode().get("uid").asLong());
         } else {
@@ -622,11 +622,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
-    public StatementResult mergeRelation(Relation relation, Transaction tx) {
+    public Result mergeRelation(Relation relation, Transaction tx) {
         return addRelation(relation, tx);
     }
 
-    public StatementResult addRelation(Relation relation, Transaction tx) {
+    public Result addRelation(Relation relation, Transaction tx) {
         List<String> props = new ArrayList<>();
         //props.add("uid:" + relation.getUid());
         if (StringUtils.isNotEmpty(relation.getName())) {
@@ -654,7 +654,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         //.append(" RETURN ID(r) AS UID");
 
         // Create the relationship
-        StatementResult ret = tx.run(statementTemplate.toString());
+        Result ret = tx.run(statementTemplate.toString());
         //relation.setUid(ret.peek().get("UID").asLong());
         return ret;
     }
@@ -665,7 +665,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private boolean existConfigNode() {
         Session session = this.driver.session();
-        StatementResult statementResult = session.run("match (n:" + Node.Type.CONFIG + "{uid:0}) return count(n) as count");
+        Result statementResult = session.run("match (n:" + Node.Type.CONFIG + "{uid:0}) return count(n) as count");
         session.close();
 
         return (statementResult.peek().get(0).asInt() == 1);
@@ -673,7 +673,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public long getUidCounter() {
         Session session = this.driver.session();
-        StatementResult statementResult = session.run("match (n{uid:0}) return n." + PREFIX_ATTRIBUTES + "uidCounter");
+        Result statementResult = session.run("match (n{uid:0}) return n." + PREFIX_ATTRIBUTES + "uidCounter");
         session.close();
 
         return (statementResult.peek().get(0).asLong());
@@ -697,7 +697,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         node.addAttribute("uidCounter", 1);
         try (Transaction tx = session.beginTransaction()) {
             addNode(node, tx);
-            tx.success();
+            //tx.success();
         }
         session.close();
     }
@@ -722,7 +722,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Session session = this.driver.session();
         try (Transaction tx = session.beginTransaction()) {
             tx.run(cypher.toString());
-            tx.success();
+            //tx.success();
         }
         session.close();
     }
@@ -757,7 +757,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     Node node = nodes.get(1000 * j + i);
                     node.getAttributes().put("uid", uid++);
                     params.put("map", node.getAttributes());
-                    StatementResult ret = tx.run(cypher, params);
+                    Result ret = tx.run(cypher, params);
 //                    node.setUid(ret.peek().get("ID").asLong());
 
 //                    String cypher = "CREATE (n:PROTEIN)";
@@ -780,7 +780,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //                return 1;
 //            });
                 }
-                tx.success();
+                //tx.success();
             }
 //            System.out.println("Inserting " + nodes.size() + " nodes at " + (1000 * nodes.size() / (System.currentTimeMillis() - start))
 // + " nodes/sec");
@@ -804,10 +804,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     cypher.append(" set n.toto={toto}");
                     cypher.append(" return n.uid as uid");
 
-                    StatementResult ret = tx.run(cypher.toString(), Values.parameters("toto", "hello"));
+                    Result ret = tx.run(cypher.toString(), Values.parameters("toto", "hello"));
                     //long retUid = ret.peek().get("uid").asLong();
                 }
-                tx.success();
+                //tx.success();
             }
             System.out.println(1000 * 1000 / (System.currentTimeMillis() - start));
         }
@@ -829,7 +829,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //                    cypher.append(" match (d:").append(Node.Type.CELLULAR_LOCATION).append(") where d.uid=").append(sourceUid + 1000);
                     cypher.append(" create (s)-[r:").append(Node.Type.CELLULAR_LOCATION).append("{uid:").append(++uid).append("}]->(d)");
 //                    cypher.append(" return r.uid");
-                    StatementResult ret = tx.run(cypher.toString());
+                    Result ret = tx.run(cypher.toString());
 
 //                String query = "CREATE (n:PROTEIN{id:{id}, name:{name}}) RETURN ID(n) as ID";
 //                String cypher = "CREATE (n:CELLULAR_LOCATION) SET n = {map}";
@@ -859,7 +859,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 ////                return 1;
 ////            });
                 }
-                tx.success();
+                //tx.success();
             }
 //            System.out.println("Inserting " + nodes.size() + " nodes at " + (1000 * nodes.size() / (System.currentTimeMillis() - start))
 // + " nodes/sec");

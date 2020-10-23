@@ -1,19 +1,19 @@
 package org.opencb.bionetdb.lib.db.iterators;
 
-import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.Result;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
-import org.opencb.bionetdb.core.utils.Neo4jConverter;
 import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
+import org.opencb.bionetdb.lib.utils.Neo4jConverter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Neo4JNetworkPathIterator implements NetworkPathIterator {
-    private StatementResult statementResult;
+    private Result result;
     private List<NetworkPath> buffer;
 
-    public Neo4JNetworkPathIterator(StatementResult statementResult) {
-        this.statementResult = statementResult;
+    public Neo4JNetworkPathIterator(Result result) {
+        this.result = result;
         this.buffer = new ArrayList<>();
     }
 
@@ -22,8 +22,8 @@ public class Neo4JNetworkPathIterator implements NetworkPathIterator {
         if (!buffer.isEmpty()) {
             return true;
         } else {
-            if (statementResult.hasNext()) {
-                buffer = Neo4jConverter.toPathList(statementResult.next());
+            if (result.hasNext()) {
+                buffer = Neo4jConverter.toPathList(result.next());
             }
             return !buffer.isEmpty();
         }

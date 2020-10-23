@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.utils;
+package org.opencb.bionetdb.lib.utils;
 
 import com.google.common.primitives.Longs;
 import org.rocksdb.Options;

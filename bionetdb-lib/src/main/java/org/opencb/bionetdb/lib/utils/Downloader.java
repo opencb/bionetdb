@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.utils;
+package org.opencb.bionetdb.lib.utils;
 
 import org.opencb.bionetdb.core.config.DownloadProperties;
 import org.opencb.commons.utils.URLUtils;

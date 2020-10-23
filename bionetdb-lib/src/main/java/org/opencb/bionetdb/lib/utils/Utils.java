@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.utils;
+package org.opencb.bionetdb.lib.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;

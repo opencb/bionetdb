@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.neo4j;
+package org.opencb.bionetdb.lib.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.biopax.paxtools.io.BioPAXIOHandler;

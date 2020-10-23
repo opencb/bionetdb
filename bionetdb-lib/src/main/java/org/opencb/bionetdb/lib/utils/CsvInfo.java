@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.utils;
+package org.opencb.bionetdb.lib.utils;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -16,8 +16,8 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
-import org.opencb.bionetdb.core.utils.cache.GeneCache;
-import org.opencb.bionetdb.core.utils.cache.ProteinCache;
+import org.opencb.bionetdb.lib.utils.cache.GeneCache;
+import org.opencb.bionetdb.lib.utils.cache.ProteinCache;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -29,7 +29,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
-import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES;
+import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
 
 public class CsvInfo {
     public static final String SEPARATOR = "\t";
@@ -585,7 +585,7 @@ public class CsvInfo {
         }
         miRnaRocksDb = rocksDbManager.getDBConnection(indexPath.toString(), false);
 
-        BufferedReader reader = org.opencb.commons.utils.FileUtils.newBufferedReader(miRnaPath);
+        BufferedReader reader = FileUtils.newBufferedReader(miRnaPath);
         String line = reader.readLine();
         String[] fields = line.split(",");
         int indexMiRnaId = -1, indexTargetGene = -1, indexEvidence = -1;

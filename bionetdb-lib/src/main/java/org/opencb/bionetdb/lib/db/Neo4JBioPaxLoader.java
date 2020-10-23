@@ -7,10 +7,10 @@ import org.biopax.paxtools.model.BioPAXElement;
 import org.biopax.paxtools.model.Model;
 import org.biopax.paxtools.model.level3.*;
 import org.biopax.paxtools.model.level3.Process;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Transaction;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.commons.utils.ListUtils;
@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
-import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES;
+import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
 
 public class Neo4JBioPaxLoader {
 
@@ -332,14 +332,14 @@ public class Neo4JBioPaxLoader {
                 Map<String, Object> params = new HashMap<>();
                 params.put("props", mapsByType.get(key));
                 String cypher = "UNWIND $props AS properties CREATE (n:" + key + ") SET n = properties RETURN ID(n)";
-                StatementResult ret = tx.run(cypher, params);
+                Result ret = tx.run(cypher, params);
                 while (ret.hasNext()) {
                     Record record = ret.next();
                     long uid = record.get(0).asLong();
                 }
                 //System.out.println("in size = " + mapsByType.get(key).size() + ", out size = " + ret.list().size());
             }
-            tx.success();
+//            tx.success();
             tx.close();
         }
         nodeLoadingTime += System.currentTimeMillis() - startTime;
@@ -392,7 +392,7 @@ public class Neo4JBioPaxLoader {
                         .append(split[2]).append("]->(d) SET r = map.properties");
                 tx.run(cypher.toString(), params);
             }
-            tx.success();
+//            tx.success();
             tx.close();
         }
         relationLoadingTime += System.currentTimeMillis() - startTime;
@@ -400,7 +400,7 @@ public class Neo4JBioPaxLoader {
                 Math.round(1000.0 * relations.size() / ((System.currentTimeMillis() - startTime))));
     }
 
-    public StatementResult addNode(Node node, Transaction tx) {
+    public Result addNode(Node node, Transaction tx) {
         // Gather properties of the node to create a cypher string with them
         List<String> props = new ArrayList<>();
         props.add("n.uid=" + node.getUid());
@@ -435,7 +435,7 @@ public class Neo4JBioPaxLoader {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
         }
         //cypher.append(" RETURN ID(n) AS UID");
-        StatementResult ret = tx.run(cypher.toString());
+        Result ret = tx.run(cypher.toString());
         //node.setUid(ret.peek().get("UID").asLong());
         return ret;
     }

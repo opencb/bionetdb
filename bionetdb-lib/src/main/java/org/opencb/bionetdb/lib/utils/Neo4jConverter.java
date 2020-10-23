@@ -1,12 +1,12 @@
-package org.opencb.bionetdb.core.utils;
+package org.opencb.bionetdb.lib.utils;
 
 import htsjdk.variant.variantcontext.VariantContext;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.util.Pair;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.types.Path;
+import org.neo4j.driver.types.Relationship;
+import org.neo4j.driver.util.Pair;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.models.network.Network;
@@ -17,8 +17,8 @@ import org.opencb.bionetdb.core.models.network.Relation;
 import java.util.*;
 
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
-import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES;
-import static org.opencb.bionetdb.core.utils.Utils.PREFIX_ATTRIBUTES_LENGTH;
+import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
+import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES_LENGTH;
 
 public class Neo4jConverter {
 
@@ -62,7 +62,7 @@ public class Neo4jConverter {
         return networkPaths;
     }
 
-    public static Network toNetwork(StatementResult statementResult) {
+    public static Network toNetwork(Result statementResult) {
         Network network = new Network();
 
         // First, be sure to process nodes first
@@ -72,12 +72,12 @@ public class Neo4jConverter {
             Record record = statementResult.next();
             for (Pair<String, Value> pair: record.fields()) {
                 if (pair.value().hasType(TYPE_SYSTEM.NODE())) {
-                    org.neo4j.driver.v1.types.Node neoNode = pair.value().asNode();
+                    org.neo4j.driver.types.Node neoNode = pair.value().asNode();
                     Node node = toNode(neoNode);
                     nodeMap.put(neoNode.id(), node);
                 } else if (pair.value().hasType(TYPE_SYSTEM.RELATIONSHIP())) {
-                        Relationship neoRelation = pair.value().asRelationship();
-                        relationshipMap.put(neoRelation.id(), neoRelation);
+                    Relationship neoRelation = pair.value().asRelationship();
+                    relationshipMap.put(neoRelation.id(), neoRelation);
                 } else if (pair.value().hasType(TYPE_SYSTEM.PATH())) {
                     Path path = pair.value().asPath();
                     getPathContent(path, nodeMap, relationshipMap);
@@ -121,7 +121,7 @@ public class Neo4jConverter {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    public static Node toNode(org.neo4j.driver.v1.types.Node neoNode) {
+    public static Node toNode(org.neo4j.driver.types.Node neoNode) {
         // Set uid, id and name
         Node node = new Node(neoNode.get("uid").asLong());
         if (neoNode.containsKey("id")) {
@@ -149,7 +149,7 @@ public class Neo4jConverter {
         // Set attributes
         for (String k: neoNode.keys()) {
             if (k.startsWith(PREFIX_ATTRIBUTES)) {
-                    node.addAttribute(k.substring(PREFIX_ATTRIBUTES_LENGTH), neoNode.get(k).asObject());
+                node.addAttribute(k.substring(PREFIX_ATTRIBUTES_LENGTH), neoNode.get(k).asObject());
             }
         }
         return node;
@@ -200,15 +200,15 @@ public class Neo4jConverter {
 
     private static void getPathContent(Path neoPath, Map<Long, Node> nodeMap, Map<Long, Relationship> relationshipMap) {
         if (neoPath.nodes() != null) {
-            Iterator<org.neo4j.driver.v1.types.Node> iterator = neoPath.nodes().iterator();
+            Iterator<org.neo4j.driver.types.Node> iterator = neoPath.nodes().iterator();
             while (iterator.hasNext()) {
-                org.neo4j.driver.v1.types.Node neoNode = iterator.next();
+                org.neo4j.driver.types.Node neoNode = iterator.next();
                 Node node = toNode(neoNode);
                 nodeMap.put(neoNode.id(), node);
             }
         }
         if (neoPath.relationships() != null) {
-            Iterator<org.neo4j.driver.v1.types.Relationship> iterator = neoPath.relationships().iterator();
+            Iterator<org.neo4j.driver.types.Relationship> iterator = neoPath.relationships().iterator();
             while (iterator.hasNext()) {
                 Relationship neoRelation = iterator.next();
                 relationshipMap.put(neoRelation.id(), neoRelation);
@@ -216,3 +216,5 @@ public class Neo4jConverter {
         }
     }
 }
+
+

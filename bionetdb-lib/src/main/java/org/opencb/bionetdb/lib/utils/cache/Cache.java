@@ -1,11 +1,11 @@
-package org.opencb.bionetdb.core.utils.cache;
+package org.opencb.bionetdb.lib.utils.cache;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.bionetdb.core.utils.RocksDbManager;
+import org.opencb.bionetdb.lib.utils.RocksDbManager;
 import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

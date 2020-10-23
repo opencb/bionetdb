@@ -3,7 +3,6 @@ package org.opencb.bionetdb.lib.db;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.logging.Log;
@@ -15,7 +14,7 @@ import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.bionetdb.core.utils.NodeBuilder;
+import org.opencb.bionetdb.lib.utils.NodeBuilder;
 import org.parboiled.common.StringUtils;
 
 import java.util.List;
@@ -24,13 +23,9 @@ import java.util.Map;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.opencb.bionetdb.core.models.network.Node.Type.CONSERVATION;
 import static org.opencb.bionetdb.core.models.network.Node.Type.FUNCTIONAL_SCORE;
-import static org.opencb.bionetdb.core.models.network.Node.Type.GENE;
 import static org.opencb.bionetdb.core.models.network.Node.Type.*;
 import static org.opencb.bionetdb.core.models.network.Node.Type.TRAIT_ASSOCIATION;
 import static org.opencb.bionetdb.core.models.network.Relation.Type.*;
-import static org.opencb.bionetdb.core.models.network.Relation.Type.PROTEIN;
-import static org.opencb.bionetdb.core.models.network.Relation.Type.SO;
-import static org.opencb.bionetdb.core.models.network.Relation.Type.TRANSCRIPT;
 
 public class Neo4JLoader {
 
@@ -189,7 +184,8 @@ public class Neo4JLoader {
 //    }
 
     private Node loadSoftware(Software software) {
-        Node softwareNode = graphDb.findNode(Label.label(SOFTWARE.name()), "id", NodeBuilder.getSoftwareId(software));
+        Node softwareNode = null;
+//        Node softwareNode = graphDb.findNode(Label.label(SOFTWARE.name()), "id", NodeBuilder.getSoftwareId(software));
         if (softwareNode != null) {
             return softwareNode;
         }
@@ -255,7 +251,8 @@ public class Neo4JLoader {
         // Genomic feature
         if (clinicalVariantEvidence.getGenomicFeature() != null) {
             GenomicFeature genomicFeature = clinicalVariantEvidence.getGenomicFeature();
-            Node genomicFeatureNode = graphDb.findNode(Label.label(GENOMIC_FEATURE.name()), "id", genomicFeature.getId());
+            Node genomicFeatureNode = null;
+//            Node genomicFeatureNode = graphDb.findNode(Label.label(GENOMIC_FEATURE.name()), "id", genomicFeature.getId());
             if (genomicFeatureNode == null) {
                 //log.info("Genomic feature " + genomicFeature.getId() + " not found for reported event!");
                 genomicFeatureNode = createNeo4JNode(NodeBuilder.newNode(0, genomicFeature));
@@ -265,7 +262,8 @@ public class Neo4JLoader {
 
         // Panel
         if (StringUtils.isNotEmpty(clinicalVariantEvidence.getPanelId())) {
-            Node panelNode = graphDb.findNode(Label.label(PANEL.name()), "id", clinicalVariantEvidence.getPanelId());
+            Node panelNode = null;
+//            Node panelNode = graphDb.findNode(Label.label(PANEL.name()), "id", clinicalVariantEvidence.getPanelId());
             if (panelNode == null) {
                 //log.info("Panel " + reportedEvent.getPanelId() + " not found for reported event!");
                 panelNode = createNeo4JNode(new org.opencb.bionetdb.core.models.network.Node(0, clinicalVariantEvidence.getPanelId(),
@@ -278,7 +276,8 @@ public class Neo4JLoader {
     }
 
     public Node loadVariant(Variant variant) {
-        Node variantNode = graphDb.findNode(Label.label(VARIANT.name()), "id", variant.toString());
+        Node variantNode = null;
+//        Node variantNode = graphDb.findNode(Label.label(VARIANT.name()), "id", variant.toString());
         if (variantNode != null) {
             //log.info("Variant ID " + variant.toString() + " already loaded. Skip.");
             return variantNode;
@@ -298,7 +297,8 @@ public class Neo4JLoader {
 
                     // Transcript node and relation consequence type - transcript
                     if (ct.getEnsemblTranscriptId() != null) {
-                        Node transcriptNode = graphDb.findNode(Label.label(TRANSCRIPT.name()), "id", ct.getEnsemblTranscriptId());
+                        Node transcriptNode = null;
+//                        Node transcriptNode = graphDb.findNode(Label.label(TRANSCRIPT.name()), "id", ct.getEnsemblTranscriptId());
                         if (transcriptNode != null) {
                             ctNode.createRelationshipTo(transcriptNode, withName(CONSEQUENCE_TYPE__TRANSCRIPT.toString()));
                         } else {
@@ -313,7 +313,8 @@ public class Neo4JLoader {
                     if (CollectionUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
                         for (SequenceOntologyTerm so : ct.getSequenceOntologyTerms()) {
                             // SO node and relation consequence type - so
-                            Node soNode = graphDb.findNode(Label.label(SO.toString()), "id", so.getAccession());
+                            Node soNode = null;
+//                            Node soNode = graphDb.findNode(Label.label(SO.toString()), "id", so.getAccession());
                             if (soNode == null) {
 //                                log.info("SO term accession " + so.getAccession() + " not found.");
                                 soNode = createNeo4JNode(new org.opencb.bionetdb.core.models.network.Node(0, so.getAccession(),
@@ -333,7 +334,8 @@ public class Neo4JLoader {
 
                         // Protein relationship management
                         if (pVA.getUniprotAccession() != null) {
-                            Node proteinNode = graphDb.findNode(Label.label(PROTEIN.name()), "id", pVA.getUniprotAccession());
+                            Node proteinNode = null;
+//                            Node proteinNode = graphDb.findNode(Label.label(PROTEIN.name()), "id", pVA.getUniprotAccession());
                             if (proteinNode != null) {
                                 pVANode.createRelationshipTo(proteinNode, withName(PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString()));
                             } else {
@@ -541,7 +543,8 @@ public class Neo4JLoader {
 
     public Node loadOntologyTermAnnotation(OntologyTermAnnotation ontologyTerm) {
         //log.info("Loading OntologyTerm, id = " + ontologyTerm.getId() + ", name = " + ontologyTerm.getName());
-        Node ontologyTermNode = graphDb.findNode(Label.label(ONTOLOGY_TERM.name()), "id", ontologyTerm.getId());
+        Node ontologyTermNode = null;
+//        Node ontologyTermNode = graphDb.findNode(Label.label(ONTOLOGY_TERM.name()), "id", ontologyTerm.getId());
         if (ontologyTermNode == null) {
             ontologyTermNode = createNeo4JNode(NodeBuilder.newNode(0, ontologyTerm));
         }
@@ -579,7 +582,8 @@ public class Neo4JLoader {
 //    }
 
     public Node loadPanel(DiseasePanel panel) {
-        Node panelNode = graphDb.findNode(Label.label(PANEL.name()), "id", panel.getId());
+        Node panelNode = null;
+//        Node panelNode = graphDb.findNode(Label.label(PANEL.name()), "id", panel.getId());
         if (panelNode != null) {
             return panelNode;
         }
@@ -602,7 +606,8 @@ public class Neo4JLoader {
                 panelNode.createRelationshipTo(panelVariantNode, withName(PANEL__PANEL_VARIANT.name()));
 //                addOntologyTerms(panelVariant.getPhenotypes(), panelVariantNode, withName(PANEL_VARIANT__ONTOLOGY_TERM.name()));
 
-                Node variantNode = graphDb.findNode(Label.label(VARIANT.name()), "id", panelVariant.getId());
+                Node variantNode = null;
+//                Node variantNode = graphDb.findNode(Label.label(VARIANT.name()), "id", panelVariant.getId());
                 if (variantNode != null) {
                     panelVariantNode.createRelationshipTo(variantNode, withName(PANEL_VARIANT__VARIANT.name()));
                 } else {
@@ -617,7 +622,8 @@ public class Neo4JLoader {
                 panelNode.createRelationshipTo(panelGeneNode, withName(PANEL__PANEL_GENE.name()));
 //                addOntologyTerms(panelGene.getPhenotypes(), panelGeneNode, withName(PANEL_GENE__ONTOLOGY_TERM.name()));
 
-                Node geneNode = graphDb.findNode(Label.label(GENE.name()), "id", panelGene.getId());
+                Node geneNode = null;
+//                Node geneNode = graphDb.findNode(Label.label(GENE.name()), "id", panelGene.getId());
                 if (geneNode != null) {
                     panelGeneNode.createRelationshipTo(geneNode, withName(PANEL_GENE__GENE.name()));
                 } else {
@@ -658,7 +664,8 @@ public class Neo4JLoader {
     }
 
     private Node createNeo4JNode(org.opencb.bionetdb.core.models.network.Node node) {
-        Node neo4jNode = graphDb.createNode(Label.label(node.getType().toString()));
+        Node neo4jNode = null;
+//        Node neo4jNode = graphDb.createNode(Label.label(node.getType().toString()));
 
         neo4jNode.setProperty("uid", neo4jNode.getId());
 

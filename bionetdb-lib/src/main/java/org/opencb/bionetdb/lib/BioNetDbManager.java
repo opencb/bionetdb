@@ -1,7 +1,7 @@
 package org.opencb.bionetdb.lib;
 
 import htsjdk.variant.variantcontext.VariantContext;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.Session;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 
 /**
  * Created by joaquin on 1/29/18.

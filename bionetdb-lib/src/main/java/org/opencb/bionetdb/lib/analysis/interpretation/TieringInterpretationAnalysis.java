@@ -1,12 +1,13 @@
 package org.opencb.bionetdb.lib.analysis.interpretation;
 
 import org.apache.commons.lang3.StringUtils;
-import org.neo4j.driver.v1.*;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.variant.Variant;
-
 import org.opencb.bionetdb.lib.db.iterators.Neo4JVariantIterator;
-import org.opencb.bionetdb.core.utils.NodeBuilder;
+import org.opencb.bionetdb.lib.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.ArrayList;
@@ -106,7 +107,7 @@ public class TieringInterpretationAnalysis {
         System.out.println("queryString = " + queryString + "\n");
 
         Session session = this.driver.session();
-        StatementResult result = session.run(queryString);
+        Result result = session.run(queryString);
         session.close();
         return new Neo4JVariantIterator(result);
     }
@@ -173,7 +174,7 @@ public class TieringInterpretationAnalysis {
      */
     private QueryResult<Variant> executeQuery(String queryString) {
         Session session = this.driver.session();
-        StatementResult result = session.run(queryString);
+        Result result = session.run(queryString);
         session.close();
         List<Variant> variants = new ArrayList<>();
         while (result.hasNext()) {

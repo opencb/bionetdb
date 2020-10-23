@@ -2,14 +2,9 @@ package org.opencb.bionetdb.app.cli.admin.executors;
 
 import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.bionetdb.core.config.DownloadProperties;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.utils.Downloader;
-import org.opencb.commons.utils.URLUtils;
+import org.opencb.bionetdb.lib.utils.Downloader;
 
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**

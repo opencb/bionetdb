@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.utils.cache;
+package org.opencb.bionetdb.lib.utils.cache;
 
 import org.opencb.biodata.models.core.Gene;
 import org.slf4j.Logger;

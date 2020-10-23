@@ -1,4 +1,4 @@
-package org.opencb.bionetdb.core.utils;
+package org.opencb.bionetdb.lib.utils;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -18,8 +18,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
-import org.opencb.bionetdb.core.utils.cache.GeneCache;
-import org.opencb.bionetdb.core.utils.cache.ProteinCache;
+import org.opencb.bionetdb.lib.utils.cache.GeneCache;
+import org.opencb.bionetdb.lib.utils.cache.ProteinCache;
 import org.opencb.commons.utils.FileUtils;
 import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
@@ -978,7 +978,7 @@ public class Neo4jCsvImporter {
 
     public void indexingGenes(Path genePath) throws IOException {
         GeneCache geneCache = csv.getGeneCache();
-        BufferedReader reader = org.opencb.commons.utils.FileUtils.newBufferedReader(genePath);
+        BufferedReader reader = FileUtils.newBufferedReader(genePath);
 
         String jsonGene = reader.readLine();
         long geneCounter = 0;
@@ -1027,7 +1027,7 @@ public class Neo4jCsvImporter {
 
     public void indexingProteins(Path proteinPath) throws IOException {
         ProteinCache proteinCache = csv.getProteinCache();
-        BufferedReader reader = org.opencb.commons.utils.FileUtils.newBufferedReader(proteinPath);
+        BufferedReader reader = FileUtils.newBufferedReader(proteinPath);
 
         String jsonProtein = reader.readLine();
         long proteinCounter = 0;

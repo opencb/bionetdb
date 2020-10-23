@@ -2,8 +2,8 @@ package org.opencb.bionetdb.lib.db.query;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.bionetdb.core.utils.NodeBuilder;
 import org.opencb.bionetdb.lib.api.query.VariantQueryParam;
+import org.opencb.bionetdb.lib.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 
@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.bionetdb.core.utils.NodeBuilder.*;
+import static org.opencb.bionetdb.lib.utils.NodeBuilder.*;
 
 public class Neo4JVariantQueryParser {
 
