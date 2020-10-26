@@ -31,8 +31,7 @@ public class Downloader {
         // Gene
         if (downloadProperties.getGene() != null) {
             try {
-                System.out.println("Downloading " + downloadProperties.getGene().getHost() + "...");
-                URLUtils.download(new URL(downloadProperties.getGene().getHost()), outDir);
+                downloadURL(new URL(downloadProperties.getGene().getHost()), outDir);
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }
@@ -41,8 +40,7 @@ public class Downloader {
         // Protein
         if (downloadProperties.getProtein() != null) {
             try {
-                System.out.println("Downloading " + downloadProperties.getProtein().getHost() + "...");
-                URLUtils.download(new URL(downloadProperties.getProtein().getHost()), outDir);
+                downloadURL(new URL(downloadProperties.getProtein().getHost()), outDir);
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }
@@ -51,8 +49,7 @@ public class Downloader {
 //        // Panel
 //        if (downloadProperties.getPanel() != null) {
 //            try {
-//                System.out.println("Downloading " + downloadProperties.getPanel().getHost() + "...");
-//                URLUtils.download(new URL(downloadProperties.getPanel().getHost()), outDir);
+//                downloadURL(new URL(downloadProperties.getPanel().getHost()), outDir);
 //            } catch (IOException e) {
 //                logger.error(e.getMessage());
 //            }
@@ -61,8 +58,7 @@ public class Downloader {
         // Clinical variant
         if (downloadProperties.getClinicalVariant() != null) {
             try {
-                System.out.println("Downloading " + downloadProperties.getClinicalVariant().getHost() + "...");
-                URLUtils.download(new URL(downloadProperties.getClinicalVariant().getHost()), outDir);
+                downloadURL(new URL(downloadProperties.getClinicalVariant().getHost()), outDir);
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }
@@ -71,8 +67,7 @@ public class Downloader {
         // Reactome
         if (downloadProperties.getNetwork() != null) {
             try {
-                System.out.println("Downloading " + downloadProperties.getNetwork().getHost() + "...");
-                URLUtils.download(new URL(downloadProperties.getNetwork().getHost()), outDir);
+                downloadURL(new URL(downloadProperties.getNetwork().getHost()), outDir);
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }
@@ -80,6 +75,12 @@ public class Downloader {
 
     }
 
+    private void downloadURL(URL url, Path outDir) throws IOException {
+        logger.info("Downloading " + url + "...");
+        URLUtils.download(url, this.outDir);
+        logger.info(url + " downloaded!");
+
+    }
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Downloader{");
