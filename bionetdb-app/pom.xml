@@ -26,21 +26,17 @@
             <artifactId>bionetdb-lib</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.bionetdb</groupId>
             <artifactId>bionetdb-server</artifactId>
             <version>${bionetdb.version}</version>
             <scope>provided</scope>
             <type>war</type>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-lib</artifactId>
-        </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.sbml.libsbml</groupId>-->
-            <!--<artifactId>libsbml</artifactId>-->
-            <!--<systemPath>${basedir}/app/ext-libs/libsbmlj.jar</systemPath>-->
-        <!--</dependency>-->
+
 
         <dependency>
             <groupId>com.beust</groupId>

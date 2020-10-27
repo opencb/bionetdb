@@ -17,15 +17,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>biodata-formats</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>biodata-tools</artifactId>
-            <version>${biodata.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-lib</artifactId>
         </dependency>
@@ -33,6 +24,14 @@
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-formats</artifactId>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.opencb.biodata</groupId>-->
+<!--            <artifactId>biodata-tools</artifactId>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -42,24 +41,9 @@
             <groupId>org.biopax.paxtools</groupId>
             <artifactId>paxtools-core</artifactId>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.sbml.libsbml</groupId>-->
-            <!--<artifactId>libsbml</artifactId>-->
-            <!--<systemPath>${basedir}/../bionetdb-app/app/ext-libs/libsbmlj.jar</systemPath>-->
-        <!--</dependency>-->
-        <!--
-        <dependency>
-            <groupId>psidev.psi.mi</groupId>
-            <artifactId>psimitab</artifactId>
-        </dependency>
-        -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
