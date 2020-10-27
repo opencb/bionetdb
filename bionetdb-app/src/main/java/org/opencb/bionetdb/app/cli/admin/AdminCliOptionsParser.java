@@ -96,24 +96,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String outDir;
     }
 
-//    @Parameters(commandNames = {"build"}, commandDescription = "Build CellBase data models from all data sources downloaded")
-//    public class BuildCommandOptions {
-//
-//        @ParametersDelegate
-//        public CommonCommandOptions commonOptions = commonCommandOptions;
-//
-//
-//        @Parameter(names = {"-i", "--input"}, description = "Input file with the downloaded network", required = true, arity = 1)
-//        public String input;
-//
-//        @Parameter(names = {"-o", "--output"}, description = "Output file where the data model is stored", required = false, arity = 1)
-//        public String output;
-//
-//        @Parameter(names = {"-s", "--species"}, description = "Name of the species to be built, valid format include 'Homo sapiens' or 'hsapiens'", required = false, arity = 1)
-//        public String species = "Homo sapiens";
-//
-//    }
-
 
     @Parameters(commandNames = {"build"}, commandDescription = "Build the data models in CSV format files")
     public class BuildCommandOptions {
@@ -124,18 +106,11 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "Input directory that contains the biological files to convert to CSV files)", required = true, arity = 1)
         public String input;
 
-        @Parameter(names = {"-o", "--output"}, description = "Output directory where to save the CSV files to import", arity = 1)
+        @Parameter(names = {"-o", "--output"}, description = "Output directory where to save the CSV files to import", required = true, arity = 1)
         public String output;
-
-        @Parameter(names = {"--clinical-analysis"}, description = "Input JSON files contains clinical analysis (otherwise, variants)", arity = 0)
-        public boolean clinicalAnalysis = false;
 
         @Parameter(names = {"--exclude"}, description = "Exclude information separated by comma, e.g.:'XREF_DBNAME:Reactome Database ID Release 63'", arity = 1)
         public List<String> exclude;
-
-        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        public Map<String, String> loaderParams = new HashMap<>();
-
     }
 
     @Parameters(commandNames = {"import"}, commandDescription = "Import the built data models in format CSV files into the database")

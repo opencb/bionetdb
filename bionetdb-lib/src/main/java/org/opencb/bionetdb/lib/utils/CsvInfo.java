@@ -153,7 +153,7 @@ public class CsvInfo {
 
     public CsvInfo(Path inputPath, Path outputPath) {
         uid = 1;
-        //this.bioPAXImporter = new Neo4jBioPaxImporter()
+        //this.bioPAXImporter = new Neo4jBioPaxBuilder()
 
         this.inputPath = inputPath;
         this.outputPath = outputPath;
@@ -506,7 +506,7 @@ public class CsvInfo {
         }
     }
 
-//    public void indexingGenes(Path inputPath) throws IOException {
+//    public void buildGenes(Path inputPath) throws IOException {
 ////        geneCache.index(inputPath, indexPath);
 //
 ////        String objFilename = output.toString() + "/genes.rocksdb";
@@ -571,7 +571,7 @@ public class CsvInfo {
 //        reader.close();
 //    }
 
-//    public void indexingProteins(Path inputPath, Path indexPath) throws IOException {
+//    public void buildProteins(Path inputPath, Path indexPath) throws IOException {
 //        proteinCache.index(inputPath, indexPath);
 //    }
 

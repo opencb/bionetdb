@@ -7,12 +7,11 @@ import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
-import org.opencb.bionetdb.lib.db.Neo4jBioPaxImporter;
+import org.opencb.bionetdb.lib.db.Neo4jBioPaxBuilder;
 import org.opencb.bionetdb.lib.utils.CsvInfo;
 import org.opencb.bionetdb.lib.utils.Neo4jCsvImporter;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.commons.utils.ListUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,148 +45,148 @@ public class ImportCommandExecutor extends CommandExecutor {
 
     @Override
     public void execute() throws BioNetDBException {
-        if (buildCommandOptions != null) {
-            createCsvFiles();
-        } else if (importCommandOptions != null) {
-            importCsvFiles();
-        } else {
-            throw new BioNetDBException("Import commandline error");
-        }
+//        if (buildCommandOptions != null) {
+//            createCsvFiles();
+//        } else if (importCommandOptions != null) {
+//            importCsvFiles();
+//        } else {
+//            throw new BioNetDBException("Import commandline error");
+//        }
     }
 
-    private void createCsvFiles() {
-        try {
-            long start;
-
-            // Check input and output directories
-            Path inputPath = Paths.get(buildCommandOptions.input);
-            FileUtils.checkDirectory(inputPath);
-
-            Path outputPath = Paths.get(buildCommandOptions.output);
-            FileUtils.checkDirectory(outputPath);
-
-            // Prepare CSV object
-            CsvInfo csv = new CsvInfo(inputPath, outputPath);
-
-            // Open CSV files
-            csv.openCSVFiles();
-            Neo4jCsvImporter importer = new Neo4jCsvImporter(csv);
-
-//            // CellBase client
-//            // TODO: maybe it should be created from the configuration file
-//            ClientConfiguration clientConfiguration = new ClientConfiguration();
-//            clientConfiguration.setVersion("v4");
-//            clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-//            CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh38", clientConfiguration);
-
-            // Retrieving files from the input directory
-            List<File> reactomeFiles = new ArrayList<>();
-            List<File> jsonFiles = new ArrayList<>();
-            for (File file: inputPath.toFile().listFiles()) {
-                if (file.isFile()) {
-                    String filename = file.getName();
-                    if (filename.equals(Neo4jCsvImporter.GENE_FILENAME)
-                            || filename.equals(Neo4jCsvImporter.GENE_FILENAME + ".gz")
-                            || filename.equals(Neo4jCsvImporter.PROTEIN_FILENAME)
-                            || filename.equals(Neo4jCsvImporter.PROTEIN_FILENAME + ".gz")) {
-                        continue;
-                    }
-                    if (filename.contains("biopax") || filename.contains("owl")) {
-                        reactomeFiles.add(file);
-                    } else if (filename.endsWith("meta.json")) {
-                        continue;
-                    } else if (filename.endsWith(".json") || filename.endsWith(".json.gz")) {
-                        jsonFiles.add(file);
-                    } else {
-                        logger.info("Skipping file {}", file.getAbsolutePath());
-                    }
-                }
-            }
-
-            long geneIndexingTime = 0;
-            long proteinIndexingTime = 0;
-            long genePanelsTime = 0;
-            long miRnaIndexingTime = 0;
-            long bioPaxTime = 0;
-
-            // Indexing genes
-            logger.info("Starting gene indexing...");
-            File geneFile = new File(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME);
-            if (!geneFile.exists()) {
-                geneFile = new File(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME + ".gz");
-                FileUtils.checkFile(geneFile.toPath());
-            }
-            start = System.currentTimeMillis();
-            importer.indexingGenes(geneFile.toPath());
-            geneIndexingTime = (System.currentTimeMillis() - start) / 1000;
-            logger.info("Gene indexing done in {} s", geneIndexingTime);
-
-            // Indexing proteins
-            logger.info("Starting protein indexing...");
-            File proteinFile = new File(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME);
-            if (!proteinFile.exists()) {
-                proteinFile = new File(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME + ".gz");
-                FileUtils.checkFile(proteinFile.toPath());
-            }
-            start = System.currentTimeMillis();
-            importer.indexingProteins(proteinFile.toPath());
-            proteinIndexingTime = (System.currentTimeMillis() - start) / 1000;
-            logger.info("Protein indexing done in {} s", proteinIndexingTime);
-
-            // Gene panels support
-            if (Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME).toFile().exists()) {
-                logger.info("Starting gene panels processing...");
-                start = System.currentTimeMillis();
-                importer.addGenePanels(Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME), outputPath);
-                genePanelsTime = (System.currentTimeMillis() - start) / 1000;
-                logger.info("Gene panels processing done in {} s", genePanelsTime);
-            }
-
-
-            // Indexing miRNA
-            if (Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME).toFile().exists()) {
-                logger.info("Starting miRNA indexing...");
-                start = System.currentTimeMillis();
-                importer.indexingMiRnas(Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME),
-                        Paths.get(outputPath + "/" + Neo4jCsvImporter.MIRNA_DBNAME), true);
-                miRnaIndexingTime = (System.currentTimeMillis() - start) / 1000;
-                logger.info("miRNA indexing done in {} s", miRnaIndexingTime);
-            }
-
-            // Parse BioPAX files
-            Map<String, Set<String>> filters = parseFilters(buildCommandOptions.exclude);
-            BPAXProcessing bpaxProcessing = new BPAXProcessing(importer);
-            Neo4jBioPaxImporter bioPAXImporter = new Neo4jBioPaxImporter(csv, filters, bpaxProcessing);
-            start = System.currentTimeMillis();
-            bioPAXImporter.addReactomeFiles(reactomeFiles);
-            bpaxProcessing.post();
-            bioPaxTime = (System.currentTimeMillis() - start) / 1000;
-
-
-            start = System.currentTimeMillis();
-//            if (buildCommandOptions.clinicalAnalysis) {
-//                // Parse JSON variant files
-//                importer.addClinicalAnalysisFiles(jsonFiles);
-//            } else {
-                // Parse JSON variant files
-                importer.addVariantFiles(jsonFiles);
+//    private void createCsvFiles() {
+//        try {
+//            long start;
+//
+//            // Check input and output directories
+//            Path inputPath = Paths.get(buildCommandOptions.input);
+//            FileUtils.checkDirectory(inputPath);
+//
+//            Path outputPath = Paths.get(buildCommandOptions.output);
+//            FileUtils.checkDirectory(outputPath);
+//
+//            // Prepare CSV object
+//            CsvInfo csv = new CsvInfo(inputPath, outputPath);
+//
+//            // Open CSV files
+//            csv.openCSVFiles();
+//            Neo4jCsvImporter importer = new Neo4jCsvImporter(csv);
+//
+////            // CellBase client
+////            // TODO: maybe it should be created from the configuration file
+////            ClientConfiguration clientConfiguration = new ClientConfiguration();
+////            clientConfiguration.setVersion("v4");
+////            clientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
+////            CellBaseClient cellBaseClient = new CellBaseClient("hsapiens", "GRCh38", clientConfiguration);
+//
+//            // Retrieving files from the input directory
+//            List<File> reactomeFiles = new ArrayList<>();
+//            List<File> jsonFiles = new ArrayList<>();
+//            for (File file: inputPath.toFile().listFiles()) {
+//                if (file.isFile()) {
+//                    String filename = file.getName();
+//                    if (filename.equals(Neo4jCsvImporter.GENE_FILENAME)
+//                            || filename.equals(Neo4jCsvImporter.GENE_FILENAME + ".gz")
+//                            || filename.equals(Neo4jCsvImporter.PROTEIN_FILENAME)
+//                            || filename.equals(Neo4jCsvImporter.PROTEIN_FILENAME + ".gz")) {
+//                        continue;
+//                    }
+//                    if (filename.contains("biopax") || filename.contains("owl")) {
+//                        reactomeFiles.add(file);
+//                    } else if (filename.endsWith("meta.json")) {
+//                        continue;
+//                    } else if (filename.endsWith(".json") || filename.endsWith(".json.gz")) {
+//                        jsonFiles.add(file);
+//                    } else {
+//                        logger.info("Skipping file {}", file.getAbsolutePath());
+//                    }
+//                }
 //            }
-            long jsonTime = (System.currentTimeMillis() - start) / 1000;
-
-            // Close CSV files
-            csv.close();
-
-            logger.info("Gene indexing in {} s", geneIndexingTime);
-            logger.info("Protein indexing in {} s", proteinIndexingTime);
-            logger.info("Gene panels processing in {} s", genePanelsTime);
-            logger.info("miRNA indexing in {} s", miRnaIndexingTime);
-            logger.info("BioPAX processing in {} s", bioPaxTime);
-            logger.info((buildCommandOptions.clinicalAnalysis ? "Clinical analysis" : "Variant") + " processing in {} s", jsonTime);
-        } catch (IOException e) {
-            logger.error("Error generation CSV files: {}", e.getMessage());
-            e.printStackTrace();
-        }
-    }
+//
+//            long geneIndexingTime = 0;
+//            long proteinIndexingTime = 0;
+//            long genePanelsTime = 0;
+//            long miRnaIndexingTime = 0;
+//            long bioPaxTime = 0;
+//
+//            // Indexing genes
+//            logger.info("Starting gene indexing...");
+//            File geneFile = new File(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME);
+//            if (!geneFile.exists()) {
+//                geneFile = new File(inputPath + "/" + Neo4jCsvImporter.GENE_FILENAME + ".gz");
+//                FileUtils.checkFile(geneFile.toPath());
+//            }
+//            start = System.currentTimeMillis();
+//            importer.indexingGenes(geneFile.toPath());
+//            geneIndexingTime = (System.currentTimeMillis() - start) / 1000;
+//            logger.info("Gene indexing done in {} s", geneIndexingTime);
+//
+//            // Indexing proteins
+//            logger.info("Starting protein indexing...");
+//            File proteinFile = new File(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME);
+//            if (!proteinFile.exists()) {
+//                proteinFile = new File(inputPath + "/" + Neo4jCsvImporter.PROTEIN_FILENAME + ".gz");
+//                FileUtils.checkFile(proteinFile.toPath());
+//            }
+//            start = System.currentTimeMillis();
+//            importer.indexingProteins(proteinFile.toPath());
+//            proteinIndexingTime = (System.currentTimeMillis() - start) / 1000;
+//            logger.info("Protein indexing done in {} s", proteinIndexingTime);
+//
+//            // Gene panels support
+//            if (Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME).toFile().exists()) {
+//                logger.info("Starting gene panels processing...");
+//                start = System.currentTimeMillis();
+//                importer.addGenePanels(Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME), outputPath);
+//                genePanelsTime = (System.currentTimeMillis() - start) / 1000;
+//                logger.info("Gene panels processing done in {} s", genePanelsTime);
+//            }
+//
+//
+//            // Indexing miRNA
+//            if (Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME).toFile().exists()) {
+//                logger.info("Starting miRNA indexing...");
+//                start = System.currentTimeMillis();
+//                importer.indexingMiRnas(Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME),
+//                        Paths.get(outputPath + "/" + Neo4jCsvImporter.MIRNA_DBNAME), true);
+//                miRnaIndexingTime = (System.currentTimeMillis() - start) / 1000;
+//                logger.info("miRNA indexing done in {} s", miRnaIndexingTime);
+//            }
+//
+//            // Parse BioPAX files
+//            Map<String, Set<String>> filters = parseFilters(buildCommandOptions.exclude);
+//            BPAXProcessing bpaxProcessing = new BPAXProcessing(importer);
+//            Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, bpaxProcessing);
+//            start = System.currentTimeMillis();
+//            bioPAXImporter.addReactomeFiles(reactomeFiles);
+//            bpaxProcessing.post();
+//            bioPaxTime = (System.currentTimeMillis() - start) / 1000;
+//
+//
+//            start = System.currentTimeMillis();
+////            if (buildCommandOptions.clinicalAnalysis) {
+////                // Parse JSON variant files
+////                importer.addClinicalAnalysisFiles(jsonFiles);
+////            } else {
+//                // Parse JSON variant files
+//                importer.addVariantFiles(jsonFiles);
+////            }
+//            long jsonTime = (System.currentTimeMillis() - start) / 1000;
+//
+//            // Close CSV files
+//            csv.close();
+//
+//            logger.info("Gene indexing in {} s", geneIndexingTime);
+//            logger.info("Protein indexing in {} s", proteinIndexingTime);
+//            logger.info("Gene panels processing in {} s", genePanelsTime);
+//            logger.info("miRNA indexing in {} s", miRnaIndexingTime);
+//            logger.info("BioPAX processing in {} s", bioPaxTime);
+//            logger.info((buildCommandOptions.clinicalAnalysis ? "Clinical analysis" : "Variant") + " processing in {} s", jsonTime);
+//        } catch (IOException e) {
+//            logger.error("Error generation CSV files: {}", e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
 
     private void importCsvFiles() {
         // Check input directories
@@ -291,8 +290,8 @@ public class ImportCommandExecutor extends CommandExecutor {
         boolean isValid = false;
         if (!isEmptyCsvFile(file)) {
             String name = file.getName();
-            if (name.contains(Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR)) {
-                String fields[] = removeCsvExt(name).split(Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR);
+            if (name.contains(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)) {
+                String fields[] = removeCsvExt(name).split(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR);
                 isValid = nodeNames.contains(fields[1]) && nodeNames.contains(fields[2]);
             } else {
                 String fields[] = removeCsvExt(name).split("__");
@@ -308,8 +307,8 @@ public class ImportCommandExecutor extends CommandExecutor {
 
     private String getRelationName(File file) {
         String name = file.getName();
-        if (name.contains(Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR)) {
-            return name.split(Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR)[0];
+        if (name.contains(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)) {
+            return name.split(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)[0];
         } else {
             return removeCsvExt(name);
         }
@@ -327,7 +326,7 @@ public class ImportCommandExecutor extends CommandExecutor {
 //  BioPAX importer callback object
 //-------------------------------------------------------------------------
 
-    public class BPAXProcessing implements Neo4jBioPaxImporter.BioPAXProcessing {
+    public class BPAXProcessing implements Neo4jBioPaxBuilder.BioPAXProcessing {
         private Neo4jCsvImporter importer;
 
         private List<Node> dnaNodes;
@@ -435,8 +434,8 @@ public class ImportCommandExecutor extends CommandExecutor {
             PrintWriter pw;
             for (Relation relation: relations) {
                 String id = relation.getType()
-                        + Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR + relation.getOrigType()
-                        + Neo4jBioPaxImporter.BioPAXProcessing.SEPARATOR + relation.getDestType();
+                        + Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR + relation.getOrigType()
+                        + Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR + relation.getDestType();
                 pw = importer.getCsvInfo().getCsvWriters().get(id);
                 if (pw == null) {
                     logger.info("BioPAX relationship not yet supported {}", id);
@@ -504,21 +503,5 @@ public class ImportCommandExecutor extends CommandExecutor {
 //        }
 //    }
 
-    public Map<String, Set<String>> parseFilters(List<String> excludeList) {
-        Map<String, Set<String>> filters = null;
-        if (ListUtils.isNotEmpty(excludeList)) {
-            filters = new HashMap<>();
-            for (String exclude: excludeList) {
-                String split[] = exclude.split(":");
-                if (split.length == 2) {
-                    if (!filters.containsKey(split[0])) {
-                        filters.put(split[0], new HashSet<>());
-                    }
-                    filters.get(split[0]).add(split[1]);
-                }
-            }
-        }
-        return filters;
-    }
 
 }

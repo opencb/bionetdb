@@ -2,19 +2,24 @@ package org.opencb.bionetdb.app.cli.admin.executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.bionetdb.core.io.BioPaxParser;
 import org.opencb.bionetdb.core.io.SbmlParser;
 import org.opencb.bionetdb.core.io.SifParser;
 import org.opencb.bionetdb.core.models.network.Network;
+import org.opencb.bionetdb.lib.utils.Builder;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.commons.utils.ListUtils;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.*;
 
 /**
  * Created by imedina on 05/08/15.
@@ -33,47 +38,34 @@ public class BuildCommandExecutor extends CommandExecutor {
     public void execute() {
 
         try {
+            // Check input and output directories
             Path inputPath = Paths.get(buildCommandOptions.input);
-            FileUtils.checkFile(inputPath);
+            FileUtils.checkDirectory(inputPath);
 
-            Network network = null;
-            if (inputPath.getFileName().toString().endsWith("owl") || inputPath.getFileName().toString().endsWith("owl.gz")) {
-                BioPaxParser bioPaxParser = new BioPaxParser("L3");
-                network = bioPaxParser.parse(inputPath);
-            } else if (inputPath.getFileName().toString().endsWith("sbml") || inputPath.getFileName().toString().endsWith("sbml.gz")) {
-                SbmlParser sbmlParser = new SbmlParser();
-                network = sbmlParser.parse(inputPath);
-            } else if (inputPath.getFileName().toString().endsWith("sif") || inputPath.getFileName().toString().endsWith("sif.gz")) {
-                SifParser sifParser = new SifParser();
-                network = sifParser.parse(inputPath);
-                // TODO: update this code according to the refactoring Network code
-//            } else if (inputPath.getFileName().toString().endsWith("txt") || inputPath.getFileName().toString().endsWith("txt.gz")) {
-//                PsiMiTabParser psiMiTabParser = new PsiMiTabParser();
-//                network = psiMiTabParser.parse(inputPath, "Homo sapiens");
-            }
+            Path outputPath = Paths.get(buildCommandOptions.output);
+            FileUtils.checkDirectory(outputPath);
 
-            if (network != null) {
-                // Print to file
-                Path outputPath;
-                if (buildCommandOptions.output == null || buildCommandOptions.output.isEmpty()) {
-                    outputPath = Paths.get(buildCommandOptions.input+".json");
-                } else {
-                    outputPath = Paths.get(buildCommandOptions.output);
-                }
-
-                ObjectMapper objectMapper = new ObjectMapper();
-                objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-                BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputPath.toAbsolutePath().toString()));
-                bufferedWriter.write(objectMapper.writeValueAsString(network));
-                bufferedWriter.close();
-            } else {
-                logger.error("File extension has not been recognized, it must contain 'owl' or 'sbml', file name is '{}'", inputPath.getFileName());
-            }
-
+            Builder builder = new Builder(inputPath, outputPath, parseFilters(buildCommandOptions.exclude));
+            builder.build();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
+    public Map<String, Set<String>> parseFilters(List<String> excludeList) {
+        Map<String, Set<String>> filters = null;
+        if (CollectionUtils.isNotEmpty(excludeList)) {
+            filters = new HashMap<>();
+            for (String exclude: excludeList) {
+                String split[] = exclude.split(":");
+                if (split.length == 2) {
+                    if (!filters.containsKey(split[0])) {
+                        filters.put(split[0], new HashSet<>());
+                    }
+                    filters.get(split[0]).add(split[1]);
+                }
+            }
+        }
+        return filters;
+    }
 }

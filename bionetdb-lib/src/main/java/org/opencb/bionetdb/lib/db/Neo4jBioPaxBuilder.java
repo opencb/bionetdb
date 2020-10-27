@@ -13,7 +13,6 @@ import org.opencb.bionetdb.lib.utils.CsvInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,7 +21,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
-public class Neo4jBioPaxImporter {
+public class Neo4jBioPaxBuilder {
     private static final String REACTOME_FEAT = "reactome.";
     private static final int TRANSACTION_BATCH_SIZE = 1000;
 
@@ -61,12 +60,12 @@ public class Neo4jBioPaxImporter {
         void processRelations(List<Relation> relations);
     }
 
-    public Neo4jBioPaxImporter(CsvInfo csv, BioPAXProcessing bioPAXProcessing) {
+    public Neo4jBioPaxBuilder(CsvInfo csv, BioPAXProcessing bioPAXProcessing) {
         this(csv, null, bioPAXProcessing);
     }
 
 
-    public Neo4jBioPaxImporter(CsvInfo csv, Map<String, Set<String>> filters, BioPAXProcessing bioPAXProcessing) {
+    public Neo4jBioPaxBuilder(CsvInfo csv, Map<String, Set<String>> filters, BioPAXProcessing bioPAXProcessing) {
         this.csv = csv;
         this.filters = filters;
         this.bioPAXProcessing = bioPAXProcessing;
@@ -85,13 +84,7 @@ public class Neo4jBioPaxImporter {
         this.logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public void addReactomeFiles(List<File> files) throws IOException {
-        for (File file: files) {
-            importBioPaxFile(file.toPath());
-        }
-    }
-
-    private void importBioPaxFile(Path path) throws IOException {
+    public void build(Path path) throws IOException {
         // Reading GZip input stream
         InputStream inputStream;
         if (path.toFile().getName().endsWith(".gz")) {
