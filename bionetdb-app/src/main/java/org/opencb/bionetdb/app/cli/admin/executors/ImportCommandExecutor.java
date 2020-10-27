@@ -8,7 +8,9 @@ import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.lib.db.Neo4jBioPaxBuilder;
+import org.opencb.bionetdb.lib.utils.Builder;
 import org.opencb.bionetdb.lib.utils.CsvInfo;
+import org.opencb.bionetdb.lib.utils.Importer;
 import org.opencb.bionetdb.lib.utils.Neo4jCsvImporter;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
@@ -26,25 +28,29 @@ import java.util.*;
  */
 public class ImportCommandExecutor extends CommandExecutor {
 
-    private AdminCliOptionsParser.BuildCommandOptions buildCommandOptions;
     private AdminCliOptionsParser.ImportCommandOptions importCommandOptions;
-
-    public ImportCommandExecutor(AdminCliOptionsParser.BuildCommandOptions createCsvCommandOptions) {
-        super(createCsvCommandOptions.commonOptions.logLevel, createCsvCommandOptions.commonOptions.conf);
-
-        this.buildCommandOptions = createCsvCommandOptions;
-        this.importCommandOptions = null;
-    }
 
     public ImportCommandExecutor(AdminCliOptionsParser.ImportCommandOptions importCommandOptions) {
         super(importCommandOptions.commonOptions.logLevel, importCommandOptions.commonOptions.conf);
 
-        this.buildCommandOptions = null;
         this.importCommandOptions = importCommandOptions;
     }
 
     @Override
-    public void execute() throws BioNetDBException {
+    public void execute() {
+
+        try {
+            // Check input directory
+            Path inputPath = Paths.get(importCommandOptions.input);
+            FileUtils.checkDirectory(inputPath);
+
+            Importer importer = new Importer(importCommandOptions.database, inputPath);
+            importer.run();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
 //        if (buildCommandOptions != null) {
 //            createCsvFiles();
 //        } else if (importCommandOptions != null) {
@@ -188,139 +194,139 @@ public class ImportCommandExecutor extends CommandExecutor {
 //        }
 //    }
 
-    private void importCsvFiles() {
-        // Check input directories
-        Path inputPath = Paths.get(importCommandOptions.input);
-        if (!inputPath.toFile().isDirectory()) {
-            logger.error("Input directory {} is invalid", inputPath);
-            return;
-        }
+//    private void importCsvFiles() {
+//        // Check input directories
+//        Path inputPath = Paths.get(importCommandOptions.input);
+//        if (!inputPath.toFile().isDirectory()) {
+//            logger.error("Input directory {} is invalid", inputPath);
+//            return;
+//        }
+//
+//        String name;
+//        StringBuilder sb = new StringBuilder();
+//        Set<String> validNodes = new HashSet<>();
+//
+//        String neo4jHome = System.getenv("NEO4J_HOME");
+//        if (neo4jHome == null) {
+//            logger.error("The environment variable NEO4J_HOME is not defined.");
+//            return;
+//        }
+//        sb.append(neo4jHome);
+//        sb.append("/bin/neo4j stop");
+//        Command command = new Command(sb.toString());
+//        command.run();
+//        logger.info("Executing: {}", sb);
+//        logger.info("Output: {}", command.getOutput());
+//
+//        sb.setLength(0);
+//        sb.append(neo4jHome);
+//        sb.append("/bin/neo4j-admin import --id-type INTEGER --delimiter=\"" + StringEscapeUtils.escapeJava(CsvInfo.SEPARATOR) + "\" "
+//                + "--ignore-duplicate-nodes --ignore-missing-nodes");
+//
+//        // Retrieving files from the input directory
+//        List<File> relationFiles = new ArrayList<>();
+//        for (File file: inputPath.toFile().listFiles()) {
+//            if (file.isFile()) {
+//                String filename = file.getName();
+//                if (filename.endsWith(".csv")) {
+//                    if (filename.contains("__")) {
+//                        relationFiles.add(file);
+//                    } else {
+//                        if (!isEmptyCsvFile(file)) {
+//                            name = getNodeName(file);
+//                            validNodes.add(name);
+//                            sb.append(" --nodes:").append(name).append(" ").append(file.getAbsolutePath());
+//                        } else {
+//                            logger.info("Skipping node file {} to import: file empty", file.getAbsolutePath());
+//                        }
+//                    }
+//                } else {
+//                    logger.info("Skipping node file {} to import: no CSV format", file.getAbsolutePath());
+//                }
+//            }
+//        }
+//
+//        // Now, relationhsip files
+//        for (File file: relationFiles) {
+//            System.out.println("checking file: " + file.getName());
+//            if (isValidRelationCsvFile(file, validNodes)) {
+//                name = getRelationName(file);
+//                sb.append(" --relationships:").append(name).append(" ").append(file.getAbsolutePath());
+//            } else {
+//                logger.info("Skipping relationship file {} to import: invalid file", file.getAbsolutePath());
+//            }
+//        }
+//
+//        command = new Command(sb.toString());
+//        command.run();
+//        logger.info("Executing: {}", sb);
+//        logger.info("Output: {}", command.getOutput());
+//
+//        sb.setLength(0);
+//        sb.append(neo4jHome);
+//        sb.append("/bin/neo4j start");
+//        command = new Command(sb.toString());
+//        command.run();
+//        logger.info("Executing: {}", sb);
+//        logger.info("Output: {}", command.getOutput());
+//    }
 
-        String name;
-        StringBuilder sb = new StringBuilder();
-        Set<String> validNodes = new HashSet<>();
-
-        String neo4jHome = System.getenv("NEO4J_HOME");
-        if (neo4jHome == null) {
-            logger.error("The environment variable NEO4J_HOME is not defined.");
-            return;
-        }
-        sb.append(neo4jHome);
-        sb.append("/bin/neo4j stop");
-        Command command = new Command(sb.toString());
-        command.run();
-        logger.info("Executing: {}", sb);
-        logger.info("Output: {}", command.getOutput());
-
-        sb.setLength(0);
-        sb.append(neo4jHome);
-        sb.append("/bin/neo4j-admin import --id-type INTEGER --delimiter=\"" + StringEscapeUtils.escapeJava(CsvInfo.SEPARATOR) + "\" "
-                + "--ignore-duplicate-nodes --ignore-missing-nodes");
-
-        // Retrieving files from the input directory
-        List<File> relationFiles = new ArrayList<>();
-        for (File file: inputPath.toFile().listFiles()) {
-            if (file.isFile()) {
-                String filename = file.getName();
-                if (filename.endsWith(".csv")) {
-                    if (filename.contains("__")) {
-                        relationFiles.add(file);
-                    } else {
-                        if (!isEmptyCsvFile(file)) {
-                            name = getNodeName(file);
-                            validNodes.add(name);
-                            sb.append(" --nodes:").append(name).append(" ").append(file.getAbsolutePath());
-                        } else {
-                            logger.info("Skipping node file {} to import: file empty", file.getAbsolutePath());
-                        }
-                    }
-                } else {
-                    logger.info("Skipping node file {} to import: no CSV format", file.getAbsolutePath());
-                }
-            }
-        }
-
-        // Now, relationhsip files
-        for (File file: relationFiles) {
-            System.out.println("checking file: " + file.getName());
-            if (isValidRelationCsvFile(file, validNodes)) {
-                name = getRelationName(file);
-                sb.append(" --relationships:").append(name).append(" ").append(file.getAbsolutePath());
-            } else {
-                logger.info("Skipping relationship file {} to import: invalid file", file.getAbsolutePath());
-            }
-        }
-
-        command = new Command(sb.toString());
-        command.run();
-        logger.info("Executing: {}", sb);
-        logger.info("Output: {}", command.getOutput());
-
-        sb.setLength(0);
-        sb.append(neo4jHome);
-        sb.append("/bin/neo4j start");
-        command = new Command(sb.toString());
-        command.run();
-        logger.info("Executing: {}", sb);
-        logger.info("Output: {}", command.getOutput());
-    }
-
-    private boolean isEmptyCsvFile(File file) {
-        boolean isEmpty = false;
-        try {
-            BufferedReader bufferedReader = FileUtils.newBufferedReader(file.toPath());
-            int counter = 0;
-            String line = bufferedReader.readLine();
-            while (line != null) {
-                counter++;
-                if (counter > 1) {
-                    break;
-                }
-                line = bufferedReader.readLine();
-            }
-            isEmpty = (counter < 2);
-        } catch (IOException e) {
-            logger.warn("Something wrong checking CSV file {}, skipping it!", file.toPath());
-            isEmpty = false;
-        }
-        return isEmpty;
-    }
-
-    private boolean isValidRelationCsvFile(File file, Set<String> nodeNames) {
-        boolean isValid = false;
-        if (!isEmptyCsvFile(file)) {
-            String name = file.getName();
-            if (name.contains(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)) {
-                String fields[] = removeCsvExt(name).split(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR);
-                isValid = nodeNames.contains(fields[1]) && nodeNames.contains(fields[2]);
-            } else {
-                String fields[] = removeCsvExt(name).split("__");
-                isValid = nodeNames.contains(fields[0]) && nodeNames.contains(fields[1]);
-            }
-        }
-        return isValid;
-    }
-
-    private String getNodeName(File file) {
-        return removeCsvExt(file.getName());
-    }
-
-    private String getRelationName(File file) {
-        String name = file.getName();
-        if (name.contains(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)) {
-            return name.split(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)[0];
-        } else {
-            return removeCsvExt(name);
-        }
-    }
-
-    private String removeCsvExt(String filename) {
-        String name = null;
-        if (filename != null) {
-            return filename.replace(".csv", "");
-        }
-        return name;
-    }
+//    private boolean isEmptyCsvFile(File file) {
+//        boolean isEmpty = false;
+//        try {
+//            BufferedReader bufferedReader = FileUtils.newBufferedReader(file.toPath());
+//            int counter = 0;
+//            String line = bufferedReader.readLine();
+//            while (line != null) {
+//                counter++;
+//                if (counter > 1) {
+//                    break;
+//                }
+//                line = bufferedReader.readLine();
+//            }
+//            isEmpty = (counter < 2);
+//        } catch (IOException e) {
+//            logger.warn("Something wrong checking CSV file {}, skipping it!", file.toPath());
+//            isEmpty = false;
+//        }
+//        return isEmpty;
+//    }
+//
+//    private boolean isValidRelationCsvFile(File file, Set<String> nodeNames) {
+//        boolean isValid = false;
+//        if (!isEmptyCsvFile(file)) {
+//            String name = file.getName();
+//            if (name.contains(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)) {
+//                String fields[] = removeCsvExt(name).split(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR);
+//                isValid = nodeNames.contains(fields[1]) && nodeNames.contains(fields[2]);
+//            } else {
+//                String fields[] = removeCsvExt(name).split("__");
+//                isValid = nodeNames.contains(fields[0]) && nodeNames.contains(fields[1]);
+//            }
+//        }
+//        return isValid;
+//    }
+//
+//    private String getNodeName(File file) {
+//        return removeCsvExt(file.getName());
+//    }
+//
+//    private String getRelationName(File file) {
+//        String name = file.getName();
+//        if (name.contains(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)) {
+//            return name.split(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)[0];
+//        } else {
+//            return removeCsvExt(name);
+//        }
+//    }
+//
+//    private String removeCsvExt(String filename) {
+//        String name = null;
+//        if (filename != null) {
+//            return filename.replace(".csv", "");
+//        }
+//        return name;
+//    }
 
 //-------------------------------------------------------------------------
 //  BioPAX importer callback object

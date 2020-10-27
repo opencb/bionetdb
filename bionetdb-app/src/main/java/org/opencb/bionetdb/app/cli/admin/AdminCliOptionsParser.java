@@ -81,7 +81,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"-L", "--log-level"}, description = "Set the logging level, accepted values are: debug, info, warn, error and fatal", required = false, arity = 1)
         public String logLevel = "info";
 
-        @Parameter(names = {"-C", "--conf"}, description = "CellBase configuration.json file. Have a look at cellbase/cellbase-core/src/main/resources/configuration.json for an example", required = false, arity = 1)
+        @Parameter(names = {"-C", "--conf"}, description = "BioNetDB configuration file (JSON format).", required = false, arity = 1)
         public String conf;
 
     }
@@ -113,7 +113,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public List<String> exclude;
     }
 
-    @Parameters(commandNames = {"import"}, commandDescription = "Import the built data models in format CSV files into the database")
+    @Parameters(commandNames = {"import"}, commandDescription = "Import the built data models in format CSV files into the BioNetDB database")
     public class ImportCommandOptions {
 
         @ParametersDelegate
@@ -122,16 +122,8 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "Input directory where the CSV files are located", required = true, arity = 1)
         public String input;
 
-
-        @Parameter(names = {"--database"}, description = "Data model type to be loaded, i.e. genome, gene, ...", arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "BioNetDB database name", required = true, arity = 1)
         public String database;
-
-        @Parameter(names = {"--exclude"}, description = "Exclude information separated by comma, e.g.:'XREF_DBNAME:Reactome Database ID Release 63'", arity = 1)
-        public List<String> exclude;
-
-        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        public Map<String, String> loaderParams = new HashMap<>();
-
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load the built data models into the database")
