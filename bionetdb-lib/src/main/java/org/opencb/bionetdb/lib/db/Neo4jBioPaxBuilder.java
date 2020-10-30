@@ -134,36 +134,41 @@ public class Neo4jBioPaxBuilder {
                     break;
                 }
                 case "Rna": {
-                    String rnaName = ((Rna) bioPAXElement).getDisplayName();
-                    if (isMicroRNA(rnaName)) {
-                        // Process miRN
-                        Long rnaUid = csv.getLong(rnaName);
-                        if (rnaUid == null) {
-                            // miRNA not registered yet
-                            node = loadRna(bioPAXElement);
-                            updateAuxMaps(node);
+                    node = loadRna(bioPAXElement);
+                    updateAuxMaps(node);
 
-                            updatePhysicalEntity(bioPAXElement);
-                            if (node.getName() != null) {
-                                csv.putLong(node.getName(), node.getUid());
-                            }
-                        } else {
-                            // miRNA already registered
-                            // Get the RDF ID and save it to be referenced later for the possible relationships
-                            String rnaRDFId = getBioPaxId(bioPAXElement.getRDFId());
-                            updateAuxMaps(rnaRDFId, rnaUid, Node.Type.RNA);
-                        }
-                    } else {
-                        node = loadRna(bioPAXElement);
-                        updateAuxMaps(node);
-
-                        updatePhysicalEntity(bioPAXElement);
-                    }
+                    updatePhysicalEntity(bioPAXElement);
+//                    String rnaName = ((Rna) bioPAXElement).getDisplayName();
+//                    if (isMicroRNA(rnaName)) {
+//                        // Process miRNA
+//                        Long rnaUid = csv.getLong(rnaName, Node.Type.MIRNA.name());
+//                        if (rnaUid == null) {
+//                            // miRNA not registered yet
+//                            node = loadRna(bioPAXElement);
+//                            updateAuxMaps(node);
+//
+//                            updatePhysicalEntity(bioPAXElement);
+//                            if (node.getName() != null) {
+//                                csv.putLong(node.getName(), Node.Type.MIRNA.name(), node.getUid());
+//                            }
+//                        } else {
+//                            // miRNA already registered
+//                            // Get the RDF ID and save it to be referenced later for the possible relationships
+//                            String rnaRDFId = getBioPaxId(bioPAXElement.getRDFId());
+//                            updateAuxMaps(rnaRDFId, rnaUid, Node.Type.RNA);
+//                        }
+//                    } else {
+//                        node = loadRna(bioPAXElement);
+//                        updateAuxMaps(node);
+//
+//                        updatePhysicalEntity(bioPAXElement);
+//                    }
                     break;
                 }
                 case "Protein": {
                     String protPrimaryId = null;
                     String protName = ((Protein) bioPAXElement).getDisplayName();
+
                     if (StringUtils.isEmpty(protName)) {
                         Set<Xref> xrefs = ((Protein)bioPAXElement).getXref();
                         for (Xref xref: xrefs) {
@@ -190,18 +195,18 @@ public class Neo4jBioPaxBuilder {
                                 }
                             }
                         }
-                        if (StringUtils.isEmpty(protPrimaryId)) {
+                        if (!"HSP70".equals(protName) && StringUtils.isEmpty(protPrimaryId)) {
                             protPrimaryId = protName;
                         }
                     }
 
-                    Long protUid = (protPrimaryId == null ? null : csv.getLong(protPrimaryId));
+                    Long protUid = (protPrimaryId == null ? null : csv.getLong(protPrimaryId, Node.Type.PROTEIN.name()));
                     if (protUid == null) {
                         node = loadProtein(bioPAXElement);
                         updateAuxMaps(node);
 
                         updatePhysicalEntity(bioPAXElement);
-                        csv.putLong(protPrimaryId, node.getUid());
+                        csv.putLong(protPrimaryId, Node.Type.PROTEIN.name(), node.getUid());
                     } else {
                         // The protein node exists, get the RDF ID and save it to be
                         // referenced later for the possible relationships (interaction, complex,...)
@@ -212,13 +217,13 @@ public class Neo4jBioPaxBuilder {
                         Long celLocUid;
                         Node cellularLocNode;
                         for (String name: ((PhysicalEntity) bioPAXElement).getCellularLocation().getTerm()) {
-                            celLocUid = csv.getLong("cl." + name);
+                            celLocUid = csv.getLong(name, Node.Type.CELLULAR_LOCATION.name());
                             if (celLocUid == null) {
                                 cellularLocNode = new Node(csv.getAndIncUid(), null, name, Node.Type.CELLULAR_LOCATION,
                                         source);
                                 nodes.add(cellularLocNode);
                                 celLocUid = cellularLocNode.getUid();
-                                csv.putLong("cl." + name, celLocUid);
+                                csv.putLong(name, Node.Type.CELLULAR_LOCATION.name(), celLocUid);
                             }
                             protRdfIdToCelLocUid.put(protRDFId, celLocUid);
 
@@ -949,12 +954,12 @@ public class Neo4jBioPaxBuilder {
         // cellularLocation
         Node cellularLocNode = null;
         for (String name: physicalEntityBP.getCellularLocation().getTerm()) {
-            Long celLocUid = csv.getLong("cl." + name);
+            Long celLocUid = csv.getLong(name, Node.Type.CELLULAR_LOCATION.name());
             if (celLocUid == null) {
                 cellularLocNode = new Node(csv.getAndIncUid(), null, name, Node.Type.CELLULAR_LOCATION, source);
                 nodes.add(cellularLocNode);
                 celLocUid = cellularLocNode.getUid();
-                csv.putLong("cl." + name, celLocUid);
+                csv.putLong(name, Node.Type.CELLULAR_LOCATION.name(), celLocUid);
             }
             if (!celLocUidSet.contains(physicalEntityUid + "." + celLocUid)) {
                 Relation relation = new Relation(csv.getAndIncUid(), null, physicalEntityUid,
@@ -1090,12 +1095,12 @@ public class Neo4jBioPaxBuilder {
                             Long nextStepUid = rdfToUid.get(getBioPaxId(nextStep.getRDFId()));
                             Node.Type nextStepType = uidToType.get(nextStepUid);
                             try {
-                                if (csv.getLong(currentStepUid + "." + nextStepUid) == null) {
+                                if (csv.getLong(currentStepUid + "." + nextStepUid, Node.Type.PATHWAY.name()) == null) {
                                     Relation relation = new Relation(csv.getAndIncUid(), null, currentStepUid,
                                             currentStepType, nextStepUid, nextStepType, Relation.Type.PATHWAY_NEXT_STEP,
                                             source);
                                     relations.add(relation);
-                                    csv.putLong(currentStepUid + "." + nextStepUid, 1L);
+                                    csv.putLong(currentStepUid + "." + nextStepUid, Node.Type.PATHWAY.name(), 1L);
                                 }
                             } catch (Exception e) {
                                 logger.info("impossible create realtionship: " + e.getMessage());
@@ -1394,15 +1399,15 @@ public class Neo4jBioPaxBuilder {
 
         // Only process XREF for proteins
         if (type == Node.Type.PROTEIN) {
-            Long xrefUid = csv.getLong("x0." + xrefId);
+            Long xrefUid = csv.getLong("x0." + xrefId, Node.Type.XREF.name());
             if (xrefUid == null) {
                 Node xrefNode = new Node(csv.getAndIncUid(), xrefId, xrefId, Node.Type.XREF, source);
                 xrefNode.addAttribute("dbName", dbName);
                 nodes.add(xrefNode);
 
                 xrefUid = xrefNode.getUid();
-                csv.putLong("x0." + xrefId, xrefUid);
-                csv.putLong("x1." + xrefId, uid);
+                csv.putLong("x0." + xrefId, Node.Type.XREF.name(), xrefUid);
+                csv.putLong("x1." + xrefId, Node.Type.XREF.name(), uid);
             }
 
             Relation relation = new Relation(csv.getAndIncUid(), null, uid, type, xrefUid, Node.Type.XREF,
@@ -1410,15 +1415,15 @@ public class Neo4jBioPaxBuilder {
             relations.add(relation);
         } else if (type == Node.Type.RNA) {
             // mix = miRNA Xref, mixt = miRNA Xref target
-            Long xrefUid = csv.getLong("mix." + xrefId);
+            Long xrefUid = csv.getLong("mix." + xrefId, Node.Type.XREF.name());
             if (xrefUid == null) {
                 Node xrefNode = new Node(csv.getAndIncUid(), xrefId, xrefId, Node.Type.XREF, source);
                 xrefNode.addAttribute("dbName", dbName);
                 nodes.add(xrefNode);
 
                 xrefUid = xrefNode.getUid();
-                csv.putLong("mix." + xrefId, xrefUid);
-                csv.putLong("mixt." + xrefId, uid);
+                csv.putLong("mix." + xrefId, Node.Type.XREF.name(), xrefUid);
+                csv.putLong("mixt." + xrefId, Node.Type.XREF.name(), uid);
             }
 
             Relation relation = new Relation(csv.getAndIncUid(), null, uid, type, xrefUid,  Node.Type.XREF,

@@ -36,7 +36,8 @@ public class Node {
         SMALL_MOLECULE      ("SMALL_MOLECULE", "PHYSICAL_ENTITY"),
 
         MIRNA               ("MIRNA"),
-        TARGET_TRANSCRIPT   ("TARGET_TRANSCRIPT"),
+        MIRNA_MATURE("MIRNA_MATURE"),
+//        TARGET_TRANSCRIPT   ("TARGET_TRANSCRIPT"),
 
         DNA                 ("DNA"),    // ~= GENOMIC_FEATURE
         GENE                ("GENE"),

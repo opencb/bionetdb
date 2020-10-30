@@ -5,15 +5,11 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.*;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.core.Transcript;
-import org.opencb.biodata.models.core.TranscriptTfbs;
+import org.opencb.biodata.models.core.*;
 import org.opencb.biodata.models.core.Xref;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.models.network.Node;
@@ -22,7 +18,6 @@ import org.opencb.bionetdb.lib.db.Neo4jBioPaxBuilder;
 import org.opencb.bionetdb.lib.utils.cache.GeneCache;
 import org.opencb.bionetdb.lib.utils.cache.ProteinCache;
 import org.opencb.commons.utils.FileUtils;
-import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,7 +181,7 @@ public class Builder {
             CsvInfo csv = builder.getCsvInfo();
             PrintWriter pwNode, pwRel;
 
-            // Post-process gene nodes
+            // Post-process DNA nodes
             logger.info("Post-processing {} dna nodes", dnaNodes.size());
             pwNode = csv.getCsvWriters().get(Node.Type.DNA.toString());
             pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___DNA___GENE.toString());
@@ -203,7 +198,28 @@ public class Builder {
                 pwNode.println(csv.nodeLine(node));
             }
 
-/*
+            // Post-process RNA nodes
+            logger.info("Post-processing {} rna nodes", rnaNodes.size());
+            pwNode = csv.getCsvWriters().get(Node.Type.RNA.toString());
+            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___RNA___MIRNA.toString());
+            for (Node node: rnaNodes) {
+                // Write RNA node
+                pwNode.println(csv.nodeLine(node));
+
+                if (StringUtils.isNotEmpty(node.getName())) {
+                    if (node.getName().startsWith("miR")) {
+                        String id = "hsa-" + node.getName().toLowerCase();
+                        Long miRnaUid = csv.getLong(id, Node.Type.MIRNA.name());
+                        if (miRnaUid != null) {
+                            // Write relation rna - mirna
+                            pwRel.println(csv.relationLine(node.getUid(), miRnaUid));
+                        }
+                    }
+                }
+            }
+
+
+            /*
             // Post-process miRNA nodes
             logger.info("Post-processing {} miRNA nodes", rnaNodes.size());
             pwNode = csv.getCsvWriters().get(Node.Type.RNA.toString());
@@ -326,33 +342,33 @@ public class Builder {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private void addVariantFiles(List<File> files) throws IOException {
-        for (int i = 0; i < files.size(); i++) {
-            File file = files.get(i);
-            if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
-                if (file.getName().contains("clinvar")) {
-                    // JSON file
-                    addVariantJsonFile(file);
-                }
-            }
-        }
-
-
-        for (int i = 0; i < files.size(); i++) {
-            File file = files.get(i);
-            if (file.getName().endsWith("vcf") || file.getName().endsWith("vcf.gz")) {
-                // VCF file
-                logger.info("VCF not supported yet!!");
-            } else if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
-                if (!file.getName().contains("clinvar") && !file.getName().contains("meta.json")) {
-                    // JSON file
-                    addVariantJsonFile(file);
-                }
-            } else {
-                logger.info("Unknown file type, skipping!!");
-            }
-        }
-    }
+//    private void addVariantFiles(List<File> files) throws IOException {
+//        for (int i = 0; i < files.size(); i++) {
+//            File file = files.get(i);
+//            if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
+//                if (file.getName().contains("clinvar")) {
+//                    // JSON file
+//                    addVariantJsonFile(file);
+//                }
+//            }
+//        }
+//
+//
+//        for (int i = 0; i < files.size(); i++) {
+//            File file = files.get(i);
+//            if (file.getName().endsWith("vcf") || file.getName().endsWith("vcf.gz")) {
+//                // VCF file
+//                logger.info("VCF not supported yet!!");
+//            } else if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
+//                if (!file.getName().contains("clinvar") && !file.getName().contains("meta.json")) {
+//                    // JSON file
+//                    addVariantJsonFile(file);
+//                }
+//            } else {
+//                logger.info("Unknown file type, skipping!!");
+//            }
+//        }
+//    }
 
 //    public void addClinicalAnalysisFiles(List<File> files) throws IOException {
 //        for (int i = 0; i < files.size(); i++) {
@@ -413,6 +429,7 @@ public class Builder {
             return null;
         }
         Long proteinUid = csv.getProteinUid(proteinId);
+
         if (proteinUid == null) {
             Node node;
             Entry protein = csv.getProtein(proteinId);
@@ -432,9 +449,12 @@ public class Builder {
             csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).println(csv.nodeLine(node));
             proteinUid = node.getUid();
         }
-//        if (proteinUid == 3943776) {
-//            System.out.println("---------------> protein uid = " + proteinUid + ", id = " + proteinId + ", name = " + proteinName);
-//        }
+
+        if (proteinUid == 3196753) {
+            System.out.println("processProtein: proteinUid = " + proteinUid);
+            System.out.println("processProtein: proteinId = " + proteinId);
+            System.exit(-1);
+        }
         return proteinUid;
     }
 
@@ -442,7 +462,7 @@ public class Builder {
         if (StringUtils.isEmpty(transcriptId)) {
             return null;
         }
-        return csv.getLong(transcriptId);
+        return csv.getLong(transcriptId,  Node.Type.TRANSCRIPT.name());
     }
 
     private Node createGeneNode(Gene gene) {
@@ -450,6 +470,7 @@ public class Builder {
     }
 
     private Node createGeneNode(Gene gene, Long uid) {
+        Node n;
         PrintWriter pwRel;
 
 //        logger.info("----> creating gene node: " + gene.getId() + ", " + gene.getName());
@@ -477,7 +498,7 @@ public class Builder {
             pwRel = csv.getCsvWriters().get(Relation.Type.GENE__TRANSCRIPT.toString());
             PrintWriter pwTranscr = csv.getCsvWriters().get(Node.Type.TRANSCRIPT.toString());
             for (Transcript transcript: gene.getTranscripts()) {
-                Long transcrUid = csv.getLong(transcript.getId());
+                Long transcrUid = csv.getLong(transcript.getId(), Node.Type.TRANSCRIPT.name());
                 if (transcrUid == null) {
                     // Create gene node and write the CSV file
                     Node transcrNode = createTranscriptNode(transcript);
@@ -490,7 +511,41 @@ public class Builder {
             }
         }
 
-        Node n;
+        // Model miRNA gene and mature miRNA
+        if (gene.getMirna() != null) {
+            MiRnaGene miRna = gene.getMirna();
+            PrintWriter pwRelGeneMiRna = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___GENE___MIRNA.toString());
+            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
+            Long miRnaUid = csv.getLong(miRna.getId(), Node.Type.MIRNA.name());
+            if (miRnaUid == null) {
+                // Create miRNA node and write the CSV file
+                miRnaUid = csv.getAndIncUid();
+                Node miRnaNode = NodeBuilder.newNode(miRnaUid, miRna);
+
+                csv.putLong(miRna.getId(), Node.Type.MIRNA.name(), miRnaUid);
+                pwMiRna.println(csv.nodeLine(miRnaNode));
+
+                // Mature miRna
+                if (CollectionUtils.isNotEmpty(miRna.getMatures())) {
+                    PrintWriter pwMature = csv.getCsvWriters().get(Node.Type.MIRNA_MATURE.toString());
+                    PrintWriter pwRelMatureMiRna = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.MATURE___MIRNA___MIRNA_MATURE.toString());
+                    for (MiRnaMature mature : miRna.getMatures()) {
+                        Long matureUid = csv.getLong(mature.getId(), Node.Type.MIRNA_MATURE.name());
+                        if (matureUid == null) {
+                            matureUid = csv.getAndIncUid();
+                            // Create mature miRNA node and write the CSV file
+                            Node matureNode = NodeBuilder.newNode(matureUid, mature);
+                            csv.putLong(mature.getId(), Node.Type.MIRNA_MATURE.name(), matureUid);
+                            pwMature.println(csv.nodeLine(matureNode));
+                        }
+                        // Write mirna-mature relation
+                        pwRelMatureMiRna.println(miRnaUid + CsvInfo.SEPARATOR + matureUid);
+                    }
+                }
+            }
+            // Write gene-mirna relation
+            pwRelGeneMiRna.println(uid + CsvInfo.SEPARATOR + miRnaUid);
+        }
 
         // Model gene annotation: drugs, diseases,...
         if (gene.getAnnotation() != null) {
@@ -498,20 +553,20 @@ public class Builder {
             if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
                 pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DRUG.toString());
                 for (GeneDrugInteraction drug: gene.getAnnotation().getDrugs()) {
-                    Long drugUid = csv.getLong(drug.getDrugName());
+                    Long drugUid = csv.getLong(drug.getDrugName(), Node.Type.DRUG.name());
                     if (drugUid == null) {
                         n = NodeBuilder.newNode(csv.getAndIncUid(), drug);
                         updateCSVFiles(uid, n, Relation.Type.GENE__DRUG.toString());
                         // Save drug and gene-drug UIDs
-                        csv.putLong(drug.getDrugName(), n.getUid());
-                        csv.putLong(uid + "." + n.getUid(), 1);
+                        csv.putLong(drug.getDrugName(), Node.Type.DRUG.name(), n.getUid());
+                        csv.putLong(uid + "." + n.getUid(), Node.Type.DRUG.name(), 1);
                     } else {
                         String key = uid + "." + drugUid;
-                        if (csv.getLong(key) == null) {
+                        if (csv.getLong(key, Node.Type.DRUG.name()) == null) {
                             // Create gene-drug relation
                             pwRel.println(csv.relationLine(uid, drugUid));
                             // Save relation to avoid duplicated ones
-                            csv.putLong(key, 1);
+                            csv.putLong(key, Node.Type.DRUG.name(), 1);
                         }
                     }
                 }
@@ -521,12 +576,12 @@ public class Builder {
                     pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DISEASE.toString());
                     for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
                         String diseaseId = disease.getId() + "_" + (disease.getHpo() != null ? disease.getHpo() : "");
-                        Long diseaseUid = csv.getLong(diseaseId);
+                        Long diseaseUid = csv.getLong(diseaseId, Node.Type.DISEASE.name());
                         if (diseaseUid == null) {
                             n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
                             updateCSVFiles(uid, n, Relation.Type.GENE__DISEASE.toString());
 
-                            csv.putLong(diseaseId, n.getUid());
+                            csv.putLong(diseaseId, Node.Type.DISEASE.name(), n.getUid());
                         } else {
                             // create gene-disease relation
                             pwRel.println(csv.relationLine(uid, diseaseUid));
@@ -554,12 +609,12 @@ public class Builder {
         Iterator<Xref> it = xrefSet.iterator();
         while (it.hasNext()) {
             Xref xref = it.next();
-            Long xrefUid = csv.getLong(xref.getDbName() + "." + xref.getId());
+            Long xrefUid = csv.getLong(xref.getDbName() + "." + xref.getId(), Node.Type.XREF.name());
             if (xrefUid == null) {
                 n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
                 pwXref.println(csv.nodeLine(n));
                 xrefUid = n.getUid();
-                csv.putLong(xref.getDbName() + "." + xref.getId(), xrefUid);
+                csv.putLong(xref.getDbName() + "." + xref.getId(), Node.Type.XREF.name(), xrefUid);
             }
             pwRel.println(csv.relationLine(uid, xrefUid));
         }
@@ -617,11 +672,11 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(protein.getKeyword())) {
             pw = csv.getCsvWriters().get(Relation.Type.PROTEIN__PROTEIN_KEYWORD.toString());
             for (KeywordType keyword: protein.getKeyword()) {
-                Long kwUid = csv.getLong(keyword.getId());
+                Long kwUid = csv.getLong(keyword.getId(), Node.Type.PROTEIN_KEYWORD.name());
                 if (kwUid == null) {
                     n = new Node(csv.getAndIncUid(), keyword.getId(), keyword.getValue(), Node.Type.PROTEIN_KEYWORD);
                     updateCSVFiles(uid, n, Relation.Type.PROTEIN__PROTEIN_KEYWORD.toString());
-                    csv.putLong(keyword.getId(), n.getUid());
+                    csv.putLong(keyword.getId(), Node.Type.PROTEIN_KEYWORD.name(), n.getUid());
                 } else {
                     // Create protein - protein keyword relation
                     pw.println(csv.relationLine(uid, kwUid));
@@ -642,12 +697,12 @@ public class Builder {
             PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
             pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.XREF___PROTEIN___XREF.toString());
             for (DbReferenceType dbRef: protein.getDbReference()) {
-                Long xrefUid = csv.getLong(dbRef.getType() + "." + dbRef.getId());
+                Long xrefUid = csv.getLong(dbRef.getType() + "." + dbRef.getId(), Node.Type.XREF.name());
                 if (xrefUid == null) {
                     n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
                     pwXref.println(csv.nodeLine(n));
                     xrefUid = n.getUid();
-                    csv.putLong(dbRef.getType() + "." + dbRef.getId(), xrefUid);
+                    csv.putLong(dbRef.getType() + "." + dbRef.getId(), Node.Type.XREF.name(), xrefUid);
                 }
                 pw.println(csv.relationLine(uid, xrefUid));
             }
@@ -664,7 +719,7 @@ public class Builder {
     private Node createTranscriptNode(Transcript transcript, Long uid) {
         // Create transcript node and save transcript UId
         Node node = NodeBuilder.newNode(uid, transcript);
-        csv.putLong(transcript.getId(), uid);
+        csv.putLong(transcript.getId(), Node.Type.TRANSCRIPT.name(), uid);
 
         // Get protein
         Node n;
@@ -674,7 +729,7 @@ public class Builder {
             for (Xref xref: transcript.getXrefs()) {
                 proteinId = csv.getProteinCache().getPrimaryId(xref.getId());
                 if (proteinId != null) {
-                    Long proteinUid = csv.getLong(proteinId);
+                    Long proteinUid = csv.getLong(proteinId, Node.Type.PROTEIN.name());
                     if (proteinUid == null) {
                         protein = csv.getProtein(proteinId);
                         if (protein != null) {
@@ -708,26 +763,27 @@ public class Builder {
         return node;
     }
 
-    private Long processVariant(Variant variant) throws IOException {
-        Node variantNode = null;
 
-        Long variantUid = csv.getLong(variant.toStringSimple());
-        if (variantUid == null) {
-            variantNode = createVariantNode(variant);
-            variantUid = variantNode.getUid();
-            csv.putLong(variant.toStringSimple(), variantUid);
-        }
-
-        // Process sample info
-        processSampleInfo(variant, variantUid);
-
-        // Check if we have to update the VARIANT_OBJECT.csv file
-        if (variantNode != null) {
-            createVariantObjectNode(variant, variantNode);
-        }
-
-        return variantUid;
-    }
+    //    private Long processVariant(Variant variant) throws IOException {
+//        Node variantNode = null;
+//
+//        Long variantUid = csv.getLong(variant.toStringSimple(), Node.Type.VARIANT.name());
+//        if (variantUid == null) {
+//            variantNode = createVariantNode(variant);
+//            variantUid = variantNode.getUid();
+//            csv.putLong(variant.toStringSimple(), Node.Type.VARIANT.name(), variantUid);
+//        }
+//
+//        // Process sample info
+//        processSampleInfo(variant, variantUid);
+//
+//        // Check if we have to update the VARIANT_OBJECT.csv file
+//        if (variantNode != null) {
+//            createVariantObjectNode(variant, variantNode);
+//        }
+//
+//        return variantUid;
+//    }
 
     private Node createVariantNode(Variant variant) {
         return createVariantNode(variant, csv.getAndIncUid());
@@ -781,11 +837,11 @@ public class Builder {
                         for (SequenceOntologyTerm so : ct.getSequenceOntologyTerms()) {
                             String soId = so.getAccession();
                             if (soId != null) {
-                                Long soUid = csv.getLong(soId);
+                                Long soUid = csv.getLong(soId, Node.Type.SO.name());
                                 if (soUid == null) {
                                     Node soNode = new Node(csv.getAndIncUid(), so.getAccession(), so.getName(), Node.Type.SO);
                                     updateCSVFiles(ctNode.getUid(), soNode, Relation.Type.CONSEQUENCE_TYPE__SO.toString());
-                                    csv.putLong(soId, soNode.getUid());
+                                    csv.putLong(soId, Node.Type.SO.name(), soNode.getUid());
                                 } else {
                                     // Relation: consequence type - so
                                     pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__SO.toString());
@@ -957,163 +1013,163 @@ public class Builder {
 //        return caNode;
 //    }
 
-    private void processReportedVariants(List<ClinicalVariant> findings, Long interpretationUid, boolean arePrimaryFindings)
-            throws IOException {
-        PrintWriter pw;
-        Relation.Type interpretationRelation;
-        if (arePrimaryFindings) {
-            interpretationRelation = Relation.Type.PRIMARY_FINDING___INTERPRETATION___REPORTED_VARIANT;
+//    private void processReportedVariants(List<ClinicalVariant> findings, Long interpretationUid, boolean arePrimaryFindings)
+//            throws IOException {
+//        PrintWriter pw;
+//        Relation.Type interpretationRelation;
+//        if (arePrimaryFindings) {
+//            interpretationRelation = Relation.Type.PRIMARY_FINDING___INTERPRETATION___REPORTED_VARIANT;
+//
+//        } else {
+//            interpretationRelation = Relation.Type.SECONDARY_FINDING___INTERPRETATION___REPORTED_VARIANT;
+//        }
+//
+//        for (ClinicalVariant finding : findings) {
+//            Node findingNode = NodeBuilder.newNode(csv.getAndIncUid(), finding);
+//            pw = csv.getCsvWriters().get(Node.Type.REPORTED_VARIANT.toString());
+//            pw.println(csv.nodeLine(findingNode));
+//
+//            // Process variant and relation it to the reported variant
+//            Long variantUid = processVariant(finding);
+//            pw = csv.getCsvWriters().get(Relation.Type.REPORTED_VARIANT__VARIANT.toString());
+//            pw.println(csv.relationLine(findingNode.getUid(), variantUid));
+//
+//            // Relation: interpretation - primary finding
+//            pw = csv.getCsvWriters().get(interpretationRelation.toString());
+//            pw.println(csv.relationLine(interpretationUid, findingNode.getUid()));
+//        }
+//    }
 
-        } else {
-            interpretationRelation = Relation.Type.SECONDARY_FINDING___INTERPRETATION___REPORTED_VARIANT;
-        }
 
-        for (ClinicalVariant finding : findings) {
-            Node findingNode = NodeBuilder.newNode(csv.getAndIncUid(), finding);
-            pw = csv.getCsvWriters().get(Node.Type.REPORTED_VARIANT.toString());
-            pw.println(csv.nodeLine(findingNode));
-
-            // Process variant and relation it to the reported variant
-            Long variantUid = processVariant(finding);
-            pw = csv.getCsvWriters().get(Relation.Type.REPORTED_VARIANT__VARIANT.toString());
-            pw.println(csv.relationLine(findingNode.getUid(), variantUid));
-
-            // Relation: interpretation - primary finding
-            pw = csv.getCsvWriters().get(interpretationRelation.toString());
-            pw.println(csv.relationLine(interpretationUid, findingNode.getUid()));
-        }
-    }
-
-
-    private void addVariantJsonFile(File file) throws IOException {
-        // Reading file line by line, each line a JSON object
-        BufferedReader reader;
-        ObjectMapper mapper = new ObjectMapper();
-
-        File metaFile = new File(file.getAbsoluteFile() + ".meta.json");
-        if (metaFile.exists()) {
-            csv.openMetadataFile(metaFile);
-        } else {
-            metaFile = new File(file.getAbsoluteFile() + ".meta.json.gz");
-            if (metaFile.exists()) {
-                csv.openMetadataFile(metaFile);
-            }
-        }
-
-        long counter = 0;
-        logger.info("Processing JSON file {}", file.getPath());
-        reader = FileUtils.newBufferedReader(file.toPath());
-        String line = reader.readLine();
-        while (line != null) {
-            Variant variant = mapper.readValue(line, Variant.class);
-            processVariant(variant);
-
-            // read next line
-            line = reader.readLine();
-            if (++counter % 5000 == 0) {
-                logger.info("Parsing {} variants...", counter);
-            }
-        }
-        reader.close();
-        logger.info("Parsed {} variants from {}. Done!!!", counter, file.toString());
-    }
-
-    private void processSampleInfo(Variant variant, Long variantUid) {
-        String variantId = variant.toString();
-
-        if (CollectionUtils.isNotEmpty(variant.getStudies())) {
-            PrintWriter pw;
-
-            // Only one single study is supported
-            StudyEntry studyEntry = variant.getStudies().get(0);
-
-            if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
-                // INFO management: FILTER, QUAL and info fields
-                String fileId = studyEntry.getFiles().get(0).getFileId();
-                String infoId = variantId + "_" + fileId;
-                Long infoUid = csv.getLong(infoId);
-                if (infoUid == null) {
-                    // Variant file info node
-                    infoUid = csv.getAndIncUid();
-                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_FILE_INFO.toString());
-                    pw.println(variantInfoLine(infoUid, studyEntry));
-                }
-                Long fileUid = csv.getLong(fileId);
-                if (fileUid != null) {
-                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_FILE_INFO__FILE.toString());
-                    pw.println(infoUid + CsvInfo.SEPARATOR + fileUid);
-                }
-
-                // FORMAT: GT and format attributes
-                for (int i = 0; i < studyEntry.getSamples().size(); i++) {
-                    String sampleName = CollectionUtils.isEmpty(csv.getSampleNames())
-                            ? "sample" + (i + 1)
-                            : csv.getSampleNames().get(i);
-                    Long sampleUid = csv.getLong(sampleName);
-                    if (sampleUid == null) {
-                        sampleUid = csv.getAndIncUid();
-                        csv.getCsvWriters().get(Node.Type.SAMPLE.toString())
-                                .println(sampleUid + CsvInfo.SEPARATOR + sampleName + CsvInfo.SEPARATOR + sampleName);
-                        csv.putLong(sampleName, sampleUid);
-                    }
-                    // Variant call node
-                    Long formatUid = csv.getAndIncUid();
-                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_CALL.toString());
-                    pw.println(variantFormatLine(formatUid, studyEntry, i));
-
-                    // Relation: variant - variant call
-                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT__VARIANT_CALL.toString());
-                    pw.println(csv.relationLine(variantUid, formatUid));
-
-                    // Relation: sample - variant call
-                    pw = csv.getCsvWriters().get(Relation.Type.SAMPLE__VARIANT_CALL.toString());
-                    pw.println(csv.relationLine(sampleUid, formatUid));
-
-                    // Relation: variant call - variant file info
-                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString());
-                    pw.println(csv.relationLine(formatUid, infoUid));
-                }
-            }
-        }
-    }
-
-    private String variantInfoLine(long infoUid, StudyEntry studyEntry) {
-        StringBuilder sb = new StringBuilder("" + infoUid);
-        Map<String, String> fileData = studyEntry.getFiles().get(0).getData();
-
-        Iterator<String> iterator = csv.getInfoFields().iterator();
-        while (iterator.hasNext()) {
-            String infoName = iterator.next();
-            if (sb.length() > 0) {
-                sb.append(CsvInfo.SEPARATOR);
-            }
-            if (fileData.containsKey(infoName)) {
-                sb.append(fileData.get(infoName));
-            } else {
-                sb.append(CsvInfo.MISSING_VALUE);
-            }
-        }
-        return sb.toString();
-    }
-
-    private String variantFormatLine(Long formatUid, StudyEntry studyEntry, int index) {
-        StringBuilder sb = new StringBuilder("" + formatUid);
-
-        Iterator<String> iterator = csv.getFormatFields().iterator();
-        while (iterator.hasNext()) {
-            String formatName = iterator.next();
-            if (sb.length() > 0) {
-                sb.append(CsvInfo.SEPARATOR);
-            }
-//            if (studyEntry.getFormatPositions().containsKey(formatName)) {
-//                sb.append(studyEntry.getSampleData(index).get(studyEntry.getFormatPositions()
-//                        .get(formatName)));
-//            } else {
-            sb.append(CsvInfo.MISSING_VALUE);
+//    private void addVariantJsonFile(File file) throws IOException {
+//        // Reading file line by line, each line a JSON object
+//        BufferedReader reader;
+//        ObjectMapper mapper = new ObjectMapper();
+//
+//        File metaFile = new File(file.getAbsoluteFile() + ".meta.json");
+//        if (metaFile.exists()) {
+//            csv.openMetadataFile(metaFile);
+//        } else {
+//            metaFile = new File(file.getAbsoluteFile() + ".meta.json.gz");
+//            if (metaFile.exists()) {
+//                csv.openMetadataFile(metaFile);
 //            }
-        }
-        return sb.toString();
-    }
+//        }
+//
+//        long counter = 0;
+//        logger.info("Processing JSON file {}", file.getPath());
+//        reader = FileUtils.newBufferedReader(file.toPath());
+//        String line = reader.readLine();
+//        while (line != null) {
+//            Variant variant = mapper.readValue(line, Variant.class);
+//            processVariant(variant);
+//
+//            // read next line
+//            line = reader.readLine();
+//            if (++counter % 5000 == 0) {
+//                logger.info("Parsing {} variants...", counter);
+//            }
+//        }
+//        reader.close();
+//        logger.info("Parsed {} variants from {}. Done!!!", counter, file.toString());
+//    }
+
+//    private void processSampleInfo(Variant variant, Long variantUid) {
+//        String variantId = variant.toString();
+//
+//        if (CollectionUtils.isNotEmpty(variant.getStudies())) {
+//            PrintWriter pw;
+//
+//            // Only one single study is supported
+//            StudyEntry studyEntry = variant.getStudies().get(0);
+//
+//            if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
+//                // INFO management: FILTER, QUAL and info fields
+//                String fileId = studyEntry.getFiles().get(0).getFileId();
+//                String infoId = variantId + "_" + fileId;
+//                Long infoUid = csv.getLong(infoId);
+//                if (infoUid == null) {
+//                    // Variant file info node
+//                    infoUid = csv.getAndIncUid();
+//                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_FILE_INFO.toString());
+//                    pw.println(variantInfoLine(infoUid, studyEntry));
+//                }
+//                Long fileUid = csv.getLong(fileId);
+//                if (fileUid != null) {
+//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_FILE_INFO__FILE.toString());
+//                    pw.println(infoUid + CsvInfo.SEPARATOR + fileUid);
+//                }
+//
+//                // FORMAT: GT and format attributes
+//                for (int i = 0; i < studyEntry.getSamples().size(); i++) {
+//                    String sampleName = CollectionUtils.isEmpty(csv.getSampleNames())
+//                            ? "sample" + (i + 1)
+//                            : csv.getSampleNames().get(i);
+//                    Long sampleUid = csv.getLong(sampleName);
+//                    if (sampleUid == null) {
+//                        sampleUid = csv.getAndIncUid();
+//                        csv.getCsvWriters().get(Node.Type.SAMPLE.toString())
+//                                .println(sampleUid + CsvInfo.SEPARATOR + sampleName + CsvInfo.SEPARATOR + sampleName);
+//                        csv.putLong(sampleName, sampleUid);
+//                    }
+//                    // Variant call node
+//                    Long formatUid = csv.getAndIncUid();
+//                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_CALL.toString());
+//                    pw.println(variantFormatLine(formatUid, studyEntry, i));
+//
+//                    // Relation: variant - variant call
+//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT__VARIANT_CALL.toString());
+//                    pw.println(csv.relationLine(variantUid, formatUid));
+//
+//                    // Relation: sample - variant call
+//                    pw = csv.getCsvWriters().get(Relation.Type.SAMPLE__VARIANT_CALL.toString());
+//                    pw.println(csv.relationLine(sampleUid, formatUid));
+//
+//                    // Relation: variant call - variant file info
+//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString());
+//                    pw.println(csv.relationLine(formatUid, infoUid));
+//                }
+//            }
+//        }
+//    }
+
+//    private String variantInfoLine(long infoUid, StudyEntry studyEntry) {
+//        StringBuilder sb = new StringBuilder("" + infoUid);
+//        Map<String, String> fileData = studyEntry.getFiles().get(0).getData();
+//
+//        Iterator<String> iterator = csv.getInfoFields().iterator();
+//        while (iterator.hasNext()) {
+//            String infoName = iterator.next();
+//            if (sb.length() > 0) {
+//                sb.append(CsvInfo.SEPARATOR);
+//            }
+//            if (fileData.containsKey(infoName)) {
+//                sb.append(fileData.get(infoName));
+//            } else {
+//                sb.append(CsvInfo.MISSING_VALUE);
+//            }
+//        }
+//        return sb.toString();
+//    }
+
+//    private String variantFormatLine(Long formatUid, StudyEntry studyEntry, int index) {
+//        StringBuilder sb = new StringBuilder("" + formatUid);
+//
+//        Iterator<String> iterator = csv.getFormatFields().iterator();
+//        while (iterator.hasNext()) {
+//            String formatName = iterator.next();
+//            if (sb.length() > 0) {
+//                sb.append(CsvInfo.SEPARATOR);
+//            }
+////            if (studyEntry.getFormatPositions().containsKey(formatName)) {
+////                sb.append(studyEntry.getSampleData(index).get(studyEntry.getFormatPositions()
+////                        .get(formatName)));
+////            } else {
+//            sb.append(CsvInfo.MISSING_VALUE);
+////            }
+//        }
+//        return sb.toString();
+//    }
 
     //-------------------------------------------------------------------------
 
@@ -1250,7 +1306,7 @@ public class Builder {
         while (jsonGene != null) {
             Gene gene = geneCache.getObjReader().readValue(jsonGene);
             String geneId = gene.getId();
-            if (org.apache.commons.lang3.StringUtils.isNotEmpty(geneId)) {
+            if (StringUtils.isNotEmpty(geneId)) {
                 geneCounter++;
                 if (geneCounter % 5000 == 0) {
                     logger.info("Building {} genes...", geneCounter);
@@ -1285,6 +1341,34 @@ public class Builder {
             // Next line
             jsonGene = reader.readLine();
         }
+
+        // Second loop
+        reader.close();
+        reader = FileUtils.newBufferedReader(genePath);
+
+        jsonGene = reader.readLine();
+        while (jsonGene != null) {
+            Gene gene = geneCache.getObjReader().readValue(jsonGene);
+            if (gene.getAnnotation() != null && CollectionUtils.isNotEmpty(gene.getAnnotation().getMirnaTargets())) {
+                Long geneUid = csv.getLong(gene.getId(), Node.Type.GENE.name());
+                if (geneUid != null) {
+                    PrintWriter pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.TARGET___GENE___MIRNA_MATURE.toString());
+                    for (MirnaTarget mirnaTarget : gene.getAnnotation().getMirnaTargets()) {
+                        Long matureUid = csv.getLong(mirnaTarget.getSourceId(), Node.Type.MIRNA_MATURE.name());
+                        if (matureUid != null) {
+                            for (TargetGene target : mirnaTarget.getTargets()) {
+                                pw.println(geneUid + CsvInfo.SEPARATOR + matureUid + CsvInfo.SEPARATOR + target.getExperiment()
+                                        + CsvInfo.SEPARATOR + target.getEvidence() + CsvInfo.SEPARATOR + target.getPubmed());
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Next line
+            jsonGene = reader.readLine();
+        }
+
         logger.info("Building {} genes. Done.", geneCounter);
 
         reader.close();
@@ -1390,51 +1474,51 @@ public class Builder {
         }
     }
 
-    public void indexingMiRnas(Path miRnaPath, Path indexPath, boolean toImport) throws IOException {
-        csv.indexingMiRnas(miRnaPath, indexPath);
-
-        if (toImport) {
-            // Import miRNAs and genes
-            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
-            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE
-                    .toString());
-
-            RocksIterator rocksIterator = csv.getMiRnaRocksDb().newIterator();
-            rocksIterator.seekToFirst();
-            while (rocksIterator.isValid()) {
-                String miRnaId = new String(rocksIterator.key());
-                String miRnaInfo = new String(rocksIterator.value());
-
-                Long miRnaUid = csv.getLong(miRnaId);
-                if (miRnaUid == null) {
-                    Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
-                    pwMiRna.println(csv.nodeLine(miRnaNode));
-
-                    // Save the miRNA node uid
-                    miRnaUid = miRnaNode.getUid();
-                    csv.putLong(miRnaId, miRnaUid);
-                }
-
-                String[] fields = miRnaInfo.split("::");
-                for (int i = 0; i < fields.length; i++) {
-                    String[] subFields = fields[i].split(":");
-
-                    // Process target gene
-                    Long geneUid = processGene(subFields[0], subFields[0]);
-                    if (geneUid != null) {
-                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
-                            // Write mirna-target gene relation
-                            pwMiRnaTargetRel.println(miRnaUid + CsvInfo.SEPARATOR + geneUid + CsvInfo.SEPARATOR + subFields[1]);
-                            csv.putLong(miRnaUid + "." + geneUid, 1);
-                        }
-                    }
-                }
-
-                // Next miRNA
-                rocksIterator.next();
-            }
-        }
-    }
+//    public void indexingMiRnas(Path miRnaPath, Path indexPath, boolean toImport) throws IOException {
+//        csv.indexingMiRnas(miRnaPath, indexPath);
+//
+//        if (toImport) {
+//            // Import miRNAs and genes
+//            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
+//            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE
+//                    .toString());
+//
+//            RocksIterator rocksIterator = csv.getMiRnaRocksDb().newIterator();
+//            rocksIterator.seekToFirst();
+//            while (rocksIterator.isValid()) {
+//                String miRnaId = new String(rocksIterator.key());
+//                String miRnaInfo = new String(rocksIterator.value());
+//
+//                Long miRnaUid = csv.getLong(miRnaId);
+//                if (miRnaUid == null) {
+//                    Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
+//                    pwMiRna.println(csv.nodeLine(miRnaNode));
+//
+//                    // Save the miRNA node uid
+//                    miRnaUid = miRnaNode.getUid();
+//                    csv.putLong(miRnaId, miRnaUid);
+//                }
+//
+//                String[] fields = miRnaInfo.split("::");
+//                for (int i = 0; i < fields.length; i++) {
+//                    String[] subFields = fields[i].split(":");
+//
+//                    // Process target gene
+//                    Long geneUid = processGene(subFields[0], subFields[0]);
+//                    if (geneUid != null) {
+//                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
+//                            // Write mirna-target gene relation
+//                            pwMiRnaTargetRel.println(miRnaUid + CsvInfo.SEPARATOR + geneUid + CsvInfo.SEPARATOR + subFields[1]);
+//                            csv.putLong(miRnaUid + "." + geneUid, 1);
+//                        }
+//                    }
+//                }
+//
+//                // Next miRNA
+//                rocksIterator.next();
+//            }
+//        }
+//    }
 
     public CsvInfo getCsvInfo() {
         return csv;

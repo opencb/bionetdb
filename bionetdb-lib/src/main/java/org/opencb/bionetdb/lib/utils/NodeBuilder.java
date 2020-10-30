@@ -230,6 +230,23 @@ public class NodeBuilder {
         return node;
     }
 
+    public static Node newNode(long uid, MiRnaGene miRna) {
+        Node node = new Node(uid, miRna.getId(), miRna.getId(), Node.Type.MIRNA);
+        node.addAttribute("accession", miRna.getAccession());
+        node.addAttribute("status", miRna.getStatus());
+        node.addAttribute("sequence", miRna.getSequence());
+        return node;
+    }
+
+    public static Node newNode(long uid, MiRnaMature miRnaMature) {
+        Node node = new Node(uid, miRnaMature.getId(), miRnaMature.getId(), Node.Type.MIRNA_MATURE);
+        node.addAttribute("accession", miRnaMature.getAccession());
+        node.addAttribute("sequence", miRnaMature.getSequence());
+        node.addAttribute("start", miRnaMature.getStart());
+        node.addAttribute("end", miRnaMature.getEnd());
+        return node;
+    }
+
     public static Node newNode(long uid, GeneDrugInteraction drug) {
         Node node = new Node(uid, null, drug.getDrugName(), Node.Type.DRUG);
         node.addAttribute("source", drug.getSource());

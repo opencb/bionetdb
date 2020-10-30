@@ -9,11 +9,6 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.metadata.Individual;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.lib.utils.cache.GeneCache;
@@ -25,7 +20,10 @@ import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -134,10 +132,12 @@ public class CsvInfo {
         XREF___PROTEIN___XREF("XREF___PROTEIN___XREF"),
         XREF___RNA___XREF("XREF___RNA___XREF"),
 
-        TARGET_GENE___MIRNA___GENE("TARGET_GENE___MIRNA___GENE"),
-
         IS___DNA___GENE("IS___DNA___GENE"),
-        IS___RNA___MIRNA("IS___DNA___GENE");
+        IS___RNA___MIRNA("IS___RNA___MIRNA"),
+
+        IS___GENE___MIRNA("IS___GENE___MIRNA"),
+        TARGET___GENE___MIRNA_MATURE("TARGET___GENE___MIRNA_MATURE"),
+        MATURE___MIRNA___MIRNA_MATURE("MATURE___MIRNA___MIRNA_MATURE");
 
         private final String relation;
 
@@ -247,86 +247,86 @@ public class CsvInfo {
         }
     }
 
-    public void openMetadataFile(File metafile) throws IOException {
-        BufferedReader bufferedReader = FileUtils.newBufferedReader(metafile.toPath());
-        String metadata = bufferedReader.readLine();
-        bufferedReader.close();
-
-        //FileUtils.readFully(new BufferedReader(new FileReader(metafile.getAbsolutePath())));
-//        String metadata = FileUtils.readFully(new BufferedReader(new FileReader(metafile.getAbsolutePath())));
-        ObjectMapper mapper = new ObjectMapper();
-        VariantMetadata variantMetadata = mapper.readValue(metadata, VariantMetadata.class);
-        if (ListUtils.isNotEmpty(variantMetadata.getStudies())) {
-            VariantStudyMetadata variantStudyMetadata = variantMetadata.getStudies().get(0);
-            for (Individual individual: variantStudyMetadata.getIndividuals()) {
-                sampleNames.add(individual.getSamples().get(0).getId());
-            }
-
-            if (ListUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
-                for (VariantFileMetadata variantFileMetadata: variantStudyMetadata.getFiles()) {
-                    if (StringUtils.isNotEmpty(variantFileMetadata.getId())) {
-                        Long fileUid = getLong(variantFileMetadata.getId());
-                        if (fileUid == null) {
-                            // File node
-                            Node n = new Node(getAndIncUid(), variantFileMetadata.getId(), variantFileMetadata.getPath(),
-                                    Node.Type.FILE);
-                            csvWriters.get(Node.Type.FILE.toString()).println(nodeLine(n));
-                            putLong(variantFileMetadata.getId(), n.getUid());
-                        }
-                    }
-
-                    if (variantFileMetadata.getHeader() != null) {
-                        for (VariantFileHeaderComplexLine line: variantFileMetadata.getHeader().getComplexLines()) {
-                            if ("INFO".equals(line.getKey())) {
-                                infoFields.add(line.getId());
-                            } else if ("FORMAT".equals(line.getKey())) {
-                                formatFields.add(line.getId());
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-
-
-        // Variant call
-        String strType;
-        List<String> attrs = new ArrayList<>();
-        attrs.add("variantCallId");
-        Iterator<String> iterator = formatFields.iterator();
-        while (iterator.hasNext()) {
-            attrs.add(iterator.next());
-        }
-        strType = Node.Type.VARIANT_CALL.toString();
-        nodeAttributes.put(strType, attrs);
-        csvWriters.get(strType).println(getNodeHeaderLine(attrs));
-        strType = Relation.Type.VARIANT__VARIANT_CALL.toString();
-        csvWriters.get(strType).println(getRelationHeaderLine(strType));
-        strType = Relation.Type.SAMPLE__VARIANT_CALL.toString();
-        csvWriters.get(strType).println(getRelationHeaderLine(strType));
-
-        // Variant file info
-        attrs = new ArrayList<>();
-        attrs.add("variantFileInfoId");
-        iterator = infoFields.iterator();
-        while (iterator.hasNext()) {
-            attrs.add(iterator.next());
-        }
-        strType = Node.Type.VARIANT_FILE_INFO.toString();
-        nodeAttributes.put(strType, attrs);
-        csvWriters.get(strType).println(getNodeHeaderLine(attrs));
-        strType = Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString();
-        csvWriters.get(strType).println(getRelationHeaderLine(strType));
-        strType = Relation.Type.VARIANT_FILE_INFO__FILE.toString();
-        csvWriters.get(strType).println(getRelationHeaderLine(strType));
-    }
+//    public void openMetadataFile(File metafile) throws IOException {
+//        BufferedReader bufferedReader = FileUtils.newBufferedReader(metafile.toPath());
+//        String metadata = bufferedReader.readLine();
+//        bufferedReader.close();
+//
+//        //FileUtils.readFully(new BufferedReader(new FileReader(metafile.getAbsolutePath())));
+////        String metadata = FileUtils.readFully(new BufferedReader(new FileReader(metafile.getAbsolutePath())));
+//        ObjectMapper mapper = new ObjectMapper();
+//        VariantMetadata variantMetadata = mapper.readValue(metadata, VariantMetadata.class);
+//        if (ListUtils.isNotEmpty(variantMetadata.getStudies())) {
+//            VariantStudyMetadata variantStudyMetadata = variantMetadata.getStudies().get(0);
+//            for (Individual individual: variantStudyMetadata.getIndividuals()) {
+//                sampleNames.add(individual.getSamples().get(0).getId());
+//            }
+//
+//            if (ListUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
+//                for (VariantFileMetadata variantFileMetadata: variantStudyMetadata.getFiles()) {
+//                    if (StringUtils.isNotEmpty(variantFileMetadata.getId())) {
+//                        Long fileUid = getLong(variantFileMetadata.getId());
+//                        if (fileUid == null) {
+//                            // File node
+//                            Node n = new Node(getAndIncUid(), variantFileMetadata.getId(), variantFileMetadata.getPath(),
+//                                    Node.Type.FILE);
+//                            csvWriters.get(Node.Type.FILE.toString()).println(nodeLine(n));
+//                            putLong(variantFileMetadata.getId(), n.getUid());
+//                        }
+//                    }
+//
+//                    if (variantFileMetadata.getHeader() != null) {
+//                        for (VariantFileHeaderComplexLine line: variantFileMetadata.getHeader().getComplexLines()) {
+//                            if ("INFO".equals(line.getKey())) {
+//                                infoFields.add(line.getId());
+//                            } else if ("FORMAT".equals(line.getKey())) {
+//                                formatFields.add(line.getId());
+//                            }
+//                        }
+//                    }
+//
+//                }
+//            }
+//        }
+//
+//
+//        // Variant call
+//        String strType;
+//        List<String> attrs = new ArrayList<>();
+//        attrs.add("variantCallId");
+//        Iterator<String> iterator = formatFields.iterator();
+//        while (iterator.hasNext()) {
+//            attrs.add(iterator.next());
+//        }
+//        strType = Node.Type.VARIANT_CALL.toString();
+//        nodeAttributes.put(strType, attrs);
+//        csvWriters.get(strType).println(getNodeHeaderLine(attrs));
+//        strType = Relation.Type.VARIANT__VARIANT_CALL.toString();
+//        csvWriters.get(strType).println(getRelationHeaderLine(strType));
+//        strType = Relation.Type.SAMPLE__VARIANT_CALL.toString();
+//        csvWriters.get(strType).println(getRelationHeaderLine(strType));
+//
+//        // Variant file info
+//        attrs = new ArrayList<>();
+//        attrs.add("variantFileInfoId");
+//        iterator = infoFields.iterator();
+//        while (iterator.hasNext()) {
+//            attrs.add(iterator.next());
+//        }
+//        strType = Node.Type.VARIANT_FILE_INFO.toString();
+//        nodeAttributes.put(strType, attrs);
+//        csvWriters.get(strType).println(getNodeHeaderLine(attrs));
+//        strType = Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString();
+//        csvWriters.get(strType).println(getRelationHeaderLine(strType));
+//        strType = Relation.Type.VARIANT_FILE_INFO__FILE.toString();
+//        csvWriters.get(strType).println(getRelationHeaderLine(strType));
+//    }
 
     public Long getGeneUid(String xrefId) {
         Long geneUid = null;
         String geneId = geneCache.getPrimaryId(xrefId);
         if (StringUtils.isNotEmpty(geneId)) {
-            geneUid = getLong(geneId);
+            geneUid = getLong(geneId,  Node.Type.GENE.name());
         } else {
             logger.info("Getting gene UID: Xref not found for gene {}", xrefId);
         }
@@ -336,7 +336,7 @@ public class CsvInfo {
     public void saveGeneUid(String xrefId, Long geneUid) {
         String geneId = geneCache.getPrimaryId(xrefId);
         if (StringUtils.isNotEmpty(geneId)) {
-            putLong(geneId, geneUid);
+            putLong(geneId, Node.Type.GENE.name(), geneUid);
         } else {
             logger.info("Setting gene UID {}: Xref not found for gene {}", geneUid, xrefId);
         }
@@ -349,7 +349,7 @@ public class CsvInfo {
             geneCache.addXrefId(geneName, "g." + geneId);
         }
 
-        putLong("g." + geneId, geneUid);
+        putLong(geneId, Node.Type.GENE.name(), geneUid);
     }
 
     public Gene getGene(String xrefId) {
@@ -360,7 +360,7 @@ public class CsvInfo {
         Long proteinUid = null;
         String proteinId = proteinCache.getPrimaryId(xrefId);
         if (StringUtils.isNotEmpty(proteinId)) {
-            proteinUid = getLong(proteinId);
+            proteinUid = getLong(proteinId, Node.Type.PROTEIN.name());
         } else {
             logger.info("Getting protein UID: Xref not found for protein {}", xrefId);
         }
@@ -370,7 +370,7 @@ public class CsvInfo {
     public void saveProteinUid(String xrefId, Long proteinUid) {
         String proteinId = proteinCache.getPrimaryId(xrefId);
         if (StringUtils.isNotEmpty(proteinId)) {
-            putLong(proteinId, proteinUid);
+            putLong(proteinId, Node.Type.PROTEIN.name(), proteinUid);
         } else {
             logger.info("Setting protein UID {}: Xref not found for protein {}", proteinUid, xrefId);
         }
@@ -382,7 +382,7 @@ public class CsvInfo {
             proteinCache.addXrefId(proteinName, proteinId);
         }
 
-        putLong(proteinId, proteinUid);
+        putLong(proteinId, Node.Type.PROTEIN.name(), proteinUid);
     }
 
     public Entry getProtein(String xrefId) {
@@ -398,21 +398,29 @@ public class CsvInfo {
         return info;
     }
 
-    public Long getLong(String key) {
-        return rocksDbManager.getLong(key, uidRocksDb);
+    public Long getLong(String id, String type) {
+        return rocksDbManager.getLong(id + "." + type, uidRocksDb);
     }
 
-    public String getString(String key) {
-        return rocksDbManager.getString(key, uidRocksDb);
+//    public Long getLong(String key) {
+//        return rocksDbManager.getLong(key, uidRocksDb);
+//    }
+
+//    public String getString(String key) {
+//        return rocksDbManager.getString(key, uidRocksDb);
+//    }
+
+    public void putLong(String id, String type, long value) {
+        rocksDbManager.putLong(id + "." + type, value, uidRocksDb);
     }
 
-    public void putLong(String key, long value) {
-        rocksDbManager.putLong(key, value, uidRocksDb);
-    }
+//    public void putLong(String key, long value) {
+//        rocksDbManager.putLong(key, value, uidRocksDb);
+//    }
 
-    public void putString(String key, String value) {
-        rocksDbManager.putString(key, value, uidRocksDb);
-    }
+//    public void putString(String key, String value) {
+//        rocksDbManager.putString(key, value, uidRocksDb);
+//    }
 
     protected String getNodeHeaderLine(List<String> attrs) {
         StringBuilder sb = new StringBuilder();
@@ -461,8 +469,10 @@ public class CsvInfo {
         String[] split = type.split("___");
         sb.append(":START_ID(").append(nodeAttributes.get(split[1]).get(0)).append(")").append(SEPARATOR).append(":END_ID(")
                 .append(nodeAttributes.get(split[2]).get(0)).append(")");
-        if (type.equals(BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString())) {
+        if (type.equals(BioPAXRelation.TARGET___GENE___MIRNA_MATURE.toString())) {
+            sb.append(CsvInfo.SEPARATOR + PREFIX_ATTRIBUTES + "experiment");
             sb.append(CsvInfo.SEPARATOR + PREFIX_ATTRIBUTES + "evidence");
+            sb.append(CsvInfo.SEPARATOR + PREFIX_ATTRIBUTES + "pubmed");
         }
         return sb.toString();
     }
@@ -705,13 +715,17 @@ public class CsvInfo {
                 "cdsLength", "description", "annotationFlags");
         nodeAttributes.put(Node.Type.TRANSCRIPT.toString(), new ArrayList<>(attrs));
 
-        // Target transcript
-        attrs = Arrays.asList("rnaId", "id", "name", "evidence");
-        nodeAttributes.put(Node.Type.TARGET_TRANSCRIPT.toString(), new ArrayList<>(attrs));
+//        // Target transcript
+//        attrs = Arrays.asList("rnaId", "id", "name", "evidence");
+//        nodeAttributes.put(Node.Type.TARGET_TRANSCRIPT.toString(), new ArrayList<>(attrs));
 
         // miRNA
-        attrs = Arrays.asList("mirnaId", "id", "name");
+        attrs = Arrays.asList("miRnaId", "id", "name", "accession", "status", "sequence");
         nodeAttributes.put(Node.Type.MIRNA.toString(), new ArrayList<>(attrs));
+
+        // Mature miRNA
+        attrs = Arrays.asList("matureMiRnaId", "id", "name", "accession", "sequence", "start", "end");
+        nodeAttributes.put(Node.Type.MIRNA_MATURE.toString(), new ArrayList<>(attrs));
 
         // TFBS
         attrs = Arrays.asList("tfbsId", "id", "name", "chromosome", "start", "end", "strand", "relativeStart",
