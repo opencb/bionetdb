@@ -30,6 +30,7 @@ public class Node {
 
         PHYSICAL_ENTITY     ("PHYSICAL_ENTITY"),
         TRANSCRIPT          ("TRANSCRIPT", "PHYSICAL_ENTITY"),
+        EXON                ("EXON", "PHYSICAL_ENTITY"),
         PROTEIN             ("PROTEIN", "PHYSICAL_ENTITY"),
         COMPLEX             ("COMPLEX", "PHYSICAL_ENTITY"),
         RNA                 ("RNA", "PHYSICAL_ENTITY"),
@@ -71,6 +72,10 @@ public class Node {
         DRUG                    ("DRUG"),
         EXPRESSION              ("EXPRESSION"),
         ONTOLOGY                ("ONTOLOGY"),
+        FEATURE_ONTOLOGY_TERM_ANNOTATION("FEATURE_ONTOLOGY_TERM_ANNOTATION"),
+        ANNOTATION_EVIDENCE("ANNOTATION_EVIDENCE"),
+
+        CONSTRAINT               ("CONSTRAINT"),
 
         PATHWAY ("PATHWAY"),
 

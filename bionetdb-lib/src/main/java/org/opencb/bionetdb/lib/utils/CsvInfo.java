@@ -688,7 +688,7 @@ public class CsvInfo {
 
         // Gene
         attrs = Arrays.asList("geneId", "id", "name", "biotype", "chromosome", "start", "end", "strand", "description",
-                "source", "status");
+                "version", "source", "status");
         nodeAttributes.put(Node.Type.GENE.toString(), new ArrayList<>(attrs));
 
         // Gene object  (object = gz json)
@@ -710,12 +710,29 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.DISEASE.toString(), new ArrayList<>(attrs));
 
         // Transcript
-        attrs = Arrays.asList("transcriptId", "id", "name", "proteinId", "biotype", "chromosome", "start", "end",
-                "strand", "status", "cdnaCodingStart", "cdnaCodingEnd", "genomicCodingStart", "genomicCodingEnd",
-                "cdsLength", "description", "annotationFlags");
+        attrs = Arrays.asList("transcriptId", "id", "name", "chromosome", "start", "end", "strand", "biotype", "status",
+                "genomicCodingStart", "genomicCodingEnd", "cdnaCodingStart", "cdnaCodingEnd", "cdsLength", "cDnaSequence", "proteinId",
+                "proteinSequence", "description", "version", "source", "annotationFlags");
         nodeAttributes.put(Node.Type.TRANSCRIPT.toString(), new ArrayList<>(attrs));
 
-//        // Target transcript
+        // Exon
+        attrs = Arrays.asList("exonId", "id", "name", "chromosome", "start", "end", "strand", "genomicCodingStart",
+                "genomicCodingEnd", "cdnaCodingStart", "cdnaCodingEnd", "cdsStart", "cdsEnd", "phase", "exonNumber", "sequence");
+        nodeAttributes.put(Node.Type.EXON.toString(), new ArrayList<>(attrs));
+
+        // Constraint
+        attrs = Arrays.asList("constraintId", "id", "name", "source", "method", "value");
+        nodeAttributes.put(Node.Type.CONSTRAINT.toString(), new ArrayList<>(attrs));
+
+        // Feature ontology term annotation
+        attrs = Arrays.asList("ontologyId", "id", "name", "source", "attributes");
+        nodeAttributes.put(Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION.toString(), new ArrayList<>(attrs));
+
+        // Annotation evidence
+        attrs = Arrays.asList("evidenceId", "id", "name", "references", "qualifier");
+        nodeAttributes.put(Node.Type.ANNOTATION_EVIDENCE.toString(), new ArrayList<>(attrs));
+
+        //        // Target transcript
 //        attrs = Arrays.asList("rnaId", "id", "name", "evidence");
 //        nodeAttributes.put(Node.Type.TARGET_TRANSCRIPT.toString(), new ArrayList<>(attrs));
 

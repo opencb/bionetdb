@@ -552,7 +552,7 @@ public class Builder {
             // Model drugs
             if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
                 pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DRUG.toString());
-                for (GeneDrugInteraction drug: gene.getAnnotation().getDrugs()) {
+                for (GeneDrugInteraction drug : gene.getAnnotation().getDrugs()) {
                     Long drugUid = csv.getLong(drug.getDrugName(), Node.Type.DRUG.name());
                     if (drugUid == null) {
                         n = NodeBuilder.newNode(csv.getAndIncUid(), drug);
@@ -570,23 +570,32 @@ public class Builder {
                         }
                     }
                 }
+            }
 
-                // Model diseases
-                if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
-                    pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DISEASE.toString());
-                    for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
-                        String diseaseId = disease.getId() + "_" + (disease.getHpo() != null ? disease.getHpo() : "");
-                        Long diseaseUid = csv.getLong(diseaseId, Node.Type.DISEASE.name());
-                        if (diseaseUid == null) {
-                            n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
-                            updateCSVFiles(uid, n, Relation.Type.GENE__DISEASE.toString());
+            // Model diseases
+            if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
+                pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DISEASE.toString());
+                for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
+                    String diseaseId = disease.getId() + "_" + (disease.getHpo() != null ? disease.getHpo() : "");
+                    Long diseaseUid = csv.getLong(diseaseId, Node.Type.DISEASE.name());
+                    if (diseaseUid == null) {
+                        n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
+                        updateCSVFiles(uid, n, Relation.Type.GENE__DISEASE.toString());
 
-                            csv.putLong(diseaseId, Node.Type.DISEASE.name(), n.getUid());
-                        } else {
-                            // create gene-disease relation
-                            pwRel.println(csv.relationLine(uid, diseaseUid));
-                        }
+                        csv.putLong(diseaseId, Node.Type.DISEASE.name(), n.getUid());
+                    } else {
+                        // create gene-disease relation
+                        pwRel.println(csv.relationLine(uid, diseaseUid));
                     }
+                }
+            }
+
+            // Model constraint
+            if (CollectionUtils.isNotEmpty(gene.getAnnotation().getConstraints())) {
+                for (Constraint constraint : gene.getAnnotation().getConstraints()) {
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), constraint);
+                    // Write constraint node and gene-constraint relation
+                    updateCSVFiles(uid, n, Relation.Type.GENE__CONSTRAINT.toString());
                 }
             }
         }
@@ -724,8 +733,8 @@ public class Builder {
         // Get protein
         Node n;
         if (CollectionUtils.isNotEmpty(transcript.getXrefs())) {
-            String proteinId = null;
-            Entry protein = null;
+            String proteinId;
+            Entry protein;
             for (Xref xref: transcript.getXrefs()) {
                 proteinId = csv.getProteinCache().getPrimaryId(xref.getId());
                 if (proteinId != null) {
@@ -752,6 +761,20 @@ public class Builder {
             }
         }
 
+        // Model exon
+        if (CollectionUtils.isNotEmpty(transcript.getExons())) {
+            PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__EXON.toString());
+            for (Exon exon : transcript.getExons()) {
+                Long exonUid = csv.getLong(exon.getId(), Node.Type.EXON.name());
+                if (exonUid == null) {
+                    n = createExonNode(exon);
+                    exonUid = n.getUid();
+                }
+                // Add relation transcript-ontology to CSV file
+                pwRel.println(uid + CsvInfo.SEPARATOR + exonUid);
+            }
+        }
+
         // TFBS
         if (CollectionUtils.isNotEmpty(transcript.getTfbs())) {
             for (TranscriptTfbs tfbs: transcript.getTfbs()) {
@@ -760,9 +783,67 @@ public class Builder {
             }
         }
 
+        if (transcript.getAnnotation() != null) {
+            // Model constraint
+            if (CollectionUtils.isNotEmpty(transcript.getAnnotation().getConstraints())) {
+                for (Constraint constraint : transcript.getAnnotation().getConstraints()) {
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), constraint);
+                    // Write constraint node and transcript-constraint relation
+                    updateCSVFiles(uid, n, Relation.Type.TRANSCRIPT__CONSTRAINT.toString());
+                }
+            }
+
+            // Model feature ontology term annotation
+            if (CollectionUtils.isNotEmpty(transcript.getAnnotation().getOntologies())) {
+                PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__FEATURE_ONTOLOGY_TERM_ANNOTATION.toString());
+                for (FeatureOntologyTermAnnotation ontology : transcript.getAnnotation().getOntologies()) {
+                    Long ontologyUid = csv.getLong(ontology.getId(), Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION.name());
+                    if (ontologyUid == null) {
+                        n = createFeatureOntologyTermAnnotationNode(ontology);
+                        ontologyUid = n.getUid();
+                    }
+                    // Add relation transcript-ontology to CSV file
+                    pwRel.println(uid + CsvInfo.SEPARATOR + ontologyUid);
+                }
+            }
+        }
+
         return node;
     }
 
+    private Node createExonNode(Exon exon) {
+        return createExonNode(exon, csv.getAndIncUid());
+    }
+
+    private Node createExonNode(Exon exon, Long uid) {
+        // Create exon node and save UId and wrrite CSV file
+        Node node = NodeBuilder.newNode(uid, exon);
+        csv.getCsvWriters().get(Node.Type.EXON.toString()).println(csv.nodeLine(node));
+        csv.putLong(exon.getId(), Node.Type.EXON.name(), uid);
+
+        return node;
+    }
+
+    private Node createFeatureOntologyTermAnnotationNode(FeatureOntologyTermAnnotation ontology) {
+        return createFeatureOntologyTermAnnotationNode(ontology, csv.getAndIncUid());
+    }
+
+    private Node createFeatureOntologyTermAnnotationNode(FeatureOntologyTermAnnotation ontology, Long uid) {
+        // Create ontology node and save UId and wrrite CSV file
+        Node node = NodeBuilder.newNode(uid, ontology);
+        csv.getCsvWriters().get(Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION.toString()).println(csv.nodeLine(node));
+        csv.putLong(ontology.getId(), Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION.name(), uid);
+
+        if (CollectionUtils.isNotEmpty(ontology.getEvidence())) {
+            for (AnnotationEvidence annotationEvidence : ontology.getEvidence()) {
+                Node n = NodeBuilder.newNode(csv.getAndIncUid(), annotationEvidence);
+                // Write evidence node and ontology-evidence relation
+                updateCSVFiles(uid, n, Relation.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION__ANNOTATION_EVIDENCE.toString());
+            }
+        }
+
+        return node;
+    }
 
     //    private Long processVariant(Variant variant) throws IOException {
 //        Node variantNode = null;

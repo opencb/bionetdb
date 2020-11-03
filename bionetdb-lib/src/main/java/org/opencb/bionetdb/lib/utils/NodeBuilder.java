@@ -225,6 +225,7 @@ public class NodeBuilder {
         node.addAttribute("end", gene.getEnd());
         node.addAttribute("strand", gene.getStrand());
         node.addAttribute("description", gene.getDescription());
+        node.addAttribute("version", gene.getVersion());
         node.addAttribute("source", gene.getSource());
         node.addAttribute("status", gene.getStatus());
         return node;
@@ -252,6 +253,11 @@ public class NodeBuilder {
         node.addAttribute("source", drug.getSource());
         node.addAttribute("type", drug.getType());
         node.addAttribute("studyType", drug.getStudyType());
+        node.addAttribute("interactionType", drug.getInteractionType());
+        node.addAttribute("chemblId", drug.getChemblId());
+        if (CollectionUtils.isNotEmpty(drug.getPublications())) {
+            node.addAttribute("publications", StringUtils.join(drug.getPublications(), ","));
+        }
         return node;
     }
 
@@ -261,46 +267,105 @@ public class NodeBuilder {
         node.addAttribute("numberOfPubmeds", disease.getNumberOfPubmeds());
         node.addAttribute("score", disease.getScore());
         node.addAttribute("source", disease.getSource());
-        if (ListUtils.isNotEmpty(disease.getSources())) {
+        if (CollectionUtils.isNotEmpty(disease.getSources())) {
             node.addAttribute("sources", StringUtils.join(disease.getSources(), ","));
         }
-        if (ListUtils.isNotEmpty(disease.getAssociationTypes())) {
+        if (CollectionUtils.isNotEmpty(disease.getAssociationTypes())) {
             node.addAttribute("associationTypes", StringUtils.join(disease.getAssociationTypes(), ","));
         }
         return node;
     }
 
+    public static Node newNode(long uid, Constraint constraint) {
+        Node node = new Node(uid, null, constraint.getName(), Node.Type.CONSTRAINT);
+        node.addAttribute("source", constraint.getSource());
+        node.addAttribute("method", constraint.getMethod());
+        node.addAttribute("value", constraint.getValue());
+        return node;
+    }
+
+
     public static Node newNode(long uid, Transcript transcript) {
         Node node = new Node(uid, transcript.getId(), transcript.getName(), Node.Type.TRANSCRIPT);
-        node.addAttribute("proteinId", transcript.getProteinId());
-        node.addAttribute("biotype", transcript.getBiotype());
         node.addAttribute("chromosome", transcript.getChromosome());
         node.addAttribute("start", transcript.getStart());
         node.addAttribute("end", transcript.getEnd());
         node.addAttribute("strand", transcript.getStrand());
+        node.addAttribute("biotype", transcript.getBiotype());
         node.addAttribute("status", transcript.getStatus());
-        node.addAttribute("cdnaCodingStart", transcript.getCdnaCodingStart());
-        node.addAttribute("cdnaCodingEnd", transcript.getCdnaCodingEnd());
         node.addAttribute("genomicCodingStart", transcript.getGenomicCodingStart());
         node.addAttribute("genomicCodingEnd", transcript.getGenomicCodingEnd());
+        node.addAttribute("cdnaCodingStart", transcript.getCdnaCodingStart());
+        node.addAttribute("cdnaCodingEnd", transcript.getCdnaCodingEnd());
         node.addAttribute("cdsLength", transcript.getCdsLength());
+        node.addAttribute("cDnaSequence", transcript.getcDnaSequence());
+        // TODO: maybe to remove?
+        node.addAttribute("proteinId", transcript.getProteinId());
+        // TODO: maybe to remove?
+        node.addAttribute("proteinSequence", transcript.getProteinSequence());
         node.addAttribute("description", transcript.getDescription());
+        node.addAttribute("version", transcript.getVersion());
+        node.addAttribute("source", transcript.getSource());
         if (CollectionUtils.isNotEmpty(transcript.getFlags())) {
             node.addAttribute("annotationFlags", StringUtils.join(transcript.getFlags(), ","));
         }
         return node;
     }
 
+    public static Node newNode(long uid, Exon exon) {
+        Node node = new Node(uid, exon.getId(), null, Node.Type.EXON);
+        node.addAttribute("chromosome", exon.getChromosome());
+        node.addAttribute("start", exon.getStart());
+        node.addAttribute("end", exon.getEnd());
+        node.addAttribute("strand", exon.getStrand());
+        node.addAttribute("genomicCodingStart", exon.getGenomicCodingStart());
+        node.addAttribute("genomicCodingEnd", exon.getGenomicCodingEnd());
+        node.addAttribute("cdnaCodingStart", exon.getCdnaCodingStart());
+        node.addAttribute("cdnaCodingEnd", exon.getCdnaCodingEnd());
+        node.addAttribute("cdsStart", exon.getCdsStart());
+        node.addAttribute("cdsEnd", exon.getCdsEnd());
+        node.addAttribute("phase", exon.getPhase());
+        node.addAttribute("exonNumber", exon.getExonNumber());
+        node.addAttribute("sequence", exon.getSequence());
+        return node;
+    }
+
     public static Node newNode(long uid, TranscriptTfbs tfbs) {
-        Node node = new Node(uid, null, tfbs.getTfName(), Node.Type.TFBS);
+        Node node = new Node(uid, tfbs.getId(), null, Node.Type.TFBS);
+        node.addAttribute("pfmId", tfbs.getPfmId());
         node.addAttribute("chromosome", tfbs.getChromosome());
         node.addAttribute("start", tfbs.getStart());
         node.addAttribute("end", tfbs.getEnd());
         node.addAttribute("strand", tfbs.getStrand());
+        node.addAttribute("type", tfbs.getType());
+        node.addAttribute("regulatoryId", tfbs.getRegulatoryId());
+        if (CollectionUtils.isNotEmpty(tfbs.getTranscriptionFactors())) {
+            node.addAttribute("transcriptionFactors", StringUtils.join(tfbs.getTranscriptionFactors(), ","));
+        }
         node.addAttribute("relativeStart", tfbs.getRelativeStart());
         node.addAttribute("relativeEnd", tfbs.getRelativeEnd());
         node.addAttribute("score", tfbs.getScore());
-        node.addAttribute("pwm", tfbs.getPwm());
+        return node;
+    }
+
+    public static Node newNode(long uid, FeatureOntologyTermAnnotation featureOntologyTermAnnotation) {
+        Node node = new Node(uid, featureOntologyTermAnnotation.getId(), featureOntologyTermAnnotation.getName(),
+                Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION);
+        node.addAttribute("source", featureOntologyTermAnnotation.getSource());
+        if (MapUtils.isNotEmpty(featureOntologyTermAnnotation.getAttributes())) {
+            for (String key : featureOntologyTermAnnotation.getAttributes().keySet()) {
+                node.addAttribute("attributes_" + key, featureOntologyTermAnnotation.getAttributes().get(key));
+            }
+        }
+        return node;
+    }
+
+    public static Node newNode(long uid, AnnotationEvidence annotationEvidence) {
+        Node node = new Node(uid, annotationEvidence.getCode(), null, Node.Type.ANNOTATION_EVIDENCE);
+        if (CollectionUtils.isNotEmpty(annotationEvidence.getReferences())) {
+            node.addAttribute("references", StringUtils.join(annotationEvidence.getReferences(), ","));
+        }
+        node.addAttribute("qualifier", annotationEvidence.getQualifier());
         return node;
     }
 
