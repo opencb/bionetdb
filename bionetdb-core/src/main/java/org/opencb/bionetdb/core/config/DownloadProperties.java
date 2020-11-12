@@ -26,7 +26,7 @@ public class DownloadProperties {
     private URLProperties network;
     private URLProperties gene;
     private URLProperties protein;
-//    private URLProperties panel;
+    private URLProperties panel;
     private URLProperties clinicalVariant;
 
     public URLProperties getGene() {
@@ -47,14 +47,14 @@ public class DownloadProperties {
         return this;
     }
 
-//    public URLProperties getPanel() {
-//        return panel;
-//    }
-//
-//    public DownloadProperties setPanel(URLProperties panel) {
-//        this.panel = panel;
-//        return this;
-//    }
+    public URLProperties getPanel() {
+        return panel;
+    }
+
+    public DownloadProperties setPanel(URLProperties panel) {
+        this.panel = panel;
+        return this;
+    }
 
     public URLProperties getClinicalVariant() {
         return clinicalVariant;

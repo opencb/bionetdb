@@ -46,14 +46,14 @@ public class Downloader {
             }
         }
 
-//        // Panel
-//        if (downloadProperties.getPanel() != null) {
-//            try {
-//                downloadURL(new URL(downloadProperties.getPanel().getHost()), outDir);
-//            } catch (IOException e) {
-//                logger.error(e.getMessage());
-//            }
-//        }
+        // Panel
+        if (downloadProperties.getPanel() != null) {
+            try {
+                downloadURL(new URL(downloadProperties.getPanel().getHost()), outDir);
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
+        }
 
         // Clinical variant
         if (downloadProperties.getClinicalVariant() != null) {

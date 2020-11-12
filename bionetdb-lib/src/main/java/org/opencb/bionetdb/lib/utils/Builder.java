@@ -29,7 +29,7 @@ public class Builder {
     public static final Object GENE_FILENAME = "gene.json";
     public static final Object GENE_DBNAME = "gene.rocksdb";
 
-    public static final Object PANEL_DIRNAME = "panel";
+    public static final Object PANEL_FILENAME = "panels.json";
 
     public static final Object PROTEIN_FILENAME = "protein.json";
     public static final Object PROTEIN_DBNAME = "protein.rocksdb";
@@ -38,6 +38,8 @@ public class Builder {
     public static final Object MIRNA_DBNAME = "mirna.rocksdb";
 
     public static final Object NETWORK_FILENAME = "Homo_sapiens.owl";
+
+    public static final Object CLINICAL_VARIANT_FILENAME = "clinical_variants.json";
 
     private CsvInfo csv;
     private Path inputPath;
@@ -55,9 +57,10 @@ public class Builder {
 
         long geneBuildTime = 0;
         long proteinBuildTime = 0;
-//            long genePanelsTime = 0;
+        long genePanelBuildTime = 0;
 //            long miRnaIndexingTime = 0;
-        long bioPaxTime = 0;
+        long bioPaxBuildTime = 0;
+        long clinvarBuildTime = 0;
 
 
         // Check input files
@@ -73,57 +76,61 @@ public class Builder {
             FileUtils.checkFile(proteinFile.toPath());
         }
 
+        File panelFile = new File(inputPath + "/" + PANEL_FILENAME);
+        FileUtils.checkFile(panelFile.toPath());
+
         File networkFile = new File(inputPath + "/" + NETWORK_FILENAME);
         FileUtils.checkFile(networkFile.toPath());
 
+        File clinicalVariantFile = new File(inputPath + "/" + CLINICAL_VARIANT_FILENAME);
+        if (!clinicalVariantFile.exists()) {
+            clinicalVariantFile = new File(inputPath + "/" + CLINICAL_VARIANT_FILENAME + ".gz");
+            FileUtils.checkFile(clinicalVariantFile.toPath());
+        }
+
         // Processing genes
-        logger.info("Building genes...");
+        logger.info("Processing genes...");
         start = System.currentTimeMillis();
         buildGenes(geneFile.toPath());
         geneBuildTime = (System.currentTimeMillis() - start) / 1000;
-        logger.info("Gene build done in {} s", geneBuildTime);
-        System.out.println("Gene build time:" + geneBuildTime);
+        logger.info("Gene processing done in {} s", geneBuildTime);
 
         // Processing proteins
-        logger.info("Building proteins...");
+        logger.info("Processing proteins...");
         start = System.currentTimeMillis();
         buildProteins(proteinFile.toPath());
         proteinBuildTime = (System.currentTimeMillis() - start) / 1000;
-        logger.info("Protein build done in {} s", proteinBuildTime);
+        logger.info("Protein processing done in {} s", proteinBuildTime);
 
-//            // Gene panels support
-//            if (Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME).toFile().exists()) {
-//                logger.info("Starting gene panels processing...");
-//                start = System.currentTimeMillis();
-//                importer.addGenePanels(Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME), outputPath);
-//                genePanelsTime = (System.currentTimeMillis() - start) / 1000;
-//                logger.info("Gene panels processing done in {} s", genePanelsTime);
-//            }
+        // Gene panels support
+        logger.info("Processing gene panels...");
+        start = System.currentTimeMillis();
+        buildGenePanels(panelFile.toPath());
+//            importer.addGenePanels(Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME), outputPath);
+        genePanelBuildTime = (System.currentTimeMillis() - start) / 1000;
+        logger.info("Gene panel processing done in {} s", genePanelBuildTime);
 
 
-//            // Indexing miRNA
-//            if (Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME).toFile().exists()) {
-//                logger.info("Starting miRNA indexing...");
-//                start = System.currentTimeMillis();
-//                importer.indexingMiRnas(Paths.get(inputPath + "/" + Neo4jCsvImporter.MIRNA_FILENAME),
-//                        Paths.get(outputPath + "/" + Neo4jCsvImporter.MIRNA_DBNAME), true);
-//                miRnaIndexingTime = (System.currentTimeMillis() - start) / 1000;
-//                logger.info("miRNA indexing done in {} s", miRnaIndexingTime);
-//            }
-
-        // Processiiong BioPAX file
+        // Procesing BioPAX file
         BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
         Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
         start = System.currentTimeMillis();
         bioPAXImporter.build(networkFile.toPath());
         biopaxProcessing.post();
-        bioPaxTime = (System.currentTimeMillis() - start) / 1000;
+        bioPaxBuildTime = (System.currentTimeMillis() - start) / 1000;
 
+
+        // Processing clinical variants
+        logger.info("Processing clinical variants...");
+        start = System.currentTimeMillis();
+        buildClinicalVariants(clinicalVariantFile.toPath());
+        clinvarBuildTime = (System.currentTimeMillis() - start) / 1000;
+        logger.info("Processing clinical variants done in {} s", clinvarBuildTime);
 
 //            start = System.currentTimeMillis();
 ////            if (buildCommandOptions.clinicalAnalysis) {
 ////                // Parse JSON variant files
-////                importer.addClinicalAnalysisFiles(jsonFiles);
+//                importer.addClinicalAnalysisFiles(jsonFiles);
 ////            } else {
 //            // Parse JSON variant files
 //            importer.addVariantFiles(jsonFiles);
@@ -135,10 +142,9 @@ public class Builder {
 
         logger.info("Gene build time: {} s", geneBuildTime);
         logger.info("Protein build time: {} s", proteinBuildTime);
-//            logger.info("Gene panels processing in {} s", genePanelsTime);
-//            logger.info("miRNA indexing in {} s", miRnaIndexingTime);
-        logger.info("BioPAX build time: {} s", bioPaxTime);
-//            logger.info((buildCommandOptions.clinicalAnalysis ? "Clinical analysis" : "Variant") + " processing in {} s", jsonTime);
+        logger.info("Gene panel build time: {} s", genePanelBuildTime);
+        logger.info("BioPAX build time: {} s", bioPaxBuildTime);
+        logger.info("Clinical variant build time: {} s", clinvarBuildTime);
     }
 
 
@@ -845,26 +851,26 @@ public class Builder {
         return node;
     }
 
-    //    private Long processVariant(Variant variant) throws IOException {
-//        Node variantNode = null;
-//
-//        Long variantUid = csv.getLong(variant.toStringSimple(), Node.Type.VARIANT.name());
-//        if (variantUid == null) {
-//            variantNode = createVariantNode(variant);
-//            variantUid = variantNode.getUid();
-//            csv.putLong(variant.toStringSimple(), Node.Type.VARIANT.name(), variantUid);
-//        }
-//
-//        // Process sample info
+    private Long processVariant(Variant variant) throws IOException {
+        Node variantNode = null;
+
+        Long variantUid = csv.getLong(variant.toStringSimple(), Node.Type.VARIANT.name());
+        if (variantUid == null) {
+            variantNode = createVariantNode(variant);
+            variantUid = variantNode.getUid();
+            csv.putLong(variant.toStringSimple(), Node.Type.VARIANT.name(), variantUid);
+        }
+
+        // Process sample info
 //        processSampleInfo(variant, variantUid);
-//
-//        // Check if we have to update the VARIANT_OBJECT.csv file
-//        if (variantNode != null) {
-//            createVariantObjectNode(variant, variantNode);
-//        }
-//
-//        return variantUid;
-//    }
+
+        // Check if we have to update the VARIANT_OBJECT.csv file
+        if (variantNode != null) {
+            createVariantObjectNode(variant, variantNode);
+        }
+
+        return variantUid;
+    }
 
     private Node createVariantNode(Variant variant) {
         return createVariantNode(variant, csv.getAndIncUid());
@@ -887,30 +893,29 @@ public class Builder {
 
                     // Gene
                     Long geneUid = processGene(ct.getEnsemblGeneId(), ct.getGeneName());
-//                    if (geneUid != null) {
-//                        // Relation: consequence type - gene
-//                        pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
-//                        pw.println(csv.relationLine(ctNode.getUid(), geneUid));
-//                    }
+                    if (geneUid != null) {
+                        // Relation: consequence type - gene
+                        pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
+                        pw.println(csv.relationLine(ctNode.getUid(), geneUid));
+                    }
 
                     // Transcript
                     Long transcriptUid = processTranscript(ct.getEnsemblTranscriptId());
                     if (transcriptUid != null) {
-//                        if (geneUid != null && csv.getLong(geneUid + "." + transcriptUid) == null) {
-//                            csv.getCsvWriters().get(Relation.Type.GENE__TRANSCRIPT.toString()).println(csv.relationLine(
-//                                    geneUid, transcriptUid));
-//                            csv.putLong(geneUid + "." + transcriptUid, 1);
-//                        }
+                        if (geneUid != null) {
+                            csv.getCsvWriters().get(Relation.Type.GENE__TRANSCRIPT.toString()).println(csv.relationLine(
+                                    geneUid, transcriptUid));
+                        }
 
                         // Relation: consequence type - transcript
                         pw = csv.getCsvWriters().get(Relation.Type.CONSEQUENCE_TYPE__TRANSCRIPT.toString());
                         pw.println(csv.relationLine(ctNode.getUid(), transcriptUid));
-//                    } else {
-//                        if (geneUid != null) {
-//                            logger.info("Transcript UID is null for {} (gene {}), maybe version mismatch!!"
-//                                            + " Gene vs variant annotation!!!", ct.getEnsemblTranscriptId(),
-//                                    ct.getEnsemblGeneId());
-//                        }
+                    } else {
+                        if (geneUid != null) {
+                            logger.info("Transcript UID is null for {} (gene {}), maybe version mismatch!!"
+                                            + " Gene vs variant annotation!!!", ct.getEnsemblTranscriptId(),
+                                    ct.getEnsemblGeneId());
+                        }
                     }
 
                     // SO
@@ -1122,11 +1127,10 @@ public class Builder {
 //    }
 
 
-//    private void addVariantJsonFile(File file) throws IOException {
-//        // Reading file line by line, each line a JSON object
-//        BufferedReader reader;
-//        ObjectMapper mapper = new ObjectMapper();
-//
+    private void buildClinicalVariants(Path path) throws IOException {
+        // Reading file line by line, each line a JSON object
+        BufferedReader reader = FileUtils.newBufferedReader(path);
+
 //        File metaFile = new File(file.getAbsoluteFile() + ".meta.json");
 //        if (metaFile.exists()) {
 //            csv.openMetadataFile(metaFile);
@@ -1136,24 +1140,28 @@ public class Builder {
 //                csv.openMetadataFile(metaFile);
 //            }
 //        }
-//
-//        long counter = 0;
+
+        long counter = 0;
+        ObjectMapper mapper = new ObjectMapper();
 //        logger.info("Processing JSON file {}", file.getPath());
 //        reader = FileUtils.newBufferedReader(file.toPath());
-//        String line = reader.readLine();
-//        while (line != null) {
-//            Variant variant = mapper.readValue(line, Variant.class);
-//            processVariant(variant);
-//
-//            // read next line
-//            line = reader.readLine();
-//            if (++counter % 5000 == 0) {
-//                logger.info("Parsing {} variants...", counter);
-//            }
-//        }
-//        reader.close();
-//        logger.info("Parsed {} variants from {}. Done!!!", counter, file.toString());
-//    }
+        String line = reader.readLine();
+        while (line != null) {
+            Variant variant = mapper.readValue(line, Variant.class);
+            processVariant(variant);
+            if (variant.getStrand().equals("-")) {
+                System.out.println(variant.toStringSimple() + ", " + variant.getStrand());
+            }
+
+            // read next line
+            line = reader.readLine();
+            if (++counter % 5000 == 0) {
+                logger.info("Parsing {} variants...", counter);
+            }
+        }
+        reader.close();
+        logger.info("Parsed {} variants from {}. Done!!!", counter, path);
+    }
 
 //    private void processSampleInfo(Variant variant, Long variantUid) {
 //        String variantId = variant.toString();
@@ -1518,40 +1526,37 @@ public class Builder {
         reader.close();
     }
 
-    public void addGenePanels(Path panelPath, Path indexPath) throws IOException {
+    public void buildGenePanels(Path panelPath) throws IOException {
         File[] panelFiles = panelPath.toFile().listFiles();
 
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectReader reader = mapper.reader(DiseasePanel.class);
+        ObjectReader mapperReader = new ObjectMapper().reader(DiseasePanel.class);
 
         // Get CSV file writers
         PrintWriter pwNode = csv.getCsvWriters().get(Node.Type.PANEL.toString());
         PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.PANEL__GENE.toString());
 
-        for (File panelFile: panelFiles) {
-            if (panelFile.getName().endsWith("json")) {
-                FileInputStream fis = new FileInputStream(panelFile);
-                byte[] data = new byte[(int) panelFile.length()];
-                fis.read(data);
-                fis.close();
+        BufferedReader reader = FileUtils.newBufferedReader(panelPath);
 
-                //String str = new String(data, "UTF-8");
-                DiseasePanel panel = reader.readValue(data);
+        String jsonPanel = reader.readLine();
+        while (jsonPanel != null) {
+            DiseasePanel panel = mapperReader.readValue(jsonPanel);
 
-                // Create node and save CSV file
-                Node node = NodeBuilder.newNode(csv.getAndIncUid(), panel);
-                pwNode.println(csv.nodeLine(node));
+            // Create node and save CSV file
+            Node node = NodeBuilder.newNode(csv.getAndIncUid(), panel);
+            pwNode.println(csv.nodeLine(node));
 
-                for (DiseasePanel.GenePanel gene: panel.getGenes()) {
-                    if (StringUtils.isNotEmpty(gene.getId())) {
-                        Long geneUid = processGene(gene.getId(), gene.getName());
-                        if (geneUid != null) {
-                            // Add relation to CSV file
-                            pwRel.println(node.getUid() + CsvInfo.SEPARATOR + geneUid);
-                        }
+            for (DiseasePanel.GenePanel gene : panel.getGenes()) {
+                if (StringUtils.isNotEmpty(gene.getId())) {
+                    Long geneUid = processGene(gene.getId(), gene.getName());
+                    if (geneUid != null) {
+                        // Add relation to CSV file
+                        pwRel.println(node.getUid() + CsvInfo.SEPARATOR + geneUid);
                     }
                 }
             }
+
+            // Next panel
+            jsonPanel = reader.readLine();
         }
     }
 

@@ -10,7 +10,6 @@ import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 
 public abstract class Cache<T> {
@@ -64,7 +63,11 @@ public abstract class Cache<T> {
         if (StringUtils.isNotEmpty(primaryId)) {
             try {
                 obj = objReader.readValue(rocksDbManager.getString(primaryId, objRocksDb));
-            } catch (IOException e) {
+            } catch (Exception e) {
+                System.out.println(">>>>>>>>Error parsing object with ID " + id + ", primaryId = " + primaryId);
+                System.out.println(e.getMessage());
+                System.out.println(rocksDbManager.getString(primaryId, objRocksDb));
+                System.out.println("===================================");
                 logger.info("Error parsing object with ID {}: {}", id, primaryId);
                 logger.info(e.getMessage());
                 obj = null;
