@@ -20,6 +20,7 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,8 @@ public abstract class CommandExecutor {
 
     protected String appHome;
     protected BioNetDBConfiguration configuration;
+
+    protected BioNetDbManager bioNetDbManager;
 
     protected Logger logger;
 
@@ -96,18 +99,17 @@ public abstract class CommandExecutor {
     /**
      * This method attempts to first data configuration from CLI parameter, if not present then uses
      * the configuration from installation directory, if not exists then loads JAR configuration.json
-     * @throws URISyntaxException
      * @throws IOException
      */
-    public void loadBioNetDBConfiguration() throws URISyntaxException, IOException {
-        if(this.configFile != null) {
+    public void loadBioNetDBConfiguration() throws IOException {
+        if (this.configFile != null) {
             logger.debug("Loading configuration from '{}'", this.configFile);
             this.configuration = BioNetDBConfiguration.load(new FileInputStream(new File(this.configFile)));
-        }else {
-            if(Files.exists(Paths.get(this.appHome + "/configuration.yml"))) {
+        } else {
+            if (Files.exists(Paths.get(this.appHome + "/configuration.yml"))) {
                 logger.debug("Loading configuration from '{}'", this.appHome+"/configuration.yml");
                 this.configuration = BioNetDBConfiguration.load(new FileInputStream(new File(this.appHome+"/configuration.yml")));
-            }else {
+            } else {
                 logger.debug("Loading configuration from '{}'",
                         BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.json").toString());
                 this.configuration = BioNetDBConfiguration.load(BioNetDBConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));

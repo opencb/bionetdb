@@ -7,7 +7,6 @@ import org.opencb.bionetdb.app.cli.main.executors.QueryCommandExecutor;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 /**
  * Created by imedina on 05/08/15.
@@ -62,7 +61,7 @@ public class BioNetDBMain {
                 try {
                     commandExecutor.loadBioNetDBConfiguration();
                     commandExecutor.execute();
-                } catch (IOException | URISyntaxException e) {
+                } catch (IOException e) {
                     commandExecutor.getLogger().error("Error reading CellBase configuration: " + e.getMessage());
                     System.exit(1);
                 } catch (BioNetDBException e) {

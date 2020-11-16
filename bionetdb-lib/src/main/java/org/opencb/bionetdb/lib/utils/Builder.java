@@ -120,22 +120,12 @@ public class Builder {
         bioPaxBuildTime = (System.currentTimeMillis() - start) / 1000;
 
 
-        // Processing clinical variants
-        logger.info("Processing clinical variants...");
-        start = System.currentTimeMillis();
-        buildClinicalVariants(clinicalVariantFile.toPath());
-        clinvarBuildTime = (System.currentTimeMillis() - start) / 1000;
-        logger.info("Processing clinical variants done in {} s", clinvarBuildTime);
-
-//            start = System.currentTimeMillis();
-////            if (buildCommandOptions.clinicalAnalysis) {
-////                // Parse JSON variant files
-//                importer.addClinicalAnalysisFiles(jsonFiles);
-////            } else {
-//            // Parse JSON variant files
-//            importer.addVariantFiles(jsonFiles);
-////            }
-//            long jsonTime = (System.currentTimeMillis() - start) / 1000;
+//        // Processing clinical variants
+//        logger.info("Processing clinical variants...");
+//        start = System.currentTimeMillis();
+//        buildClinicalVariants(clinicalVariantFile.toPath());
+//        clinvarBuildTime = (System.currentTimeMillis() - start) / 1000;
+//        logger.info("Processing clinical variants done in {} s", clinvarBuildTime);
 
         // Close CSV files
         csv.close();

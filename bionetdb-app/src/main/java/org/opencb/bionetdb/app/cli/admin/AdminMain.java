@@ -26,7 +26,6 @@ import org.opencb.bionetdb.app.cli.admin.executors.LoadCommandExecutor;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 /**
  * Created by jtarraga on 19/10/20.
@@ -81,7 +80,7 @@ public class AdminMain {
                 try {
                     commandExecutor.loadBioNetDBConfiguration();
                     commandExecutor.execute();
-                } catch (IOException | URISyntaxException | BioNetDBException e) {
+                } catch (IOException | BioNetDBException e) {
                     commandExecutor.getLogger().error("Error reading BioNetDB configuration: " + e.getMessage());
                     System.exit(1);
                 }

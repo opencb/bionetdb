@@ -45,10 +45,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private BioNetDBConfiguration configuration;
 
     public Neo4JNetworkDBAdaptor(BioNetDBConfiguration configuration) {
-        this(configuration, false);
-    }
-
-    public Neo4JNetworkDBAdaptor(BioNetDBConfiguration configuration, boolean createIndex) {
         this.configuration = configuration;
 
         // configuration class checks if database is null or empty
@@ -61,75 +57,89 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         driver = GraphDatabase.driver("bolt://" + databaseURI, AuthTokens.basic(user, password));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> driver.close()));
 
-        // Create indexes
-        if (createIndex) {
-            createIndexes();
-        }
-
-        // Add configuration node
-        if (!existConfigNode()) {
-            createConfigNode();
-        }
+//        // Add configuration node
+//        if (!existConfigNode()) {
+//            createConfigNode();
+//        }
     }
 
-    private void createIndexes() {
+    @Override
+    public void close() {
+        driver.close();
+    }
+
+    @Override
+    public void index() {
         Session session = this.driver.session();
+        System.out.println("index.....");
         if (session != null) {
-            try (Transaction tx = session.beginTransaction()) {
-                tx.run("CREATE INDEX ON :" + Node.Type.PHYSICAL_ENTITY + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(name)");
-                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.COMPLEX + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.SMALL_MOLECULE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.DNA + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.RNA + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(name)");
-                tx.run("CREATE INDEX ON :" + Node.Type.PATHWAY + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.CATALYSIS + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.REGULATION + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(id)");
-                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(" + PREFIX_ATTRIBUTES + "dbName)");
-                tx.run("CREATE INDEX ON :" + Node.Type.UNDEFINED + "(uid)");
+            session.writeTransaction(tx -> {
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.GENE + ") ON (n.id)");
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.GENE + ") ON (n.name)");
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.GENE + ") ON (n.source)");
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.TRANSCRIPT + ") ON (n.id)");
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.TRANSCRIPT + ") ON (n.name)");
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.TRANSCRIPT + ") ON (n.source)");
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.PROTEIN + ") ON (n.id)");
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.PROTEIN + ") ON (n.name)");
+                return 1;
+            });
 
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(id)");
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(name)");
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_OBJECT + "(id)");
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CALL + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_FILE_INFO + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.CONSEQUENCE_TYPE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.POPULATION_FREQUENCY + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.TRAIT_ASSOCIATION + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.SAMPLE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.SAMPLE + "(id)");
-                tx.run("CREATE INDEX ON :" + Node.Type.SO + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.SO + "(id)");
-                tx.run("CREATE INDEX ON :" + Node.Type.GENE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.GENE + "(id)");
-                tx.run("CREATE INDEX ON :" + Node.Type.DRUG + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.DRUG + "(name)");
-                tx.run("CREATE INDEX ON :" + Node.Type.DISEASE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.DISEASE + "(id)");
-                tx.run("CREATE INDEX ON :" + Node.Type.TRANSCRIPT + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.TRANSCRIPT + "(id)");
-                tx.run("CREATE INDEX ON :" + Node.Type.TFBS + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_KEYWORD + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_KEYWORD + "(name)");
-                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_FEATURE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.FUNCTIONAL_SCORE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.SUBSTITUTION_SCORE + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_VARIANT_ANNOTATION + "(uid)");
-                tx.run("CREATE INDEX ON :" + Node.Type.CONSERVATION + "(uid)");
 
-                tx.run("CREATE INDEX ON :" + Node.Type.CONFIG + "(uid)");
+//            try (Transaction tx = session.beginTransaction()) {
+//                tx.run("CREATE INDEX ON :" + Node.Type.PHYSICAL_ENTITY + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(name)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.COMPLEX + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.SMALL_MOLECULE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.DNA + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.RNA + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.CELLULAR_LOCATION + "(name)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PATHWAY + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.CATALYSIS + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.REGULATION + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.REACTION + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.XREF + "(" + PREFIX_ATTRIBUTES + "dbName)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.UNDEFINED + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(name)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_OBJECT + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CALL + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_FILE_INFO + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.CONSEQUENCE_TYPE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.POPULATION_FREQUENCY + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.TRAIT_ASSOCIATION + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.SAMPLE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.SAMPLE + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.SO + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.SO + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.GENE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.GENE + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.DRUG + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.DRUG + "(name)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.DISEASE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.DISEASE + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.TRANSCRIPT + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.TRANSCRIPT + "(id)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.TFBS + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_KEYWORD + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_KEYWORD + "(name)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_FEATURE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.FUNCTIONAL_SCORE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.SUBSTITUTION_SCORE + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_VARIANT_ANNOTATION + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.CONSERVATION + "(uid)");
+//
+//                tx.run("CREATE INDEX ON :" + Node.Type.CONFIG + "(uid)");
 
 //                tx.success();
-            }
             session.close();
         }
+        System.out.println("index.....done!!!");
     }
 
     //-------------------------------------------------------------------------
@@ -879,11 +889,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private String cleanValue(String value) {
         return value.replace("\"", ",").replace("\\", "|");
-    }
-
-    @Override
-    public void close() throws Exception {
-        driver.close();
     }
 
     public Driver getDriver() {

@@ -3,6 +3,7 @@ package org.opencb.bionetdb.app.cli.admin.executors;
 import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.bionetdb.lib.utils.Downloader;
 
 import java.nio.file.Paths;
@@ -30,7 +31,7 @@ public class DownloadCommandExecutor extends CommandExecutor {
             throw new BioNetDBException("Missing the download section in BioNetDB configuration file");
         }
 
-        Downloader downloader = new Downloader(configuration.getDownload(), Paths.get(downloadCommandOptions.outDir));
-        downloader.download();
+        BioNetDbManager manager = new BioNetDbManager(configuration);
+        manager.download(Paths.get(downloadCommandOptions.outDir));
     }
 }

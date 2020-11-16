@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.lib;
 
 import htsjdk.variant.variantcontext.VariantContext;
+import org.apache.commons.collections.CollectionUtils;
 import org.neo4j.driver.Session;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
@@ -24,6 +25,9 @@ import org.opencb.bionetdb.lib.api.query.NodeQueryParam;
 import org.opencb.bionetdb.lib.db.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.lib.db.Neo4JVariantLoader;
+import org.opencb.bionetdb.lib.utils.Builder;
+import org.opencb.bionetdb.lib.utils.Downloader;
+import org.opencb.bionetdb.lib.utils.Importer;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -72,9 +76,9 @@ public class BioNetDbManager {
         this.configuration = configuration;
 
         // We can now create the default NetworkDBAdaptor
-        boolean createIndex = false; // true
-        networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.configuration, createIndex);
-        tieringInterpretationAnalysis = new TieringInterpretationAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
+//        boolean createIndex = false; // true
+//        networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.configuration);
+//        tieringInterpretationAnalysis = new TieringInterpretationAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
 
 //        // We create CellBase client
 //        cellbaseClientConfiguration = new ClientConfiguration();
@@ -84,6 +88,38 @@ public class BioNetDbManager {
 
         idToUidMap = new HashMap<>();
     }
+
+    //-------------------------------------------------------------------------
+
+    public void download(Path outDir) {
+        Downloader downloader = new Downloader(configuration.getDownload(), outDir);
+        downloader.download();
+    }
+
+    //-------------------------------------------------------------------------
+
+    public void build(Path inputPath, Path outputPath, List<String> exclude) throws IOException {
+        Builder builder = new Builder(inputPath, outputPath, parseFilters(exclude));
+        builder.build();
+    }
+
+    //-------------------------------------------------------------------------
+
+    public void load(String database, Path inputPath) {
+        Importer importer = new Importer(database, inputPath);
+        importer.run();
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            logger.info(e.getMessage());
+        }
+
+        networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.configuration);
+        networkDBAdaptor.index();
+        networkDBAdaptor.close();
+    }
+
 
     //---------------------------------------------
     // A N A L Y S I S
@@ -425,5 +461,22 @@ public class BioNetDbManager {
 
         int time = (int) (stopTime - startTime) / 1000;
         return new QueryResult("get", time, networkPaths.size(), networkPaths.size(), null, null, networkPaths);
+    }
+
+    public Map<String, Set<String>> parseFilters(List<String> excludeList) {
+        Map<String, Set<String>> filters = null;
+        if (CollectionUtils.isNotEmpty(excludeList)) {
+            filters = new HashMap<>();
+            for (String exclude: excludeList) {
+                String[] split = exclude.split(":");
+                if (split.length == 2) {
+                    if (!filters.containsKey(split[0])) {
+                        filters.put(split[0], new HashSet<>());
+                    }
+                    filters.get(split[0]).add(split[1]);
+                }
+            }
+        }
+        return filters;
     }
 }

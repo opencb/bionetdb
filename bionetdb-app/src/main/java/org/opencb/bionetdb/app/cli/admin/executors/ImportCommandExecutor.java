@@ -2,6 +2,8 @@ package org.opencb.bionetdb.app.cli.admin.executors;
 
 import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.bionetdb.lib.utils.Importer;
 import org.opencb.commons.utils.FileUtils;
 
@@ -24,15 +26,14 @@ public class ImportCommandExecutor extends CommandExecutor {
 
     @Override
     public void execute() {
-
         try {
             // Check input directory
             Path inputPath = Paths.get(importCommandOptions.input);
             FileUtils.checkDirectory(inputPath);
 
-            Importer importer = new Importer(importCommandOptions.database, inputPath);
-            importer.run();
-        } catch (IOException e) {
+            BioNetDbManager manager = new BioNetDbManager(configuration);
+            manager.load(importCommandOptions.database, inputPath);
+        } catch (IOException | BioNetDBException e) {
             e.printStackTrace();
         }
     }
