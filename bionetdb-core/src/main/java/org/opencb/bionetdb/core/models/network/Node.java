@@ -30,7 +30,11 @@ public class Node {
 
         PHYSICAL_ENTITY     ("PHYSICAL_ENTITY"),
         TRANSCRIPT          ("TRANSCRIPT", "PHYSICAL_ENTITY"),
+        ENSEMBL_TRANSCRIPT          ("TRANSCRIPT", "PHYSICAL_ENTITY"),
+        REFSEQ_TRANSCRIPT          ("TRANSCRIPT", "PHYSICAL_ENTITY"),
         EXON                ("EXON", "PHYSICAL_ENTITY"),
+        ENSEMBL_EXON                ("EXON", "PHYSICAL_ENTITY"),
+        REFSEQ_EXON                ("EXON", "PHYSICAL_ENTITY"),
         PROTEIN             ("PROTEIN", "PHYSICAL_ENTITY"),
         COMPLEX             ("COMPLEX", "PHYSICAL_ENTITY"),
         RNA                 ("RNA", "PHYSICAL_ENTITY"),
@@ -42,6 +46,8 @@ public class Node {
 
         DNA                 ("DNA"),    // ~= GENOMIC_FEATURE
         GENE                ("GENE"),
+        ENSEMBL_GENE                ("ENSEMBL_GENE"),
+        REFSEQ_GENE                ("REFSEQ_GENE"),
         VARIANT             ("VARIANT"),
         REGULATION_REGION   ("REGULATION_REGION", "DNA"),
         TFBS                ("TFBS", "REGULATION_REGION"),

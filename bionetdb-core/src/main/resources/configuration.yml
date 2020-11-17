@@ -26,5 +26,5 @@ download:
     panel:
       host: http://resources.opencb.org/opencb/opencga/disease-panels/panelapp/panels.json
     clinicalVariant:
-      host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/clinical_variants.json.gz
+      host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/clinical_variants.full.json.gz
 

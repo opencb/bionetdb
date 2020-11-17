@@ -5,17 +5,16 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.lib.utils.cache.GeneCache;
 import org.opencb.bionetdb.lib.utils.cache.ProteinCache;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.commons.utils.ListUtils;
 import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,10 +26,12 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.*;
 
+import static org.opencb.bionetdb.core.models.network.Node.Type.*;
 import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
 
 public class CsvInfo {
     public static final String SEPARATOR = "\t";
+    public static final String ARRAY_SEPARATOR = "|";
     public static final String MISSING_VALUE = ""; //"-";
 
     private static final String MIRNA_ROCKSDB = "mirnas.rocksdb";
@@ -200,7 +201,7 @@ public class CsvInfo {
             pw = new PrintWriter(outputPath + "/" + filename);
             csvWriters.put(type.toString(), pw);
 
-            if (ListUtils.isNotEmpty(nodeAttributes.get(type.toString()))) {
+            if (CollectionUtils.isNotEmpty(nodeAttributes.get(type.toString()))) {
                 pw.println(getNodeHeaderLine(nodeAttributes.get(type.toString())));
             }
         }
@@ -432,6 +433,7 @@ public class CsvInfo {
             }
             sb.append(attrs.get(i));
         }
+        sb.append(SEPARATOR).append(":LABEL");
         return sb.toString();
     }
 
@@ -483,7 +485,7 @@ public class CsvInfo {
     public String nodeLine(Node node) {
         List<String> attrs = nodeAttributes.get(node.getType().toString());
         StringBuilder sb = new StringBuilder();
-        if (ListUtils.isEmpty(attrs)) {
+        if (CollectionUtils.isEmpty(attrs)) {
             if (!notdefined.contains(node.getType().toString())) {
                 System.out.println("Attributes not defined for " + node.getType());
                 notdefined.add(node.getType().toString());
@@ -498,6 +500,60 @@ public class CsvInfo {
                 value = cleanString(node.getAttributes().getString(attrs.get(i)));
                 sb.append(SEPARATOR).append(StringUtils.isEmpty(value) ? MISSING_VALUE : value);
             }
+        }
+        sb.append(SEPARATOR).append(node.getType().name());
+        switch (node.getType()) {
+            case GENE: {
+                if (node.getAttributes().getString("source").equals("ensembl")) {
+                    sb.append(ARRAY_SEPARATOR).append(ENSEMBL_GENE.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                } else if (node.getAttributes().getString("source").equals("refseq")) {
+                    sb.append(ARRAY_SEPARATOR).append(REFSEQ_GENE.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                } else {
+                    sb.append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                }
+                break;
+            }
+            case TRANSCRIPT: {
+                if (node.getAttributes().getString("source").equals("ensembl")) {
+                    sb.append(ARRAY_SEPARATOR).append(ENSEMBL_TRANSCRIPT.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                } else if (node.getAttributes().getString("source").equals("refseq")) {
+                    sb.append(ARRAY_SEPARATOR).append(REFSEQ_TRANSCRIPT.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                } else {
+                    sb.append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                }
+                break;
+            }
+            case EXON: {
+                if (node.getAttributes().getString("source").equals("ensembl")) {
+                    sb.append(ARRAY_SEPARATOR).append(ENSEMBL_EXON.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                } else if (node.getAttributes().getString("source").equals("refseq")) {
+                    sb.append(ARRAY_SEPARATOR).append(REFSEQ_EXON.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                } else {
+                    sb.append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                }
+                break;
+            }
+            case SMALL_MOLECULE:
+            case RNA:
+            case DNA:
+            case DRUG:
+            case MIRNA:
+            case MIRNA_MATURE:
+            case COMPLEX:
+            case PROTEIN:
+            case VARIANT:
+            case TFBS: {
+                sb.append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                break;
+            }
+            case REACTION:
+            case REGULATION:
+            case CATALYSIS: {
+                sb.append(ARRAY_SEPARATOR).append(INTERACTION.name());
+                break;
+            }
+            default:
+                break;
         }
         return sb.toString();
     }
@@ -717,7 +773,7 @@ public class CsvInfo {
 
         // Exon
         attrs = Arrays.asList("exonId", "id", "name", "chromosome", "start", "end", "strand", "genomicCodingStart",
-                "genomicCodingEnd", "cdnaCodingStart", "cdnaCodingEnd", "cdsStart", "cdsEnd", "phase", "exonNumber", "sequence");
+                "genomicCodingEnd", "cdnaCodingStart", "cdnaCodingEnd", "cdsStart", "cdsEnd", "phase", "exonNumber", "source", "sequence");
         nodeAttributes.put(Node.Type.EXON.toString(), new ArrayList<>(attrs));
 
         // Constraint

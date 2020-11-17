@@ -58,8 +58,10 @@ public class Importer {
 
         sb.setLength(0);
         sb.append(neo4jHome);
-        sb.append("/bin/neo4j-admin import --database " + database + " --id-type INTEGER --delimiter=\""
-                + StringEscapeUtils.escapeJava(CsvInfo.SEPARATOR) + "\" " + "--skip-duplicate-nodes");
+        sb.append("/bin/neo4j-admin import --database " + database + " --id-type INTEGER"
+                + " --delimiter=\"" + StringEscapeUtils.escapeJava(CsvInfo.SEPARATOR) + "\""
+                + " --array-delimiter=\"" + StringEscapeUtils.escapeJava(CsvInfo.ARRAY_SEPARATOR) + "\""
+                + " --skip-duplicate-nodes");
 
         // Retrieving files from the input directory
         List<File> relationFiles = new ArrayList<>();
@@ -73,7 +75,8 @@ public class Importer {
                         if (!isEmptyCsvFile(file)) {
                             name = getNodeName(file);
                             validNodes.add(name);
-                            sb.append(" --nodes=").append(name).append("=").append(file.getAbsolutePath());
+                            sb.append(" --nodes=").append(file.getAbsolutePath());
+                            //sb.append(" --nodes=").append(name).append("=").append(file.getAbsolutePath());
                         } else {
                             logger.info("Skipping node file {} to import: file empty", file.getAbsolutePath());
                         }

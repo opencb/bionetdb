@@ -71,7 +71,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     @Override
     public void index() {
         Session session = this.driver.session();
-        System.out.println("index.....");
         if (session != null) {
             session.writeTransaction(tx -> {
                 tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Type.GENE + ") ON (n.id)");
@@ -139,7 +138,6 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //                tx.success();
             session.close();
         }
-        System.out.println("index.....done!!!");
     }
 
     //-------------------------------------------------------------------------

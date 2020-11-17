@@ -312,7 +312,7 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, Exon exon) {
+    public static Node newNode(long uid, Exon exon, String source) {
         Node node = new Node(uid, exon.getId(), null, Node.Type.EXON);
         node.addAttribute("chromosome", exon.getChromosome());
         node.addAttribute("start", exon.getStart());
@@ -326,6 +326,7 @@ public class NodeBuilder {
         node.addAttribute("cdsEnd", exon.getCdsEnd());
         node.addAttribute("phase", exon.getPhase());
         node.addAttribute("exonNumber", exon.getExonNumber());
+        node.addAttribute("source", source);
         node.addAttribute("sequence", exon.getSequence());
         return node;
     }

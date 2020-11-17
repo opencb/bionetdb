@@ -43,7 +43,7 @@ public class Builder {
 
     public static final Object NETWORK_FILENAME = "Homo_sapiens.owl";
 
-    public static final Object CLINICAL_VARIANT_FILENAME = "clinical_variants.json";
+    public static final Object CLINICAL_VARIANT_FILENAME = "clinical_variants.full.json";
 
     private CsvInfo csv;
     private Path inputPath;
@@ -63,7 +63,6 @@ public class Builder {
         long refSeqGeneBuildTime = 0;
         long proteinBuildTime = 0;
         long genePanelBuildTime = 0;
-//            long miRnaIndexingTime = 0;
         long bioPaxBuildTime = 0;
         long clinvarBuildTime = 0;
 
@@ -75,7 +74,7 @@ public class Builder {
         }
 
         File refSeqGeneFile = new File(inputPath + "/" + REFSEQ_GENE_FILENAME);
-        if (!ensemblGeneFile.exists()) {
+        if (!refSeqGeneFile.exists()) {
             refSeqGeneFile = new File(inputPath + "/" + REFSEQ_GENE_FILENAME + ".gz");
         }
 
@@ -129,7 +128,6 @@ public class Builder {
         logger.info("Processing gene panels...");
         start = System.currentTimeMillis();
         buildGenePanels(panelFile.toPath());
-//            importer.addGenePanels(Paths.get(inputPath + "/" + Neo4jCsvImporter.PANEL_DIRNAME), outputPath);
         genePanelBuildTime = (System.currentTimeMillis() - start) / 1000;
         logger.info("Gene panel processing done in {} s", genePanelBuildTime);
 
@@ -143,12 +141,12 @@ public class Builder {
         bioPaxBuildTime = (System.currentTimeMillis() - start) / 1000;
 
 
-//        // Processing clinical variants
-//        logger.info("Processing clinical variants...");
-//        start = System.currentTimeMillis();
-//        buildClinicalVariants(clinicalVariantFile.toPath());
-//        clinvarBuildTime = (System.currentTimeMillis() - start) / 1000;
-//        logger.info("Processing clinical variants done in {} s", clinvarBuildTime);
+        // Processing clinical variants
+        logger.info("Processing clinical variants...");
+        start = System.currentTimeMillis();
+        buildClinicalVariants(clinicalVariantFile.toPath());
+        clinvarBuildTime = (System.currentTimeMillis() - start) / 1000;
+        logger.info("Processing clinical variants done in {} s", clinvarBuildTime);
 
         // Close CSV files
         csv.close();
@@ -787,7 +785,7 @@ public class Builder {
             for (Exon exon : transcript.getExons()) {
                 Long exonUid = csv.getLong(exon.getId(), Node.Type.EXON.name());
                 if (exonUid == null) {
-                    n = createExonNode(exon);
+                    n = createExonNode(exon, transcript.getSource());
                     exonUid = n.getUid();
                 }
                 // Add relation transcript-ontology to CSV file
@@ -831,13 +829,13 @@ public class Builder {
         return node;
     }
 
-    private Node createExonNode(Exon exon) {
-        return createExonNode(exon, csv.getAndIncUid());
+    private Node createExonNode(Exon exon, String source) {
+        return createExonNode(exon, csv.getAndIncUid(), source);
     }
 
-    private Node createExonNode(Exon exon, Long uid) {
+    private Node createExonNode(Exon exon, Long uid, String source) {
         // Create exon node and save UId and wrrite CSV file
-        Node node = NodeBuilder.newNode(uid, exon);
+        Node node = NodeBuilder.newNode(uid, exon, source);
         csv.getCsvWriters().get(Node.Type.EXON.toString()).println(csv.nodeLine(node));
         csv.putLong(exon.getId(), Node.Type.EXON.name(), uid);
 
