@@ -61,10 +61,6 @@ public class BioNetDbManager {
     private TieringInterpretationAnalysis tieringInterpretationAnalysis;
 
     public BioNetDbManager(BioNetDBConfiguration configuration) throws BioNetDBException {
-        init(configuration);
-    }
-
-    private void init(BioNetDBConfiguration configuration) throws BioNetDBException {
         // We first create te logger to debug next actions
         logger = LoggerFactory.getLogger(BioNetDbManager.class);
 

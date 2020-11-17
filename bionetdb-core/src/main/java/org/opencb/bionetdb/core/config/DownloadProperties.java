@@ -24,17 +24,27 @@ import java.util.List;
 public class DownloadProperties {
 
     private URLProperties network;
-    private URLProperties gene;
+    private URLProperties ensemblGene;
+    private URLProperties refSeqGene;
     private URLProperties protein;
     private URLProperties panel;
     private URLProperties clinicalVariant;
 
-    public URLProperties getGene() {
-        return gene;
+    public URLProperties getEnsemblGene() {
+        return ensemblGene;
     }
 
-    public DownloadProperties setGene(URLProperties gene) {
-        this.gene = gene;
+    public DownloadProperties setEnsemblGene(URLProperties ensemblGene) {
+        this.ensemblGene = ensemblGene;
+        return this;
+    }
+
+    public URLProperties getRefSeqGene() {
+        return refSeqGene;
+    }
+
+    public DownloadProperties setRefSeqGene(URLProperties refSeqGene) {
+        this.refSeqGene = refSeqGene;
         return this;
     }
 
@@ -105,6 +115,5 @@ public class DownloadProperties {
             this.files = files;
             return this;
         }
-
     }
 }

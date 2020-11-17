@@ -92,7 +92,7 @@ public class Neo4jCsvImporter {
 //        Long geneUid = csv.getGeneUid(geneId);
 //        if (geneUid == null) {
 //            Node node;
-//            Gene gene = csv.getGene(geneId);
+//            Gene gene = csv.getEnsemblGene(geneId);
 //            if (gene != null) {
 //                // Create gene node
 //                node = createGeneNode(gene);

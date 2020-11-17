@@ -33,7 +33,6 @@ import java.io.IOException;
 public class AdminMain {
 
     public static void main(String[] args) {
-
         AdminCliOptionsParser cliOptionsParser = new AdminCliOptionsParser();
         try {
             cliOptionsParser.parse(args);
@@ -81,7 +80,7 @@ public class AdminMain {
                     commandExecutor.loadBioNetDBConfiguration();
                     commandExecutor.execute();
                 } catch (IOException | BioNetDBException e) {
-                    commandExecutor.getLogger().error("Error reading BioNetDB configuration: " + e.getMessage());
+                    e.printStackTrace();
                     System.exit(1);
                 }
             }

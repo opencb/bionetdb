@@ -17,12 +17,14 @@ download:
     network:
       ## In this version we are loading Ractome as default network
       host: http://resources.opencb.org/datasets/reactome/Homo_sapiens.owl
-    gene:
+    ensemblGene:
       host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/gene.json.gz
+    refSeqGene:
+      host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/refseq.json.gz
     protein:
       host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/protein.json.gz
-##    panel:
-##      host: ftp://mirbase.org/pub/mirbase/CURRENT/miRNA.xls.gz
+    panel:
+      host: http://resources.opencb.org/opencb/opencga/disease-panels/panelapp/panels.json
     clinicalVariant:
       host: http://bioinfo.hpc.cam.ac.uk/downloads/cellbase/v5/homo_sapiens_grch38/build/clinical_variants.json.gz
 

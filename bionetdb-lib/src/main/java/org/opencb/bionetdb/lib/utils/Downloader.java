@@ -28,10 +28,19 @@ public class Downloader {
     }
 
     public void download() {
-        // Gene
-        if (downloadProperties.getGene() != null) {
+        // Ensembl gene
+        if (downloadProperties.getEnsemblGene() != null) {
             try {
-                downloadURL(new URL(downloadProperties.getGene().getHost()), outDir);
+                downloadURL(new URL(downloadProperties.getEnsemblGene().getHost()), outDir);
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
+        }
+
+        // RefSeq gene
+        if (downloadProperties.getRefSeqGene() != null) {
+            try {
+                downloadURL(new URL(downloadProperties.getRefSeqGene().getHost()), outDir);
             } catch (IOException e) {
                 logger.error(e.getMessage());
             }
@@ -77,10 +86,10 @@ public class Downloader {
 
     private void downloadURL(URL url, Path outDir) throws IOException {
         logger.info("Downloading " + url + "...");
-        URLUtils.download(url, this.outDir);
+        URLUtils.download(url, outDir);
         logger.info(url + " downloaded!");
-
     }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Downloader{");

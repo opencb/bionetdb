@@ -20,7 +20,7 @@ public class BioNetDBConfigurationTest {
 
 //        bioNetDBConfiguration.setDefaultDatabase("testDB");
 
-        DatabaseConfiguration database = new DatabaseConfiguration("testDB",  null);
+        DatabaseConfiguration database = new DatabaseConfiguration(); //"testDB",  null);
 
         bioNetDBConfiguration.setDatabase(database);
 

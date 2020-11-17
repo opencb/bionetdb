@@ -21,12 +21,16 @@ import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.*;
 
 public class Builder {
-    public static final Object GENE_FILENAME = "gene.json";
+    public static final Object ENSEMBL_GENE_FILENAME = "gene.json";
+    public static final Object REFSEQ_GENE_FILENAME = "refseq.json";
     public static final Object GENE_DBNAME = "gene.rocksdb";
 
     public static final Object PANEL_FILENAME = "panels.json";
@@ -55,7 +59,8 @@ public class Builder {
         // Open CSV files
         csv.openCSVFiles();
 
-        long geneBuildTime = 0;
+        long ensemblGeneBuildTime = 0;
+        long refSeqGeneBuildTime = 0;
         long proteinBuildTime = 0;
         long genePanelBuildTime = 0;
 //            long miRnaIndexingTime = 0;
@@ -64,10 +69,18 @@ public class Builder {
 
 
         // Check input files
-        File geneFile = new File(inputPath + "/" + GENE_FILENAME);
-        if (!geneFile.exists()) {
-            geneFile = new File(inputPath + "/" + GENE_FILENAME + ".gz");
-            FileUtils.checkFile(geneFile.toPath());
+        File ensemblGeneFile = new File(inputPath + "/" + ENSEMBL_GENE_FILENAME);
+        if (!ensemblGeneFile.exists()) {
+            ensemblGeneFile = new File(inputPath + "/" + ENSEMBL_GENE_FILENAME + ".gz");
+        }
+
+        File refSeqGeneFile = new File(inputPath + "/" + REFSEQ_GENE_FILENAME);
+        if (!ensemblGeneFile.exists()) {
+            refSeqGeneFile = new File(inputPath + "/" + REFSEQ_GENE_FILENAME + ".gz");
+        }
+
+        if (!ensemblGeneFile.exists() && !refSeqGeneFile.exists()) {
+            throw new IOException("Missing Ensembl/RefSeq gene files");
         }
 
         File proteinFile = new File(inputPath + "/" + PROTEIN_FILENAME);
@@ -89,11 +102,21 @@ public class Builder {
         }
 
         // Processing genes
-        logger.info("Processing genes...");
-        start = System.currentTimeMillis();
-        buildGenes(geneFile.toPath());
-        geneBuildTime = (System.currentTimeMillis() - start) / 1000;
-        logger.info("Gene processing done in {} s", geneBuildTime);
+        if (ensemblGeneFile.exists()) {
+            logger.info("Processing Ensembl genes...");
+            start = System.currentTimeMillis();
+            buildGenes(ensemblGeneFile.toPath());
+            ensemblGeneBuildTime = (System.currentTimeMillis() - start) / 1000;
+            logger.info("Ensembl gene processing done in {} s", ensemblGeneBuildTime);
+        }
+
+        if (refSeqGeneFile.exists()) {
+            logger.info("Processing RefSeq genes...");
+            start = System.currentTimeMillis();
+            buildGenes(refSeqGeneFile.toPath());
+            refSeqGeneBuildTime = (System.currentTimeMillis() - start) / 1000;
+            logger.info("RefSeq gene processing done in {} s", refSeqGeneBuildTime);
+        }
 
         // Processing proteins
         logger.info("Processing proteins...");
@@ -130,7 +153,8 @@ public class Builder {
         // Close CSV files
         csv.close();
 
-        logger.info("Gene build time: {} s", geneBuildTime);
+        logger.info("Ensembl gene build time: {} s", ensemblGeneBuildTime);
+        logger.info("RefSeq gene build time: {} s", refSeqGeneBuildTime);
         logger.info("Protein build time: {} s", proteinBuildTime);
         logger.info("Gene panel build time: {} s", genePanelBuildTime);
         logger.info("BioPAX build time: {} s", bioPaxBuildTime);

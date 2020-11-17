@@ -61,10 +61,7 @@ public class BioNetDBMain {
                 try {
                     commandExecutor.loadBioNetDBConfiguration();
                     commandExecutor.execute();
-                } catch (IOException e) {
-                    commandExecutor.getLogger().error("Error reading CellBase configuration: " + e.getMessage());
-                    System.exit(1);
-                } catch (BioNetDBException e) {
+                } catch (IOException | BioNetDBException e) {
                     e.printStackTrace();
                     System.exit(1);
                 }

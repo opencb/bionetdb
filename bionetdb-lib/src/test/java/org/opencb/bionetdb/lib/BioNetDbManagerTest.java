@@ -434,7 +434,7 @@ public class BioNetDbManagerTest {
     }
 
 //    @Test
-//    public void getGene() throws IOException {
+//    public void getEnsemblGene() throws IOException {
 //        String geneId = "ENSG00000164053";
 //        String transcriptId = "ENST00000424906";
 //

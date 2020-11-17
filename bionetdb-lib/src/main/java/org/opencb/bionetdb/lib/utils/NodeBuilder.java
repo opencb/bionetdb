@@ -411,8 +411,8 @@ public class NodeBuilder {
 //            }
 //        }
 //        // Gene type
-//        if (ListUtils.isNotEmpty(protein.getGene())) {
-//            protein.getGene().get(0).getName().get(0).
+//        if (ListUtils.isNotEmpty(protein.getEnsemblGene())) {
+//            protein.getEnsemblGene().get(0).getName().get(0).
 //        }
 
         return node;
