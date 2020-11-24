@@ -6,6 +6,7 @@ import org.opencb.commons.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -88,9 +89,14 @@ public class Downloader {
     }
 
     private void downloadURL(URL url, Path outDir) throws IOException {
-        logger.info("Downloading " + url + "...");
-        URLUtils.download(url, outDir);
-        logger.info(url + " downloaded!");
+        String filename = new File(url.getFile()).getName();
+        if (outDir.resolve(filename).toFile().exists()) {
+            logger.info("Skipping to downloadd " + filename + ". It already exists in " + outDir);
+        } else {
+            logger.info("Downloading " + url + "...");
+            URLUtils.download(url, outDir);
+            logger.info(url + " downloaded!");
+        }
     }
 
     @Override
