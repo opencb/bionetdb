@@ -87,7 +87,9 @@ public class BioNetDbManager {
 
     //-------------------------------------------------------------------------
 
-    public void download(Path outDir) {
+    public void download(Path outDir) throws IOException {
+        FileUtils.checkDirectory(outDir);
+
         Downloader downloader = new Downloader(configuration.getDownload(), outDir);
         downloader.download();
     }

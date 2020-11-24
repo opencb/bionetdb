@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.lib.utils;
 
 import org.opencb.bionetdb.core.config.DownloadProperties;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,9 @@ public class Downloader {
         this.logger = LoggerFactory.getLogger(this.getClass().toString());
     }
 
-    public void download() {
+    public void download() throws IOException {
+        FileUtils.checkDirectory(outDir);
+
         // Ensembl gene
         if (downloadProperties.getEnsemblGene() != null) {
             try {

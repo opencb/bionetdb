@@ -69,7 +69,7 @@ public abstract class CommandExecutor {
         }
     }
 
-    public abstract void execute() throws BioNetDBException;
+    public abstract void execute() throws BioNetDBException, IOException;
 
     public String getLogLevel() {
         return logLevel;
