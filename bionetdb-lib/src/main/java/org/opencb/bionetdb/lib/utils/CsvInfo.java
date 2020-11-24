@@ -501,59 +501,51 @@ public class CsvInfo {
                 sb.append(SEPARATOR).append(StringUtils.isEmpty(value) ? MISSING_VALUE : value);
             }
         }
-        sb.append(SEPARATOR).append(node.getType().name());
+
+        // Labels
         switch (node.getType()) {
             case GENE: {
                 if (node.getAttributes().getString("source").equals("ensembl")) {
-                    sb.append(ARRAY_SEPARATOR).append(ENSEMBL_GENE.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(ENSEMBL_GENE));
                 } else if (node.getAttributes().getString("source").equals("refseq")) {
-                    sb.append(ARRAY_SEPARATOR).append(REFSEQ_GENE.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(REFSEQ_GENE));
                 } else {
-                    sb.append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(GENE));
                 }
                 break;
             }
             case TRANSCRIPT: {
                 if (node.getAttributes().getString("source").equals("ensembl")) {
-                    sb.append(ARRAY_SEPARATOR).append(ENSEMBL_TRANSCRIPT.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(ENSEMBL_TRANSCRIPT));
                 } else if (node.getAttributes().getString("source").equals("refseq")) {
-                    sb.append(ARRAY_SEPARATOR).append(REFSEQ_TRANSCRIPT.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(REFSEQ_TRANSCRIPT));
                 } else {
-                    sb.append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(TRANSCRIPT));
                 }
                 break;
             }
             case EXON: {
                 if (node.getAttributes().getString("source").equals("ensembl")) {
-                    sb.append(ARRAY_SEPARATOR).append(ENSEMBL_EXON.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(ENSEMBL_EXON));
                 } else if (node.getAttributes().getString("source").equals("refseq")) {
-                    sb.append(ARRAY_SEPARATOR).append(REFSEQ_EXON.name()).append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(REFSEQ_EXON));
                 } else {
-                    sb.append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
+                    sb.append(labelsLine(EXON));
                 }
                 break;
             }
-            case SMALL_MOLECULE:
-            case RNA:
-            case DNA:
-            case DRUG:
-            case MIRNA:
-            case MIRNA_MATURE:
-            case COMPLEX:
-            case PROTEIN:
-            case VARIANT:
-            case TFBS: {
-                sb.append(ARRAY_SEPARATOR).append(PHYSICAL_ENTITY.name());
-                break;
-            }
-            case REACTION:
-            case REGULATION:
-            case CATALYSIS: {
-                sb.append(ARRAY_SEPARATOR).append(INTERACTION.name());
-                break;
-            }
             default:
+                sb.append(labelsLine(node.getType()));
                 break;
+        }
+        return sb.toString();
+    }
+
+    private String labelsLine(Node.Type type) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(SEPARATOR).append(type.getLabels().get(0));
+        for (int i = 1; i < type.getLabels().size(); i++) {
+            sb.append(ARRAY_SEPARATOR).append(type.getLabels().get(i));
         }
         return sb.toString();
     }

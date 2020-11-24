@@ -4,8 +4,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class Node {
 
@@ -24,74 +23,74 @@ public class Node {
     private static long counter = 0;
 
     public enum Type {
-        CONFIG              ("CONFIG"),
+        CONFIG("CONFIG"),
 
-        UNDEFINED           ("UNDEFINED"),
+        UNDEFINED("UNDEFINED"),
 
-        PHYSICAL_ENTITY     ("PHYSICAL_ENTITY"),
-        TRANSCRIPT          ("TRANSCRIPT", "PHYSICAL_ENTITY"),
-        ENSEMBL_TRANSCRIPT          ("TRANSCRIPT", "PHYSICAL_ENTITY"),
-        REFSEQ_TRANSCRIPT          ("TRANSCRIPT", "PHYSICAL_ENTITY"),
-        EXON                ("EXON", "PHYSICAL_ENTITY"),
-        ENSEMBL_EXON                ("EXON", "PHYSICAL_ENTITY"),
-        REFSEQ_EXON                ("EXON", "PHYSICAL_ENTITY"),
-        PROTEIN             ("PROTEIN", "PHYSICAL_ENTITY"),
-        COMPLEX             ("COMPLEX", "PHYSICAL_ENTITY"),
-        RNA                 ("RNA", "PHYSICAL_ENTITY"),
-        SMALL_MOLECULE      ("SMALL_MOLECULE", "PHYSICAL_ENTITY"),
+        PHYSICAL_ENTITY("PHYSICAL_ENTITY"),
+        TRANSCRIPT("TRANSCRIPT", "PHYSICAL_ENTITY"),
+        ENSEMBL_TRANSCRIPT("ENSEMBL_TRANSCRIPT", "TRANSCRIPT,PHYSICAL_ENTITY"),
+        REFSEQ_TRANSCRIPT("REFSEQ_TRANSCRIPT", "TRANSCRIPT,PHYSICAL_ENTITY"),
+        EXON("EXON", "PHYSICAL_ENTITY"),
+        ENSEMBL_EXON("ENSEMBL_EXON", "EXON,PHYSICAL_ENTITY"),
+        REFSEQ_EXON("REFSEQ_EXON", "EXON,PHYSICAL_ENTITY"),
+        PROTEIN("PROTEIN", "PHYSICAL_ENTITY"),
+        COMPLEX("COMPLEX", "PHYSICAL_ENTITY"),
+        RNA("RNA", "PHYSICAL_ENTITY"),
+        SMALL_MOLECULE ("SMALL_MOLECULE", "PHYSICAL_ENTITY"),
 
-        MIRNA               ("MIRNA"),
-        MIRNA_MATURE("MIRNA_MATURE"),
+        MIRNA("MIRNA", "PHYSICAL_ENTITY"),
+        MIRNA_MATURE("MIRNA_MATURE", "PHYSICAL_ENTITY"),
 //        TARGET_TRANSCRIPT   ("TARGET_TRANSCRIPT"),
 
-        DNA                 ("DNA"),    // ~= GENOMIC_FEATURE
-        GENE                ("GENE"),
-        ENSEMBL_GENE                ("ENSEMBL_GENE"),
-        REFSEQ_GENE                ("REFSEQ_GENE"),
-        VARIANT             ("VARIANT"),
-        REGULATION_REGION   ("REGULATION_REGION", "DNA"),
-        TFBS                ("TFBS", "REGULATION_REGION"),
+        DNA("DNA", "PHYSICAL_ENTITY"),    // ~= GENOMIC_FEATURE
+        GENE("GENE", "PHYSICAL_ENTITY"),
+        ENSEMBL_GENE("ENSEMBL_GENE", "GENE,PHYSICAL_ENTITY"),
+        REFSEQ_GENE("REFSEQ_GENE", "GENE,PHYSICAL_ENTITY"),
+        VARIANT("VARIANT", "PHYSICAL_ENTITY"),
+        REGULATION_REGION("REGULATION_REGION", "DNA,PHYSICAL_ENTITY"),
+        TFBS("TFBS", "REGULATION_REGION,DNA,PHYSICAL_ENTITY"),
 
-        XREF                ("XREF"),
+        XREF("XREF"),
 
-        PANEL_GENE                ("PANEL_GENE"),
-        PANEL_VARIANT             ("PANEL_VARIANT"),
-        PANEL_STR              ("PANEL_STR"),
-        PANEL_REGION              ("PANEL_REGION"),
+        PANEL_GENE("PANEL_GENE"),
+        PANEL_VARIANT("PANEL_VARIANT"),
+        PANEL_STR("PANEL_STR"),
+        PANEL_REGION("PANEL_REGION"),
 
-        PROTEIN_ANNOTATION  ("PROTEIN_ANNOTATION"),
-        PROTEIN_FEATURE     ("PROTEIN_FEATURE"),
+        PROTEIN_ANNOTATION("PROTEIN_ANNOTATION"),
+        PROTEIN_FEATURE("PROTEIN_FEATURE"),
 
-        VARIANT_ANNOTATION          ("VARIANT_ANNOTATION"),
-        CONSEQUENCE_TYPE            ("CONSEQUENCE_TYPE"),
-        SO                          ("SO"),
-        POPULATION_FREQUENCY        ("POPULATION_FREQUENCY"),
-        CONSERVATION                ("CONSERVATION"),
-        FUNCTIONAL_SCORE            ("FUNCTIONAL_SCORE"),
-        PROTEIN_VARIANT_ANNOTATION  ("PROTEIN_VARIANT_ANNOTATION"),
-        SUBSTITUTION_SCORE          ("SUBSTITUTION_SCORE"),
+        VARIANT_ANNOTATION("VARIANT_ANNOTATION"),
+        CONSEQUENCE_TYPE("CONSEQUENCE_TYPE"),
+        SO("SO"),
+        POPULATION_FREQUENCY("POPULATION_FREQUENCY"),
+        CONSERVATION("CONSERVATION"),
+        FUNCTIONAL_SCORE("FUNCTIONAL_SCORE"),
+        PROTEIN_VARIANT_ANNOTATION("PROTEIN_VARIANT_ANNOTATION"),
+        SUBSTITUTION_SCORE("SUBSTITUTION_SCORE"),
 
-        GENE_ANNOTATION         ("GENE_ANNOTATION"),
-        TRAIT_ASSOCIATION       ("TRAIT_ASSOCIATION"),
-        GENE_TRAIT_ASSOCIATION  ("GENE_TRAIT_ASSOCIATION"),
-        DISEASE                 ("DISEASE"),
-        DRUG                    ("DRUG"),
-        EXPRESSION              ("EXPRESSION"),
-        ONTOLOGY                ("ONTOLOGY"),
+        GENE_ANNOTATION("GENE_ANNOTATION"),
+        TRAIT_ASSOCIATION("TRAIT_ASSOCIATION"),
+        GENE_TRAIT_ASSOCIATION("GENE_TRAIT_ASSOCIATION"),
+        DISEASE("DISEASE"),
+        DRUG("DRUG", "PHYSICAL_ENTITY"),
+        EXPRESSION("EXPRESSION"),
+        ONTOLOGY("ONTOLOGY"),
         FEATURE_ONTOLOGY_TERM_ANNOTATION("FEATURE_ONTOLOGY_TERM_ANNOTATION"),
         ANNOTATION_EVIDENCE("ANNOTATION_EVIDENCE"),
 
-        CONSTRAINT               ("CONSTRAINT"),
+        CONSTRAINT("CONSTRAINT"),
 
         PATHWAY ("PATHWAY"),
 
-        CELLULAR_LOCATION   ("CELLULAR_LOCATION"),
-        REGULATION          ("REGULATION"),
-        CATALYSIS           ("CATALYSIS"),
-        REACTION            ("REACTION"),
-        ASSEMBLY            ("ASSEMBLY"),
-        TRANSPORT           ("TRANSPORT"),
-        INTERACTION         ("INTERACTION"),
+        CELLULAR_LOCATION ("CELLULAR_LOCATION"),
+        REGULATION("REGULATION", "INTERACTION"),
+        CATALYSIS("CATALYSIS", "INTERACTION"),
+        REACTION("REACTION", "INTERACTION"),
+        ASSEMBLY("ASSEMBLY"),
+        TRANSPORT("TRANSPORT"),
+        INTERACTION("INTERACTION"),
 
         FILE("FILE"),
         SAMPLE("SAMPLE"),
@@ -106,7 +105,7 @@ public class Node {
         PROTEIN_KEYWORD("PROTEIN_KEYWORD"),
 
         PANEL("PANEL"),
-        GENOMIC_FEATURE("GENOMIC_FEATURE"),
+        GENOMIC_FEATURE("GENOMIC_FEATURE", "DNA,PHYSICAL_ENTITY"),
 
         DISORDER("DISORDER"),
         PHENOTYPE("PHENOTYPE"),
@@ -129,16 +128,25 @@ public class Node {
 
         ALERT("ALERT");
 
-        private final String type;
-        private final String parentType;
+        private String type;
+        private List<String> labels;
 
         Type(String type) {
             this(type, null);
         }
 
-        Type(String type, String parentType) {
+        Type(String type, String labels) {
+            Set set = new HashSet<String>();
+            set.add(type);
+            if (StringUtils.isNotEmpty(labels)) {
+                set.addAll(Arrays.asList(labels.split(",")));
+            }
             this.type = type;
-            this.parentType = parentType;
+            this.labels = new ArrayList<>(set);
+        }
+
+        public List<String> getLabels() {
+            return labels;
         }
 
         public List<Type> getAll() {
