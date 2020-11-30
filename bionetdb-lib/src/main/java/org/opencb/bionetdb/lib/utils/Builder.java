@@ -12,6 +12,7 @@ import org.opencb.biodata.models.core.*;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.lib.db.Neo4jBioPaxBuilder;
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class Builder {
@@ -45,6 +47,8 @@ public class Builder {
 
     public static final Object CLINICAL_VARIANT_FILENAME = "clinical_variants.full.json";
 
+    private List<String> additionalNeworkFiles;
+
     private CsvInfo csv;
     private Path inputPath;
     private Path outputPath;
@@ -53,19 +57,29 @@ public class Builder {
 
     protected static Logger logger;
 
+    public Builder(Path inputPath, Path outputPath, Map<String, Set<String>> filters) {
+
+        this.inputPath = inputPath;
+        this.outputPath = outputPath;
+        this.filters = filters;
+
+
+        // Prepare CSV object
+        csv = new CsvInfo(inputPath, outputPath);
+
+        // Prepare jackson writer (object to string)
+        mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+
+        this.logger = LoggerFactory.getLogger(this.getClass().toString());
+    }
+
     public void build() throws IOException {
         long start;
 
         // Open CSV files
         csv.openCSVFiles();
-
-        long ensemblGeneBuildTime = 0;
-        long refSeqGeneBuildTime = 0;
-        long proteinBuildTime = 0;
-        long genePanelBuildTime = 0;
-        long bioPaxBuildTime = 0;
-        long clinvarBuildTime = 0;
-
 
         // Check input files
         File ensemblGeneFile = new File(inputPath + "/" + ENSEMBL_GENE_FILENAME);
@@ -105,31 +119,27 @@ public class Builder {
             logger.info("Processing Ensembl genes...");
             start = System.currentTimeMillis();
             buildGenes(ensemblGeneFile.toPath());
-            ensemblGeneBuildTime = (System.currentTimeMillis() - start) / 1000;
-            logger.info("Ensembl gene processing done in {} s", ensemblGeneBuildTime);
+            logger.info("Ensembl gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
         }
 
         if (refSeqGeneFile.exists()) {
             logger.info("Processing RefSeq genes...");
             start = System.currentTimeMillis();
             buildGenes(refSeqGeneFile.toPath());
-            refSeqGeneBuildTime = (System.currentTimeMillis() - start) / 1000;
-            logger.info("RefSeq gene processing done in {} s", refSeqGeneBuildTime);
+            logger.info("RefSeq gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
         }
 
         // Processing proteins
         logger.info("Processing proteins...");
         start = System.currentTimeMillis();
         buildProteins(proteinFile.toPath());
-        proteinBuildTime = (System.currentTimeMillis() - start) / 1000;
-        logger.info("Protein processing done in {} s", proteinBuildTime);
+        logger.info("Protein processing done in {} s", (System.currentTimeMillis() - start) / 1000);
 
         // Gene panels support
         logger.info("Processing gene panels...");
         start = System.currentTimeMillis();
         buildGenePanels(panelFile.toPath());
-        genePanelBuildTime = (System.currentTimeMillis() - start) / 1000;
-        logger.info("Gene panel processing done in {} s", genePanelBuildTime);
+        logger.info("Gene panel processing done in {} s", (System.currentTimeMillis() - start) / 1000);
 
 
         // Procesing BioPAX file
@@ -138,44 +148,27 @@ public class Builder {
         start = System.currentTimeMillis();
         bioPAXImporter.build(networkFile.toPath());
         biopaxProcessing.post();
-        bioPaxBuildTime = (System.currentTimeMillis() - start) / 1000;
+        logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
 
 
         // Processing clinical variants
         logger.info("Processing clinical variants...");
         start = System.currentTimeMillis();
         buildClinicalVariants(clinicalVariantFile.toPath());
-        clinvarBuildTime = (System.currentTimeMillis() - start) / 1000;
-        logger.info("Processing clinical variants done in {} s", clinvarBuildTime);
+        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
+
+        // Processing additional networks
+        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
+            for (String additionalNeworkFile: additionalNeworkFiles) {
+                logger.info("Processing additional network file {}...", additionalNeworkFile);
+                start = System.currentTimeMillis();
+                processAdditionalNetwork(additionalNeworkFile);
+                logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
+            }
+        }
 
         // Close CSV files
         csv.close();
-
-        logger.info("Ensembl gene build time: {} s", ensemblGeneBuildTime);
-        logger.info("RefSeq gene build time: {} s", refSeqGeneBuildTime);
-        logger.info("Protein build time: {} s", proteinBuildTime);
-        logger.info("Gene panel build time: {} s", genePanelBuildTime);
-        logger.info("BioPAX build time: {} s", bioPaxBuildTime);
-        logger.info("Clinical variant build time: {} s", clinvarBuildTime);
-    }
-
-
-    public Builder(Path inputPath, Path outputPath, Map<String, Set<String>> filters) {
-
-        this.inputPath = inputPath;
-        this.outputPath = outputPath;
-        this.filters = filters;
-
-
-        // Prepare CSV object
-        csv = new CsvInfo(inputPath, outputPath);
-
-        // Prepare jackson writer (object to string)
-        mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-
-        this.logger = LoggerFactory.getLogger(this.getClass().toString());
     }
 
     //-------------------------------------------------------------------------
@@ -1018,6 +1011,54 @@ public class Builder {
 
         return varNode;
     }
+
+    private void processAdditionalNetwork(String additionalNeworkFilename) throws IOException {
+        // Check file
+        File addNetworkFile = Paths.get(additionalNeworkFilename).toFile();
+        if (!addNetworkFile.exists()) {
+            logger.info("Additional network file {} does not exist", additionalNeworkFilename);
+            return;
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Network network = objectMapper.readValue(addNetworkFile, Network.class);
+
+        Map<Long, Long> nodeUidMap = new HashMap<>();
+
+        // First, nodes
+        if (CollectionUtils.isNotEmpty(network.getNodes())) {
+            for (Node node: network.getNodes()) {
+                Long uid = csv.getLong(node.getId(), node.getType().name());
+                if (uid == null) {
+                    // Node does not exist in the !
+                    nodeUidMap.put(node.getUid(), csv.getAndIncUid());
+                    // Update UID and append node to the CSV file
+                    node.setUid(nodeUidMap.get(node.getUid()));
+                    csv.getCsvWriters().get(node.getType().toString()).println(csv.nodeLine(node));
+                } else {
+                    // Node already exists !!
+                    nodeUidMap.put(node.getUid(), uid);
+                }
+            }
+        }
+
+        // Second, relations
+        if (CollectionUtils.isNotEmpty(network.getRelations())) {
+            for (Relation relation: network.getRelations()) {
+                relation.setUid(csv.getAndIncUid());
+                System.out.println(relation.getType().toString());
+                System.out.println(csv.relationLine(nodeUidMap.get(relation.getOrigUid()), nodeUidMap.get(relation.getDestUid())));
+                if (csv.getCsvWriters().containsKey(relation.getType().toString())) {
+                    System.out.println("YYYYEEEEESSSSSSSS");
+                }
+
+                csv.getCsvWriters().get(relation.getType().toString()).println(csv.relationLine(nodeUidMap.get(relation.getOrigUid()),
+                        nodeUidMap.get(relation.getDestUid())));
+            }
+        }
+    }
+
+
 //
 //    public Long processClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) throws IOException {
 //        Node clinicalAnalysisNode = null;
@@ -1709,5 +1750,14 @@ public class Builder {
         // Create relation to gene node and write
         pw = csv.getCsvWriters().get(Relation.Type.VARIANT__VARIANT_OBJECT.toString());
         pw.println(variantNode.getUid() + CsvInfo.SEPARATOR + variantObjectNode.getUid());
+    }
+
+    public List<String> getAdditionalNeworkFiles() {
+        return additionalNeworkFiles;
+    }
+
+    public Builder setAdditionalNeworkFiles(List<String> additionalNeworkFiles) {
+        this.additionalNeworkFiles = additionalNeworkFiles;
+        return this;
     }
 }

@@ -109,6 +109,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"-o", "--output"}, description = "Output directory where to save the CSV files to import", required = true, arity = 1)
         public String output;
 
+        @Parameter(names = {"--add-network-file"}, description = "JSON file containing a BioNetDB network", arity = 1)
+        public List<String> networkFiles;
+
         @Parameter(names = {"--exclude"}, description = "Exclude information separated by comma, e.g.:'XREF_DBNAME:Reactome Database ID Release 63'", arity = 1)
         public List<String> exclude;
     }

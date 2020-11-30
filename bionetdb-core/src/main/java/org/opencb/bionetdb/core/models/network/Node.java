@@ -171,6 +171,10 @@ public class Node {
         }
     }
 
+    public Node() {
+        this(-1, null, null, null, null);
+    }
+
     public Node(long uid) {
         this(uid, null, null, null, null);
     }

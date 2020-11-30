@@ -1,8 +1,16 @@
 package org.opencb.bionetdb.app;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+import org.opencb.bionetdb.core.models.network.Network;
+import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.models.network.Relation;
 
-import static org.junit.Assert.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class BioNetDBMainTest {
 
@@ -12,4 +20,58 @@ public class BioNetDBMainTest {
         String cmdLine = "~/appl/bionetdb/build/bin/bionetdb.sh create-csv -i " + caPath + "/input/ -o csv/ --clinical-analysis";
     }
 
+    private void createNetworks() {
+        long uid = 0;
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+
+        Network network;
+        Node node1, node2, node3;
+        Relation relation1, relation2, relation3;
+
+        network = new Network("net1", "net1", "Network #1");
+        network.setNodes(new ArrayList<>());
+        network.setRelations(new ArrayList<>());
+
+        node1 = new Node(uid++, "ENSG00000078808", "SDF4", Node.Type.GENE);
+        network.getNodes().add(node1);
+        node2 = new Node(uid++, null, "COCA", Node.Type.DRUG);
+        network.getNodes().add(node2);
+        relation1 = new Relation(uid++, "rel1", node1.getUid(), Node.Type.GENE, node2.getUid(), Node.Type.DRUG,
+                Relation.Type.GENE__DRUG);
+        network.getRelations().add(relation1);
+
+        try {
+            mapper.writer().writeValue(new File("/tmp/network1.json"), network);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        network = new Network("net2", "net2", "Network #2");
+        network.setNodes(new ArrayList<>());
+        network.setRelations(new ArrayList<>());
+
+        node1 = new Node(uid++, "ENSG00000066666", "SDF666", Node.Type.GENE);
+        network.getNodes().add(node1);
+        node2 = new Node(uid++, null, "COCA", Node.Type.DRUG);
+        network.getNodes().add(node2);
+        node3 = new Node(uid++, "ALCOHOL", "ALCOHOL", Node.Type.DRUG);
+        network.getNodes().add(node3);
+        relation2 = new Relation(uid++, "rel2", node1.getUid(), Node.Type.GENE, node2.getUid(), Node.Type.DRUG,
+                Relation.Type.GENE__DRUG);
+        network.getRelations().add(relation2);
+        relation3 = new Relation(uid++, "rel3", node1.getUid(), Node.Type.GENE, node3.getUid(), Node.Type.DRUG,
+                Relation.Type.GENE__DRUG);
+        network.getRelations().add(relation3);
+
+        try {
+            mapper.writer().writeValue(new File("/tmp/network2.json"), network);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 }
