@@ -1,5 +1,13 @@
 package org.opencb.bionetdb.core.models.network;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +22,9 @@ public class Network extends Graph {
 
     private Map<String, Object> attributes;
 
+    private long numNodes;
+    private long numRelations;
+
     public Network() {
         this("", "", "");
     }
@@ -26,6 +37,32 @@ public class Network extends Graph {
 
         attributes = new HashMap<>();
     }
+
+    public void write(File file) throws FileNotFoundException, JsonProcessingException {
+        Network network = new Network(id, name, description);
+        network.setAttributes(attributes);
+        network.setNumNodes(nodes.size());
+        network.setNumRelations(relations.size());
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+
+        PrintWriter pw = new PrintWriter(file);
+
+        pw.println(mapper.writer().writeValueAsString(network));
+        for (Node node: nodes) {
+            pw.println(mapper.writer().writeValueAsString(node));
+        }
+        for (Relation relation: relations) {
+            pw.println(mapper.writer().writeValueAsString(relation));
+        }
+
+        pw.close();
+
+
+    }
+
 
     @Override
     public String toString() {
@@ -73,6 +110,16 @@ public class Network extends Graph {
 
     public Network setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public Network setNumNodes(long numNodes) {
+        this.numNodes = numNodes;
+        return this;
+    }
+
+    public Network setNumRelations(long numRelations) {
+        this.numRelations = numRelations;
         return this;
     }
 }

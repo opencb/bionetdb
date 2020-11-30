@@ -1,33 +1,14 @@
 package org.opencb.bionetdb.app.cli.admin.executors;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import htsjdk.samtools.util.StringUtil;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.io.BioPaxParser;
-import org.opencb.bionetdb.core.io.SbmlParser;
-import org.opencb.bionetdb.core.io.SifParser;
-import org.opencb.bionetdb.core.models.network.Network;
-import org.opencb.bionetdb.core.models.network.Node;
-import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.lib.BioNetDbManager;
-import org.opencb.bionetdb.lib.utils.Builder;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.commons.utils.ListUtils;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
 
 /**
  * Created by imedina on 05/08/15.

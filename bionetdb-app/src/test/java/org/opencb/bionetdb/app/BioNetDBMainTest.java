@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.app;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
@@ -9,7 +10,7 @@ import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 public class BioNetDBMainTest {
@@ -20,7 +21,8 @@ public class BioNetDBMainTest {
         String cmdLine = "~/appl/bionetdb/build/bin/bionetdb.sh create-csv -i " + caPath + "/input/ -o csv/ --clinical-analysis";
     }
 
-    private void createNetworks() {
+
+    public void createNetworks() {
         long uid = 0;
 
         ObjectMapper mapper = new ObjectMapper();
@@ -43,12 +45,17 @@ public class BioNetDBMainTest {
                 Relation.Type.GENE__DRUG);
         network.getRelations().add(relation1);
 
+        File file = new File("/tmp/network1.json");
         try {
-            mapper.writer().writeValue(new File("/tmp/network1.json"), network);
-        } catch (IOException e) {
+            network.write(file);
+        } catch (FileNotFoundException | JsonProcessingException e) {
             e.printStackTrace();
         }
-
+//        try {
+//            mapper.writer().writeValue(, network);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         network = new Network("net2", "net2", "Network #2");
         network.setNodes(new ArrayList<>());
@@ -67,11 +74,17 @@ public class BioNetDBMainTest {
                 Relation.Type.GENE__DRUG);
         network.getRelations().add(relation3);
 
+        file = new File("/tmp/network2.json");
         try {
-            mapper.writer().writeValue(new File("/tmp/network2.json"), network);
-        } catch (IOException e) {
+            network.write(file);
+        } catch (FileNotFoundException | JsonProcessingException e) {
             e.printStackTrace();
         }
+//        try {
+//            mapper.writer().writeValue(new File("/tmp/network2.json"), network);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
     }
 }
