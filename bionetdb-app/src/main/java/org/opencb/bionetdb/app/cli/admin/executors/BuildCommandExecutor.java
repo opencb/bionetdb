@@ -34,7 +34,7 @@ public class BuildCommandExecutor extends CommandExecutor {
             FileUtils.checkDirectory(outputPath);
 
             BioNetDbManager manager = new BioNetDbManager(configuration);
-            manager.build(inputPath, outputPath, buildCommandOptions.networkFiles, buildCommandOptions.exclude);
+            manager.build(inputPath, outputPath, buildCommandOptions.variantFiles, buildCommandOptions.networkFiles, buildCommandOptions.exclude);
         } catch (IOException | BioNetDBException e) {
             e.printStackTrace();
         }

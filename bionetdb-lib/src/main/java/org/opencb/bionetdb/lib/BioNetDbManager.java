@@ -97,11 +97,15 @@ public class BioNetDbManager {
     //-------------------------------------------------------------------------
 
     public void build(Path inputPath, Path outputPath, List<String> exclude) throws IOException {
-        build(inputPath, outputPath, null, exclude);
+        build(inputPath, outputPath, null, null, exclude);
     }
 
-    public void build(Path inputPath, Path outputPath, List<String> networkFiles, List<String> exclude) throws IOException {
+    public void build(Path inputPath, Path outputPath, List<String> variantFiles, List<String> networkFiles, List<String> exclude)
+            throws IOException {
         Builder builder = new Builder(inputPath, outputPath, parseFilters(exclude));
+        if (CollectionUtils.isNotEmpty(variantFiles)) {
+            builder.setAdditionalVariantFiles(variantFiles);
+        }
         if (CollectionUtils.isNotEmpty(networkFiles)) {
             builder.setAdditionalNeworkFiles(networkFiles);
         }

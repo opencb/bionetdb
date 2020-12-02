@@ -47,6 +47,7 @@ public class Builder {
 
     public static final Object CLINICAL_VARIANT_FILENAME = "clinical_variants.full.json";
 
+    private List<String> additionalVariantFiles;
     private List<String> additionalNeworkFiles;
 
     private CsvInfo csv;
@@ -141,7 +142,6 @@ public class Builder {
         buildGenePanels(panelFile.toPath());
         logger.info("Gene panel processing done in {} s", (System.currentTimeMillis() - start) / 1000);
 
-
         // Procesing BioPAX file
         BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
         Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
@@ -157,13 +157,23 @@ public class Builder {
         buildClinicalVariants(clinicalVariantFile.toPath());
         logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
 
+        // Processing additional variants
+        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
+            for (String additionalVariantFile: additionalVariantFiles) {
+                logger.info("Processing additional variant file {}...", additionalVariantFile);
+                start = System.currentTimeMillis();
+                buildClinicalVariants(Paths.get(additionalVariantFile));
+                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
+            }
+        }
+
         // Processing additional networks
         if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
             for (String additionalNeworkFile: additionalNeworkFiles) {
                 logger.info("Processing additional network file {}...", additionalNeworkFile);
                 start = System.currentTimeMillis();
                 processAdditionalNetwork(additionalNeworkFile);
-                logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
+                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
             }
         }
 
@@ -1046,12 +1056,6 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(network.getRelations())) {
             for (Relation relation: network.getRelations()) {
                 relation.setUid(csv.getAndIncUid());
-                System.out.println(relation.getType().toString());
-                System.out.println(csv.relationLine(nodeUidMap.get(relation.getOrigUid()), nodeUidMap.get(relation.getDestUid())));
-                if (csv.getCsvWriters().containsKey(relation.getType().toString())) {
-                    System.out.println("YYYYEEEEESSSSSSSS");
-                }
-
                 csv.getCsvWriters().get(relation.getType().toString()).println(csv.relationLine(nodeUidMap.get(relation.getOrigUid()),
                         nodeUidMap.get(relation.getDestUid())));
             }
@@ -1750,6 +1754,15 @@ public class Builder {
         // Create relation to gene node and write
         pw = csv.getCsvWriters().get(Relation.Type.VARIANT__VARIANT_OBJECT.toString());
         pw.println(variantNode.getUid() + CsvInfo.SEPARATOR + variantObjectNode.getUid());
+    }
+
+    public List<String> getAdditionalVariantFiles() {
+        return additionalVariantFiles;
+    }
+
+    public Builder setAdditionalVariantFiles(List<String> additionalVariantFiles) {
+        this.additionalVariantFiles = additionalVariantFiles;
+        return this;
     }
 
     public List<String> getAdditionalNeworkFiles() {

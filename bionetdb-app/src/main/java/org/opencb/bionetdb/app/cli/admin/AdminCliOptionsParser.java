@@ -112,6 +112,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--add-network-file"}, description = "JSON file containing a BioNetDB network", arity = 1)
         public List<String> networkFiles;
 
+        @Parameter(names = {"--add-variant-file"}, description = "Variant file. Each line contains a variant in JSON format", arity = 1)
+        public List<String> variantFiles;
+
         @Parameter(names = {"--exclude"}, description = "Exclude information separated by comma, e.g.:'XREF_DBNAME:Reactome Database ID Release 63'", arity = 1)
         public List<String> exclude;
     }
