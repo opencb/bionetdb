@@ -17,7 +17,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.VcfFileReader;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.lib.utils.Neo4jConverter;
@@ -283,20 +282,16 @@ public class Neo4JVariantLoader {
                                 cypher.append("MATCH (n:PROTEIN)-[rx:XREF]->(x:XREF{attr_source:'uniprot'}) WHERE x.id = '")
                                         .append(uniprotId).append("' RETURN n");
                                 List<Node> proteinNodes = null;
-                                try {
-                                    DataResult<Node> queryResult = networkDBAdaptor.nodeQuery(cypher.toString());
-                                    if (queryResult == null || CollectionUtils.isEmpty(queryResult.getResults())) {
-                                        // This protein is not stored in the database, we must create the node and then
-                                        // link to the protein variant annotation
-                                        Node proteinNode = new Node(++uidCounter, uniprotId, uniprotName, Node.Type.PROTEIN);
-                                        networkDBAdaptor.addNode(proteinNode, tx);
+                                DataResult<Node> queryResult = networkDBAdaptor.nodeQuery(cypher.toString());
+                                if (queryResult == null || CollectionUtils.isEmpty(queryResult.getResults())) {
+                                    // This protein is not stored in the database, we must create the node and then
+                                    // link to the protein variant annotation
+                                    Node proteinNode = new Node(++uidCounter, uniprotId, uniprotName, Node.Type.PROTEIN);
+                                    networkDBAdaptor.addNode(proteinNode, tx);
 
-                                        proteinNodes.add(proteinNode);
-                                    } else {
-                                        proteinNodes = queryResult.getResults();
-                                    }
-                                } catch (BioNetDBException e) {
-                                    e.printStackTrace();
+                                    proteinNodes.add(proteinNode);
+                                } else {
+                                    proteinNodes = queryResult.getResults();
                                 }
 
                                 // Link protein nodes to the protein variant annotation

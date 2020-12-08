@@ -4,8 +4,9 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
+import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.response.BioNetDBResult;
+import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -42,22 +43,21 @@ public class NodeWSServer extends GenericRestWSServer {
                              @ApiParam(value = "Comma-separated list of node labels") @QueryParam("label") String label
     ) {
         try {
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(bioNetDBConfiguration);
             Query query = new Query();
             if (StringUtils.isNotEmpty(id)) {
                 List<String> ids = Arrays.asList(id.split(","));
-                query.put(NetworkDBAdaptor.NetworkQueryParams.ID.key(), ids);
+                query.put("id", ids);
             }
 
             if (StringUtils.isNotEmpty(label)) {
                 List<String> labels = Arrays.asList(id.split(","));
-                query.put(NetworkDBAdaptor.NetworkQueryParams.LABEL.key(), labels);
+                query.put("label", labels);
             }
 
-            DataResult queryResult = networkDBAdaptor.nodeQuery(query, QueryOptions.empty());
-            networkDBAdaptor.close();
+            BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
+            DataResult result = bioNetDbManager.getNodeQueryExecutor().query(query, QueryOptions.empty());
 
-            return createOkResponse(queryResult);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -84,9 +84,9 @@ public class NodeWSServer extends GenericRestWSServer {
     @ApiOperation(httpMethod = "GET", value = "Get Nodes by Cypher statement")
     public Response getNodesByCypher(@QueryParam("cypher") String cypher) {
         try {
-            NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(bioNetDBConfiguration);
-            DataResult queryResult = networkDBAdaptor.nodeQuery(cypher);
-            return createOkResponse(queryResult);
+            BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
+            BioNetDBResult<Node> result = bioNetDbManager.getNodeQueryExecutor().query(cypher);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

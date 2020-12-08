@@ -9,8 +9,11 @@ import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.server.ParamException;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.bionetdb.core.response.BioNetDBResult;
+import org.opencb.bionetdb.core.response.RestResponse;
 import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.server.exception.VersionException;
@@ -55,7 +58,8 @@ public class GenericRestWSServer {
 
     protected UriInfo uriInfo;
     protected HttpServletRequest httpServletRequest;
-    protected MultivaluedMap<String, String> params;
+    protected ObjectMap params;
+    private String requestDescription;
 
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
@@ -248,54 +252,185 @@ public class GenericRestWSServer {
         }
     }
 
-    protected Response createErrorResponse(Exception e) {
+//    protected Response createErrorResponse(Exception e) {
+//        // First we print the exception in Server logs
+//        e.printStackTrace();
+//
+//        // Now we prepare the response to client
+//        QueryResponse queryResponse = new QueryResponse();
+//        queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
+//        queryResponse.setApiVersion(apiVersion);
+//        queryResponse.setQueryOptions(queryOptions);
+//        queryResponse.setError(e.toString());
+//
+//        QueryResult<ObjectMap> result = new QueryResult<>();
+//        result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
+//        result.setErrorMsg("DEPRECATED: " + e.toString());
+//        queryResponse.setResponse(Collections.singletonList(result));
+//
+//        return Response
+//                .fromResponse(createJsonResponse(queryResponse))
+//                .status(Response.Status.INTERNAL_SERVER_ERROR)
+//                .build();
+//    }
+//
+//    protected Response createErrorResponse(String method, String errorMessage) {
+//        try {
+//            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(
+//                    new HashMap<>().put("[ERROR] " + method, errorMessage)), MediaType.APPLICATION_JSON_TYPE));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+
+    protected Response createErrorResponse(Throwable e) {
+        return createErrorResponse(e, startTime, apiVersion, requestDescription, params);
+    }
+
+    public static Response createErrorResponse(Throwable e, long startTime, String apiVersion, String requestDescription,
+                                               ObjectMap params) {
         // First we print the exception in Server logs
-        e.printStackTrace();
+        logger.error("Catch error: " + e.getMessage(), e);
 
         // Now we prepare the response to client
-        QueryResponse queryResponse = new QueryResponse();
+        RestResponse<ObjectMap> queryResponse = new RestResponse<>();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
-        queryResponse.setQueryOptions(queryOptions);
-        queryResponse.setError(e.toString());
+        queryResponse.setParams(params);
+        addErrorEvent(queryResponse, e);
 
-        QueryResult<ObjectMap> result = new QueryResult<>();
-        result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
-        result.setErrorMsg("DEPRECATED: " + e.toString());
-        queryResponse.setResponse(Collections.singletonList(result));
+        BioNetDBResult<ObjectMap> result = BioNetDBResult.empty();
+        queryResponse.setResponses(Arrays.asList(result));
 
-        return Response
-                .fromResponse(createJsonResponse(queryResponse))
-                .status(Response.Status.INTERNAL_SERVER_ERROR)
-                .build();
+        Response.StatusType errorStatus;
+        if (e instanceof WebApplicationException
+                && ((WebApplicationException) e).getResponse() != null
+                && ((WebApplicationException) e).getResponse().getStatusInfo() != null) {
+            errorStatus = ((WebApplicationException) e).getResponse().getStatusInfo();
+//        } else if (e instanceof CatalogAuthorizationException) {
+//            errorStatus = Response.Status.FORBIDDEN;
+//        } else if (e instanceof CatalogAuthenticationException) {
+//            errorStatus = Response.Status.UNAUTHORIZED;
+        } else {
+            errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
+        }
+
+        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
+//        logResponse(response.getStatusInfo(), queryResponse, startTime, requestDescription);
+        return response;
+    }
+
+    protected Response createErrorResponse(String errorMessage, BioNetDBResult result) {
+        RestResponse<ObjectMap> dataResponse = new RestResponse<>();
+        dataResponse.setApiVersion(apiVersion);
+        dataResponse.setParams(params);
+        addErrorEvent(dataResponse, errorMessage);
+        dataResponse.setResponses(Arrays.asList(result));
+
+        Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
+//        logResponse(response.getStatusInfo(), dataResponse);
+        return response;
     }
 
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(
-                    new HashMap<>().put("[ERROR] " + method, errorMessage)), MediaType.APPLICATION_JSON_TYPE));
-        } catch (Exception e) {
-            return createErrorResponse(e);
+            Response response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
+                    MediaType.APPLICATION_JSON_TYPE));
+//            logResponse(response.getStatusInfo());
+            return response;
+        } catch (JsonProcessingException e) {
+//            e.printStackTrace();
+            logger.error("Error creating error response", e);
         }
+
+        return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
+    static <T> void addErrorEvent(RestResponse<T> response, String message) {
+        if (response.getEvents() == null) {
+            response.setEvents(new ArrayList<>());
+        }
+        response.getEvents().add(new Event(Event.Type.ERROR, message));
+    }
+
+    private static <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
+        if (response.getEvents() == null) {
+            response.setEvents(new ArrayList<>());
+        }
+        String message;
+        if (e instanceof ParamException.QueryParamException && e.getCause() != null) {
+            message = e.getCause().getMessage();
+        } else {
+            message = e.getMessage();
+        }
+        response.getEvents().add(
+                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), message));
+    }
+
+    // TODO: Change signature
+    //    protected <T> Response createOkResponse(BioNetDBResult<T> result)
+    //    protected <T> Response createOkResponse(List<BioNetDBResult<T>> results)
     protected Response createOkResponse(Object obj) {
-        QueryResponse queryResponse = new QueryResponse();
+        return createOkResponse(obj, Collections.emptyList());
+    }
+
+    protected Response createOkResponse(Object obj, List<Event> events) {
+        RestResponse queryResponse = new RestResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
-        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setParams(params);
+        queryResponse.setEvents(events);
 
-        // Guarantee that the QueryResponse object contains a list of results
-        List list;
+        // Guarantee that the RestResponse object contains a list of results
+        List<BioNetDBResult<?>> list = new ArrayList<>();
         if (obj instanceof List) {
-            list = (List) obj;
+            if (!((List) obj).isEmpty()) {
+                Object firstObject = ((List) obj).get(0);
+                if (firstObject instanceof BioNetDBResult) {
+                    list = (List) obj;
+                } else if (firstObject instanceof DataResult) {
+                    List<DataResult> results = (List) obj;
+                    // We will cast each of the DataResults to OpenCGAResult
+                    for (DataResult result : results) {
+                        list.add(new BioNetDBResult<>(result));
+                    }
+                } else {
+                    list = Collections.singletonList(new BioNetDBResult<>(0, Collections.emptyList(), 1, (List) obj, 1));
+                }
+            }
         } else {
-            list = new ArrayList(1);
-            list.add(obj);
+            if (obj instanceof BioNetDBResult) {
+                list.add(((BioNetDBResult) obj));
+            } else if (obj instanceof DataResult) {
+                list.add(new BioNetDBResult<>((DataResult) obj));
+            } else {
+                list.add(new BioNetDBResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
+            }
         }
-        queryResponse.setResponse(list);
-        return createJsonResponse(queryResponse);
+        queryResponse.setResponses(list);
+
+        Response response = createJsonResponse(queryResponse);
+//        logResponse(response.getStatusInfo(), queryResponse);
+        return response;
     }
+
+//    protected Response createOkResponse(Object obj) {
+//        QueryResponse queryResponse = new QueryResponse();
+//        queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
+//        queryResponse.setApiVersion(apiVersion);
+//        queryResponse.setQueryOptions(queryOptions);
+//
+//        // Guarantee that the QueryResponse object contains a list of results
+//        List list;
+//        if (obj instanceof List) {
+//            list = (List) obj;
+//        } else {
+//            list = new ArrayList(1);
+//            list.add(obj);
+//        }
+//        queryResponse.setResponse(list);
+//        return createJsonResponse(queryResponse);
+//    }
 
     protected Response createOkResponse(Object obj, MediaType mediaType) {
         return buildResponse(Response.ok(obj, mediaType));
@@ -309,17 +444,16 @@ public class GenericRestWSServer {
         return buildResponse(Response.ok(str));
     }
 
-    protected Response createJsonResponse(QueryResponse queryResponse) {
+    static Response createJsonResponse(RestResponse queryResponse) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            logger.error("Error parsing queryResponse object");
-            return createErrorResponse("", "Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
+            logger.error("Error parsing queryResponse object", e);
+            throw new WebApplicationException("Error parsing queryResponse object", e);
         }
     }
 
-    private Response buildResponse(Response.ResponseBuilder responseBuilder) {
+    protected static Response buildResponse(Response.ResponseBuilder responseBuilder) {
         return responseBuilder
                 .header("Access-Control-Allow-Origin", "*")
                 .header("Access-Control-Allow-Headers", "x-requested-with, content-type, authorization")
@@ -327,4 +461,22 @@ public class GenericRestWSServer {
                 .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 .build();
     }
+//    protected Response createJsonResponse(QueryResponse queryResponse) {
+//        try {
+//            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
+//        } catch (JsonProcessingException e) {
+//            e.printStackTrace();
+//            logger.error("Error parsing queryResponse object");
+//            return createErrorResponse("", "Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
+//        }
+//    }
+//
+//    private Response buildResponse(Response.ResponseBuilder responseBuilder) {
+//        return responseBuilder
+//                .header("Access-Control-Allow-Origin", "*")
+//                .header("Access-Control-Allow-Headers", "x-requested-with, content-type, authorization")
+//                .header("Access-Control-Allow-Credentials", "true")
+//                .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+//                .build();
+//    }
 }

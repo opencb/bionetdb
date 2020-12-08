@@ -2,10 +2,10 @@ package org.opencb.bionetdb.lib.executors;
 
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.response.BioNetDBResult;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
 import org.opencb.bionetdb.lib.api.query.NodeQueryParam;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 
@@ -24,26 +24,26 @@ public class NodeQueryExecutor {
         this.networkDBAdaptor = networkDBAdaptor;
     }
 
-    public DataResult<Node> getNode(long uid) throws BioNetDBException {
+    public BioNetDBResult<Node> getNode(long uid) throws BioNetDBException {
         Query query = new Query();
         query.put(NodeQueryParam.UID.key(), uid);
 //        query.put(NodeQueryParam.OUTPUT.key(), "node");
         return query(query, QueryOptions.empty());
     }
 
-    public DataResult<Node> getNode(String id) throws BioNetDBException {
+    public BioNetDBResult<Node> getNode(String id) throws BioNetDBException {
         Query query = new Query();
         query.put(NodeQueryParam.ID.key(), id);
 //        query.put(NodeQueryParam.OUTPUT.key(), "node");
         return query(query, QueryOptions.empty());
     }
 
-    public DataResult<Node> query(Query query, QueryOptions queryOptions) throws BioNetDBException {
+    public BioNetDBResult<Node> query(Query query, QueryOptions queryOptions) throws BioNetDBException {
         NodeIterator nodeIterator = iterator(query, queryOptions);
         return getQueryResult(nodeIterator);
     }
 
-    public DataResult<Node> query(String cypher) throws BioNetDBException {
+    public BioNetDBResult<Node> query(String cypher) throws BioNetDBException {
         NodeIterator nodeIterator = iterator(cypher);
         return getQueryResult(nodeIterator);
     }
@@ -60,7 +60,7 @@ public class NodeQueryExecutor {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private DataResult<Node> getQueryResult(NodeIterator nodeIterator) {
+    private BioNetDBResult<Node> getQueryResult(NodeIterator nodeIterator) {
         List<Node> nodes = new ArrayList<>();
 
         long startTime = System.currentTimeMillis();
@@ -73,6 +73,6 @@ public class NodeQueryExecutor {
         long stopTime = System.currentTimeMillis();
 
         int time = (int) (stopTime - startTime) / 1000;
-        return new DataResult(time, Collections.emptyList(), nodes.size(), nodes, nodes.size());
+        return new BioNetDBResult(time, Collections.emptyList(), nodes.size(), nodes, nodes.size());
     }
 }

@@ -309,7 +309,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public NodeIterator nodeIterator(String cypher) throws BioNetDBException {
+    public NodeIterator nodeIterator(String cypher) {
         Session session = this.driver.session();
         System.out.println("Cypher query: " + cypher);
         return new Neo4JNodeIterator(session.run(cypher));
@@ -322,7 +322,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public DataResult<Node> nodeQuery(String cypher) throws BioNetDBException {
+    public DataResult<Node> nodeQuery(String cypher) {
         // Query for nodes using the node iterator
         StopWatch stopWatch = StopWatch.createStarted();
         NodeIterator nodeIterator = nodeIterator(cypher);

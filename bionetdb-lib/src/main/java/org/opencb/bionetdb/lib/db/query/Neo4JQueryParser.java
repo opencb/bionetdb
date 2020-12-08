@@ -60,7 +60,7 @@ public class Neo4JQueryParser {
         }
     }
 
-    public static String parseNodeQuery(Query query, QueryOptions options) throws BioNetDBException {
+    public static String parseNodeQuery(Query query, QueryOptions options) {
         String nameNode = "n";
 
         // Match clause
@@ -95,6 +95,10 @@ public class Neo4JQueryParser {
             }
         } else {
             ret.append(" RETURN ").append(nameNode);
+        }
+
+        if (options.containsKey(QueryOptions.LIMIT)) {
+            ret.append(" LIMIT ").append(options.getString(QueryOptions.LIMIT));
         }
 
         // Build the complete Cypher statement
