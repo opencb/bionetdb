@@ -6,11 +6,11 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
+import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.api.query.VariantQueryParam;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.*;
 
@@ -24,8 +24,8 @@ public class ProteinNetworkInterpretationAnalysis {
         this.networkDBAdaptor = networkDBAdaptor;
     }
 
-    public QueryResult<Variant> execute(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
-                                        boolean complexOrReaction, Query query) throws BioNetDBException {
+    public DataResult<Variant> execute(Pedigree pedigree, Disorder disorder, ClinicalProperty.ModeOfInheritance moi,
+                                       boolean complexOrReaction, Query query) throws BioNetDBException {
         // Check moi
         Map<String, List<String>> genotypes;
         switch (moi) {

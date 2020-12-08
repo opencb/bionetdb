@@ -11,9 +11,9 @@ import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
 import org.opencb.bionetdb.lib.api.query.VariantQueryParam;
 import org.opencb.bionetdb.lib.utils.NodeBuilder;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
 import java.util.*;
@@ -26,7 +26,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         super(networkDBAdaptor);
     }
 
-    public QueryResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, Query query)
+    public DataResult<Variant> getDominantVariants(Pedigree pedigree, Disorder disorder, Query query)
             throws BioNetDBException, IOException {
         Map<String, List<String>> genotypes = ModeOfInheritance.dominant(pedigree, disorder, COMPLETE);
         putGenotypes(query, genotypes);
@@ -34,7 +34,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
-    public QueryResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query)
+    public DataResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query)
             throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.recessive(pedigree, disorder, COMPLETE);
         putGenotypes(query, genotypes);
@@ -42,7 +42,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
-    public QueryResult<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query)
+    public DataResult<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query)
             throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, COMPLETE);
         query.put(VariantQueryParam.CHROMOSOME.key(), "X");
@@ -51,7 +51,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
-    public QueryResult<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query)
+    public DataResult<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query)
             throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, COMPLETE);
         query.put(VariantQueryParam.CHROMOSOME.key(), "X");
@@ -60,7 +60,7 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
-    public QueryResult<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
+    public DataResult<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.yLinked(pedigree, disorder, COMPLETE);
         query.put(VariantQueryParam.CHROMOSOME.key(), "Y");
         putGenotypes(query, genotypes);
@@ -68,18 +68,18 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
-    public QueryResult<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException, IOException {
+    public DataResult<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException, IOException {
         Map<String, List<String>> genotypes = ModeOfInheritance.deNovo(pedigree);
         putGenotypes(query, genotypes);
         query.put(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
 
         // Get variants and genotypes
-        QueryResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
-        List<Variant> variants = variantQueryResult.getResult();
+        DataResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+        List<Variant> variants = variantQueryResult.getResults();
 
         int dbTime = 0;
         if (CollectionUtils.isEmpty(variants)) {
-            return new QueryResult<>("", dbTime, 0, 0, "", "", Collections.emptyList());
+            return new DataResult<>(dbTime, new ArrayList<>(), 0, Collections.emptyList(), 0);
         } else {
             List<String> sampleNames = Arrays.asList(variants.get(0).getAnnotation().getAdditionalAttributes()
                     .get("samples").getAttribute().get(NodeBuilder.SAMPLE).split(","));
@@ -91,11 +91,11 @@ public class VariantAnalysis extends BioNetDBAnalysis {
             List<Variant> deNovoVariants = ModeOfInheritance.deNovo(variants.iterator(), probandSampleIdx, motherSampleIdx,
                     fatherSampleIdx);
 
-            return new QueryResult<>("", dbTime, variants.size(), variants.size(), "", "", deNovoVariants);
+            return new DataResult<>(dbTime, Collections.emptyList(), deNovoVariants.size(), deNovoVariants, deNovoVariants.size());
         }
     }
 
-    public QueryResult<Map<String, List<Variant>>> getCompoundHeterozygousVariants(Pedigree pedigree, Query query)
+    public DataResult<Map<String, List<Variant>>> getCompoundHeterozygousVariants(Pedigree pedigree, Query query)
             throws BioNetDBException {
         Map<String, List<String>> genotypes = ModeOfInheritance.compoundHeterozygous(pedigree);
         putGenotypes(query, genotypes);
@@ -104,12 +104,12 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         query.put(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key(), true);
 
         // Get variants and genotypes
-        QueryResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
-        List<Variant> variants = variantQueryResult.getResult();
+        DataResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+        List<Variant> variants = variantQueryResult.getResults();
 
         int dbTime = 0;
         if (CollectionUtils.isEmpty(variants)) {
-            return new QueryResult<>("", dbTime, 0, 0, "", "", Collections.emptyList());
+            return new DataResult<>(dbTime, Collections.emptyList(), 0, Collections.emptyList(), 0);
         } else {
 
             List<String> sampleNames = Arrays.asList(variants.get(0).getAnnotation().getAdditionalAttributes().get("samples").getAttribute()
@@ -122,8 +122,8 @@ public class VariantAnalysis extends BioNetDBAnalysis {
             Map<String, List<Variant>> chVariants = ModeOfInheritance.compoundHeterozygous(variants.iterator(), probandSampleIdx,
                     motherSampleIdx, fatherSampleIdx);
 
-            return new QueryResult<>("", dbTime, variants.size(), variants.size(), "", "",
-                    Collections.singletonList(chVariants));
+            return new DataResult<>(dbTime, Collections.emptyList(), chVariants.size(), Collections.singletonList(chVariants),
+                    chVariants.size());
         }
     }
 

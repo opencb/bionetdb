@@ -23,8 +23,7 @@ import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.lib.utils.Neo4jConverter;
 import org.opencb.bionetdb.lib.utils.Neo4jImporter;
 import org.opencb.bionetdb.lib.utils.NodeBuilder;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.ListUtils;
+import org.opencb.commons.datastore.core.DataResult;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -285,8 +284,8 @@ public class Neo4JVariantLoader {
                                         .append(uniprotId).append("' RETURN n");
                                 List<Node> proteinNodes = null;
                                 try {
-                                    QueryResult<Node> queryResult = networkDBAdaptor.nodeQuery(cypher.toString());
-                                    if (queryResult == null || ListUtils.isEmpty(queryResult.getResult())) {
+                                    DataResult<Node> queryResult = networkDBAdaptor.nodeQuery(cypher.toString());
+                                    if (queryResult == null || CollectionUtils.isEmpty(queryResult.getResults())) {
                                         // This protein is not stored in the database, we must create the node and then
                                         // link to the protein variant annotation
                                         Node proteinNode = new Node(++uidCounter, uniprotId, uniprotName, Node.Type.PROTEIN);
@@ -294,7 +293,7 @@ public class Neo4JVariantLoader {
 
                                         proteinNodes.add(proteinNode);
                                     } else {
-                                        proteinNodes = queryResult.getResult();
+                                        proteinNodes = queryResult.getResults();
                                     }
                                 } catch (BioNetDBException e) {
                                     e.printStackTrace();

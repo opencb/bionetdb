@@ -26,10 +26,10 @@ import org.opencb.bionetdb.lib.db.iterators.Neo4JVariantIterator;
 import org.opencb.bionetdb.lib.db.query.Neo4JQueryParser;
 import org.opencb.bionetdb.lib.db.query.Neo4JVariantQueryParser;
 import org.opencb.bionetdb.lib.utils.Neo4jConverter;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -316,13 +316,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public QueryResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+    public DataResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
         String cypher = Neo4JQueryParser.parseNodeQuery(query, queryOptions);
         return nodeQuery(cypher);
     }
 
     @Override
-    public QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException {
+    public DataResult<Node> nodeQuery(String cypher) throws BioNetDBException {
         // Query for nodes using the node iterator
         StopWatch stopWatch = StopWatch.createStarted();
         NodeIterator nodeIterator = nodeIterator(cypher);
@@ -333,7 +333,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
 
         // Create QueryResult and return
-        QueryResult<Node> queryResult = new QueryResult<>("", dbTime, nodes.size(), nodes.size(), "", "", nodes);
+        DataResult<Node> queryResult = new DataResult<>(dbTime, new ArrayList<>(), nodes.size(), nodes, nodes.size());
         return queryResult;
     }
     //-------------------------------------------------------------------------
@@ -353,14 +353,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public QueryResult<List<Object>> rowQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+    public DataResult<List<Object>> rowQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
         throw new UnsupportedOperationException("rowQuery not yet supported");
 //        String cypher = Neo4JQueryParser.parseRowQuery(query, queryOptions);
 //        return nodeQuery(cypher);
     }
 
     @Override
-    public QueryResult<List<Object>> rowQuery(String cypher) throws BioNetDBException {
+    public DataResult<List<Object>> rowQuery(String cypher) throws BioNetDBException {
         throw new UnsupportedOperationException("rowQuery not yet supported");
     }
 
@@ -384,12 +384,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public QueryResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+    public DataResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
         return null;
     }
 
     @Override
-    public QueryResult<NetworkPath> networkPathQuery(String cypher) throws BioNetDBException {
+    public DataResult<NetworkPath> networkPathQuery(String cypher) throws BioNetDBException {
         return null;
     }
 
@@ -398,21 +398,21 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
 
     @Override
-    public QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
+    public DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
             throws BioNetDBException {
         String cypher = Neo4JQueryParser.parseNodesForNetwork(nodeQueries, queryOptions);
         return networkQuery(cypher);
     }
 
     @Override
-    public QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
+    public DataResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
             throws BioNetDBException {
         String cypher = Neo4JQueryParser.parsePathsForNetwork(pathQueries, queryOptions);
         return networkQuery(cypher);
     }
 
     @Override
-    public QueryResult<Network> networkQuery(String cypher) throws BioNetDBException {
+    public DataResult<Network> networkQuery(String cypher) throws BioNetDBException {
         // Open session
         Session session = this.driver.session();
 
@@ -425,8 +425,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         session.close();
 
         // Build the query result
-        int time = (int) (stopTime - startTime) / 1000;
-        return new QueryResult("networkQuery", time, 1, 1, null, null, Arrays.asList(network));
+        int dbTime = (int) (stopTime - startTime) / 1000;
+        return new DataResult(dbTime, new ArrayList<>(), 1, Collections.singletonList(network), 1);
     }
 
     @Override
@@ -445,13 +445,13 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public QueryResult<Variant> variantQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+    public DataResult<Variant> variantQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
         String cypher = Neo4JVariantQueryParser.parse(query, QueryOptions.empty());
         return variantQuery(cypher);
     }
 
     @Override
-    public QueryResult<Variant> variantQuery(String cypher) throws BioNetDBException {
+    public DataResult<Variant> variantQuery(String cypher) throws BioNetDBException {
         if (org.apache.commons.lang.StringUtils.isEmpty(cypher)) {
             throw new BioNetDBException("Missing cypher to query");
         }
@@ -466,7 +466,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
 
         int dbTime = 0;
-        return new QueryResult<>("", dbTime, variants.size(), variants.size(), "", "", variants);
+        return new DataResult(dbTime, new ArrayList<>(), variants.size(), variants, variants.size());
     }
 
     //-------------------------------------------------------------------------
@@ -474,7 +474,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
 
     @Override
-    public QueryResult<Variant> proteinNetworkInterpretationAnalysis(boolean complexOrReaction, Query query) throws BioNetDBException {
+    public DataResult<Variant> proteinNetworkInterpretationAnalysis(boolean complexOrReaction, Query query) throws BioNetDBException {
         // Create cypher statement from query
         String cypher = Neo4JVariantQueryParser.parseProteinNetworkInterpretation(query, QueryOptions.empty(), complexOrReaction);
 
@@ -488,7 +488,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
 
         int dbTime = 0;
-        return new QueryResult<>("", dbTime, variants.size(), variants.size(), "", "", variants);
+        return new DataResult(dbTime, new ArrayList<>(), variants.size(), variants, variants.size());
     }
 
     //-------------------------------------------------------------------------

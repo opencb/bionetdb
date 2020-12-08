@@ -8,27 +8,24 @@ import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantC
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Network;
-import org.opencb.bionetdb.core.models.network.NetworkManager;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
-import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.lib.analysis.InterpretationAnalysis;
 import org.opencb.bionetdb.lib.analysis.NetworkAnalysis;
 import org.opencb.bionetdb.lib.analysis.VariantAnalysis;
 import org.opencb.bionetdb.lib.analysis.interpretation.TieringInterpretationAnalysis;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
-import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
 import org.opencb.bionetdb.lib.api.iterators.RowIterator;
 import org.opencb.bionetdb.lib.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.lib.api.query.NodeQuery;
-import org.opencb.bionetdb.lib.api.query.NodeQueryParam;
 import org.opencb.bionetdb.lib.db.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.lib.db.Neo4JVariantLoader;
+import org.opencb.bionetdb.lib.executors.NodeQueryExecutor;
 import org.opencb.bionetdb.lib.utils.Builder;
 import org.opencb.bionetdb.lib.utils.Downloader;
 import org.opencb.bionetdb.lib.utils.Importer;
-import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
@@ -52,6 +49,7 @@ public class BioNetDbManager {
 //    private CellBaseClient cellBaseClient;
 
     private NetworkDBAdaptor networkDBAdaptor;
+
     private Logger logger;
 
     private Map<String, Long> idToUidMap;
@@ -127,6 +125,15 @@ public class BioNetDbManager {
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.configuration);
         networkDBAdaptor.index();
         networkDBAdaptor.close();
+    }
+
+
+    //---------------------------------------------
+    // E X E C U T O R S
+    //---------------------------------------------
+
+    public NodeQueryExecutor getNodeQueryExecutor() {
+        return new NodeQueryExecutor(networkDBAdaptor);
     }
 
 
@@ -285,61 +292,29 @@ public class BioNetDbManager {
     // N O D E S
     //-------------------------------------------------------------------------
 
-    public QueryResult<Node> getNode(long uid) throws BioNetDBException {
-        NodeQuery query = new NodeQuery();
-        query.put(NodeQueryParam.UID.key(), uid);
-        query.put(NodeQueryParam.OUTPUT.key(), "node");
-        return nodeQuery(query, QueryOptions.empty());
-    }
-
-    public QueryResult<Node> getNode(String id) throws BioNetDBException {
-        NodeQuery query = new NodeQuery();
-        query.put(NodeQueryParam.ID.key(), id);
-        query.put(NodeQueryParam.OUTPUT.key(), "node");
-        return nodeQuery(query, QueryOptions.empty());
-    }
-
-    public QueryResult<Node> nodeQuery(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        NodeIterator nodeIterator = nodeIterator(query, queryOptions);
-        return getQueryResult(nodeIterator);
-    }
-
-    public QueryResult<Node> nodeQuery(String cypher) throws BioNetDBException {
-        NodeIterator nodeIterator = nodeIterator(cypher);
-        return getQueryResult(nodeIterator);
-    }
-
-    public NodeIterator nodeIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        return networkDBAdaptor.nodeIterator(query, queryOptions);
-    }
-
-    public NodeIterator nodeIterator(String cypher) throws BioNetDBException {
-        return networkDBAdaptor.nodeIterator(cypher);
-    }
-
     //-------------------------------------------------------------------------
     // T A B L E S
     //   - a table is a list of rows
     //   - a row is a list of strings
     //-------------------------------------------------------------------------
 
-    public QueryResult<List<Object>> table(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        RowIterator rowIterator = rowIterator(query, queryOptions);
-        return getQueryResult(rowIterator);
-    }
-
-    public QueryResult<List<Object>> table(String cypher) throws BioNetDBException {
-        RowIterator rowIterator = rowIterator(cypher);
-        return getQueryResult(rowIterator);
-    }
-
-    public RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-        return networkDBAdaptor.rowIterator(query, queryOptions);
-    }
-
-    public RowIterator rowIterator(String cypher) throws BioNetDBException {
-        return networkDBAdaptor.rowIterator(cypher);
-    }
+//    public QueryResult<List<Object>> table(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
+//        RowIterator rowIterator = rowIterator(query, queryOptions);
+//        return getQueryResult(rowIterator);
+//    }
+//
+//    public QueryResult<List<Object>> table(String cypher) throws BioNetDBException {
+//        RowIterator rowIterator = rowIterator(cypher);
+//        return getQueryResult(rowIterator);
+//    }
+//
+//    public RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
+//        return networkDBAdaptor.rowIterator(query, queryOptions);
+//    }
+//
+//    public RowIterator rowIterator(String cypher) throws BioNetDBException {
+//        return networkDBAdaptor.rowIterator(cypher);
+//    }
 
     //-------------------------------------------------------------------------
     // P A T H S
@@ -368,17 +343,17 @@ public class BioNetDbManager {
     // N E T W O R K S
     //-------------------------------------------------------------------------
 
-    public QueryResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
+    public DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
             throws BioNetDBException {
         return networkDBAdaptor.networkQuery(nodeQueries, queryOptions);
     }
 
-    public QueryResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
+    public DataResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
             throws BioNetDBException {
         return networkDBAdaptor.networkQueryByPaths(pathQueries, queryOptions);
     }
 
-    public QueryResult<Network> networkQuery(String cypher) throws BioNetDBException {
+    public DataResult<Network> networkQuery(String cypher) throws BioNetDBException {
         return networkDBAdaptor.networkQuery(cypher);
     }
 
@@ -398,48 +373,31 @@ public class BioNetDbManager {
     }
 
 
-    private void updateNodeUids(Node.Type type, Query query, QueryOptions queryOptions, NetworkManager netManager)
-            throws BioNetDBException {
-        // Get network nodes
-        List<Node> nodes = netManager.getNodes(type);
+//    private void updateNodeUids(Node.Type type, Query query, QueryOptions queryOptions, NetworkManager netManager)
+//            throws BioNetDBException {
+//        // Get network nodes
+//        List<Node> nodes = netManager.getNodes(type);
+//
+//        for (Node node : nodes) {
+//            String key = type.name() + ":" + node.getId();
+//            if (idToUidMap.containsKey(key)) {
+//                netManager.replaceUid(node.getUid(), idToUidMap.get(key));
+//            } else {
+//                QueryResult<Node> vNodes = getNode(node.getId());
+//                if (vNodes.getResult().size() > 0) {
+//                    Node n = vNodes.getResult().get(0);
+//                    netManager.replaceUid(node.getUid(), n.getUid());
+//
+//                    idToUidMap.put(key, n.getUid());
+//                }
+//            }
+//
+////            System.out.println("node " + node.getType().name() + ": uid=" + node.getUid() + ", id=" + node.getId() + ", name="
+////                    + node.getName());
+//        }
+//    }
 
-        for (Node node : nodes) {
-            String key = type.name() + ":" + node.getId();
-            if (idToUidMap.containsKey(key)) {
-                netManager.replaceUid(node.getUid(), idToUidMap.get(key));
-            } else {
-                QueryResult<Node> vNodes = getNode(node.getId());
-                if (vNodes.getResult().size() > 0) {
-                    Node n = vNodes.getResult().get(0);
-                    netManager.replaceUid(node.getUid(), n.getUid());
-
-                    idToUidMap.put(key, n.getUid());
-                }
-            }
-
-//            System.out.println("node " + node.getType().name() + ": uid=" + node.getUid() + ", id=" + node.getId() + ", name="
-//                    + node.getName());
-        }
-    }
-
-    private QueryResult<Node> getQueryResult(NodeIterator nodeIterator) {
-        List<Node> nodes = new ArrayList<>();
-
-        long startTime = System.currentTimeMillis();
-        while (nodeIterator.hasNext()) {
-            if (nodes.size() >= this.QUERY_MAX_RESULTS) {
-                break;
-            }
-            nodes.add(nodeIterator.next());
-        }
-        long stopTime = System.currentTimeMillis();
-
-        int time = (int) (stopTime - startTime) / 1000;
-        return new QueryResult("get", time, nodes.size(), nodes.size(), null, null, nodes);
-
-    }
-
-    private QueryResult<List<Object>> getQueryResult(RowIterator rowIterator) {
+    private DataResult<List<Object>> getQueryResult(RowIterator rowIterator) {
         List<List<Object>> rows = new ArrayList<>();
 
         long startTime = System.currentTimeMillis();
@@ -452,7 +410,7 @@ public class BioNetDbManager {
         long stopTime = System.currentTimeMillis();
 
         int time = (int) (stopTime - startTime) / 1000;
-        return new QueryResult("table", time, rows.size(), rows.size(), null, null, rows);
+        return new DataResult(time, Collections.emptyList(), rows.size(), rows, rows.size());
     }
 
     public QueryResult<NetworkPath> getQueryResult(NetworkPathIterator networkPathIterator)

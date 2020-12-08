@@ -11,9 +11,9 @@ import org.opencb.bionetdb.lib.analysis.VariantAnalysis;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.db.query.Neo4JQueryParser;
 import org.opencb.bionetdb.lib.utils.CsvInfo;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -43,7 +43,9 @@ public class BioNetDbManagerTest {
 
     @After
     public void tearDown() throws Exception {
-        bioNetDbManager.close();
+        if (bioNetDbManager != null) {
+            bioNetDbManager.close();
+        }
     }
 
 
@@ -83,8 +85,8 @@ public class BioNetDbManagerTest {
 
     @Test
     public void getNodeByUid() throws Exception {
-        QueryResult<Node> queryResult = bioNetDbManager.getNode(1);
-        printNodes(queryResult.getResult());
+        DataResult<Node> queryResult = bioNetDbManager.getNodeQueryExecutor().getNode(1);
+        printNodes(queryResult.getResults());
     }
 
     @Test
@@ -94,36 +96,38 @@ public class BioNetDbManagerTest {
         query.put(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key(), "GENE,TRANSCRIPT");
         String cypher = Neo4JQueryParser.parse(query, QueryOptions.empty());
         System.out.println(cypher);
-        QueryResult<Node> queryResult = bioNetDbManager.nodeQuery(cypher.toString());
-        printNodes(queryResult.getResult());
+        DataResult<Node> queryResult = bioNetDbManager.getNodeQueryExecutor().query(cypher.toString());
+        printNodes(queryResult.getResults());
     }
 
     @Test
     public void nodeQueryByCypher() throws Exception {
         StringBuilder cypher = new StringBuilder();
         cypher.append("match (g:GENE)-[r]-(t:TRANSCRIPT) where g.name=\"APOE\" return g,t");
-        QueryResult<Node> queryResult = bioNetDbManager.nodeQuery(cypher.toString());
-        printNodes(queryResult.getResult());
+        DataResult<Node> queryResult = bioNetDbManager.getNodeQueryExecutor().query(cypher.toString());
+        printNodes(queryResult.getResults());
     }
 
-    @Test
-    public void tableQuery() throws Exception {
-        Query query = new Query();
-        query.put(NetworkDBAdaptor.NetworkQueryParams.SRC_NODE.key(), "GENE:name=\"APOE\"");
-        query.put(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key(), "GENE.name,GENE.id,TRANSCRIPT.id");
-        String cypher = Neo4JQueryParser.parse(query, QueryOptions.empty());
-        System.out.println(cypher);
-        QueryResult<List<Object>> queryResult = bioNetDbManager.table(cypher);
-        printLists(queryResult.getResult());
-    }
+    //-------------------------------------------------------------------------
 
-    @Test
-    public void tableByCypher() throws Exception {
-        StringBuilder cypher = new StringBuilder();
-        cypher.append("match (g:GENE)-[r]-(t:TRANSCRIPT) where g.name=\"APOE\" return g.uid, g.id, t.uid, t.id, g");
-        QueryResult<List<Object>> queryResult = bioNetDbManager.table(cypher.toString());
-        printLists(queryResult.getResult());
-    }
+//    @Test
+//    public void tableQuery() throws Exception {
+//        Query query = new Query();
+//        query.put(NetworkDBAdaptor.NetworkQueryParams.SRC_NODE.key(), "GENE:name=\"APOE\"");
+//        query.put(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key(), "GENE.name,GENE.id,TRANSCRIPT.id");
+//        String cypher = Neo4JQueryParser.parse(query, QueryOptions.empty());
+//        System.out.println(cypher);
+//        QueryResult<List<Object>> queryResult = bioNetDbManager.table(cypher);
+//        printLists(queryResult.getResult());
+//    }
+//
+//    @Test
+//    public void tableByCypher() throws Exception {
+//        StringBuilder cypher = new StringBuilder();
+//        cypher.append("match (g:GENE)-[r]-(t:TRANSCRIPT) where g.name=\"APOE\" return g.uid, g.id, t.uid, t.id, g");
+//        QueryResult<List<Object>> queryResult = bioNetDbManager.table(cypher.toString());
+//        printLists(queryResult.getResult());
+//    }
 
     @Test
     public void networkQuery() throws Exception {
@@ -133,20 +137,20 @@ public class BioNetDbManagerTest {
         query.put(NetworkDBAdaptor.NetworkQueryParams.OUTPUT.key(), "network");
         String cypher = Neo4JQueryParser.parse(query, QueryOptions.empty());
         System.out.println(cypher);
-        QueryResult<Network> queryResult = bioNetDbManager.networkQuery(cypher);
-        System.out.println(queryResult.getResult().get(0).toString());
+        DataResult<Network> queryResult = bioNetDbManager.networkQuery(cypher);
+        System.out.println(queryResult.getResults().get(0).toString());
     }
+
+    //-------------------------------------------------------------------------
 
     @Test
     public void networkByCypher() throws Exception {
         StringBuilder cypher = new StringBuilder();
         cypher.append("match path=(g:GENE)-[r]-(t:TRANSCRIPT) where g.name=\"APOE\" return path");
-        QueryResult<Network> queryResult = bioNetDbManager.networkQuery(cypher.toString());
-        System.out.println(queryResult.getResult().get(0).toString());
+        DataResult<Network> queryResult = bioNetDbManager.networkQuery(cypher.toString());
+        System.out.println(queryResult.getResults().get(0).toString());
     }
 
-    //-------------------------------------------------------------------------
-    // I N T E R P R E T A T I O N
     //-------------------------------------------------------------------------
 
     @Test
@@ -416,7 +420,7 @@ public class BioNetDbManagerTest {
 //    }
 
     //-------------------------------------------------------------------------
-    //
+    // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
     private void printNodes(List<Node> nodes) {

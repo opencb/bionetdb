@@ -7,9 +7,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.server.exception.VersionException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -54,7 +54,7 @@ public class NodeWSServer extends GenericRestWSServer {
                 query.put(NetworkDBAdaptor.NetworkQueryParams.LABEL.key(), labels);
             }
 
-            QueryResult queryResult = networkDBAdaptor.nodeQuery(query, QueryOptions.empty());
+            DataResult queryResult = networkDBAdaptor.nodeQuery(query, QueryOptions.empty());
             networkDBAdaptor.close();
 
             return createOkResponse(queryResult);
@@ -85,7 +85,7 @@ public class NodeWSServer extends GenericRestWSServer {
     public Response getNodesByCypher(@QueryParam("cypher") String cypher) {
         try {
             NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(bioNetDBConfiguration);
-            QueryResult queryResult = networkDBAdaptor.nodeQuery(cypher);
+            DataResult queryResult = networkDBAdaptor.nodeQuery(cypher);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
