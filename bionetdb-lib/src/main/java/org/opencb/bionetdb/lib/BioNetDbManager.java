@@ -7,7 +7,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.lib.analysis.InterpretationAnalysis;
 import org.opencb.bionetdb.lib.analysis.NetworkAnalysis;
@@ -16,8 +15,6 @@ import org.opencb.bionetdb.lib.analysis.interpretation.TieringInterpretationAnal
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.lib.api.iterators.RowIterator;
-import org.opencb.bionetdb.lib.api.query.NetworkPathQuery;
-import org.opencb.bionetdb.lib.api.query.NodeQuery;
 import org.opencb.bionetdb.lib.db.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.lib.db.Neo4JVariantLoader;
@@ -26,7 +23,6 @@ import org.opencb.bionetdb.lib.utils.Builder;
 import org.opencb.bionetdb.lib.utils.Downloader;
 import org.opencb.bionetdb.lib.utils.Importer;
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
@@ -320,42 +316,42 @@ public class BioNetDbManager {
     // P A T H S
     //-------------------------------------------------------------------------
 
-    public QueryResult<NetworkPath> pathQuery(NetworkPathQuery networkPathQuery, QueryOptions queryOptions)
-            throws BioNetDBException {
-        NetworkPathIterator networkPathIterator = pathIterator(networkPathQuery, queryOptions);
-        return getQueryResult(networkPathIterator);
-    }
-
-    public QueryResult<NetworkPath> pathQuery(String cypher) throws BioNetDBException {
-        NetworkPathIterator networkPathIterator = pathIterator(cypher);
-        return getQueryResult(networkPathIterator);
-    }
-
-    public NetworkPathIterator pathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException {
-        return networkDBAdaptor.networkPathIterator(networkPathQuery, queryOptions);
-    }
-
-    public NetworkPathIterator pathIterator(String cypher) throws BioNetDBException {
-        return networkDBAdaptor.networkPathIterator(cypher);
-    }
+//    public QueryResult<NetworkPath> pathQuery(NetworkPathQuery networkPathQuery, QueryOptions queryOptions)
+//            throws BioNetDBException {
+//        NetworkPathIterator networkPathIterator = pathIterator(networkPathQuery, queryOptions);
+//        return getQueryResult(networkPathIterator);
+//    }
+//
+//    public QueryResult<NetworkPath> pathQuery(String cypher) throws BioNetDBException {
+//        NetworkPathIterator networkPathIterator = pathIterator(cypher);
+//        return getQueryResult(networkPathIterator);
+//    }
+//
+//    public NetworkPathIterator pathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException {
+//        return networkDBAdaptor.networkPathIterator(networkPathQuery, queryOptions);
+//    }
+//
+//    public NetworkPathIterator pathIterator(String cypher) throws BioNetDBException {
+//        return networkDBAdaptor.networkPathIterator(cypher);
+//    }
 
     //-------------------------------------------------------------------------
     // N E T W O R K S
     //-------------------------------------------------------------------------
 
-    public DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
-            throws BioNetDBException {
-        return networkDBAdaptor.networkQuery(nodeQueries, queryOptions);
-    }
-
-    public DataResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
-            throws BioNetDBException {
-        return networkDBAdaptor.networkQueryByPaths(pathQueries, queryOptions);
-    }
-
-    public DataResult<Network> networkQuery(String cypher) throws BioNetDBException {
-        return networkDBAdaptor.networkQuery(cypher);
-    }
+//    public DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
+//            throws BioNetDBException {
+//        return networkDBAdaptor.networkQuery(nodeQueries, queryOptions);
+//    }
+//
+//    public DataResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
+//            throws BioNetDBException {
+//        return networkDBAdaptor.networkQueryByPaths(pathQueries, queryOptions);
+//    }
+//
+//    public DataResult<Network> networkQuery(String cypher) throws BioNetDBException {
+//        return networkDBAdaptor.networkQuery(cypher);
+//    }
 
 
     //-------------------------------------------------------------------------

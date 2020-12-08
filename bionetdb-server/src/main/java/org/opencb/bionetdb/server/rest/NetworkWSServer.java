@@ -3,7 +3,6 @@ package org.opencb.bionetdb.server.rest;
 import io.swagger.annotations.*;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.server.exception.VersionException;
-import org.opencb.commons.datastore.core.DataResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -79,8 +78,9 @@ public class NetworkWSServer extends GenericRestWSServer {
             @ApiParam(value = "Cypher query")
             @QueryParam("query") String cypherQuery) {
         try {
-            DataResult<Network> networkQueryResult = bioNetDBManager.networkQuery(cypherQuery);
-            return createOkResponse(networkQueryResult);
+            return null;
+//            DataResult<Network> networkQueryResult = bioNetDBManager.networkQuery(cypherQuery);
+//            return createOkResponse(networkQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

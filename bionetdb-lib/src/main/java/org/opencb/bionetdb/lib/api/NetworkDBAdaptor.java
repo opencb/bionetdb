@@ -1,19 +1,13 @@
 package org.opencb.bionetdb.lib.api;
 
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Network;
-import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.core.models.network.Node;
-import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
+import org.opencb.bionetdb.core.response.BioNetDBResult;
 import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
-import org.opencb.bionetdb.lib.api.iterators.RowIterator;
-import org.opencb.bionetdb.lib.api.iterators.VariantIterator;
-import org.opencb.bionetdb.lib.api.query.NetworkPathQuery;
-import org.opencb.bionetdb.lib.api.query.NodeQuery;
-import org.opencb.commons.datastore.core.*;
-
-import java.util.List;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -105,8 +99,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     NodeIterator nodeIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
     NodeIterator nodeIterator(String cypher) throws BioNetDBException;
 
-    DataResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
-    DataResult<Node> nodeQuery(String cypher) throws BioNetDBException;
+    BioNetDBResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    BioNetDBResult<Node> nodeQuery(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
     // T A B L E S / R O W S
@@ -114,11 +108,11 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //   - a row is modeled as a list of Object
     //-------------------------------------------------------------------------
 
-    RowIterator rowIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
-    RowIterator rowIterator(String cypher) throws BioNetDBException;
-
-    DataResult<List<Object>> rowQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
-    DataResult<List<Object>> rowQuery(String cypher) throws BioNetDBException;
+//    RowIterator rowIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
+//    RowIterator rowIterator(String cypher) throws BioNetDBException;
+//
+//    DataResult<List<Object>> rowQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+//    DataResult<List<Object>> rowQuery(String cypher) throws BioNetDBException;
 
 
     //-------------------------------------------------------------------------
@@ -127,33 +121,33 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //     the origin node and the destionation node
     //-------------------------------------------------------------------------
 
-    NetworkPathIterator networkPathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException;
-    NetworkPathIterator networkPathIterator(String cypher) throws BioNetDBException;
-
-    DataResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
-    DataResult<NetworkPath> networkPathQuery(String cypher) throws BioNetDBException;
+//    NetworkPathIterator networkPathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException;
+//    NetworkPathIterator networkPathIterator(String cypher) throws BioNetDBException;
+//
+//    DataResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+//    DataResult<NetworkPath> networkPathQuery(String cypher) throws BioNetDBException;
 
     //-------------------------------------------------------------------------
     // N E T W O R K S
     //-------------------------------------------------------------------------
 
-    DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions) throws BioNetDBException;
-    DataResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
-    DataResult<Network> networkQuery(String cypher) throws BioNetDBException;
+//    DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions) throws BioNetDBException;
+//    DataResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
+//    DataResult<Network> networkQuery(String cypher) throws BioNetDBException;
 
     //========================================================================
     // V A R I A N T
     //========================================================================
 
-    VariantIterator variantIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
-    VariantIterator variantIterator(String cypher) throws BioNetDBException;
-
-    DataResult<Variant> variantQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
-    DataResult<Variant> variantQuery(String cypher) throws BioNetDBException;
+//    VariantIterator variantIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
+//    VariantIterator variantIterator(String cypher) throws BioNetDBException;
+//
+//    DataResult<Variant> variantQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+//    DataResult<Variant> variantQuery(String cypher) throws BioNetDBException;
 
     //========================================================================
     // I N T E R P R E T A T I O N     A N A L Y S I S
     //========================================================================
 
-    DataResult<Variant> proteinNetworkInterpretationAnalysis(boolean complexOrReaction, Query query) throws BioNetDBException;
+//    DataResult<Variant> proteinNetworkInterpretationAnalysis(boolean complexOrReaction, Query query) throws BioNetDBException;
 }

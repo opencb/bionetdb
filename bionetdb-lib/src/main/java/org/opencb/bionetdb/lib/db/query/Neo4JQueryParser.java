@@ -3,7 +3,6 @@ package org.opencb.bionetdb.lib.db.query;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.lib.api.query.NetworkPathQuery;
 import org.opencb.bionetdb.lib.api.query.NodeQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -73,7 +72,7 @@ public class Neo4JQueryParser {
 
         // Where clauses, parse attributes and relationships
         StringBuilder where = new StringBuilder();
-        List<String> filters = getAttributeFilters(nameNode, query, options);
+        List<String> filters = getFilters(nameNode, query);
         if (filters.size() > 0) {
             where.append(" WHERE ").append(StringUtils.join(filters, " AND "));
         }
@@ -108,104 +107,131 @@ public class Neo4JQueryParser {
         return cypher.toString();
     }
 
-    public static String parsePath(NetworkPathQuery query, QueryOptions options) throws BioNetDBException {
-        if (query.getSrcNodeQuery() == null || query.getDestNodeQuery() == null) {
-            throw new BioNetDBException("Invalid path query: it is madatory to include source and destination nodes");
-        }
-
-        StringBuilder match = new StringBuilder();
-        String srcNodeName = "n1";
-        String destNodeName = "n2";
-        NodeQuery srcQuery = query.getSrcNodeQuery();
-        NodeQuery destQuery = query.getDestNodeQuery();
-
-        // Max jumps
-        int maxJumps = query.getInt(NetworkDBAdaptor.NetworkQueryParams.MAX_JUMPS.key(), 2);
-
-        // Match clause
-        match.append("MATCH path=(").append(srcNodeName);
-        if (srcQuery.getType() != null) {
-            match.append(":").append(srcQuery.getType().name());
-        }
-        match.append(")-[*..").append(maxJumps).append("]-(").append(destNodeName);
-        if (destQuery.getType() != null) {
-            match.append(":").append(destQuery.getType().name());
-        }
-        match.append(")");
-
-        // Where clauses, parse attributes
-        StringBuilder where = new StringBuilder();
-        List<String> filters = getAttributeFilters(srcNodeName, query.getSrcNodeQuery(), options);
-        filters.addAll(getAttributeFilters(destNodeName, query.getDestNodeQuery(), options));
-        if (filters.size() > 0) {
-            where.append(" WHERE ").append(StringUtils.join(filters, " AND "));
-        }
-
-        // Build the complete Cypher statement
-        StringBuilder cypher = new StringBuilder();
-        cypher.append(match).append(where).append(" RETURN path");
-
-        return cypher.toString();
-    }
-
-    public static String parseNodesForNetwork(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
-        List<NetworkPathQuery> pathQueries = new ArrayList<>();
-        int size = nodeQueries.size();
-        for (int i = 0; i < size; i++) {
-            for (int j = i + 1; j < size; j++) {
-                NetworkPathQuery networkPathQuery = new NetworkPathQuery(nodeQueries.get(i), nodeQueries.get(j));
-                pathQueries.add(networkPathQuery);
-            }
-        }
-
-        return parsePathsForNetwork(pathQueries, options);
-    }
-
-    public static String parsePathsForNetwork(List<NetworkPathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
-        StringBuilder cypher = new StringBuilder();
-        if (ListUtils.isNotEmpty(pathQueries)) {
-            cypher.append(parsePath(pathQueries.get(0), options));
-            for (int i = 1; i < pathQueries.size(); i++) {
-                cypher.append(" UNION ").append(parsePath(pathQueries.get(i), options));
-            }
-        }
-        return cypher.toString();
-    }
+//    public static String parsePath(NetworkPathQuery query, QueryOptions options) throws BioNetDBException {
+//        if (query.getSrcNodeQuery() == null || query.getDestNodeQuery() == null) {
+//            throw new BioNetDBException("Invalid path query: it is madatory to include source and destination nodes");
+//        }
+//
+//        StringBuilder match = new StringBuilder();
+//        String srcNodeName = "n1";
+//        String destNodeName = "n2";
+//        NodeQuery srcQuery = query.getSrcNodeQuery();
+//        NodeQuery destQuery = query.getDestNodeQuery();
+//
+//        // Max jumps
+//        int maxJumps = query.getInt(NetworkDBAdaptor.NetworkQueryParams.MAX_JUMPS.key(), 2);
+//
+//        // Match clause
+//        match.append("MATCH path=(").append(srcNodeName);
+//        if (srcQuery.getType() != null) {
+//            match.append(":").append(srcQuery.getType().name());
+//        }
+//        match.append(")-[*..").append(maxJumps).append("]-(").append(destNodeName);
+//        if (destQuery.getType() != null) {
+//            match.append(":").append(destQuery.getType().name());
+//        }
+//        match.append(")");
+//
+//        // Where clauses, parse attributes
+//        StringBuilder where = new StringBuilder();
+//        List<String> filters = getFilters(srcNodeName, query.getSrcNodeQuery(), options);
+//        filters.addAll(getFilters(destNodeName, query.getDestNodeQuery(), options));
+//        if (filters.size() > 0) {
+//            where.append(" WHERE ").append(StringUtils.join(filters, " AND "));
+//        }
+//
+//        // Build the complete Cypher statement
+//        StringBuilder cypher = new StringBuilder();
+//        cypher.append(match).append(where).append(" RETURN path");
+//
+//        return cypher.toString();
+//    }
+//
+//    public static String parseNodesForNetwork(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
+//        List<NetworkPathQuery> pathQueries = new ArrayList<>();
+//        int size = nodeQueries.size();
+//        for (int i = 0; i < size; i++) {
+//            for (int j = i + 1; j < size; j++) {
+//                NetworkPathQuery networkPathQuery = new NetworkPathQuery(nodeQueries.get(i), nodeQueries.get(j));
+//                pathQueries.add(networkPathQuery);
+//            }
+//        }
+//
+//        return parsePathsForNetwork(pathQueries, options);
+//    }
+//
+//    public static String parsePathsForNetwork(List<NetworkPathQuery> pathQueries, QueryOptions options) throws BioNetDBException {
+//        StringBuilder cypher = new StringBuilder();
+//        if (ListUtils.isNotEmpty(pathQueries)) {
+//            cypher.append(parsePath(pathQueries.get(0), options));
+//            for (int i = 1; i < pathQueries.size(); i++) {
+//                cypher.append(" UNION ").append(parsePath(pathQueries.get(i), options));
+//            }
+//        }
+//        return cypher.toString();
+//    }
 
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
 
-    private static List<String> getAttributeFilters(String nodeName, Query query, QueryOptions options) {
-        // Get pseudo-attributes for the target node
-        Set<String> skip;
-//        if (query.getType() == Node.Type.GENE) {
-//            skip = GENE_PSEUDO_ATTRS;
-//        } else if (query.getType() == Node.Type.VARIANT) {
-//            skip = VARIANT_PSEUDO_ATTRS;
-//        } else {
-        skip = new HashSet<>();
-//        }
-
+    private static List<String> getFilters(String nodeName, Query query) {
         // Only process the non pseudo-attributes
         List<String> filters = new ArrayList<>();
-        for (String key : query.keySet()) {
-            if (skip.contains(key)) {
-                continue;
+
+        addFilters("uid", nodeName, query, filters);
+        addFilters("id", nodeName, query, filters);
+        addFilters("name", nodeName, query, filters);
+        addFilters("label", nodeName, query, filters);
+        addFilters("source", nodeName, query, filters);
+        addFilters("attribute", nodeName, query, filters);
+
+        return filters;
+    }
+
+    private static void addFilters(String key, String nodeName, Query query, List<String> filters) {
+        if (query.containsKey(key)) {
+            String[] values = query.getString(key).split(",");
+
+            StringBuilder filter = new StringBuilder("(");
+            switch (key) {
+                case "uid":
+                    filter.append(nodeName).append(".").append(key).append("=").append(values[0]);
+                    break;
+                case "label":
+                    filter.append(nodeName).append(":").append(values[0]);
+                    break;
+                case "attribute":
+                    String[] fields = values[0].split("=");
+                    filter.append(nodeName).append(".").append("attr_").append(fields[0]).append("=\"").append(fields[1]).append("\"");
+                    break;
+                default:
+                    filter.append(nodeName).append(".").append(key).append("=\"").append(values[0]).append("\"");
+                    break;
             }
-            StringBuilder filter = new StringBuilder(nodeName).append(".").append(key);
-            String value = query.getString(key);
-            if (value.startsWith("=") || value.startsWith(">") || value.startsWith("<") || value.startsWith("!")) {
-                filter.append(query.get(key));
-            } else if (query.get(key) instanceof String) {
-                filter.append("=\"").append(query.get(key)).append("\"");
-            } else {
-                filter.append("=").append(query.get(key));
+            for (int i = 1; i < values.length; i++) {
+                filter.append(" OR ");
+                switch (key) {
+                    case "uid":
+                        filter.append(nodeName).append(".").append(key).append("=").append(values[i]);
+                        break;
+                    case "label":
+                        filter.append(nodeName).append(":").append(values[0]);
+                        break;
+                    case "attribute":
+                        String[] fields = values[i].split("=");
+                        filter.append(nodeName).append(".").append("attr_").append(fields[0]).append("=\"").append(fields[1]).append("\"");
+                        break;
+                    default:
+                        filter.append(nodeName).append(".").append(key).append("=\"").append(values[i]).append("\"");
+                        break;
+                }
             }
+            filter.append(")");
+
             filters.add(filter.toString());
         }
-        return filters;
     }
 
     private static String parseGeneNode(NodeQuery query, QueryOptions options) {

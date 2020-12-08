@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.lib.analysis;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -13,10 +12,11 @@ import org.opencb.bionetdb.lib.api.query.VariantQueryParam;
 import org.opencb.bionetdb.lib.utils.NodeBuilder;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance.COMPLETE;
 
@@ -31,7 +31,8 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         Map<String, List<String>> genotypes = ModeOfInheritance.dominant(pedigree, disorder, COMPLETE);
         putGenotypes(query, genotypes);
 
-        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+        return null;
+//        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
     public DataResult<Variant> getRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query)
@@ -39,7 +40,8 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         Map<String, List<String>> genotypes = ModeOfInheritance.recessive(pedigree, disorder, COMPLETE);
         putGenotypes(query, genotypes);
 
-        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+        return null;
+//        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
     public DataResult<Variant> getXLinkedDominantVariants(Pedigree pedigree, Disorder disorder, Query query)
@@ -48,7 +50,8 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         query.put(VariantQueryParam.CHROMOSOME.key(), "X");
         putGenotypes(query, genotypes);
 
-        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+        return null;
+//        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
     public DataResult<Variant> getXLinkedRecessiveVariants(Pedigree pedigree, Disorder disorder, Query query)
@@ -57,7 +60,8 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         query.put(VariantQueryParam.CHROMOSOME.key(), "X");
         putGenotypes(query, genotypes);
 
-        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+        return null;
+//        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
     public DataResult<Variant> getYLinkedVariants(Pedigree pedigree, Disorder disorder, Query query) throws BioNetDBException {
@@ -65,7 +69,8 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         query.put(VariantQueryParam.CHROMOSOME.key(), "Y");
         putGenotypes(query, genotypes);
 
-        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+        return null;
+//        return networkDBAdaptor.variantQuery(query, QueryOptions.empty());
     }
 
     public DataResult<Variant> getDeNovoVariants(Pedigree pedigree, Query query) throws BioNetDBException, IOException {
@@ -74,25 +79,26 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         query.put(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
 
         // Get variants and genotypes
-        DataResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
-        List<Variant> variants = variantQueryResult.getResults();
-
-        int dbTime = 0;
-        if (CollectionUtils.isEmpty(variants)) {
-            return new DataResult<>(dbTime, new ArrayList<>(), 0, Collections.emptyList(), 0);
-        } else {
-            List<String> sampleNames = Arrays.asList(variants.get(0).getAnnotation().getAdditionalAttributes()
-                    .get("samples").getAttribute().get(NodeBuilder.SAMPLE).split(","));
-
-            // Filter deNovo variants
-            int probandSampleIdx = sampleNames.indexOf(pedigree.getProband().getId());
-            int motherSampleIdx = sampleNames.indexOf(pedigree.getProband().getMother().getId());
-            int fatherSampleIdx = sampleNames.indexOf(pedigree.getProband().getFather().getId());
-            List<Variant> deNovoVariants = ModeOfInheritance.deNovo(variants.iterator(), probandSampleIdx, motherSampleIdx,
-                    fatherSampleIdx);
-
-            return new DataResult<>(dbTime, Collections.emptyList(), deNovoVariants.size(), deNovoVariants, deNovoVariants.size());
-        }
+        return null;
+//        DataResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+//        List<Variant> variants = variantQueryResult.getResults();
+//
+//        int dbTime = 0;
+//        if (CollectionUtils.isEmpty(variants)) {
+//            return new DataResult<>(dbTime, new ArrayList<>(), 0, Collections.emptyList(), 0);
+//        } else {
+//            List<String> sampleNames = Arrays.asList(variants.get(0).getAnnotation().getAdditionalAttributes()
+//                    .get("samples").getAttribute().get(NodeBuilder.SAMPLE).split(","));
+//
+//            // Filter deNovo variants
+//            int probandSampleIdx = sampleNames.indexOf(pedigree.getProband().getId());
+//            int motherSampleIdx = sampleNames.indexOf(pedigree.getProband().getMother().getId());
+//            int fatherSampleIdx = sampleNames.indexOf(pedigree.getProband().getFather().getId());
+//            List<Variant> deNovoVariants = ModeOfInheritance.deNovo(variants.iterator(), probandSampleIdx, motherSampleIdx,
+//                    fatherSampleIdx);
+//
+//            return new DataResult<>(dbTime, Collections.emptyList(), deNovoVariants.size(), deNovoVariants, deNovoVariants.size());
+//        }
     }
 
     public DataResult<Map<String, List<Variant>>> getCompoundHeterozygousVariants(Pedigree pedigree, Query query)
@@ -104,27 +110,29 @@ public class VariantAnalysis extends BioNetDBAnalysis {
         query.put(VariantQueryParam.INCLUDE_CONSEQUENCE_TYPE.key(), true);
 
         // Get variants and genotypes
-        DataResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
-        List<Variant> variants = variantQueryResult.getResults();
-
-        int dbTime = 0;
-        if (CollectionUtils.isEmpty(variants)) {
-            return new DataResult<>(dbTime, Collections.emptyList(), 0, Collections.emptyList(), 0);
-        } else {
-
-            List<String> sampleNames = Arrays.asList(variants.get(0).getAnnotation().getAdditionalAttributes().get("samples").getAttribute()
-                    .get(NodeBuilder.SAMPLE).split(","));
-
-            // Filter deNovo variants
-            int probandSampleIdx = sampleNames.indexOf(pedigree.getProband().getId());
-            int motherSampleIdx = sampleNames.indexOf(pedigree.getProband().getMother().getId());
-            int fatherSampleIdx = sampleNames.indexOf(pedigree.getProband().getFather().getId());
-            Map<String, List<Variant>> chVariants = ModeOfInheritance.compoundHeterozygous(variants.iterator(), probandSampleIdx,
-                    motherSampleIdx, fatherSampleIdx);
-
-            return new DataResult<>(dbTime, Collections.emptyList(), chVariants.size(), Collections.singletonList(chVariants),
-                    chVariants.size());
-        }
+        return null;
+//        DataResult<Variant> variantQueryResult = networkDBAdaptor.variantQuery(query, QueryOptions.empty());
+//        List<Variant> variants = variantQueryResult.getResults();
+//
+//        int dbTime = 0;
+//        if (CollectionUtils.isEmpty(variants)) {
+//            return new DataResult<>(dbTime, Collections.emptyList(), 0, Collections.emptyList(), 0);
+//        } else {
+//
+//            List<String> sampleNames = Arrays.asList(variants.get(0).getAnnotation().getAdditionalAttributes().get("samples")
+// .getAttribute()
+//                    .get(NodeBuilder.SAMPLE).split(","));
+//
+//            // Filter deNovo variants
+//            int probandSampleIdx = sampleNames.indexOf(pedigree.getProband().getId());
+//            int motherSampleIdx = sampleNames.indexOf(pedigree.getProband().getMother().getId());
+//            int fatherSampleIdx = sampleNames.indexOf(pedigree.getProband().getFather().getId());
+//            Map<String, List<Variant>> chVariants = ModeOfInheritance.compoundHeterozygous(variants.iterator(), probandSampleIdx,
+//                    motherSampleIdx, fatherSampleIdx);
+//
+//            return new DataResult<>(dbTime, Collections.emptyList(), chVariants.size(), Collections.singletonList(chVariants),
+//                    chVariants.size());
+//        }
     }
 
     //------------------------------------------------------------------

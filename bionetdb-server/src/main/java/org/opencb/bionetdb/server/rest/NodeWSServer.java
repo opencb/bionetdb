@@ -21,7 +21,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by imedina on 06/10/15.
@@ -39,23 +38,47 @@ public class NodeWSServer extends GenericRestWSServer {
     @GET
     @Path("/query")
     @ApiOperation(httpMethod = "GET", value = "Query nodes")
-    public Response getNodes(@ApiParam(value = "Comma-separated list of IDs") @QueryParam("id") String id,
-                             @ApiParam(value = "Comma-separated list of node labels") @QueryParam("label") String label
+    public Response getNodes(@ApiParam(value = "Comma-separated list of node UIDs.") @QueryParam("uid") String uid,
+                             @ApiParam(value = "Comma-separated list of node IDs. E.g.: ENSG00000279457") @QueryParam("id") String id,
+                             @ApiParam(value = "Comma-separated list of node names. E.g.: AL627309.4,WASH7P") @QueryParam("name")
+                                         String name,
+                             @ApiParam(value = "Comma-separated list of node labels. E.g.: GENE,DRUG") @QueryParam("label") String label,
+                             @ApiParam(value = "Comma-separated list of node sources. E.g.: ensembl") @QueryParam("source") String source,
+                             @ApiParam(value = "Comma-separated list of node attributes. E.g.: start=11869,biotype=unprocessed_pseudogene")
+                                 @QueryParam("attribute") String attribute,
+                             @ApiParam(value = "Number of nodes to return.", defaultValue = "25") @QueryParam(QueryOptions.LIMIT) int limit
     ) {
         try {
             Query query = new Query();
+            if (StringUtils.isNotEmpty(uid)) {
+                query.put("uid", Arrays.asList(uid.split(",")));
+            }
+
             if (StringUtils.isNotEmpty(id)) {
-                List<String> ids = Arrays.asList(id.split(","));
-                query.put("id", ids);
+                query.put("id", Arrays.asList(id.split(",")));
+            }
+
+            if (StringUtils.isNotEmpty(name)) {
+                query.put("name", Arrays.asList(name.split(",")));
             }
 
             if (StringUtils.isNotEmpty(label)) {
-                List<String> labels = Arrays.asList(id.split(","));
-                query.put("label", labels);
+                query.put("label", Arrays.asList(label.split(",")));
             }
 
+            if (StringUtils.isNotEmpty(source)) {
+                query.put("source", Arrays.asList(source.split(",")));
+            }
+
+            if (StringUtils.isNotEmpty(attribute)) {
+                query.put("attribute", Arrays.asList(attribute.split(",")));
+            }
+
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.put(QueryOptions.LIMIT, limit);
+
             BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
-            DataResult result = bioNetDbManager.getNodeQueryExecutor().query(query, QueryOptions.empty());
+            DataResult result = bioNetDbManager.getNodeQueryExecutor().query(query, queryOptions);
 
             return createOkResponse(result);
         } catch (Exception e) {

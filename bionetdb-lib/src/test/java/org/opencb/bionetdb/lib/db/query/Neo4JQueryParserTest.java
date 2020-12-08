@@ -31,8 +31,8 @@ public class Neo4JQueryParserTest {
         NodeQuery destQuery = new NodeQuery(Node.Type.SMALL_MOLECULE);
         //query.put("name", "RDH11");
         NetworkPathQuery networkPathQuery = new NetworkPathQuery(srcQuery, destQuery, null);
-        String cypher = parser.parsePath(networkPathQuery, QueryOptions.empty());
-        System.out.println(cypher);
+//        String cypher = parser.parsePath(networkPathQuery, QueryOptions.empty());
+//        System.out.println(cypher);
     }
 
     @Test
@@ -42,8 +42,8 @@ public class Neo4JQueryParserTest {
         nodeQueries.add(new NodeQuery(Node.Type.PROTEIN));
         nodeQueries.add(new NodeQuery(Node.Type.SMALL_MOLECULE));
         nodeQueries.add(new NodeQuery(Node.Type.COMPLEX));
-        String cypher = parser.parseNodesForNetwork(nodeQueries, QueryOptions.empty());
-        System.out.println(cypher);
+//        String cypher = parser.parseNodesForNetwork(nodeQueries, QueryOptions.empty());
+//        System.out.println(cypher);
     }
 
     @Test
@@ -53,8 +53,8 @@ public class Neo4JQueryParserTest {
 
         pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Type.PROTEIN), new NodeQuery(Node.Type.CATALYSIS), null));
         pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Type.COMPLEX), new NodeQuery(Node.Type.SMALL_MOLECULE), null));
-        String cypher = parser.parsePathsForNetwork(pathQueries, QueryOptions.empty());
-        System.out.println(cypher);
+//        String cypher = parser.parsePathsForNetwork(pathQueries, QueryOptions.empty());
+//        System.out.println(cypher);
     }
 
 

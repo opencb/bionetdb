@@ -60,6 +60,7 @@ public class ProteinNetworkInterpretationAnalysis {
         }
         query.put(VariantQueryParam.GENOTYPE.key(), gt);
 
-        return networkDBAdaptor.proteinNetworkInterpretationAnalysis(complexOrReaction, query);
+        return null;
+//        return networkDBAdaptor.proteinNetworkInterpretationAnalysis(complexOrReaction, query);
     }
 }

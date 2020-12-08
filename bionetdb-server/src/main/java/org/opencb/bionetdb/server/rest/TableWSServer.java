@@ -2,9 +2,7 @@ package org.opencb.bionetdb.server.rest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.apache.commons.lang.StringUtils;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.lib.api.iterators.RowIterator;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -41,13 +39,13 @@ public class TableWSServer extends GenericRestWSServer {
             logger.info(cypher);
 
             NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(bioNetDBConfiguration);
-            RowIterator rowIterator = networkDBAdaptor.rowIterator(cypher);
             List<List<Object>> rows = new ArrayList<>();
-            while (rowIterator.hasNext()) {
-                List<Object> row = rowIterator.next();
-                logger.info(StringUtils.join(row, ","));
-                rows.add(row);
-            }
+//            RowIterator rowIterator = networkDBAdaptor.rowIterator(cypher);
+//            while (rowIterator.hasNext()) {
+//                List<Object> row = rowIterator.next();
+//                logger.info(StringUtils.join(row, ","));
+//                rows.add(row);
+//            }
             QueryResult<List<Object>> queryResult = new QueryResult<>(null, 0, rows.size(), rows.size(), null, null, rows);
             networkDBAdaptor.close();
             return createOkResponse(queryResult);

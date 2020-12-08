@@ -4,7 +4,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.server.exception.VersionException;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -41,12 +40,12 @@ public class PathWSServer extends GenericRestWSServer {
             logger.info(cypher);
 
             NetworkDBAdaptor networkDBAdaptor = new Neo4JNetworkDBAdaptor(bioNetDBConfiguration);
-            NetworkPathIterator iterator = networkDBAdaptor.networkPathIterator(cypher);
             List<NetworkPath> networkPaths = new ArrayList<>();
-            while (iterator.hasNext()) {
-                NetworkPath networkPath = iterator.next();
-                networkPaths.add(networkPath);
-            }
+//            NetworkPathIterator iterator = networkDBAdaptor.networkPathIterator(cypher);
+//            while (iterator.hasNext()) {
+//                NetworkPath networkPath = iterator.next();
+//                networkPaths.add(networkPath);
+//            }
             QueryResult<NetworkPath> queryResult = new QueryResult<>(null, 0, networkPaths.size(), networkPaths.size(),
                     null, null, networkPaths);
             networkDBAdaptor.close();
