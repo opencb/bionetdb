@@ -114,4 +114,31 @@ public class NodeWSServer extends GenericRestWSServer {
             return createErrorResponse(e);
         }
     }
+
+    @GET
+    @Path("/stats")
+    @ApiOperation(httpMethod = "GET", value = "Nodes stats")
+    public Response stats(@ApiParam(value = "Comma-separated list of node sources. E.g.: ensembl") @QueryParam("source") String source,
+                             @ApiParam(value = "Comma-separated list of node attributes. E.g.: start=11869,biotype=unprocessed_pseudogene")
+                             @QueryParam("attribute") String attribute
+    ) {
+        try {
+            Query query = new Query();
+
+            if (StringUtils.isNotEmpty(source)) {
+                query.put("source", Arrays.asList(source.split(",")));
+            }
+
+            if (StringUtils.isNotEmpty(attribute)) {
+                query.put("attribute", Arrays.asList(attribute.split(",")));
+            }
+
+            BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
+            DataResult result = bioNetDbManager.getNodeQueryExecutor().stats(query);
+
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 }

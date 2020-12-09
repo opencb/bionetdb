@@ -107,6 +107,20 @@ public class Neo4JQueryParser {
         return cypher.toString();
     }
 
+    public static List<String> getFilters(String nodeName, Query query) {
+        // Only process the non pseudo-attributes
+        List<String> filters = new ArrayList<>();
+
+        addFilters("uid", nodeName, query, filters);
+        addFilters("id", nodeName, query, filters);
+        addFilters("name", nodeName, query, filters);
+        addFilters("label", nodeName, query, filters);
+        addFilters("source", nodeName, query, filters);
+        addFilters("attribute", nodeName, query, filters);
+
+        return filters;
+    }
+
 //    public static String parsePath(NetworkPathQuery query, QueryOptions options) throws BioNetDBException {
 //        if (query.getSrcNodeQuery() == null || query.getDestNodeQuery() == null) {
 //            throw new BioNetDBException("Invalid path query: it is madatory to include source and destination nodes");
@@ -174,21 +188,6 @@ public class Neo4JQueryParser {
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
-
-
-    private static List<String> getFilters(String nodeName, Query query) {
-        // Only process the non pseudo-attributes
-        List<String> filters = new ArrayList<>();
-
-        addFilters("uid", nodeName, query, filters);
-        addFilters("id", nodeName, query, filters);
-        addFilters("name", nodeName, query, filters);
-        addFilters("label", nodeName, query, filters);
-        addFilters("source", nodeName, query, filters);
-        addFilters("attribute", nodeName, query, filters);
-
-        return filters;
-    }
 
     private static void addFilters(String key, String nodeName, Query query, List<String> filters) {
         if (query.containsKey(key)) {

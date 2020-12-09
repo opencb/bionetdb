@@ -9,6 +9,7 @@ import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.models.network.NodeStats;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.core.response.BioNetDBResult;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
@@ -324,6 +325,44 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         BioNetDBResult<Node> queryResult = new BioNetDBResult<>(dbTime, new ArrayList<>(), nodes.size(), nodes, nodes.size());
         return queryResult;
     }
+
+    @Override
+    public BioNetDBResult<NodeStats> nodeStats(Query query) {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Session session = this.driver.session();
+
+        StringBuilder where = new StringBuilder();
+        List<String> filters = Neo4JQueryParser.getFilters("n", query);
+        if (filters.size() > 0) {
+            where.append(" where ").append(StringUtils.join(filters, " and"));
+        }
+        String cypher = "match (n)" + where.toString() + " with distinct labels(n) as label, count(labels(n)) as cnt return label, cnt";
+        System.out.println("Cypher query: " + cypher);
+        Result result = session.run(cypher);
+
+        long total = 0;
+        Map<String, Long> count = new HashMap<>();
+
+        while (result.hasNext()) {
+            Record record = result.next();
+            List<Object> items = record.get(0).asList();
+            long cnt = record.get(1).asLong();
+            for (Object item: items) {
+                String label = (String) item;
+                if (!count.containsKey(label)) {
+                    count.put(label, 0L);
+                }
+                count.put(label, count.get(label) + cnt);
+            }
+            total += cnt;
+        }
+
+        NodeStats stats = new NodeStats(total, count);
+        int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+        return new BioNetDBResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(stats), 1);
+    }
+
     //-------------------------------------------------------------------------
     // T A B L E     Q U E R I E S
     //-------------------------------------------------------------------------

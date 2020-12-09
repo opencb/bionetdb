@@ -2,6 +2,7 @@ package org.opencb.bionetdb.lib.executors;
 
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Node;
+import org.opencb.bionetdb.core.models.network.NodeStats;
 import org.opencb.bionetdb.core.response.BioNetDBResult;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
@@ -40,12 +41,20 @@ public class NodeQueryExecutor {
 
     public BioNetDBResult<Node> query(Query query, QueryOptions queryOptions) throws BioNetDBException {
         NodeIterator nodeIterator = iterator(query, queryOptions);
-        return getQueryResult(nodeIterator);
+        return getNodeQueryResult(nodeIterator);
     }
 
     public BioNetDBResult<Node> query(String cypher) throws BioNetDBException {
         NodeIterator nodeIterator = iterator(cypher);
-        return getQueryResult(nodeIterator);
+        return getNodeQueryResult(nodeIterator);
+    }
+
+    public BioNetDBResult<NodeStats> stats() {
+        return stats(new Query());
+    }
+
+    public BioNetDBResult<NodeStats> stats(Query query) {
+        return networkDBAdaptor.nodeStats(query);
     }
 
     public NodeIterator iterator(Query query, QueryOptions queryOptions) throws BioNetDBException {
@@ -60,7 +69,7 @@ public class NodeQueryExecutor {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private BioNetDBResult<Node> getQueryResult(NodeIterator nodeIterator) {
+    private BioNetDBResult<Node> getNodeQueryResult(NodeIterator nodeIterator) {
         List<Node> nodes = new ArrayList<>();
 
         long startTime = System.currentTimeMillis();
