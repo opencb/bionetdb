@@ -7,13 +7,12 @@ import org.neo4j.driver.*;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.config.DatabaseConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.network.Network;
-import org.opencb.bionetdb.core.models.network.Node;
-import org.opencb.bionetdb.core.models.network.NodeStats;
-import org.opencb.bionetdb.core.models.network.Relation;
+import org.opencb.bionetdb.core.models.network.*;
 import org.opencb.bionetdb.core.response.BioNetDBResult;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
+import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
+import org.opencb.bionetdb.lib.db.iterators.Neo4JNetworkPathIterator;
 import org.opencb.bionetdb.lib.db.iterators.Neo4JNodeIterator;
 import org.opencb.bionetdb.lib.db.query.Neo4JQueryParser;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -292,7 +291,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     //-------------------------------------------------------------------------
 
     @Override
-    public NodeIterator nodeIterator(Query query, QueryOptions queryOptions) throws BioNetDBException {
+    public NodeIterator nodeIterator(Query query, QueryOptions queryOptions) {
         String cypher = Neo4JQueryParser.parseNodeQuery(query, queryOptions);
         return nodeIterator(cypher);
     }
@@ -305,7 +304,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     @Override
-    public BioNetDBResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+    public BioNetDBResult<Node> nodeQuery(Query query, QueryOptions queryOptions) {
         String cypher = Neo4JQueryParser.parseNodeQuery(query, queryOptions);
         return nodeQuery(cypher);
     }
@@ -395,30 +394,41 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     // P A T H     Q U E R I E S
     //-------------------------------------------------------------------------
 
-//    @Override
-//    public NetworkPathIterator networkPathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions)
-//            throws BioNetDBException {
-//
-//        String cypher = Neo4JQueryParser.parsePath(networkPathQuery, queryOptions);
-//        return networkPathIterator(cypher);
-//    }
-//
-//    @Override
-//    public NetworkPathIterator networkPathIterator(String cypher) throws BioNetDBException {
-//        Session session = this.driver.session();
-////        System.out.println("Cypher query: " + cypher);
-//        return new Neo4JNetworkPathIterator(session.run(cypher));
-//    }
-//
-//    @Override
-//    public DataResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
-//        return null;
-//    }
-//
-//    @Override
-//    public DataResult<NetworkPath> networkPathQuery(String cypher) throws BioNetDBException {
-//        return null;
-//    }
+    @Override
+    public NetworkPathIterator networkPathIterator(Query networkPathQuery, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parseNetworkPathQuery(networkPathQuery, queryOptions);
+        return networkPathIterator(cypher);
+    }
+
+    @Override
+    public NetworkPathIterator networkPathIterator(String cypher) {
+        Session session = this.driver.session();
+        System.out.println("Cypher query: " + cypher);
+        return new Neo4JNetworkPathIterator(session.run(cypher));
+    }
+
+    @Override
+    public BioNetDBResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException {
+        String cypher = Neo4JQueryParser.parseNetworkPathQuery(query, queryOptions);
+        return networkPathQuery(cypher);
+    }
+
+    @Override
+    public BioNetDBResult<NetworkPath> networkPathQuery(String cypher) {
+        // Query for nodes using the node iterator
+        StopWatch stopWatch = StopWatch.createStarted();
+        NetworkPathIterator pathIterator = networkPathIterator(cypher);
+        List<NetworkPath> networkPaths = new ArrayList<>();
+        while (pathIterator.hasNext()) {
+            networkPaths.add(pathIterator.next());
+        }
+        int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+        // Create QueryResult and return
+        BioNetDBResult<NetworkPath> queryResult = new BioNetDBResult<>(dbTime, new ArrayList<>(), networkPaths.size(), networkPaths,
+                networkPaths.size());
+        return queryResult;
+    }
 
     //-------------------------------------------------------------------------
     // N E T W O R K     Q U E R I E S

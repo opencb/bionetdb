@@ -1,9 +1,9 @@
 package org.opencb.bionetdb.lib.db.query;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
-import org.opencb.bionetdb.lib.api.query.NodeQuery;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
@@ -108,7 +108,6 @@ public class Neo4JQueryParser {
     }
 
     public static List<String> getFilters(String nodeName, Query query) {
-        // Only process the non pseudo-attributes
         List<String> filters = new ArrayList<>();
 
         addFilters("uid", nodeName, query, filters);
@@ -121,45 +120,43 @@ public class Neo4JQueryParser {
         return filters;
     }
 
-//    public static String parsePath(NetworkPathQuery query, QueryOptions options) throws BioNetDBException {
-//        if (query.getSrcNodeQuery() == null || query.getDestNodeQuery() == null) {
-//            throw new BioNetDBException("Invalid path query: it is madatory to include source and destination nodes");
-//        }
-//
-//        StringBuilder match = new StringBuilder();
-//        String srcNodeName = "n1";
-//        String destNodeName = "n2";
-//        NodeQuery srcQuery = query.getSrcNodeQuery();
-//        NodeQuery destQuery = query.getDestNodeQuery();
-//
-//        // Max jumps
-//        int maxJumps = query.getInt(NetworkDBAdaptor.NetworkQueryParams.MAX_JUMPS.key(), 2);
-//
-//        // Match clause
-//        match.append("MATCH path=(").append(srcNodeName);
-//        if (srcQuery.getType() != null) {
-//            match.append(":").append(srcQuery.getType().name());
-//        }
-//        match.append(")-[*..").append(maxJumps).append("]-(").append(destNodeName);
-//        if (destQuery.getType() != null) {
-//            match.append(":").append(destQuery.getType().name());
-//        }
-//        match.append(")");
-//
-//        // Where clauses, parse attributes
-//        StringBuilder where = new StringBuilder();
-//        List<String> filters = getFilters(srcNodeName, query.getSrcNodeQuery(), options);
-//        filters.addAll(getFilters(destNodeName, query.getDestNodeQuery(), options));
-//        if (filters.size() > 0) {
-//            where.append(" WHERE ").append(StringUtils.join(filters, " AND "));
-//        }
-//
-//        // Build the complete Cypher statement
-//        StringBuilder cypher = new StringBuilder();
-//        cypher.append(match).append(where).append(" RETURN path");
-//
-//        return cypher.toString();
-//    }
+    public static String parseNetworkPathQuery(Query query, QueryOptions options) throws BioNetDBException {
+        String origNodeName = "n1";
+        String destNodeName = "n2";
+        String origLabel = query.containsKey("origin_label") ? query.getString("origin_label") : "";
+        String destLabel = query.containsKey("destination_label") ? query.getString("destination_label") : "";
+
+        // Max. num. hops
+        int maxHops = query.getInt("maxNumHops", 3);
+
+        // Match clause
+        StringBuilder match = new StringBuilder();
+        match.append("MATCH path=");
+        match.append("(").append(origNodeName).append(":").append(origLabel).append(")");
+        match.append("-[*..").append(maxHops).append("]-");
+        match.append("(").append(destNodeName).append(":").append(destLabel).append(")");
+
+        // Where clauses, parse attributes
+        List<String> filters = new ArrayList<>();
+        if (query.containsKey("origin_filters")) {
+            filters.addAll(getFilters(origNodeName, buildQuery(query.getList("origin_filters"))));
+        }
+
+        if (query.containsKey("destination_filters")) {
+            filters.addAll(getFilters(destNodeName, buildQuery(query.getList("destination_filters"))));
+        }
+
+        StringBuilder where = new StringBuilder();
+        if (CollectionUtils.isNotEmpty(filters)) {
+            where.append(" WHERE ").append(StringUtils.join(filters, " AND "));
+        }
+
+        // Build the complete Cypher statement
+        StringBuilder cypher = new StringBuilder();
+        cypher.append(match).append(where).append(" RETURN path");
+
+        return cypher.toString();
+    }
 //
 //    public static String parseNodesForNetwork(List<NodeQuery> nodeQueries, QueryOptions options) throws BioNetDBException {
 //        List<NetworkPathQuery> pathQueries = new ArrayList<>();
@@ -233,15 +230,43 @@ public class Neo4JQueryParser {
         }
     }
 
-    private static String parseGeneNode(NodeQuery query, QueryOptions options) {
-        StringBuilder cypher = new StringBuilder();
-        return cypher.toString();
+    private static Query buildQuery(List<Object> filters) {
+        Query query = new Query();
+        for (Object filter: filters) {
+            String[] fields = ((String) filter).split("=");
+            switch (fields[0]) {
+                case "uid":
+                    query.put("uid", fields[1]);
+                    break;
+                case "id":
+                    query.put("id", fields[1]);
+                    break;
+                case "name":
+                    query.put("name", fields[1]);
+                    break;
+                case "label":
+                    query.put("label", fields[1]);
+                    break;
+                case "source":
+                    query.put("source", fields[1]);
+                    break;
+                default:
+                    query.put("attr_" + fields[0], fields[1]);
+                    break;
+            }
+        }
+        return query;
     }
 
-    private static String parseVariantNode(NodeQuery query, QueryOptions options) {
-        StringBuilder cypher = new StringBuilder();
-        return cypher.toString();
-    }
+//    private static String parseGeneNode(NodeQuery query, QueryOptions options) {
+//        StringBuilder cypher = new StringBuilder();
+//        return cypher.toString();
+//    }
+//
+//    private static String parseVariantNode(NodeQuery query, QueryOptions options) {
+//        StringBuilder cypher = new StringBuilder();
+//        return cypher.toString();
+//    }
 
     //-------------------------------------------------------------------------
     //-------------------------------------------------------------------------

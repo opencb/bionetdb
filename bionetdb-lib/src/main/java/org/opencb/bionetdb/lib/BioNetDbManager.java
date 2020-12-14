@@ -19,6 +19,7 @@ import org.opencb.bionetdb.lib.db.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
 import org.opencb.bionetdb.lib.db.Neo4JVariantLoader;
 import org.opencb.bionetdb.lib.executors.NodeQueryExecutor;
+import org.opencb.bionetdb.lib.executors.PathQueryExecutor;
 import org.opencb.bionetdb.lib.utils.Builder;
 import org.opencb.bionetdb.lib.utils.Downloader;
 import org.opencb.bionetdb.lib.utils.Importer;
@@ -132,6 +133,9 @@ public class BioNetDbManager {
         return new NodeQueryExecutor(networkDBAdaptor);
     }
 
+    public PathQueryExecutor getPathQueryExecutor() {
+        return new PathQueryExecutor(networkDBAdaptor);
+    }
 
     //---------------------------------------------
     // A N A L Y S I S

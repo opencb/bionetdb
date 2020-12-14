@@ -2,9 +2,11 @@ package org.opencb.bionetdb.lib.api;
 
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.bionetdb.core.models.network.Network;
+import org.opencb.bionetdb.core.models.network.NetworkPath;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.NodeStats;
 import org.opencb.bionetdb.core.response.BioNetDBResult;
+import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -97,11 +99,11 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     // N O D E S
     //-------------------------------------------------------------------------
 
-    NodeIterator nodeIterator(Query query, QueryOptions queryOptions) throws BioNetDBException;
-    NodeIterator nodeIterator(String cypher) throws BioNetDBException;
+    NodeIterator nodeIterator(Query query, QueryOptions queryOptions);
+    NodeIterator nodeIterator(String cypher);
 
-    BioNetDBResult<Node> nodeQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
-    BioNetDBResult<Node> nodeQuery(String cypher) throws BioNetDBException;
+    BioNetDBResult<Node> nodeQuery(Query query, QueryOptions queryOptions);
+    BioNetDBResult<Node> nodeQuery(String cypher);
 
     BioNetDBResult<NodeStats> nodeStats(Query query);
 
@@ -124,11 +126,11 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //     the origin node and the destionation node
     //-------------------------------------------------------------------------
 
-//    NetworkPathIterator networkPathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException;
-//    NetworkPathIterator networkPathIterator(String cypher) throws BioNetDBException;
-//
-//    DataResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
-//    DataResult<NetworkPath> networkPathQuery(String cypher) throws BioNetDBException;
+    NetworkPathIterator networkPathIterator(Query networkPathQuery, QueryOptions queryOptions) throws BioNetDBException;
+    NetworkPathIterator networkPathIterator(String cypher);
+
+    BioNetDBResult<NetworkPath> networkPathQuery(Query query, QueryOptions queryOptions) throws BioNetDBException;
+    BioNetDBResult<NetworkPath> networkPathQuery(String cypher);
 
     //-------------------------------------------------------------------------
     // N E T W O R K S
