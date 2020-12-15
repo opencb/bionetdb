@@ -1,14 +1,15 @@
 package org.opencb.bionetdb.server.rest;
 
-import io.swagger.annotations.*;
-import org.opencb.bionetdb.core.models.network.Network;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import org.opencb.bionetdb.lib.BioNetDbManager;
 import org.opencb.bionetdb.server.exception.VersionException;
+import org.opencb.commons.datastore.core.DataResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -26,64 +27,59 @@ public class NetworkWSServer extends GenericRestWSServer {
         super(uriInfo, hsr);
     }
 
+//    @GET
+//    @Path("/model")
+//    @ApiOperation(httpMethod = "GET", value = "Get the object data model")
+//    public Response getModel() {
+//        return createModelResponse(Network.class);
+//    }
+//
     @GET
-    @Path("/model")
-    @ApiOperation(httpMethod = "GET", value = "Get the object data model")
-    public Response getModel() {
-        return createModelResponse(Network.class);
-    }
-
-    @GET
-    @Path("/info")
-    @ApiOperation(value = "Get network information", position = 1, response = Network.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    dataType = "string", paramType = "query")
-    })
-    public Response info(
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
-            @QueryParam("silent") boolean silent) {
+    @Path("/stats")
+    @ApiOperation(value = "Get network stats", position = 1)
+    public Response stats() {
         try {
-            return createOkResponse("Nto yet implemented");
+            BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
+            DataResult result = bioNetDbManager.getNetworkQueryExecutor().stats();
+
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
-
-    @GET
-    @Path("/query")
-    @ApiOperation(value = "Get network information", position = 1, response = Network.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    dataType = "string", paramType = "query")
-    })
-    public Response query(
-            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
-            @QueryParam("silent") boolean silent) {
-        try {
-            return createOkResponse("Nto yet implemented");
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/cypher")
-    @ApiOperation(value = "Execute a cypher query in the server", position = 1, response = Network.class)
-    public Response cypher(
-            @ApiParam(value = "Cypher query")
-            @QueryParam("query") String cypherQuery) {
-        try {
-            return null;
-//            DataResult<Network> networkQueryResult = bioNetDBManager.networkQuery(cypherQuery);
-//            return createOkResponse(networkQueryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//
+//    @GET
+//    @Path("/query")
+//    @ApiOperation(value = "Get network information", position = 1, response = Network.class)
+//    @ApiImplicitParams({
+//            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+//                    dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+//                    dataType = "string", paramType = "query")
+//    })
+//    public Response query(
+//            @ApiParam(value = "Boolean to accept either only complete (false) or partial (true) results", defaultValue = "false")
+//            @QueryParam("silent") boolean silent) {
+//        try {
+//            return createOkResponse("Nto yet implemented");
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//
+//    @GET
+//    @Path("/cypher")
+//    @ApiOperation(value = "Execute a cypher query in the server", position = 1, response = Network.class)
+//    public Response cypher(
+//            @ApiParam(value = "Cypher query")
+//            @QueryParam("query") String cypherQuery) {
+//        try {
+//            return null;
+////            DataResult<Network> networkQueryResult = bioNetDBManager.networkQuery(cypherQuery);
+////            return createOkResponse(networkQueryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
 }

@@ -434,6 +434,44 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     // N E T W O R K     Q U E R I E S
     //-------------------------------------------------------------------------
 
+    @Override
+    public BioNetDBResult<NetworkStats> networkStats() {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Session session = this.driver.session();
+
+        String cypher = "call apoc.meta.stats yield stats";
+        System.out.println("Cypher query: " + cypher);
+        Result result = session.run(cypher);
+
+//        long total = 0;
+//        Map<String, Long> count = new HashMap<>();
+
+        NetworkStats stats = new NetworkStats();
+
+        while (result.hasNext()) {
+            Record record = result.next();
+            if (record.containsKey("stats")) {
+                Map<String, Object> map = record.get("stats").asMap();
+
+                stats.setNodeCount((Long) map.get("nodeCount"));
+                stats.setRelationCount((Long) map.get("relCount"));
+
+                stats.setNodeTypeCount((Long) map.get("labelCount"));
+                stats.setRelationTypeCount((Long) map.get("relTypeCount"));
+                stats.setAttributeTypeCount((Long) map.get("propertyKeyCount"));
+
+                stats.setAggNodeTypes((Map<String, Long>) map.get("labels"));
+                stats.setAggRelationTypes((Map<String, Long>) map.get("relTypes"));
+
+                break;
+            }
+        }
+        int dbTime = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+        return new BioNetDBResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(stats), 1);
+    }
+
+
 //    @Override
 //    public DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
 //            throws BioNetDBException {

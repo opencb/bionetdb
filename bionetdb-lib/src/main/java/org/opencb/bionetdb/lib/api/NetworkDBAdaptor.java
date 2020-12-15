@@ -1,10 +1,7 @@
 package org.opencb.bionetdb.lib.api;
 
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.models.network.Network;
-import org.opencb.bionetdb.core.models.network.NetworkPath;
-import org.opencb.bionetdb.core.models.network.Node;
-import org.opencb.bionetdb.core.models.network.NodeStats;
+import org.opencb.bionetdb.core.models.network.*;
 import org.opencb.bionetdb.core.response.BioNetDBResult;
 import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.lib.api.iterators.NodeIterator;
@@ -135,6 +132,8 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     //-------------------------------------------------------------------------
     // N E T W O R K S
     //-------------------------------------------------------------------------
+
+    BioNetDBResult<NetworkStats> networkStats();
 
 //    DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions) throws BioNetDBException;
 //    DataResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions) throws BioNetDBException;
