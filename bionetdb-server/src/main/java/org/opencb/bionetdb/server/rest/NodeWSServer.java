@@ -41,11 +41,10 @@ public class NodeWSServer extends GenericRestWSServer {
     public Response getNodes(@ApiParam(value = "Comma-separated list of node UIDs.") @QueryParam("uid") String uid,
                              @ApiParam(value = "Comma-separated list of node IDs. E.g.: ENSG00000279457") @QueryParam("id") String id,
                              @ApiParam(value = "Comma-separated list of node names. E.g.: AL627309.4,WASH7P") @QueryParam("name")
-                                         String name,
+                                     String name,
                              @ApiParam(value = "Comma-separated list of node labels. E.g.: GENE,DRUG") @QueryParam("label") String label,
-                             @ApiParam(value = "Comma-separated list of node sources. E.g.: ensembl") @QueryParam("source") String source,
                              @ApiParam(value = "Comma-separated list of node attributes. E.g.: start=11869,biotype=unprocessed_pseudogene")
-                                 @QueryParam("attribute") String attribute,
+                             @QueryParam("attribute") String attribute,
                              @ApiParam(value = "Number of nodes to return.", defaultValue = "25") @QueryParam(QueryOptions.LIMIT) int limit
     ) {
         try {
@@ -64,10 +63,6 @@ public class NodeWSServer extends GenericRestWSServer {
 
             if (StringUtils.isNotEmpty(label)) {
                 query.put("label", Arrays.asList(label.split(",")));
-            }
-
-            if (StringUtils.isNotEmpty(source)) {
-                query.put("source", Arrays.asList(source.split(",")));
             }
 
             if (StringUtils.isNotEmpty(attribute)) {
@@ -118,16 +113,11 @@ public class NodeWSServer extends GenericRestWSServer {
     @GET
     @Path("/stats")
     @ApiOperation(httpMethod = "GET", value = "Nodes stats")
-    public Response stats(@ApiParam(value = "Comma-separated list of node sources. E.g.: ensembl") @QueryParam("source") String source,
-                             @ApiParam(value = "Comma-separated list of node attributes. E.g.: start=11869,biotype=unprocessed_pseudogene")
-                             @QueryParam("attribute") String attribute
+    public Response stats(@ApiParam(value = "Comma-separated list of node attributes. E.g.: start=11869,biotype=unprocessed_pseudogene")
+                          @QueryParam("attribute") String attribute
     ) {
         try {
             Query query = new Query();
-
-            if (StringUtils.isNotEmpty(source)) {
-                query.put("source", Arrays.asList(source.split(",")));
-            }
 
             if (StringUtils.isNotEmpty(attribute)) {
                 query.put("attribute", Arrays.asList(attribute.split(",")));
