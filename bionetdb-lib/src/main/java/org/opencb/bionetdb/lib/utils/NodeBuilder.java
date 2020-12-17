@@ -69,7 +69,7 @@ public class NodeBuilder {
             if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
                 String source = studyEntry.getFiles().get(0).getFileId();
                 if (StringUtils.isNotEmpty(source)) {
-                    node.setSource(source);
+                    node.addAttribute("source", source);
                 }
             }
         }
@@ -104,7 +104,7 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, StudyEntry studyEntry, Node variantNode) {
-        Node node = new Node(uid, variantNode.getId() + "_" + variantNode.getSource(), "", Node.Type.VARIANT_FILE_INFO);
+        Node node = new Node(uid, variantNode.getId() + "_" + studyEntry.getFiles().get(0).getFileId(), "", Node.Type.VARIANT_FILE_INFO);
         Map<String, String> fileData = studyEntry.getFiles().get(0).getData();
         node.addAttribute("filename", studyEntry.getFiles().get(0).getFileId());
         for (String key : fileData.keySet()) {

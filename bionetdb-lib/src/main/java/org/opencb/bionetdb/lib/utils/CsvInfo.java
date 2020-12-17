@@ -933,7 +933,6 @@ public class CsvInfo {
         Set<String> noAttributes = new HashSet<>();
         noAttributes.add("id");
         noAttributes.add("name");
-        noAttributes.add("source");
         return noAttributes;
     }
 

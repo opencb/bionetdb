@@ -677,10 +677,6 @@ public class Neo4JLoader {
             neo4jNode.setProperty("name", node.getName());
         }
 
-        if (StringUtils.isNotEmpty(node.getSource())) {
-            neo4jNode.setProperty("source", node.getSource());
-        }
-
         if (MapUtils.isNotEmpty(node.getAttributes())) {
             for (Map.Entry<String, Object> entry : node.getAttributes().entrySet()) {
                 neo4jNode.setProperty(entry.getKey(), entry.getValue());

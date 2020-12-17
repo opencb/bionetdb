@@ -21,17 +21,11 @@ public class Relation {
     private Type type;
     private List<String> tags;
 
-    private String source;
-
     private ObjectMap attributes;
 
     private static long counter = 0;
 
     public Relation(long uid, String name, long origUid, Node.Type origType, long destUid, Node.Type destType, Type type) {
-        this (uid, name, origUid, origType, destUid, destType, type, null);
-    }
-
-    public Relation(long uid, String name, long origUid, Node.Type origType, long destUid, Node.Type destType, Type type, String source) {
         this.uid = uid;
 
         this.name = name;
@@ -47,8 +41,6 @@ public class Relation {
         if (StringUtils.isNotEmpty(type.name())) {
             tags.add(type.name());
         }
-
-        this.source = source;
 
         this.attributes = new ObjectMap();
 
@@ -238,15 +230,6 @@ public class Relation {
 
     public Relation setUid(long uid) {
         this.uid = uid;
-        return this;
-    }
-
-    public String getSource() {
-        return source;
-    }
-
-    public Relation setSource(String source) {
-        this.source = source;
         return this;
     }
 

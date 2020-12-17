@@ -44,12 +44,15 @@ public class SifParser {
             List<String> splitLine = Arrays.asList(line.split("\t"));
 
             // create nodes
-            Node pe1 = new Node((uid++), splitLine.get(0), null, Node.Type.PHYSICAL_ENTITY, source);
-            Node pe2 = new Node((uid++), splitLine.get(2), null, Node.Type.PHYSICAL_ENTITY, source);
+            Node pe1 = new Node((uid++), splitLine.get(0), null, Node.Type.PHYSICAL_ENTITY);
+            pe1.addAttribute("source", source);
+
+            Node pe2 = new Node((uid++), splitLine.get(2), null, Node.Type.PHYSICAL_ENTITY);
+            pe2.addAttribute("source", source);
 
             // create relation
             Relation relation = new Relation((uid++), splitLine.get(1), pe1.getUid(), pe1.getType(), pe2.getUid(), pe2.getType(),
-                    Relation.Type.INTERACTION, source);
+                    Relation.Type.INTERACTION);
 
             // Add to network
             network.addNode(pe1);

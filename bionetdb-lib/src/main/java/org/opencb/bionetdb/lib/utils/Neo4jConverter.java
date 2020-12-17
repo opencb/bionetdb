@@ -130,9 +130,6 @@ public class Neo4jConverter {
         if (neoNode.containsKey("name")) {
             node.setName(neoNode.get("name").asString());
         }
-        if (neoNode.containsKey("source")) {
-            node.setSource(neoNode.get("source").asString());
-        }
 
         // Set type and tags
         boolean first = true;

@@ -579,9 +579,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (StringUtils.isNotEmpty(node.getName())) {
             props.add("n.name=\"" + cleanValue(node.getName()) + "\"");
         }
-        if (StringUtils.isNotEmpty(node.getSource())) {
-            props.add("n.source=\"" + node.getSource() + "\"");
-        }
+//        if (StringUtils.isNotEmpty(node.getSource())) {
+//            props.add("n.source=\"" + node.getSource() + "\"");
+//        }
         if (node.getAttributes().containsKey("uidCounter")) {
             props.add("n." + PREFIX_ATTRIBUTES + "uidCounter=" + node.getAttributes().get("uidCounter"));
         }
@@ -618,9 +618,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             case "name":
                 value = node.getName();
                 break;
-            case "source":
-                value = node.getSource();
-                break;
+//            case "source":
+//                value = node.getSource();
+//                break;
             default:
                 value = node.getAttributes().get(byKey);
                 break;
@@ -663,10 +663,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     values.add(node.getName());
                     prefix.add(false);
                     break;
-                case "source":
-                    values.add(node.getSource());
-                    prefix.add(false);
-                    break;
+//                case "source":
+//                    values.add(node.getSource());
+//                    prefix.add(false);
+//                    break;
                 default:
                     values.add(node.getAttributes().get(byKeys.get(i)));
                     prefix.add(true);
@@ -715,9 +715,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (StringUtils.isNotEmpty(relation.getName())) {
             props.add("name:\"" + cleanValue(relation.getName()) + "\"");
         }
-        if (StringUtils.isNotEmpty(relation.getSource())) {
-            props.add("source:\"" + relation.getSource() + "\"");
-        }
+//        if (StringUtils.isNotEmpty(relation.getSource())) {
+//            props.add("source:\"" + relation.getSource() + "\"");
+//        }
         for (String key : relation.getAttributes().keySet()) {
             props.add(PREFIX_ATTRIBUTES + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
         }
@@ -820,11 +820,11 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Long startUid = System.currentTimeMillis();
         List<Node> nodes = new ArrayList<>();
         for (int i = 0; i < 10000; i++) {
-            Node node = new Node(i, "id_" + i, "name_" + i, Node.Type.CELLULAR_LOCATION, "test");
+            Node node = new Node(i, "id_" + i, "name_" + i, Node.Type.CELLULAR_LOCATION);
             node.getAttributes().put("uid", node.getUid());
             node.getAttributes().put("id", node.getId());
             node.getAttributes().put("name", node.getName());
-            node.getAttributes().put("source", node.getSource());
+//            node.getAttributes().put("source", node.getSource());
             nodes.add(node);
         }
 

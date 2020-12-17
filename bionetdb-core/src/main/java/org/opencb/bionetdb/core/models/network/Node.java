@@ -16,8 +16,6 @@ public class Node {
     private Type type;
     private List<String> tags;
 
-    private String source;
-
     private ObjectMap attributes;
 
     private static long counter = 0;
@@ -172,26 +170,20 @@ public class Node {
     }
 
     public Node() {
-        this(-1, null, null, null, null);
+        this(-1, null, null, null);
     }
 
     public Node(long uid) {
-        this(uid, null, null, null, null);
+        this(uid, null, null, null);
     }
 
     public Node(long uid, String id, String name, Type type) {
-        this(uid, id, name, type, null);
-    }
-
-    public Node(long uid, String id, String name, Type type, String source) {
         this.type = type;
 
         tags = new ArrayList<>(1);
         if (type != null && StringUtils.isNotEmpty(type.name())) {
             tags.add(type.name());
         }
-
-        this.source = source;
 
         attributes = new ObjectMap();
 
@@ -280,15 +272,6 @@ public class Node {
 
     public void addTag(String tag) {
         tags.add(tag);
-    }
-
-    public String getSource() {
-        return source;
-    }
-
-    public Node setSource(String source) {
-        this.source = source;
-        return this;
     }
 
     public ObjectMap getAttributes() {
