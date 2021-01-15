@@ -363,6 +363,251 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     }
 
     //-------------------------------------------------------------------------
+
+    @Override
+    public long addNode(Node node) throws BioNetDBException {
+        if (existNode(node)) {
+            throw new BioNetDBException("Error adding node: it already exists");
+        }
+
+        long uid = getUidCounter();
+        node.setUid(uid);
+
+        Session session = driver.session();
+        try (Transaction tx = session.beginTransaction()) {
+
+            // Gather properties of the node to create a cypher string with them
+            List<String> props = new ArrayList<>();
+            props.add("n.uid=" + node.getUid());
+            if (StringUtils.isNotEmpty(node.getId())) {
+                props.add("n.id=\"" + cleanValue(node.getId()) + "\"");
+            }
+            if (StringUtils.isNotEmpty(node.getName())) {
+                props.add("n.name=\"" + cleanValue(node.getName()) + "\"");
+            }
+
+            for (String key : node.getAttributes().keySet()) {
+                if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
+                    props.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
+                } else {
+                    props.add("n." + PREFIX_ATTRIBUTES + key + "=\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
+                }
+            }
+            //String propsJoined = "{" + String.join(",", props) + "}";
+
+            // Create the desired node
+            StringBuilder cypher = new StringBuilder("CREATE (n");
+            if (CollectionUtils.isNotEmpty(node.getTags())) {
+                cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
+            }
+            cypher.append(")");
+            if (CollectionUtils.isNotEmpty(props)) {
+                cypher.append(" SET ").append(StringUtils.join(props, ","));
+            }
+
+            // Run cypher statement
+            System.out.println(cypher.toString());
+            //cypher.append(" RETURN ID(n) AS UID");
+            tx.run(cypher.toString());
+            tx.commit();
+        }
+        session.close();
+
+        setUidCounter(uid + 1);
+
+        return uid;
+    }
+
+    @Override
+    public void updateNode(Node node) throws BioNetDBException {
+        if (!existNode(node)) {
+            throw new BioNetDBException("Error updating node: it does not exist");
+        }
+
+        Session session = driver.session();
+        try (Transaction tx = session.beginTransaction()) {
+            List<String> attrs = new ArrayList<>();
+            for (String key : node.getAttributes().keySet()) {
+                if (StringUtils.isNumeric(node.getAttributes().getString(key))) {
+                    attrs.add("n." + PREFIX_ATTRIBUTES + key + "=" + node.getAttributes().getString(key));
+                } else {
+                    attrs.add("n." + PREFIX_ATTRIBUTES + key + "=\"" + cleanValue(node.getAttributes().getString(key)) + "\"");
+                }
+            }
+
+            // Match the desired node
+            StringBuilder cypher = new StringBuilder("MATCh (n");
+            if (CollectionUtils.isNotEmpty(node.getTags())) {
+                cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
+            }
+            cypher.append(")");
+            cypher.append(" WHERE n.id=\"").append(node.getId()).append("\"");
+            if (CollectionUtils.isNotEmpty(attrs)) {
+                cypher.append(" SET ").append(StringUtils.join(attrs, ","));
+            }
+
+            tx.run(cypher.toString());
+            tx.commit();
+        }
+        session.close();
+    }
+
+    @Override
+    public void deleteNode(Node node) throws BioNetDBException {
+        checkNode(node);
+
+        Query query = new Query("id", node.getId()).append("type", node.getType());
+        BioNetDBResult<Node> result = nodeQuery(query, QueryOptions.empty());
+
+        if (result.getNumResults() == 0) {
+            throw new BioNetDBException("Error deleting node: it does not exist");
+        }
+
+        if (result.getNumResults() > 1) {
+            throw new BioNetDBException("Error deleting node: multiple nodes found!");
+        }
+
+        Session session = driver.session();
+        try (Transaction tx = session.beginTransaction()) {
+            String cypher = "MATCH (n:" + node.getType() + "{id: '" + node.getId() + "'}) DETACH DELETE n";
+            tx.run(cypher);
+            tx.commit();
+        }
+        session.close();
+    }
+
+    @Override
+    public boolean existNode(Node node) throws BioNetDBException {
+        checkNode(node);
+
+        Query query = new Query("id", node.getId()).append("type", node.getType().name());
+        BioNetDBResult<Node> result = nodeQuery(query, QueryOptions.empty());
+
+        return result.getNumResults() == 0 ? false : true;
+    }
+
+    //-------------------------------------------------------------------------
+
+    @Override
+    public void addRelation(Node origNode, Node destNode, Relation relation) throws BioNetDBException {
+        checkRelationNodes(origNode, destNode);
+
+        // TODO: check if relation exists
+
+        List<String> props = new ArrayList<>();
+        for (String key : relation.getAttributes().keySet()) {
+            props.add(PREFIX_ATTRIBUTES + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
+        }
+        String propsJoined = "{" + String.join(",", props) + "}";
+
+        StringBuilder cypher = new StringBuilder();
+        cypher.append("MATCH (o:").append(origNode.getType()).append("{id:\"")
+                .append(origNode.getId()).append("\"}) MATCH (d:").append(destNode.getType()).append("{id:\"")
+                .append(destNode.getId()).append("\"}) USING INDEX d:").append(destNode.getType())
+                .append("(id) MERGE (o)-[r:")
+                .append(StringUtils.join(relation.getTags(), ":"));
+        if (CollectionUtils.isNotEmpty(props)) {
+            cypher.append(propsJoined);
+        }
+        cypher.append("]-(d)");
+
+        System.out.println(cypher.toString());
+
+        // Create the relationship
+        Session session = driver.session();
+        try (Transaction tx = session.beginTransaction()) {
+            tx.run(cypher.toString());
+            tx.commit();
+        }
+        session.close();
+    }
+
+    @Override
+    public void updateRelation(Node origNode, Node destNode, Relation relation) throws BioNetDBException {
+        checkRelationNodes(origNode, destNode);
+
+        // TODO: check if relation exists
+
+        List<String> props = new ArrayList<>();
+        for (String key : relation.getAttributes().keySet()) {
+            props.add("r." + PREFIX_ATTRIBUTES + key + "=\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
+        }
+
+        StringBuilder cypher = new StringBuilder();
+        cypher.append("MATCH (o:").append(origNode.getType()).append("{id:\"")
+                .append(origNode.getId()).append("\"})-[r:").append(relation.getType()).append("]-(d:").append(destNode.getType())
+                .append("{id:\"").append(destNode.getId()).append("\"})");
+        if (CollectionUtils.isNotEmpty(props)) {
+            cypher.append(" SET ").append(StringUtils.join(props, ","));
+        }
+
+        System.out.println(cypher.toString());
+
+        // Create the relationship
+        Session session = driver.session();
+        try (Transaction tx = session.beginTransaction()) {
+            tx.run(cypher.toString());
+            tx.commit();
+        }
+        session.close();
+    }
+
+    @Override
+    public void deleteRelation(Node origNode, Node destNode, Relation relation) throws BioNetDBException {
+        checkRelationNodes(origNode, destNode);
+
+        // TODO: check if relation exists
+
+        List<String> props = new ArrayList<>();
+        for (String key : relation.getAttributes().keySet()) {
+            props.add(PREFIX_ATTRIBUTES + key + ":\"" + cleanValue(relation.getAttributes().getString(key)) + "\"");
+        }
+        String propsJoined = "{" + String.join(",", props) + "}";
+
+        StringBuilder cypher = new StringBuilder();
+        cypher.append("MATCH (o:").append(origNode.getType()).append("{id:\"")
+                .append(origNode.getId()).append("\"})-[r:").append(relation.getType()).append("]-(d:").append(destNode.getType())
+                .append("{id:\"").append(destNode.getId()).append("\"}) DELETE r");
+
+        System.out.println(cypher.toString());
+
+        // Create the relationship
+        Session session = driver.session();
+        try (Transaction tx = session.beginTransaction()) {
+            tx.run(cypher.toString());
+            tx.commit();
+        }
+        session.close();
+    }
+
+    @Override
+    public boolean existRelation(Node origNode, Node destNode, Relation relation) throws BioNetDBException {
+        return false;
+    }
+
+    //-------------------------------------------------------------------------
+
+    private void checkNode(Node node) throws BioNetDBException {
+        if (StringUtils.isEmpty(node.getId())) {
+            throw new BioNetDBException("Missing node ID");
+        }
+
+        if (node.getType() == null) {
+            throw new BioNetDBException("Missing node type");
+        }
+    }
+
+    private void checkRelationNodes(Node origNode, Node destNode) throws BioNetDBException {
+        if (!existNode(origNode)) {
+            throw new BioNetDBException("Origin node does not exist");
+        }
+
+        if (!existNode(destNode)) {
+            throw new BioNetDBException("Destination node does not exist");
+        }
+    }
+
+    //-------------------------------------------------------------------------
     // T A B L E     Q U E R I E S
     //-------------------------------------------------------------------------
 
@@ -756,16 +1001,24 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public long getUidCounter() {
         Session session = this.driver.session();
-        Result statementResult = session.run("match (n{uid:0}) return n." + PREFIX_ATTRIBUTES + "uidCounter");
+        StringBuilder cypher = new StringBuilder("match (n:").append(Node.Type.CONFIG).append("{uid:0}) return n.")
+                .append(PREFIX_ATTRIBUTES).append("uidCounter");
+        System.out.println(cypher.toString());
+
+        // Run cypher statement
+        Result result = session.run(cypher.toString());
+        long uidCounter = result.peek().get(0).asLong();
         session.close();
 
-        return (statementResult.peek().get(0).asLong());
+        return uidCounter;
     }
 
     public void setUidCounter(long uidCounter) {
         // Build Cypher statement
         StringBuilder cypher = new StringBuilder();
-        cypher.append("merge (n{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=").append(uidCounter);
+        cypher.append("merge (n:" + Node.Type.CONFIG + "{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=")
+                .append(uidCounter);
+        System.out.println(cypher.toString());
 
         // Run cypher statement
         Session session = this.driver.session();

@@ -1,6 +1,5 @@
 package org.opencb.bionetdb.core.models.network;
 
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
@@ -202,7 +201,8 @@ public class Node {
         sb.append(", type=").append(type);
         sb.append(", tags=").append(tags);
         sb.append(", attributes={");
-        if (MapUtils.isNotEmpty(attributes)) {
+        if (attributes != null && attributes.size() > 0) {
+//        if (MapUtils.isNotEmpty(attributes)) {
             for (String key: attributes.keySet()) {
                 sb.append(key).append("=").append(attributes.get(key)).append(',');
             }

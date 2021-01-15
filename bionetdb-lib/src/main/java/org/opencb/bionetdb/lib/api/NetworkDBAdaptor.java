@@ -105,6 +105,18 @@ public interface NetworkDBAdaptor extends AutoCloseable {
     BioNetDBResult<NodeStats> nodeStats(Query query);
 
     //-------------------------------------------------------------------------
+
+    long addNode(Node node) throws BioNetDBException;
+    void updateNode(Node node) throws BioNetDBException;
+    void deleteNode(Node node) throws BioNetDBException;
+    boolean existNode(Node node) throws BioNetDBException;
+
+    void addRelation(Node origNode, Node destNode, Relation relation) throws BioNetDBException;
+    void updateRelation(Node origNode, Node destNode, Relation relation) throws BioNetDBException;
+    void deleteRelation(Node origNode, Node destNode, Relation relation) throws BioNetDBException;
+    boolean existRelation(Node origNode, Node destNode, Relation relation) throws BioNetDBException;
+
+    //-------------------------------------------------------------------------
     // T A B L E S / R O W S
     //   - a table is modeled as a list of rows, and
     //   - a row is modeled as a list of Object

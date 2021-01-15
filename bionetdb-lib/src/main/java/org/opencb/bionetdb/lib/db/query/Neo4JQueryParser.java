@@ -65,9 +65,9 @@ public class Neo4JQueryParser {
         // Match clause
         StringBuilder match = new StringBuilder();
         match.append("MATCH (").append(nameNode);
-//        if (query.getType() != null) {
-//            match.append(":").append(query.getType().name());
-//        }
+        if (StringUtils.isNotEmpty(query.getString("type"))) {
+            match.append(":").append(query.getString("type"));
+        }
         match.append(")");
 
         // Where clauses, parse attributes and relationships
