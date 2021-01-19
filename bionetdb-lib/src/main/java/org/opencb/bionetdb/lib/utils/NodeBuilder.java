@@ -428,14 +428,14 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, FeatureType feature) {
-        Node node = new Node(uid, feature.getId(), null, Node.Type.PROTEIN_FEATURE);
+        Node node = new Node(uid, feature.getId(), feature.getId(), Node.Type.PROTEIN_FEATURE);
         if (ListUtils.isNotEmpty(feature.getEvidence())) {
             node.addAttribute("evidence", StringUtils.join(feature.getEvidence(), ","));
         }
         if (feature.getLocation() != null) {
-            node.addAttribute("location_position", feature.getLocation().getPosition());
-            node.addAttribute("location_begin", feature.getLocation().getBegin());
-            node.addAttribute("location_end", feature.getLocation().getEnd());
+            node.addAttribute("location_position", feature.getLocation().getPosition().getPosition());
+            node.addAttribute("location_begin", feature.getLocation().getBegin().getPosition());
+            node.addAttribute("location_end", feature.getLocation().getEnd().getPosition());
         }
         node.addAttribute("description", feature.getDescription());
         return node;
