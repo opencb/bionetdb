@@ -130,7 +130,7 @@ public class CsvInfo {
         PATHWAY_NEXT_STEP___PATHWAY___REGULATION("PATHWAY_NEXT_STEP___PATHWAY___REGULATION"),
 
         ANNOTATION___GENE___XREF("ANNOTATION___GENE___XREF"),
-        XREF___PROTEIN___XREF("XREF___PROTEIN___XREF"),
+        ANNOTATION___PROTEIN___XREF("ANNOTATION___PROTEIN___XREF"),
         XREF___RNA___XREF("XREF___RNA___XREF"),
 
         IS___DNA___GENE("IS___DNA___GENE"),
@@ -850,8 +850,8 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.PROTEIN_KEYWORD.toString(), new ArrayList<>(attrs));
 
         // Protein feature
-        attrs = Arrays.asList("protFeatureId", "id", "name", "evidence", "location_position", "location_begin",
-                "location_end", "description");
+        attrs = Arrays.asList("protFeatureId", "id", "name", "type", "evidence", "locationPosition", "locationBegin",
+                "locationEnd", "description");
         nodeAttributes.put(Node.Type.PROTEIN_FEATURE.toString(), new ArrayList<>(attrs));
 
         // File

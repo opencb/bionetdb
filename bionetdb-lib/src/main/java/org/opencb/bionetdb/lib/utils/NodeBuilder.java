@@ -18,7 +18,6 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.ListUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -51,7 +50,7 @@ public class NodeBuilder {
 
     public static Node newNode(long uid, Variant variant) {
         Node node = new Node(uid, variant.toStringSimple(), variant.getId(), Node.Type.VARIANT);
-        if (ListUtils.isNotEmpty(variant.getNames())) {
+        if (CollectionUtils.isNotEmpty(variant.getNames())) {
             node.addAttribute("alternativeNames", StringUtils.join(variant.getNames(), ";"));
         }
         node.addAttribute(CHROMOSOME, variant.getChromosome());
@@ -62,11 +61,11 @@ public class NodeBuilder {
         node.addAttribute(STRAND, variant.getStrand());
         node.addAttribute(TYPE, variant.getType().toString());
 
-        if (ListUtils.isNotEmpty(variant.getStudies())) {
+        if (CollectionUtils.isNotEmpty(variant.getStudies())) {
             // Only one single study is supported
             StudyEntry studyEntry = variant.getStudies().get(0);
 
-            if (ListUtils.isNotEmpty(studyEntry.getFiles())) {
+            if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
                 String source = studyEntry.getFiles().get(0).getFileId();
                 if (StringUtils.isNotEmpty(source)) {
                     node.addAttribute("source", source);
@@ -141,7 +140,7 @@ public class NodeBuilder {
     public static Node newNode(long uid, EvidenceEntry evidence, Node.Type nodeType) {
         Node node = new Node(uid, evidence.getId(), null, nodeType);
         node.addAttribute("url", evidence.getUrl());
-        if (ListUtils.isNotEmpty(evidence.getHeritableTraits())) {
+        if (CollectionUtils.isNotEmpty(evidence.getHeritableTraits())) {
             StringBuilder her = new StringBuilder();
             for (HeritableTrait heritableTrait : evidence.getHeritableTraits()) {
                 if (her.length() > 0) {
@@ -159,7 +158,7 @@ public class NodeBuilder {
         if (evidence.getSource() != null && evidence.getSource().getName() != null) {
             node.addAttribute("source", evidence.getSource().getName());
         }
-        if (ListUtils.isNotEmpty(evidence.getAlleleOrigin())) {
+        if (CollectionUtils.isNotEmpty(evidence.getAlleleOrigin())) {
             StringBuilder alleleOri = new StringBuilder();
             for (AlleleOrigin alleleOrigin : evidence.getAlleleOrigin()) {
                 if (alleleOri.length() > 0 && alleleOrigin.name() != null) {
@@ -182,11 +181,11 @@ public class NodeBuilder {
         node.addAttribute("gene", ct.getEnsemblGeneId());
         node.addAttribute("transcript", ct.getEnsemblTranscriptId());
         // Transcript annotation flags
-        if (ListUtils.isNotEmpty(ct.getTranscriptAnnotationFlags())) {
+        if (CollectionUtils.isNotEmpty(ct.getTranscriptAnnotationFlags())) {
             node.addAttribute("transcriptAnnotationFlags", StringUtils.join(ct.getTranscriptAnnotationFlags(), ","));
         }
         // Exon overlap
-        if (ListUtils.isNotEmpty(ct.getExonOverlap())) {
+        if (CollectionUtils.isNotEmpty(ct.getExonOverlap())) {
             StringBuilder overlaps = new StringBuilder();
             overlaps.append(ct.getExonOverlap().get(0).getNumber()).append(":").append(ct.getExonOverlap().get(0).getPercentage());
             for (int i = 1; i < ct.getExonOverlap().size(); i++) {
@@ -397,21 +396,19 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, Entry protein) {
-        String id = (ListUtils.isNotEmpty(protein.getAccession()) ? protein.getAccession().get(0) : null);
-        String name = (ListUtils.isNotEmpty(protein.getName()) ? protein.getName().get(0) : null);
+        String id = (CollectionUtils.isNotEmpty(protein.getAccession()) ? protein.getAccession().get(0) : null);
+        String name = (CollectionUtils.isNotEmpty(protein.getName()) ? protein.getName().get(0) : null);
         Node node = new Node(uid, id, name, Node.Type.PROTEIN);
-        if (ListUtils.isNotEmpty(protein.getAccession())) {
+        if (CollectionUtils.isNotEmpty(protein.getAccession())) {
             node.addAttribute("accession", StringUtils.join(protein.getAccession(), ","));
         }
-//        if (ListUtils.isNotEmpty(protein.getAccession())) {
-//            node.addAttribute("name", StringUtils.join(protein.getName(), ","));
-//        }
+
         node.addAttribute("dataset", protein.getDataset());
 //        node.addAttribute("dbReference", protein.getDbReference());
         if (protein.getProteinExistence() != null) {
             node.addAttribute("proteinExistence", protein.getProteinExistence().getType());
         }
-        if (ListUtils.isNotEmpty(protein.getEvidence())) {
+        if (CollectionUtils.isNotEmpty(protein.getEvidence())) {
             StringBuilder sb = new StringBuilder();
             for (EvidenceType evidenceType : protein.getEvidence()) {
                 sb.append(evidenceType.getKey()).append(";");
@@ -424,7 +421,7 @@ public class NodeBuilder {
 //            }
 //        }
 //        // Gene type
-//        if (ListUtils.isNotEmpty(protein.getEnsemblGene())) {
+//        if (CollectionUtils.isNotEmpty(protein.getEnsemblGene())) {
 //            protein.getEnsemblGene().get(0).getName().get(0).
 //        }
 
@@ -433,7 +430,7 @@ public class NodeBuilder {
 
     public static Node newNode(long uid, KeywordType keyword) {
         Node node = new Node(uid, keyword.getId(), keyword.getValue(), Node.Type.PROTEIN_KEYWORD);
-        if (ListUtils.isNotEmpty(keyword.getEvidence())) {
+        if (CollectionUtils.isNotEmpty(keyword.getEvidence())) {
             node.addAttribute("evidence", StringUtils.join(keyword.getEvidence(), ","));
         }
         return node;
@@ -441,13 +438,20 @@ public class NodeBuilder {
 
     public static Node newNode(long uid, FeatureType feature) {
         Node node = new Node(uid, feature.getId(), feature.getId(), Node.Type.PROTEIN_FEATURE);
-        if (ListUtils.isNotEmpty(feature.getEvidence())) {
+        node.addAttribute("type", feature.getType());
+        if (CollectionUtils.isNotEmpty(feature.getEvidence())) {
             node.addAttribute("evidence", StringUtils.join(feature.getEvidence(), ","));
         }
         if (feature.getLocation() != null) {
-            node.addAttribute("location_position", feature.getLocation().getPosition().getPosition());
-            node.addAttribute("location_begin", feature.getLocation().getBegin().getPosition());
-            node.addAttribute("location_end", feature.getLocation().getEnd().getPosition());
+            if (feature.getLocation().getPosition() != null) {
+                node.addAttribute("locationPosition", feature.getLocation().getPosition().getPosition());
+            }
+            if (feature.getLocation().getBegin() != null) {
+                node.addAttribute("locationBegin", feature.getLocation().getBegin().getPosition());
+            }
+            if (feature.getLocation().getEnd() != null) {
+                node.addAttribute("locationEnd", feature.getLocation().getEnd().getPosition());
+            }
         }
         node.addAttribute("description", feature.getDescription());
         return node;
