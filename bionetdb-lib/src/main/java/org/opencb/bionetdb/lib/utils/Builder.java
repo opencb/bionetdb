@@ -115,6 +115,12 @@ public class Builder {
             FileUtils.checkFile(clinicalVariantFile.toPath());
         }
 
+        // Processing proteins
+        logger.info("Processing proteins...");
+        start = System.currentTimeMillis();
+        buildProteins(proteinFile.toPath());
+        logger.info("Protein processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+
         // Processing genes
         if (ensemblGeneFile.exists()) {
             logger.info("Processing Ensembl genes...");
@@ -123,59 +129,53 @@ public class Builder {
             logger.info("Ensembl gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
         }
 
-//        if (refSeqGeneFile.exists()) {
-//            logger.info("Processing RefSeq genes...");
-//            start = System.currentTimeMillis();
-//            buildGenes(refSeqGeneFile.toPath());
-//            logger.info("RefSeq gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-//        }
-//
-//        // Processing proteins
-//        logger.info("Processing proteins...");
-//        start = System.currentTimeMillis();
-//        buildProteins(proteinFile.toPath());
-//        logger.info("Protein processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
+        if (refSeqGeneFile.exists()) {
+            logger.info("Processing RefSeq genes...");
+            start = System.currentTimeMillis();
+            buildGenes(refSeqGeneFile.toPath());
+            logger.info("RefSeq gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+        }
+
         // Disease panels support
         logger.info("Processing disease panels...");
         start = System.currentTimeMillis();
         buildDiseasePanels(panelFile.toPath());
         logger.info("Disease panels processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
-//        // Procesing BioPAX file
-//        BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
-//        Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
-//        start = System.currentTimeMillis();
-//        bioPAXImporter.build(networkFile.toPath());
-//        biopaxProcessing.post();
-//        logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
-//
-//        // Processing clinical variants
-//        logger.info("Processing clinical variants...");
-//        start = System.currentTimeMillis();
-//        buildClinicalVariants(clinicalVariantFile.toPath());
-//        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
-//        // Processing additional variants
-//        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
-//            for (String additionalVariantFile: additionalVariantFiles) {
-//                logger.info("Processing additional variant file {}...", additionalVariantFile);
-//                start = System.currentTimeMillis();
-//                buildClinicalVariants(Paths.get(additionalVariantFile));
-//                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
-//            }
-//        }
-//
-//        // Processing additional networks
-//        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
-//            for (String additionalNeworkFile: additionalNeworkFiles) {
-//                logger.info("Processing additional network file {}...", additionalNeworkFile);
-//                start = System.currentTimeMillis();
-//                processAdditionalNetwork(additionalNeworkFile);
-//                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
-//            }
-//        }
+
+        // Procesing BioPAX file
+        BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
+        Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
+        start = System.currentTimeMillis();
+        bioPAXImporter.build(networkFile.toPath());
+        biopaxProcessing.post();
+        logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
+
+
+        // Processing clinical variants
+        logger.info("Processing clinical variants...");
+        start = System.currentTimeMillis();
+        buildClinicalVariants(clinicalVariantFile.toPath());
+        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
+
+        // Processing additional variants
+        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
+            for (String additionalVariantFile: additionalVariantFiles) {
+                logger.info("Processing additional variant file {}...", additionalVariantFile);
+                start = System.currentTimeMillis();
+                buildClinicalVariants(Paths.get(additionalVariantFile));
+                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
+            }
+        }
+
+        // Processing additional networks
+        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
+            for (String additionalNeworkFile: additionalNeworkFiles) {
+                logger.info("Processing additional network file {}...", additionalNeworkFile);
+                start = System.currentTimeMillis();
+                processAdditionalNetwork(additionalNeworkFile);
+                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
+            }
+        }
 
         // Close CSV files
         csv.close();
@@ -685,29 +685,14 @@ public class Builder {
         // Create protein node and save protein UID
         Node proteinNode = NodeBuilder.newNode(uid, protein);
 
-        // Protein object node management
-        try {
-            // Create gene object node and write
-            Node proteinObjectNode = new Node(csv.getAndIncUid(), proteinNode.getId(), proteinNode.getName(), Node.Type.PROTEIN_OBJECT);
-            proteinObjectNode.addAttribute("object", Utils.compress(protein, mapper));
-            pw = csv.getCsvWriters().get(Node.Type.PROTEIN_OBJECT.toString());
-            pw.println(csv.nodeLine(proteinObjectNode));
-
-            // Create relation to gene node and write
-            pw = csv.getCsvWriters().get(Relation.Type.PROTEIN__PROTEIN_OBJECT.toString());
-            pw.println(uid + CsvInfo.SEPARATOR + proteinObjectNode.getUid());
-        } catch (IOException e) {
-            logger.warn("Unable to create GZ JSON object for protein '{}': {}", proteinNode.getId(), e.getMessage());
-        }
-
         // Model protein keywords
         if (CollectionUtils.isNotEmpty(protein.getKeyword())) {
-            pw = csv.getCsvWriters().get(Relation.Type.PROTEIN__PROTEIN_KEYWORD.toString());
+            pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___PROTEIN___PROTEIN_KEYWORD.toString());
             for (KeywordType keyword: protein.getKeyword()) {
                 Long kwUid = csv.getLong(keyword.getId(), Node.Type.PROTEIN_KEYWORD.name());
                 if (kwUid == null) {
                     n = new Node(csv.getAndIncUid(), keyword.getId(), keyword.getValue(), Node.Type.PROTEIN_KEYWORD);
-                    updateCSVFiles(uid, n, Relation.Type.PROTEIN__PROTEIN_KEYWORD.toString());
+                    updateCSVFiles(uid, n, Relation.Type.ANNOTATION___PROTEIN___PROTEIN_KEYWORD.toString());
                     csv.putLong(keyword.getId(), Node.Type.PROTEIN_KEYWORD.name(), n.getUid());
                 } else {
                     // Create protein - protein keyword relation
@@ -718,16 +703,29 @@ public class Builder {
 
         // Model protein features
         if (CollectionUtils.isNotEmpty(protein.getFeature())) {
+            pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___PROTEIN___PROTEIN_FEATURE.toString());
             for (FeatureType feature: protein.getFeature()) {
-                n = NodeBuilder.newNode(csv.getAndIncUid(), feature);
-                updateCSVFiles(uid, n, Relation.Type.PROTEIN__PROTEIN_FEATURE.toString());
+                if (StringUtils.isNotEmpty(feature.getId())) {
+                    Long featureUid = csv.getLong(feature.getId(), Node.Type.PROTEIN_FEATURE.name());
+                    if (featureUid == null) {
+                        n = NodeBuilder.newNode(csv.getAndIncUid(), feature);
+                        updateCSVFiles(uid, n, Relation.Type.ANNOTATION___PROTEIN___PROTEIN_FEATURE.toString());
+                        csv.putLong(feature.getId(), Node.Type.PROTEIN_FEATURE.name(), n.getUid());
+                    } else {
+                        // Create protein - protein feature relation
+                        pw.println(csv.relationLine(uid, featureUid));
+                    }
+                } else {
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), feature);
+                    updateCSVFiles(uid, n, Relation.Type.ANNOTATION___PROTEIN___PROTEIN_FEATURE.toString());
+                }
             }
         }
 
         // Model Xrefs
         if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
             PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
-            pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.XREF___PROTEIN___XREF.toString());
+            pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___PROTEIN___XREF.toString());
             for (DbReferenceType dbRef: protein.getDbReference()) {
                 Long xrefUid = csv.getLong(dbRef.getType() + "." + dbRef.getId(), Node.Type.XREF.name());
                 if (xrefUid == null) {

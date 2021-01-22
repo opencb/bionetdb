@@ -320,12 +320,12 @@ public class Neo4jCsvImporter {
 //
 //        // Model protein keywords
 //        if (CollectionUtils.isNotEmpty(protein.getKeyword())) {
-//            pw = csv.getCsvWriters().get(Relation.Type.PROTEIN__PROTEIN_KEYWORD.toString());
+//            pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___PROTEIN___PROTEIN_KEYWORD.toString());
 //            for (KeywordType keyword: protein.getKeyword()) {
 //                Long kwUid = csv.getLong(keyword.getId());
 //                if (kwUid == null) {
 //                    n = new Node(csv.getAndIncUid(), keyword.getId(), keyword.getValue(), Node.Type.PROTEIN_KEYWORD);
-//                    updateCSVFiles(uid, n, Relation.Type.PROTEIN__PROTEIN_KEYWORD.toString());
+//                    updateCSVFiles(uid, n, Relation.Type.ANNOTATION___PROTEIN___PROTEIN_KEYWORD.toString());
 //                    csv.putLong(keyword.getId(), n.getUid());
 //                } else {
 //                    // Create protein - protein keyword relation
@@ -338,14 +338,14 @@ public class Neo4jCsvImporter {
 //        if (CollectionUtils.isNotEmpty(protein.getFeature())) {
 //            for (FeatureType feature: protein.getFeature()) {
 //                n = NodeBuilder.newNode(csv.getAndIncUid(), feature);
-//                updateCSVFiles(uid, n, Relation.Type.PROTEIN__PROTEIN_FEATURE.toString());
+//                updateCSVFiles(uid, n, Relation.Type.ANNOTATION___PROTEIN___PROTEIN_FEATURE.toString());
 //            }
 //        }
 //
 //        // Model Xrefs
 //        if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
 //            PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
-//            pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.XREF___PROTEIN___XREF.toString());
+//            pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___PROTEIN___XREF.toString());
 //            for (DbReferenceType dbRef: protein.getDbReference()) {
 //                Long xrefUid = csv.getLong(dbRef.getType() + "." + dbRef.getId());
 //                if (xrefUid == null) {
