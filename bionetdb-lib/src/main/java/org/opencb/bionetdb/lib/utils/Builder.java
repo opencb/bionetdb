@@ -123,59 +123,59 @@ public class Builder {
             logger.info("Ensembl gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
         }
 
-//        if (refSeqGeneFile.exists()) {
-//            logger.info("Processing RefSeq genes...");
-//            start = System.currentTimeMillis();
-//            buildGenes(refSeqGeneFile.toPath());
-//            logger.info("RefSeq gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-//        }
-//
-//        // Processing proteins
-//        logger.info("Processing proteins...");
-//        start = System.currentTimeMillis();
-//        buildProteins(proteinFile.toPath());
-//        logger.info("Protein processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
+        if (refSeqGeneFile.exists()) {
+            logger.info("Processing RefSeq genes...");
+            start = System.currentTimeMillis();
+            buildGenes(refSeqGeneFile.toPath());
+            logger.info("RefSeq gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+        }
+
+        // Processing proteins
+        logger.info("Processing proteins...");
+        start = System.currentTimeMillis();
+        buildProteins(proteinFile.toPath());
+        logger.info("Protein processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+
         // Disease panels support
         logger.info("Processing disease panels...");
         start = System.currentTimeMillis();
         buildDiseasePanels(panelFile.toPath());
         logger.info("Disease panels processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
-//        // Procesing BioPAX file
-//        BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
-//        Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
-//        start = System.currentTimeMillis();
-//        bioPAXImporter.build(networkFile.toPath());
-//        biopaxProcessing.post();
-//        logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
-//
-//        // Processing clinical variants
-//        logger.info("Processing clinical variants...");
-//        start = System.currentTimeMillis();
-//        buildClinicalVariants(clinicalVariantFile.toPath());
-//        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
-//        // Processing additional variants
-//        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
-//            for (String additionalVariantFile: additionalVariantFiles) {
-//                logger.info("Processing additional variant file {}...", additionalVariantFile);
-//                start = System.currentTimeMillis();
-//                buildClinicalVariants(Paths.get(additionalVariantFile));
-//                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
-//            }
-//        }
-//
-//        // Processing additional networks
-//        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
-//            for (String additionalNeworkFile: additionalNeworkFiles) {
-//                logger.info("Processing additional network file {}...", additionalNeworkFile);
-//                start = System.currentTimeMillis();
-//                processAdditionalNetwork(additionalNeworkFile);
-//                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
-//            }
-//        }
+
+        // Procesing BioPAX file
+        BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
+        Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
+        start = System.currentTimeMillis();
+        bioPAXImporter.build(networkFile.toPath());
+        biopaxProcessing.post();
+        logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
+
+
+        // Processing clinical variants
+        logger.info("Processing clinical variants...");
+        start = System.currentTimeMillis();
+        buildClinicalVariants(clinicalVariantFile.toPath());
+        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
+
+        // Processing additional variants
+        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
+            for (String additionalVariantFile: additionalVariantFiles) {
+                logger.info("Processing additional variant file {}...", additionalVariantFile);
+                start = System.currentTimeMillis();
+                buildClinicalVariants(Paths.get(additionalVariantFile));
+                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
+            }
+        }
+
+        // Processing additional networks
+        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
+            for (String additionalNeworkFile: additionalNeworkFiles) {
+                logger.info("Processing additional network file {}...", additionalNeworkFile);
+                start = System.currentTimeMillis();
+                processAdditionalNetwork(additionalNeworkFile);
+                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
+            }
+        }
 
         // Close CSV files
         csv.close();
