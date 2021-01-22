@@ -249,7 +249,7 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, GeneDrugInteraction drug) {
-        Node node = new Node(uid, null, drug.getDrugName(), Node.Type.DRUG);
+        Node node = new Node(uid, null, null, Node.Type.GENE_DRUG_INTERACTION);
         node.addAttribute("source", drug.getSource());
         node.addAttribute("type", drug.getType());
         node.addAttribute("studyType", drug.getStudyType());
@@ -261,8 +261,20 @@ public class NodeBuilder {
         return node;
     }
 
+    public static Node newNode(long uid,  Expression expression) {
+        Node node = new Node(uid, null, null, Node.Type.GENE_EXPRESSION);
+        node.addAttribute("transcriptId", expression.getTranscriptId());
+        node.addAttribute("expression", expression.getExpression());
+        node.addAttribute("experimentId", expression.getExperimentId());
+        node.addAttribute("technologyPlatform", expression.getTechnologyPlatform());
+        node.addAttribute("factorValue", expression.getFactorValue());
+        node.addAttribute("pValue", expression.getPvalue());
+        node.addAttribute("experimentalFactor", expression.getExperimentalFactor());
+        return node;
+    }
+
     public static Node newNode(long uid, GeneTraitAssociation disease) {
-        Node node = new Node(uid, disease.getId(), disease.getName(), Node.Type.DISEASE);
+        Node node = new Node(uid, disease.getId(), disease.getName(), Node.Type.GENE_TRAIT_ASSOCIATION);
         node.addAttribute("hpo", disease.getHpo());
         node.addAttribute("numberOfPubmeds", disease.getNumberOfPubmeds());
         node.addAttribute("score", disease.getScore());
@@ -444,7 +456,7 @@ public class NodeBuilder {
     public static Node newNode(long uid, DiseasePanel panel) {
         // IMPORTANT: phenotypes, variant, genes, STRs, regions must be created by the caller of this function!
 
-        Node node = new Node(uid, panel.getId(), panel.getName(), Node.Type.PANEL);
+        Node node = new Node(uid, panel.getId(), panel.getName(), Node.Type.DISEASE_PANEL);
         if (CollectionUtils.isNotEmpty(panel.getCategories())) {
             node.addAttribute("categories", panel.getCategories().stream().map(DiseasePanel.PanelCategory::getName)
                     .collect(Collectors.joining(",")));
@@ -458,11 +470,11 @@ public class NodeBuilder {
             }
         }
         if (panel.getSource() != null) {
-            node.addAttribute("source_id", panel.getSource().getId());
-            node.addAttribute("source_name", panel.getSource().getId());
-            node.addAttribute("source_author", panel.getSource().getAuthor());
-            node.addAttribute("source_project", panel.getSource().getProject());
-            node.addAttribute("source_version", panel.getSource().getVersion());
+            node.addAttribute("sourceId", panel.getSource().getId());
+            node.addAttribute("sourceName", panel.getSource().getId());
+            node.addAttribute("sourceAuthor", panel.getSource().getAuthor());
+            node.addAttribute("sourceProject", panel.getSource().getProject());
+            node.addAttribute("sourceVersion", panel.getSource().getVersion());
         }
         node.addAttribute("creationDate", panel.getCreationDate());
         node.addAttribute("modificationDate", panel.getModificationDate());
@@ -475,7 +487,7 @@ public class NodeBuilder {
         return node;
     }
 
-//    public static Node newNode(long uid, ClinicalAnalysis clinicalAnalysis) {
+    //    public static Node newNode(long uid, ClinicalAnalysis clinicalAnalysis) {
 //        Node node = new Node(uid, clinicalAnalysis.getId(), clinicalAnalysis.getId(), Node.Type.CLINICAL_ANALYSIS);
 //        node.addAttribute("uuid", clinicalAnalysis.getUuid());
 //        node.addAttribute("description", clinicalAnalysis.getDescription());
@@ -922,7 +934,8 @@ public class NodeBuilder {
             node.addAttribute("evidences", StringUtils.join(common.getEvidences(), ","));
         }
         if (CollectionUtils.isNotEmpty(common.getPublications())) {
-            node.addAttribute("publications", StringUtils.join(common.getPublications(), ","));
+            String pubs = StringUtils.join(common.getPublications(), ",").replace("\r\n", " ").replace("\r", " ").replace("\n", " ");
+            node.addAttribute("publications", pubs);
         }
         if (CollectionUtils.isNotEmpty(common.getCoordinates())) {
             node.addAttribute("coordinates", common.getCoordinates().stream().map(c -> c.getAssembly() + "+" + c.getLocation() + "+"

@@ -129,7 +129,7 @@ public class CsvInfo {
         PATHWAY_NEXT_STEP___PATHWAY___REACTION("PATHWAY_NEXT_STEP___PATHWAY___REACTION"),
         PATHWAY_NEXT_STEP___PATHWAY___REGULATION("PATHWAY_NEXT_STEP___PATHWAY___REGULATION"),
 
-        XREF___GENE___XREF("XREF___GENE___XREF"),
+        ANNOTATION___GENE___XREF("ANNOTATION___GENE___XREF"),
         XREF___PROTEIN___XREF("XREF___PROTEIN___XREF"),
         XREF___RNA___XREF("XREF___RNA___XREF"),
 
@@ -505,30 +505,48 @@ public class CsvInfo {
         // Labels
         switch (node.getType()) {
             case GENE: {
-                if (node.getAttributes().getString("source").equals("ensembl")) {
+                if (node.getAttributes().containsKey("source")) {
+                    if (node.getAttributes().getString("source").equals("ensembl")) {
+                        sb.append(labelsLine(ENSEMBL_GENE));
+                    } else if (node.getAttributes().getString("source").equals("refseq")) {
+                        sb.append(labelsLine(REFSEQ_GENE));
+                    } else {
+                        sb.append(labelsLine(GENE));
+                    }
+                } else if (node.getId().startsWith("ENSG")) {
                     sb.append(labelsLine(ENSEMBL_GENE));
-                } else if (node.getAttributes().getString("source").equals("refseq")) {
-                    sb.append(labelsLine(REFSEQ_GENE));
                 } else {
                     sb.append(labelsLine(GENE));
                 }
                 break;
             }
             case TRANSCRIPT: {
-                if (node.getAttributes().getString("source").equals("ensembl")) {
+                if (node.getAttributes().containsKey("source")) {
+                    if (node.getAttributes().getString("source").equals("ensembl")) {
+                        sb.append(labelsLine(ENSEMBL_TRANSCRIPT));
+                    } else if (node.getAttributes().getString("source").equals("refseq")) {
+                        sb.append(labelsLine(REFSEQ_TRANSCRIPT));
+                    } else {
+                        sb.append(labelsLine(TRANSCRIPT));
+                    }
+                } else if (node.getId().startsWith("ENST")) {
                     sb.append(labelsLine(ENSEMBL_TRANSCRIPT));
-                } else if (node.getAttributes().getString("source").equals("refseq")) {
-                    sb.append(labelsLine(REFSEQ_TRANSCRIPT));
                 } else {
                     sb.append(labelsLine(TRANSCRIPT));
                 }
                 break;
             }
             case EXON: {
-                if (node.getAttributes().getString("source").equals("ensembl")) {
+                if (node.getAttributes().containsKey("source")) {
+                    if (node.getAttributes().getString("source").equals("ensembl")) {
+                        sb.append(labelsLine(ENSEMBL_EXON));
+                    } else if (node.getAttributes().getString("source").equals("refseq")) {
+                        sb.append(labelsLine(REFSEQ_EXON));
+                    } else {
+                        sb.append(labelsLine(EXON));
+                    }
+                } else if (node.getId().startsWith("ENSE")) {
                     sb.append(labelsLine(ENSEMBL_EXON));
-                } else if (node.getAttributes().getString("source").equals("refseq")) {
-                    sb.append(labelsLine(REFSEQ_EXON));
                 } else {
                     sb.append(labelsLine(EXON));
                 }
@@ -743,19 +761,33 @@ public class CsvInfo {
         attrs = Arrays.asList("geneObjectId", "id", "name", "object");
         nodeAttributes.put(Node.Type.GENE_OBJECT.toString(), new ArrayList<>(attrs));
 
-        // Panel
+        // Disease panel
         attrs = Arrays.asList("panelId", "id", "name", "description", "phenotypeNames", "sourceId", "sourceName",
                 "sourceAuthor", "sourceProject", "sourceVersion", "creationDate", "modificationDate");
-        nodeAttributes.put(Node.Type.PANEL.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.DISEASE_PANEL.toString(), new ArrayList<>(attrs));
+
+        // Panel gene
+        attrs = Arrays.asList("panelGeneId", "id", "name", "modeOfInheritance", "penetrance", "confidence", "evidences", "publications",
+                "coordinates");
+        nodeAttributes.put(Node.Type.PANEL_GENE.toString(), new ArrayList<>(attrs));
+
+        // Gene drug interaction
+        attrs = Arrays.asList("geneDrugInteractionId", "id", "name", "source", "type", "studyType", "chemblId");
+        nodeAttributes.put(Node.Type.GENE_DRUG_INTERACTION.toString(), new ArrayList<>(attrs));
 
         // Drug
-        attrs = Arrays.asList("drugId", "id", "name", "source", "type", "studyType");
+        attrs = Arrays.asList("drugId", "id", "name");
         nodeAttributes.put(Node.Type.DRUG.toString(), new ArrayList<>(attrs));
 
-        // Disease
-        attrs = Arrays.asList("diseaseId", "id", "name", "hpo", "numberOfPubmeds", "score", "source", "sources",
+        // Gene trait association
+        attrs = Arrays.asList("geneTraitAssociationId", "id", "name", "hpo", "numberOfPubmeds", "score", "source", "sources",
                 "associationType");
-        nodeAttributes.put(Node.Type.DISEASE.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.GENE_TRAIT_ASSOCIATION.toString(), new ArrayList<>(attrs));
+
+        // Gene expression
+        attrs = Arrays.asList("geneExpressionId", "id", "name", "transcriptId", "experimentalFactor", "factorValue", "experimentId",
+                "technologyPlatform", "expressionCall", "pValue");
+        nodeAttributes.put(Node.Type.GENE_EXPRESSION.toString(), new ArrayList<>(attrs));
 
         // Transcript
         attrs = Arrays.asList("transcriptId", "id", "name", "chromosome", "start", "end", "strand", "biotype", "status",
@@ -788,9 +820,13 @@ public class CsvInfo {
         attrs = Arrays.asList("miRnaId", "id", "name", "accession", "status", "sequence");
         nodeAttributes.put(Node.Type.MIRNA.toString(), new ArrayList<>(attrs));
 
-        // Mature miRNA
-        attrs = Arrays.asList("matureMiRnaId", "id", "name", "accession", "sequence", "start", "end");
+        // miRNA mature
+        attrs = Arrays.asList("miRnaMatureId", "id", "name", "accession", "sequence", "start", "end");
         nodeAttributes.put(Node.Type.MIRNA_MATURE.toString(), new ArrayList<>(attrs));
+
+        // miRNA target
+        attrs = Arrays.asList("miRnaTargetId", "id", "name", "experiment", "evidence", "pubmed");
+        nodeAttributes.put(Node.Type.MIRNA_TARGET.toString(), new ArrayList<>(attrs));
 
         // TFBS
         attrs = Arrays.asList("tfbsId", "id", "name", "chromosome", "start", "end", "strand", "relativeStart",

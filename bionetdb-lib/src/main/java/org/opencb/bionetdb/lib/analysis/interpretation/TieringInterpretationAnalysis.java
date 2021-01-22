@@ -44,8 +44,8 @@ public class TieringInterpretationAnalysis {
         for (String individual : individualsID) {
             String genotypeSubstring = getGenericSubstring(individualsGT.get(individual), "vc.attr_GT", true);
             queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)"
-                    + "-[:VARIANT__CONSEQUENCE_TYPE]-(:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)-[:GENE__TRANSCRIPT]"
-                    + "-(:GENE)-[:XREF]-(ref:XREF)"
+                    + "-[:VARIANT__CONSEQUENCE_TYPE]-(:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)-"
+                    + "[:HAS___GENE___TRANSCRIPT]-(:GENE)-[:XREF]-(ref:XREF)"
                     + " WHERE " + genesSubstring + chromosomeSubstring + genotypeSubstring + "sam.id='" + individual + "'";
             matches.add(queryString);
         }
@@ -91,8 +91,8 @@ public class TieringInterpretationAnalysis {
         String genesSubstring = getGenericSubstring(listOfGenes, "ref.id", true);
         String chromosomeSubstring = getGenericSubstring(listOfChromosome, "var.attr_chromosome", true);
         String matchString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)"
-                + "-[:VARIANT__CONSEQUENCE_TYPE]-(:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)-[:GENE__TRANSCRIPT]"
-                + "-(gene:GENE)-[:XREF]-(ref:XREF)"
+                + "-[:VARIANT__CONSEQUENCE_TYPE]-(:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(:TRANSCRIPT)-"
+                + "[:HAS___GENE___TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF)"
                 + " WHERE " + genesSubstring + chromosomeSubstring + individualsSubstring
                 + " WITH var, collect(DISTINCT sam.id) AS sam_collection, collect(vc.attr_GT) AS gt_collection,"
                 + " COUNT (DISTINCT sam.id) AS num_of_sam\n";

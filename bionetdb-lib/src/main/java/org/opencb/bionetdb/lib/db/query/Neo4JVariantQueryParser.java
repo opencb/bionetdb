@@ -341,7 +341,7 @@ public class Neo4JVariantQueryParser {
 
 
         // Match1
-        String match = "MATCH (p:PANEL)-[:PANEL__GENE]-(:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)";
+        String match = "MATCH (p:DISEASE_PANEL)-[:PANEL__GENE]-(:GENE)-[:HAS___GENE___TRANSCRIPT]-(tr1:TRANSCRIPT)";
 
         // Where1
         String where = "WHERE " + getConditionString(panels, "p.name", false);
@@ -361,7 +361,7 @@ public class Neo4JVariantQueryParser {
         List<Neo4JQueryParser.CypherStatement> cypherStatements = new ArrayList<>();
 
         // Match1
-        String match = "MATCH (r:XREF)-[:XREF]-(:GENE)-[:GENE__TRANSCRIPT]-(tr1:TRANSCRIPT)";
+        String match = "MATCH (r:XREF)-[:XREF]-(:GENE)-[:HAS___GENE___TRANSCRIPT]-(tr1:TRANSCRIPT)";
 
         // Where1
         String where = "WHERE " + getConditionString(genes, "r.id", false);
@@ -639,7 +639,8 @@ public class Neo4JVariantQueryParser {
         StringBuilder panelTail = new StringBuilder();
 
         // Match1 tail
-        panelTail.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(g:GENE)-[:PANEL__GENE]-(p:PANEL)\n");
+        panelTail.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:HAS___GENE___TRANSCRIPT]-(g:GENE)-[:PANEL__GENE]-"
+                + "(p:DISEASE_PANEL)\n");
 
         // Where1
         panelTail.append("WHERE ").append(getConditionString(Arrays.asList(query.getString(VariantQueryParam.PANEL.key())
@@ -651,7 +652,7 @@ public class Neo4JVariantQueryParser {
         StringBuilder panelTail = new StringBuilder();
 
         // Match1 tail
-        panelTail.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:GENE__TRANSCRIPT]-(g:GENE)-[:XREF]-(r:XREF)\n");
+        panelTail.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:HAS___GENE___TRANSCRIPT]-(g:GENE)-[:XREF]-(r:XREF)\n");
 
         // Where1
         panelTail.append("WHERE ").append(getConditionString(Arrays.asList(query.getString(VariantQueryParam.GENE.key())

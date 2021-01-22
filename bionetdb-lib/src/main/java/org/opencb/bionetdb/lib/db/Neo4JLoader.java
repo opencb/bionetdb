@@ -263,11 +263,11 @@ public class Neo4JLoader {
         // Panel
         if (StringUtils.isNotEmpty(clinicalVariantEvidence.getPanelId())) {
             Node panelNode = null;
-//            Node panelNode = graphDb.findNode(Label.label(PANEL.name()), "id", clinicalVariantEvidence.getPanelId());
+//            Node panelNode = graphDb.findNode(Label.label(DISEASE_PANEL.name()), "id", clinicalVariantEvidence.getPanelId());
             if (panelNode == null) {
                 //log.info("Panel " + reportedEvent.getPanelId() + " not found for reported event!");
                 panelNode = createNeo4JNode(new org.opencb.bionetdb.core.models.network.Node(0, clinicalVariantEvidence.getPanelId(),
-                        "", PANEL));
+                        "", DISEASE_PANEL));
             }
             reportedEventNode.createRelationshipTo(panelNode, withName(REPORTED_EVENT__PANEL.toString()));
         }
@@ -583,7 +583,7 @@ public class Neo4JLoader {
 
     public Node loadPanel(DiseasePanel panel) {
         Node panelNode = null;
-//        Node panelNode = graphDb.findNode(Label.label(PANEL.name()), "id", panel.getId());
+//        Node panelNode = graphDb.findNode(Label.label(DISEASE_PANEL.name()), "id", panel.getId());
         if (panelNode != null) {
             return panelNode;
         }

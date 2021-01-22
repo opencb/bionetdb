@@ -179,7 +179,7 @@ public class Neo4jCsvImporter {
 //
 //        // Model transcripts
 //        if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
-//            pwRel = csv.getCsvWriters().get(Relation.Type.GENE__TRANSCRIPT.toString());
+//            pwRel = csv.getCsvWriters().get(Relation.Type.HAS___GENE___TRANSCRIPT.toString());
 //            PrintWriter pwTranscr = csv.getCsvWriters().get(Node.Type.TRANSCRIPT.toString());
 //            for (Transcript transcript: gene.getTranscripts()) {
 //                Long transcrUid = csv.getLong(transcript.getId());
@@ -223,13 +223,13 @@ public class Neo4jCsvImporter {
 //
 //                // Model diseases
 //                if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
-//                    pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DISEASE.toString());
+//                    pwRel = csv.getCsvWriters().get(Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
 //                    for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
 //                        String diseaseId = disease.getId() + "_" + (disease.getHpo() != null ? disease.getHpo() : "");
 //                        Long diseaseUid = csv.getLong(diseaseId);
 //                        if (diseaseUid == null) {
 //                            n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
-//                            updateCSVFiles(uid, n, Relation.Type.GENE__DISEASE.toString());
+//                            updateCSVFiles(uid, n, Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
 //
 //                            csv.putLong(diseaseId, n.getUid());
 //                        } else {
@@ -243,7 +243,7 @@ public class Neo4jCsvImporter {
 //
 //        // Xrefs
 //        PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
-//        pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.XREF___GENE___XREF.toString());
+//        pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___GENE___XREF.toString());
 //        Set<Xref> xrefSet = new HashSet<>();
 //        xrefSet.add(new Xref(gene.getId(), "Ensembl", "Ensembl"));
 //        xrefSet.add(new Xref(gene.getName(), "Ensembl", "Ensembl"));
@@ -465,7 +465,7 @@ public class Neo4jCsvImporter {
 //                    Long transcriptUid = processTranscript(ct.getEnsemblTranscriptId());
 //                    if (transcriptUid != null) {
 ////                        if (geneUid != null && csv.getLong(geneUid + "." + transcriptUid) == null) {
-////                            csv.getCsvWriters().get(Relation.Type.GENE__TRANSCRIPT.toString()).println(csv.relationLine(
+////                            csv.getCsvWriters().get(Relation.Type.HAS___GENE___TRANSCRIPT.toString()).println(csv.relationLine(
 ////                                    geneUid, transcriptUid));
 ////                            csv.putLong(geneUid + "." + transcriptUid, 1);
 ////                        }
@@ -1069,7 +1069,7 @@ public class Neo4jCsvImporter {
 //        ObjectReader reader = mapper.reader(DiseasePanel.class);
 //
 //        // Get CSV file writers
-//        PrintWriter pwNode = csv.getCsvWriters().get(Node.Type.PANEL.toString());
+//        PrintWriter pwNode = csv.getCsvWriters().get(Node.Type.DISEASE_PANEL.toString());
 //        PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.PANEL__GENE.toString());
 //
 //        for (File panelFile: panelFiles) {

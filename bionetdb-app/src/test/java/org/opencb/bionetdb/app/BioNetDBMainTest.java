@@ -39,10 +39,10 @@ public class BioNetDBMainTest {
 
         node1 = new Node(uid++, "ENSG00000078808", "SDF4", Node.Type.GENE);
         network.getNodes().add(node1);
-        node2 = new Node(uid++, null, "COCA", Node.Type.DRUG);
+        node2 = new Node(uid++, null, "COCA", Node.Type.GENE_DRUG_INTERACTION);
         network.getNodes().add(node2);
-        relation1 = new Relation(uid++, "rel1", node1.getUid(), Node.Type.GENE, node2.getUid(), Node.Type.DRUG,
-                Relation.Type.GENE__DRUG);
+        relation1 = new Relation(uid++, "rel1", node1.getUid(), Node.Type.GENE, node2.getUid(), Node.Type.GENE_DRUG_INTERACTION,
+                Relation.Type.ANNOTATION___GENE___GENE_DRUG_INTERACTION);
         network.getRelations().add(relation1);
 
         File file = new File("/tmp/network1.json");
@@ -63,15 +63,15 @@ public class BioNetDBMainTest {
 
         node1 = new Node(uid++, "ENSG00000066666", "SDF666", Node.Type.GENE);
         network.getNodes().add(node1);
-        node2 = new Node(uid++, null, "COCA", Node.Type.DRUG);
+        node2 = new Node(uid++, null, "COCA", Node.Type.GENE_DRUG_INTERACTION);
         network.getNodes().add(node2);
-        node3 = new Node(uid++, "ALCOHOL", "ALCOHOL", Node.Type.DRUG);
+        node3 = new Node(uid++, "ALCOHOL", "ALCOHOL", Node.Type.GENE_DRUG_INTERACTION);
         network.getNodes().add(node3);
-        relation2 = new Relation(uid++, "rel2", node1.getUid(), Node.Type.GENE, node2.getUid(), Node.Type.DRUG,
-                Relation.Type.GENE__DRUG);
+        relation2 = new Relation(uid++, "rel2", node1.getUid(), Node.Type.GENE, node2.getUid(), Node.Type.GENE_DRUG_INTERACTION,
+                Relation.Type.ANNOTATION___GENE___GENE_DRUG_INTERACTION);
         network.getRelations().add(relation2);
-        relation3 = new Relation(uid++, "rel3", node1.getUid(), Node.Type.GENE, node3.getUid(), Node.Type.DRUG,
-                Relation.Type.GENE__DRUG);
+        relation3 = new Relation(uid++, "rel3", node1.getUid(), Node.Type.GENE, node3.getUid(), Node.Type.GENE_DRUG_INTERACTION,
+                Relation.Type.ANNOTATION___GENE___GENE_DRUG_INTERACTION);
         network.getRelations().add(relation3);
 
         file = new File("/tmp/network2.json");

@@ -123,59 +123,59 @@ public class Builder {
             logger.info("Ensembl gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
         }
 
-        if (refSeqGeneFile.exists()) {
-            logger.info("Processing RefSeq genes...");
-            start = System.currentTimeMillis();
-            buildGenes(refSeqGeneFile.toPath());
-            logger.info("RefSeq gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-        }
-
-        // Processing proteins
-        logger.info("Processing proteins...");
+//        if (refSeqGeneFile.exists()) {
+//            logger.info("Processing RefSeq genes...");
+//            start = System.currentTimeMillis();
+//            buildGenes(refSeqGeneFile.toPath());
+//            logger.info("RefSeq gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+//        }
+//
+//        // Processing proteins
+//        logger.info("Processing proteins...");
+//        start = System.currentTimeMillis();
+//        buildProteins(proteinFile.toPath());
+//        logger.info("Protein processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+//
+        // Disease panels support
+        logger.info("Processing disease panels...");
         start = System.currentTimeMillis();
-        buildProteins(proteinFile.toPath());
-        logger.info("Protein processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-
-        // Gene panels support
-        logger.info("Processing gene panels...");
-        start = System.currentTimeMillis();
-        buildGenePanels(panelFile.toPath());
-        logger.info("Gene panel processing done in {} s", (System.currentTimeMillis() - start) / 1000);
-
-        // Procesing BioPAX file
-        BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
-        Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
-        start = System.currentTimeMillis();
-        bioPAXImporter.build(networkFile.toPath());
-        biopaxProcessing.post();
-        logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
-
-
-        // Processing clinical variants
-        logger.info("Processing clinical variants...");
-        start = System.currentTimeMillis();
-        buildClinicalVariants(clinicalVariantFile.toPath());
-        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
-
-        // Processing additional variants
-        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
-            for (String additionalVariantFile: additionalVariantFiles) {
-                logger.info("Processing additional variant file {}...", additionalVariantFile);
-                start = System.currentTimeMillis();
-                buildClinicalVariants(Paths.get(additionalVariantFile));
-                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
-            }
-        }
-
-        // Processing additional networks
-        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
-            for (String additionalNeworkFile: additionalNeworkFiles) {
-                logger.info("Processing additional network file {}...", additionalNeworkFile);
-                start = System.currentTimeMillis();
-                processAdditionalNetwork(additionalNeworkFile);
-                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
-            }
-        }
+        buildDiseasePanels(panelFile.toPath());
+        logger.info("Disease panels processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+//
+//        // Procesing BioPAX file
+//        BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
+//        Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
+//        start = System.currentTimeMillis();
+//        bioPAXImporter.build(networkFile.toPath());
+//        biopaxProcessing.post();
+//        logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
+//
+//
+//        // Processing clinical variants
+//        logger.info("Processing clinical variants...");
+//        start = System.currentTimeMillis();
+//        buildClinicalVariants(clinicalVariantFile.toPath());
+//        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
+//
+//        // Processing additional variants
+//        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
+//            for (String additionalVariantFile: additionalVariantFiles) {
+//                logger.info("Processing additional variant file {}...", additionalVariantFile);
+//                start = System.currentTimeMillis();
+//                buildClinicalVariants(Paths.get(additionalVariantFile));
+//                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
+//            }
+//        }
+//
+//        // Processing additional networks
+//        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
+//            for (String additionalNeworkFile: additionalNeworkFiles) {
+//                logger.info("Processing additional network file {}...", additionalNeworkFile);
+//                start = System.currentTimeMillis();
+//                processAdditionalNetwork(additionalNeworkFile);
+//                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
+//            }
+//        }
 
         // Close CSV files
         csv.close();
@@ -471,11 +471,6 @@ public class Builder {
             proteinUid = node.getUid();
         }
 
-        if (proteinUid == 3196753) {
-            System.out.println("processProtein: proteinUid = " + proteinUid);
-            System.out.println("processProtein: proteinId = " + proteinId);
-            System.exit(-1);
-        }
         return proteinUid;
     }
 
@@ -499,24 +494,9 @@ public class Builder {
         // Create gene node and save gene UID
         Node geneNode = NodeBuilder.newNode(uid, gene);
 
-        // Gene object node management
-        try {
-            // Create gene object node and write
-            Node geneObjectNode = new Node(csv.getAndIncUid(), geneNode.getId(), geneNode.getName(), Node.Type.GENE_OBJECT);
-            geneObjectNode.addAttribute("object", Utils.compress(gene, mapper));
-            PrintWriter pw = csv.getCsvWriters().get(Node.Type.GENE_OBJECT.toString());
-            pw.println(csv.nodeLine(geneObjectNode));
-
-            // Create relation to gene node and write
-            pw = csv.getCsvWriters().get(Relation.Type.GENE__GENE_OBJECT.toString());
-            pw.println(uid + CsvInfo.SEPARATOR + geneObjectNode.getUid());
-        } catch (IOException e) {
-            logger.warn("Unable to create GZ JSON object for gene '{}': {}", gene.getId(), e.getMessage());
-        }
-
         // Model transcripts
         if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
-            pwRel = csv.getCsvWriters().get(Relation.Type.GENE__TRANSCRIPT.toString());
+            pwRel = csv.getCsvWriters().get(Relation.Type.HAS___GENE___TRANSCRIPT.toString());
             PrintWriter pwTranscr = csv.getCsvWriters().get(Node.Type.TRANSCRIPT.toString());
             for (Transcript transcript: gene.getTranscripts()) {
                 Long transcrUid = csv.getLong(transcript.getId(), Node.Type.TRANSCRIPT.name());
@@ -572,38 +552,51 @@ public class Builder {
         if (gene.getAnnotation() != null) {
             // Model drugs
             if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
-                pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DRUG.toString());
-                for (GeneDrugInteraction drug : gene.getAnnotation().getDrugs()) {
-                    Long drugUid = csv.getLong(drug.getDrugName(), Node.Type.DRUG.name());
+                pwRel = csv.getCsvWriters().get(Relation.Type.ANNOTATION___DRUG___GENE_DRUG_INTERACTION.toString());
+                for (GeneDrugInteraction drugInteraction : gene.getAnnotation().getDrugs()) {
+                    // Gene drug interaction node
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), drugInteraction);
+                    updateCSVFiles(uid, n, Relation.Type.ANNOTATION___GENE___GENE_DRUG_INTERACTION.toString());
+
+                    // Drug node
+                    Long drugUid = csv.getLong(drugInteraction.getDrugName(), Node.Type.DRUG.name());
                     if (drugUid == null) {
-                        n = NodeBuilder.newNode(csv.getAndIncUid(), drug);
-                        updateCSVFiles(uid, n, Relation.Type.GENE__DRUG.toString());
+                        Node drugNode = new Node(csv.getAndIncUid(), drugInteraction.getDrugName(), drugInteraction.getChemblId(),
+                                Node.Type.DRUG);
+                        csv.getCsvWriters().get(Node.Type.DRUG.toString()).println(csv.nodeLine(drugNode));
+
+//                        n = NodeBuilder.newNode(csv.getAndIncUid(), drugInteraction);
+//                        updateCSVFiles(drugNode.getUid(), n, Relation.Type.ANNOTATION___DRUG___GENE_DRUG_INTERACTION.toString());
                         // Save drug and gene-drug UIDs
-                        csv.putLong(drug.getDrugName(), Node.Type.DRUG.name(), n.getUid());
-                        csv.putLong(uid + "." + n.getUid(), Node.Type.DRUG.name(), 1);
-                    } else {
-                        String key = uid + "." + drugUid;
-                        if (csv.getLong(key, Node.Type.DRUG.name()) == null) {
-                            // Create gene-drug relation
-                            pwRel.println(csv.relationLine(uid, drugUid));
-                            // Save relation to avoid duplicated ones
-                            csv.putLong(key, Node.Type.DRUG.name(), 1);
-                        }
+                        drugUid = drugNode.getUid();
+                        csv.putLong(drugNode.getName(), Node.Type.DRUG.name(), drugUid);
+                        csv.putLong(drugNode.getId(), Node.Type.DRUG.name(), drugUid);
+//                        csv.putLong(uid + "." + n.getUid(), Node.Type.DRUG.name(), 1);
+//                    } else {
+//                        pwRel.println(csv.relationLine(drugUid, n.getUid()));
+//                        String key = uid + "." + drugUid;
+//                        if (csv.getLong(key, Node.Type.DRUG.name()) == null) {
+//                            // Create gene-drug relation
+//                            pwRel.println(csv.relationLine(uid, drugUid));
+//                            // Save relation to avoid duplicated ones
+//                            csv.putLong(key, Node.Type.DRUG.name(), 1);
+//                        }
                     }
+                    pwRel.println(csv.relationLine(drugUid, n.getUid()));
                 }
             }
 
-            // Model diseases
+            // Model gene trait association (diseases)
             if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
-                pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DISEASE.toString());
+                pwRel = csv.getCsvWriters().get(Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
                 for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
-                    String diseaseId = disease.getId() + "_" + (disease.getHpo() != null ? disease.getHpo() : "");
-                    Long diseaseUid = csv.getLong(diseaseId, Node.Type.DISEASE.name());
+                    String diseaseId = disease.getId() + (disease.getHpo() != null ? "_" + disease.getHpo() : "");
+                    Long diseaseUid = csv.getLong(diseaseId, Node.Type.GENE_TRAIT_ASSOCIATION.name());
                     if (diseaseUid == null) {
                         n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
-                        updateCSVFiles(uid, n, Relation.Type.GENE__DISEASE.toString());
+                        updateCSVFiles(uid, n, Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
 
-                        csv.putLong(diseaseId, Node.Type.DISEASE.name(), n.getUid());
+                        csv.putLong(diseaseId, Node.Type.GENE_TRAIT_ASSOCIATION.name(), n.getUid());
                     } else {
                         // create gene-disease relation
                         pwRel.println(csv.relationLine(uid, diseaseUid));
@@ -611,19 +604,28 @@ public class Builder {
                 }
             }
 
-            // Model constraint
-            if (CollectionUtils.isNotEmpty(gene.getAnnotation().getConstraints())) {
-                for (Constraint constraint : gene.getAnnotation().getConstraints()) {
-                    n = NodeBuilder.newNode(csv.getAndIncUid(), constraint);
+//            // Model constraint
+//            if (CollectionUtils.isNotEmpty(gene.getAnnotation().getConstraints())) {
+//                for (Constraint constraint : gene.getAnnotation().getConstraints()) {
+//                    n = NodeBuilder.newNode(csv.getAndIncUid(), constraint);
+//                    // Write constraint node and gene-constraint relation
+//                    updateCSVFiles(uid, n, Relation.Type.GENE__CONSTRAINT.toString());
+//                }
+//            }
+
+            // Gene expression
+            if (CollectionUtils.isNotEmpty(gene.getAnnotation().getExpression())) {
+                for (Expression expression : gene.getAnnotation().getExpression()) {
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), expression);
                     // Write constraint node and gene-constraint relation
-                    updateCSVFiles(uid, n, Relation.Type.GENE__CONSTRAINT.toString());
+                    updateCSVFiles(uid, n, Relation.Type.ANNOTATION___GENE___GENE_EXPRESSION.toString());
                 }
             }
         }
 
         // Xrefs
         PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
-        pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.XREF___GENE___XREF.toString());
+        pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___GENE___XREF.toString());
         Set<Xref> xrefSet = new HashSet<>();
         xrefSet.add(new Xref(gene.getId(), "Ensembl", "Ensembl"));
         xrefSet.add(new Xref(gene.getName(), "Ensembl", "Ensembl"));
@@ -918,7 +920,7 @@ public class Builder {
                     Long transcriptUid = processTranscript(ct.getEnsemblTranscriptId());
                     if (transcriptUid != null) {
                         if (geneUid != null) {
-                            csv.getCsvWriters().get(Relation.Type.GENE__TRANSCRIPT.toString()).println(csv.relationLine(
+                            csv.getCsvWriters().get(Relation.Type.HAS___GENE___TRANSCRIPT.toString()).println(csv.relationLine(
                                     geneUid, transcriptUid));
                         }
 
@@ -1462,7 +1464,7 @@ public class Builder {
 
                 // Save xrefs for that gene
                 geneCache.saveXref(geneId, geneId);
-                if (org.apache.commons.lang3.StringUtils.isNotEmpty(gene.getName())) {
+                if (StringUtils.isNotEmpty(gene.getName())) {
                     geneCache.saveXref(gene.getName(), geneId);
                 }
 
@@ -1470,7 +1472,7 @@ public class Builder {
                     for (Transcript transcr : gene.getTranscripts()) {
                         if (CollectionUtils.isNotEmpty(transcr.getXrefs())) {
                             for (Xref xref: transcr.getXrefs()) {
-                                if (org.apache.commons.lang3.StringUtils.isNotEmpty(xref.getId())) {
+                                if (StringUtils.isNotEmpty(xref.getId())) {
                                     geneCache.saveXref(xref.getId(), geneId);
                                 }
                             }
@@ -1503,8 +1505,21 @@ public class Builder {
                         Long matureUid = csv.getLong(mirnaTarget.getSourceId(), Node.Type.MIRNA_MATURE.name());
                         if (matureUid != null) {
                             for (TargetGene target : mirnaTarget.getTargets()) {
-                                pw.println(geneUid + CsvInfo.SEPARATOR + matureUid + CsvInfo.SEPARATOR + target.getExperiment()
-                                        + CsvInfo.SEPARATOR + target.getEvidence() + CsvInfo.SEPARATOR + target.getPubmed());
+                                Node targetNode = new Node(csv.getAndIncUid(), null, null, Node.Type.MIRNA_TARGET);
+                                targetNode.addAttribute("experiment", target.getExperiment());
+                                targetNode.addAttribute("evidence", target.getEvidence());
+                                targetNode.addAttribute("pubmed", target.getPubmed());
+
+                                // Write mirna target node into the CSV file
+                                csv.getCsvWriters().get(Node.Type.MIRNA_TARGET.toString()).println(csv.nodeLine(targetNode));
+
+                                // Write mirna target - gene relation
+                                csv.getCsvWriters().get(Relation.Type.ANNOTATION___GENE___MIRNA_TARGET.toString()).println(geneUid
+                                        + CsvInfo.SEPARATOR + targetNode.getUid());
+
+                                // And write mirna target - mirna mature relation
+                                csv.getCsvWriters().get(Relation.Type.ANNOTATION___MIRNA_MATURE___MIRNA_TARGET.toString()).println(matureUid
+                                        + CsvInfo.SEPARATOR + targetNode.getUid());
                             }
                         }
                     }
@@ -1549,7 +1564,7 @@ public class Builder {
                 if (protein.getProtein() != null && protein.getProtein().getRecommendedName() != null
                         && CollectionUtils.isNotEmpty(protein.getProtein().getRecommendedName().getShortName())) {
                     for (EvidencedStringType shortName : protein.getProtein().getRecommendedName().getShortName()) {
-                        if (org.apache.commons.lang3.StringUtils.isNotEmpty(shortName.getValue())) {
+                        if (StringUtils.isNotEmpty(shortName.getValue())) {
                             proteinCache.saveXref(shortName.getValue(), proteinAcc);
                         }
                     }
@@ -1583,37 +1598,53 @@ public class Builder {
         reader.close();
     }
 
-    public void buildGenePanels(Path panelPath) throws IOException {
-        File[] panelFiles = panelPath.toFile().listFiles();
-
+    public void buildDiseasePanels(Path panelPath) throws IOException {
         ObjectReader mapperReader = new ObjectMapper().reader(DiseasePanel.class);
 
         // Get CSV file writers
-        PrintWriter pwNode = csv.getCsvWriters().get(Node.Type.PANEL.toString());
-        PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.PANEL__GENE.toString());
+        PrintWriter pwDiseasePanelNode = csv.getCsvWriters().get(Node.Type.DISEASE_PANEL.toString());
+        PrintWriter pwPanelGeneNode = csv.getCsvWriters().get(Node.Type.PANEL_GENE.toString());
 
         BufferedReader reader = FileUtils.newBufferedReader(panelPath);
 
-        String jsonPanel = reader.readLine();
-        while (jsonPanel != null) {
-            DiseasePanel panel = mapperReader.readValue(jsonPanel);
+        String jsonDiseasePanel = reader.readLine();
+        while (jsonDiseasePanel != null) {
+            DiseasePanel diseasePanel = mapperReader.readValue(jsonDiseasePanel);
 
-            // Create node and save CSV file
-            Node node = NodeBuilder.newNode(csv.getAndIncUid(), panel);
-            pwNode.println(csv.nodeLine(node));
+            // Create disease panel node and save CSV file
+            Node diseasePanelNode = NodeBuilder.newNode(csv.getAndIncUid(), diseasePanel);
+            pwDiseasePanelNode.println(csv.nodeLine(diseasePanelNode));
 
-            for (DiseasePanel.GenePanel gene : panel.getGenes()) {
-                if (StringUtils.isNotEmpty(gene.getId())) {
-                    Long geneUid = processGene(gene.getId(), gene.getName());
+            for (DiseasePanel.GenePanel panelGene : diseasePanel.getGenes()) {
+                // Create panel gene node and save CSV file
+                Node panelGeneNode = NodeBuilder.newNode(csv.getAndIncUid(), panelGene);
+                pwPanelGeneNode.println(csv.nodeLine(panelGeneNode));
+
+                csv.getCsvWriters().get(Relation.Type.HAS___DISEASE_PANEL___PANEL_GENE.toString()).println(diseasePanelNode.getUid()
+                        + CsvInfo.SEPARATOR + panelGeneNode.getUid());
+
+                if (StringUtils.isNotEmpty(panelGene.getId())) {
+                    Long geneUid = csv.getGeneUid(panelGene.getId());
+                    if (geneUid == null) {
+                        geneUid = csv.getGeneUid(panelGene.getName());
+                    }
+
+//                    Long geneUid = processGene(panelGene.getId(), panelGene.getName());
                     if (geneUid != null) {
                         // Add relation to CSV file
-                        pwRel.println(node.getUid() + CsvInfo.SEPARATOR + geneUid);
+                        csv.getCsvWriters().get(Relation.Type.ANNOTATION___GENE___PANEL_GENE.toString()).println(geneUid + CsvInfo.SEPARATOR
+                                + panelGeneNode.getUid());
+                    } else {
+                        String msg = "Not found!!! Gene " + panelGene.getId() + " (" + panelGene.getName() + ") from disease panel "
+                                + diseasePanel.getId();
+                        logger.warn(msg);
+//                        System.out.println(msg);
                     }
                 }
             }
 
             // Next panel
-            jsonPanel = reader.readLine();
+            jsonDiseasePanel = reader.readLine();
         }
     }
 

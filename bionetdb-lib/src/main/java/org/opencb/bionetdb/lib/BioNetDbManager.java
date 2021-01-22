@@ -111,8 +111,10 @@ public class BioNetDbManager {
     //-------------------------------------------------------------------------
 
     public void load(String database, Path inputPath) {
+        System.out.println("Importing data into BioNetDB database...");
         Importer importer = new Importer(database, inputPath);
         importer.run();
+        System.out.println("Importing data into BioNetDB database done!!");
 
         try {
             Thread.sleep(10000);
@@ -120,9 +122,11 @@ public class BioNetDbManager {
             logger.info(e.getMessage());
         }
 
+        System.out.println("Indexing BioNetDB database...");
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.configuration);
         networkDBAdaptor.index();
         networkDBAdaptor.close();
+        System.out.println("Indexing BioNetDB database done!!");
     }
 
 

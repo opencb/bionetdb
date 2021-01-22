@@ -256,7 +256,7 @@ public class Neo4jImporter {
         //disease: (uid:ID(diseaseId),id,name,hpo,numberOfPubmeds,score,source,sources,associationType)
         attrs = Arrays.asList("diseaseId", "id", "name", "hpo", "numberOfPubmeds", "score", "source", "sources",
                 "associationType");
-        nodeAttributes.put(Node.Type.DISEASE.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.GENE_TRAIT_ASSOCIATION.toString(), new ArrayList<>(attrs));
 
         //transcript: (uid:ID(transcriptId),id,name,proteinId,biotype,chromosome,start,end,strand,status,
         // cdnaCodingStart,cdnaCodingEnd,genomicCodingStart,genomicCodingEnd,cdsLength,description,annotationFlags
@@ -314,7 +314,7 @@ public class Neo4jImporter {
 
         // Panel
         attrs = Arrays.asList("panelId", "id", "name", "author", "version", "date", "sourceProject", "sourceId", "sourceVersion");
-        nodeAttributes.put(Node.Type.PANEL.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.DISEASE_PANEL.toString(), new ArrayList<>(attrs));
 
 //        // Disease group
 //        attrs = Arrays.asList("diseaseGroupId", "id", "name");
@@ -874,7 +874,7 @@ public class Neo4jImporter {
                                 }
 
                                 // Relation: gene - drug interaction
-                                pw = csv.csvWriterMap.get(Relation.Type.GENE__DRUG.toString());
+                                pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___GENE___GENE_DRUG_INTERACTION.toString());
                                 pw.println(importRelationNode(drug.getGeneName(), drugId));
                             }
                         }
@@ -924,15 +924,15 @@ public class Neo4jImporter {
 //                                diseaseId = cleanString(diseaseId);
 //                                if (!diseaseSet.contains(diseaseId)) {
 //                                    node = NodeBuilder.newNode(0, disease);
-//                                    pw = csv.csvWriterMap.get(Node.Type.DISEASE.toString());
+//                                    pw = csv.csvWriterMap.get(Node.Type.GENE_TRAIT_ASSOCIATION.toString());
 //                                    pw.println(importNodeLine(diseaseId, node,
-//                                            nodeAttributes.get(Node.Type.DISEASE.toString())));
+//                                            nodeAttributes.get(Node.Type.GENE_TRAIT_ASSOCIATION.toString())));
 //
 //                                    diseaseSet.add(diseaseId);
 //                                }
 //
 //                                // Relation: gene - disease (trait association)
-//                                pw = csv.csvWriterMap.get(Relation.Type.GENE__DISEASE.toString());
+//                                pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
 //                                pw.println(importRelationNode(drug.getGeneName(), drugId));
 //                            }
 //                        }
