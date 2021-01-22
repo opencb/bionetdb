@@ -288,7 +288,7 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, Constraint constraint) {
-        Node node = new Node(uid, null, constraint.getName(), Node.Type.CONSTRAINT);
+        Node node = new Node(uid, null, constraint.getName(), Node.Type.TRANSCRIPT_CONSTRAINT_SCORE);
         node.addAttribute("source", constraint.getSource());
         node.addAttribute("method", constraint.getMethod());
         node.addAttribute("value", constraint.getValue());
@@ -309,11 +309,6 @@ public class NodeBuilder {
         node.addAttribute("cdnaCodingStart", transcript.getCdnaCodingStart());
         node.addAttribute("cdnaCodingEnd", transcript.getCdnaCodingEnd());
         node.addAttribute("cdsLength", transcript.getCdsLength());
-        node.addAttribute("cDnaSequence", transcript.getcDnaSequence());
-        // TODO: maybe to remove?
-        node.addAttribute("proteinId", transcript.getProteinId());
-        // TODO: maybe to remove?
-        node.addAttribute("proteinSequence", transcript.getProteinSequence());
         node.addAttribute("description", transcript.getDescription());
         node.addAttribute("version", transcript.getVersion());
         node.addAttribute("source", transcript.getSource());
@@ -338,7 +333,6 @@ public class NodeBuilder {
         node.addAttribute("phase", exon.getPhase());
         node.addAttribute("exonNumber", exon.getExonNumber());
         node.addAttribute("source", source);
-        node.addAttribute("sequence", exon.getSequence());
         return node;
     }
 
@@ -373,7 +367,7 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, AnnotationEvidence annotationEvidence) {
-        Node node = new Node(uid, annotationEvidence.getCode(), null, Node.Type.ANNOTATION_EVIDENCE);
+        Node node = new Node(uid, annotationEvidence.getCode(), null, Node.Type.TRANSCRIPT_ANNOTATION_EVIDENCE);
         if (CollectionUtils.isNotEmpty(annotationEvidence.getReferences())) {
             node.addAttribute("references", StringUtils.join(annotationEvidence.getReferences(), ","));
         }

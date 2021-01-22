@@ -131,6 +131,7 @@ public class CsvInfo {
 
         ANNOTATION___GENE___XREF("ANNOTATION___GENE___XREF"),
         ANNOTATION___PROTEIN___XREF("ANNOTATION___PROTEIN___XREF"),
+        ANNOTATION___TRANSCRIPT___XREF("ANNOTATION___TRANSCRIPT___XREF"),
         XREF___RNA___XREF("XREF___RNA___XREF"),
 
         IS___DNA___GENE("IS___DNA___GENE"),
@@ -791,18 +792,18 @@ public class CsvInfo {
 
         // Transcript
         attrs = Arrays.asList("transcriptId", "id", "name", "chromosome", "start", "end", "strand", "biotype", "status",
-                "genomicCodingStart", "genomicCodingEnd", "cdnaCodingStart", "cdnaCodingEnd", "cdsLength", "cDnaSequence", "proteinId",
-                "proteinSequence", "description", "version", "source", "annotationFlags");
+                "genomicCodingStart", "genomicCodingEnd", "cdnaCodingStart", "cdnaCodingEnd", "cdsLength", "description", "version",
+                "source", "annotationFlags");
         nodeAttributes.put(Node.Type.TRANSCRIPT.toString(), new ArrayList<>(attrs));
 
         // Exon
         attrs = Arrays.asList("exonId", "id", "name", "chromosome", "start", "end", "strand", "genomicCodingStart",
-                "genomicCodingEnd", "cdnaCodingStart", "cdnaCodingEnd", "cdsStart", "cdsEnd", "phase", "exonNumber", "source", "sequence");
+                "genomicCodingEnd", "cdnaCodingStart", "cdnaCodingEnd", "cdsStart", "cdsEnd", "phase", "exonNumber", "source");
         nodeAttributes.put(Node.Type.EXON.toString(), new ArrayList<>(attrs));
 
         // Constraint
-        attrs = Arrays.asList("constraintId", "id", "name", "source", "method", "value");
-        nodeAttributes.put(Node.Type.CONSTRAINT.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("transcriptConstraintScoreId", "id", "name", "source", "method", "value");
+        nodeAttributes.put(Node.Type.TRANSCRIPT_CONSTRAINT_SCORE.toString(), new ArrayList<>(attrs));
 
         // Feature ontology term annotation
         attrs = Arrays.asList("ontologyId", "id", "name", "source", "attributes");
@@ -810,7 +811,7 @@ public class CsvInfo {
 
         // Annotation evidence
         attrs = Arrays.asList("evidenceId", "id", "name", "references", "qualifier");
-        nodeAttributes.put(Node.Type.ANNOTATION_EVIDENCE.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.TRANSCRIPT_ANNOTATION_EVIDENCE.toString(), new ArrayList<>(attrs));
 
         //        // Target transcript
 //        attrs = Arrays.asList("rnaId", "id", "name", "evidence");

@@ -567,7 +567,7 @@ public class Neo4JVariantQueryParser {
         String nexus = complexOrReaction ? COMPLEX : REACTION;
 
         // Match1
-        cypher.append("MATCH (tr1:TRANSCRIPT)-[:TRANSCRIPT__PROTEIN]-(prot1:PROTEIN)-");
+        cypher.append("MATCH (tr1:TRANSCRIPT)-[:IS___TRANSCRIPT___PROTEIN]-(prot1:PROTEIN)-");
         if (complexOrReaction) {
             cypher.append("[:COMPONENT_OF_COMPLEX]-(nex:COMPLEX)-[:COMPONENT_OF_COMPLEX]-");
         } else {
@@ -639,7 +639,7 @@ public class Neo4JVariantQueryParser {
         StringBuilder panelTail = new StringBuilder();
 
         // Match1 tail
-        panelTail.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:HAS___GENE___TRANSCRIPT]-(g:GENE)-[:PANEL__GENE]-"
+        panelTail.append("(prot2:PROTEIN)-[:IS___TRANSCRIPT___PROTEIN]-(tr2:TRANSCRIPT)-[:HAS___GENE___TRANSCRIPT]-(g:GENE)-[:PANEL__GENE]-"
                 + "(p:DISEASE_PANEL)\n");
 
         // Where1
@@ -652,7 +652,8 @@ public class Neo4JVariantQueryParser {
         StringBuilder panelTail = new StringBuilder();
 
         // Match1 tail
-        panelTail.append("(prot2:PROTEIN)-[:TRANSCRIPT__PROTEIN]-(tr2:TRANSCRIPT)-[:HAS___GENE___TRANSCRIPT]-(g:GENE)-[:XREF]-(r:XREF)\n");
+        panelTail.append("(prot2:PROTEIN)-[:IS___TRANSCRIPT___PROTEIN]-(tr2:TRANSCRIPT)-[:HAS___GENE___TRANSCRIPT]-(g:GENE)-[:XREF]-"
+                + "(r:XREF)\n");
 
         // Where1
         panelTail.append("WHERE ").append(getConditionString(Arrays.asList(query.getString(VariantQueryParam.GENE.key())

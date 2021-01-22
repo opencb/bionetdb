@@ -396,7 +396,8 @@ public class Neo4jCsvImporter {
 //                    }
 //
 //                    // Write transcript-protein relation
-//                    csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__PROTEIN.toString()).println(uid + CsvInfo.SEPARATOR + proteinUid);
+//                    csv.getCsvWriters().get(Relation.Type.IS___TRANSCRIPT___PROTEIN.toString()).println(uid + CsvInfo.SEPARATOR
+// + proteinUid);
 //                    break;
 //                }
 //            }
@@ -406,7 +407,7 @@ public class Neo4jCsvImporter {
 //        if (CollectionUtils.isNotEmpty(transcript.getTfbs())) {
 //            for (TranscriptTfbs tfbs: transcript.getTfbs()) {
 //                n = NodeBuilder.newNode(csv.getAndIncUid(), tfbs);
-//                updateCSVFiles(uid, n, Relation.Type.TRANSCRIPT__TFBS.toString());
+//                updateCSVFiles(uid, n, Relation.Type.ANNOTATION___TRANSCRIPT___TFBS.toString());
 //            }
 //        }
 //

@@ -751,40 +751,47 @@ public class Builder {
         Node node = NodeBuilder.newNode(uid, transcript);
         csv.putLong(transcript.getId(), Node.Type.TRANSCRIPT.name(), uid);
 
-        // Get protein
         Node n;
+
+        // Get protein, remember that all proteins were created before genes/transcripts
         if (CollectionUtils.isNotEmpty(transcript.getXrefs())) {
-            String proteinId;
-            Entry protein;
+            Long proteinUid = null;
             for (Xref xref: transcript.getXrefs()) {
-                proteinId = csv.getProteinCache().getPrimaryId(xref.getId());
+                String proteinId = csv.getProteinCache().getPrimaryId(xref.getId());
                 if (proteinId != null) {
-                    Long proteinUid = csv.getLong(proteinId, Node.Type.PROTEIN.name());
-                    if (proteinUid == null) {
-                        protein = csv.getProtein(proteinId);
-                        if (protein != null) {
-                            // Create protein node and write the CSV file
-                            Node proteinNode = createProteinNode(protein);
-                            csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).println(csv.nodeLine(proteinNode));
-                            proteinUid = proteinNode.getUid();
+                    proteinUid = csv.getLong(proteinId, Node.Type.PROTEIN.name());
+//                    if (proteinUid == null) {
+//                        Entry protein = csv.getProtein(proteinId);
+//                        if (protein != null) {
+//                            // Create protein node and write the CSV file
+//                            Node proteinNode = createProteinNode(protein);
+//                            csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).println(csv.nodeLine(proteinNode));
+//                            proteinUid = proteinNode.getUid();
+//
+//                            // Save protein UID
+//                            csv.saveProteinUid(proteinId, proteinUid);
+//                        } else {
+//                            logger.info("Protein not found for ID {}", proteinId);
+//                        }
+//                    }
 
-                            // Save protein UID
-                            csv.saveProteinUid(proteinId, proteinUid);
-                        } else {
-                            logger.info("Protein not found for ID {}", proteinId);
-                        }
+                    if (proteinUid != null) {
+                        // Write transcript-protein relation
+                        csv.getCsvWriters().get(Relation.Type.IS___TRANSCRIPT___PROTEIN.toString()).println(uid + CsvInfo.SEPARATOR
+                                + proteinUid);
+                        break;
                     }
-
-                    // Write transcript-protein relation
-                    csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__PROTEIN.toString()).println(uid + CsvInfo.SEPARATOR + proteinUid);
-                    break;
                 }
             }
+//            if (proteinUid == null && StringUtils.isNotEmpty(transcript.getProteinId())) {
+//                System.out.println("Protein not found!!! Transcript " + transcript.getId() + " with proteinId = "
+//                        + transcript.getProteinId());
+//            }
         }
 
         // Model exon
         if (CollectionUtils.isNotEmpty(transcript.getExons())) {
-            PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__EXON.toString());
+            PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.HAS___TRANSCRIPT___EXON.toString());
             for (Exon exon : transcript.getExons()) {
                 Long exonUid = csv.getLong(exon.getId(), Node.Type.EXON.name());
                 if (exonUid == null) {
@@ -800,7 +807,7 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(transcript.getTfbs())) {
             for (TranscriptTfbs tfbs: transcript.getTfbs()) {
                 n = NodeBuilder.newNode(csv.getAndIncUid(), tfbs);
-                updateCSVFiles(uid, n, Relation.Type.TRANSCRIPT__TFBS.toString());
+                updateCSVFiles(uid, n, Relation.Type.ANNOTATION___TRANSCRIPT___TFBS.toString());
             }
         }
 
@@ -810,24 +817,46 @@ public class Builder {
                 for (Constraint constraint : transcript.getAnnotation().getConstraints()) {
                     n = NodeBuilder.newNode(csv.getAndIncUid(), constraint);
                     // Write constraint node and transcript-constraint relation
-                    updateCSVFiles(uid, n, Relation.Type.TRANSCRIPT__CONSTRAINT.toString());
+                    updateCSVFiles(uid, n, Relation.Type.ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE.toString());
                 }
             }
 
             // Model feature ontology term annotation
             if (CollectionUtils.isNotEmpty(transcript.getAnnotation().getOntologies())) {
-                PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.TRANSCRIPT__FEATURE_ONTOLOGY_TERM_ANNOTATION.toString());
+                PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.ANNOTATION___TRANSCRIPT___FEATURE_ONTOLOGY_TERM_ANNOTATION
+                        .toString());
                 for (FeatureOntologyTermAnnotation ontology : transcript.getAnnotation().getOntologies()) {
-                    Long ontologyUid = csv.getLong(ontology.getId(), Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION.name());
-                    if (ontologyUid == null) {
-                        n = createFeatureOntologyTermAnnotationNode(ontology);
-                        ontologyUid = n.getUid();
-                    }
-                    // Add relation transcript-ontology to CSV file
-                    pwRel.println(uid + CsvInfo.SEPARATOR + ontologyUid);
+                    // Create the feature ontology term annotation node and the relation with the transcript to CSV file
+                    n = createFeatureOntologyTermAnnotationNode(ontology);
+                    pwRel.println(uid + CsvInfo.SEPARATOR + n.getUid());
+
+//                    Long ontologyUid = csv.getLong(ontology.getId(), Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION.name());
+//                    if (ontologyUid == null) {
+//                        n = createFeatureOntologyTermAnnotationNode(ontology);
+//                        ontologyUid = n.getUid();
+//                    }
+//                    // Add relation transcript-ontology to CSV file
+//                    pwRel.println(uid + CsvInfo.SEPARATOR + ontologyUid);
                 }
             }
         }
+
+        // Model Xrefs
+        if (CollectionUtils.isNotEmpty(transcript.getXrefs())) {
+            PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
+            PrintWriter pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___TRANSCRIPT___XREF.toString());
+            for (Xref xref: transcript.getXrefs()) {
+                Long xrefUid = csv.getLong(xref.getDbName() + "." + xref.getId(), Node.Type.XREF.name());
+                if (xrefUid == null) {
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
+                    pwXref.println(csv.nodeLine(n));
+                    xrefUid = n.getUid();
+                    csv.putLong(xref.getDbName() + "." + xref.getId(), Node.Type.XREF.name(), xrefUid);
+                }
+                pw.println(csv.relationLine(uid, xrefUid));
+            }
+        }
+
 
         return node;
     }
@@ -859,7 +888,7 @@ public class Builder {
             for (AnnotationEvidence annotationEvidence : ontology.getEvidence()) {
                 Node n = NodeBuilder.newNode(csv.getAndIncUid(), annotationEvidence);
                 // Write evidence node and ontology-evidence relation
-                updateCSVFiles(uid, n, Relation.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION__ANNOTATION_EVIDENCE.toString());
+                updateCSVFiles(uid, n, Relation.Type.HAS___FEATURE_ONTOLOGY_TERM_ANNOTATION___TRANSCRIPT_ANNOTATION_EVIDENCE.toString());
             }
         }
 
