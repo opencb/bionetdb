@@ -21,10 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.opencb.bionetdb.core.models.network.Node.Type.CONSERVATION;
-import static org.opencb.bionetdb.core.models.network.Node.Type.FUNCTIONAL_SCORE;
+import static org.opencb.bionetdb.core.models.network.Node.Type.VARIANT_CONSERVATION_SCORE;
+import static org.opencb.bionetdb.core.models.network.Node.Type.VARIANT_FUNCTIONAL_SCORE;
 import static org.opencb.bionetdb.core.models.network.Node.Type.*;
-import static org.opencb.bionetdb.core.models.network.Node.Type.TRAIT_ASSOCIATION;
+import static org.opencb.bionetdb.core.models.network.Node.Type.CLINICAL_EVIDENCE;
 import static org.opencb.bionetdb.core.models.network.Relation.Type.*;
 
 public class Neo4JLoader {
@@ -235,14 +235,14 @@ public class Neo4JLoader {
             }
         }
 
-//        // Sequence ontology terms (SO)
+//        // Sequence ontology terms (SO_TERM)
 //        if (CollectionUtils.isNotEmpty(clinicalVariantEvidence.get.getConsequenceTypes())) {
 //            for (SequenceOntologyTerm so : clinicalVariantEvidence.getConsequenceTypes()) {
-//                Node soNode = graphDb.findNode(Label.label(SO.name()), "id", so.getAccession());
+//                Node soNode = graphDb.findNode(Label.label(SO_TERM.name()), "id", so.getAccession());
 //                if (soNode == null) {
-//                    //log.info("SO " + so.getAccession() + ", " + so.getName() + " not found for reported event!");
+//                    //log.info("SO_TERM " + so.getAccession() + ", " + so.getName() + " not found for reported event!");
 //                    soNode = createNeo4JNode(new org.opencb.bionetdb.core.models.network.Node(0, so.getAccession(),
-//                            so.getName(), org.opencb.bionetdb.core.models.network.Node.Type.SO));
+//                            so.getName(), org.opencb.bionetdb.core.models.network.Node.Type.SO_TERM));
 //                }
 //                reportedEventNode.createRelationshipTo(soNode, withName(REPORTED_EVENT__SO.toString()));
 //            }
@@ -293,14 +293,15 @@ public class Neo4JLoader {
                 for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                     // Consequence type node and relation variant - consequence type
                     Node ctNode = createNeo4JNode(NodeBuilder.newNode(0, ct));
-                    variantNode.createRelationshipTo(ctNode, withName(VARIANT__CONSEQUENCE_TYPE.toString()));
+                    variantNode.createRelationshipTo(ctNode, withName(ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE.toString()));
 
                     // Transcript node and relation consequence type - transcript
                     if (ct.getEnsemblTranscriptId() != null) {
                         Node transcriptNode = null;
 //                        Node transcriptNode = graphDb.findNode(Label.label(TRANSCRIPT.name()), "id", ct.getEnsemblTranscriptId());
                         if (transcriptNode != null) {
-                            ctNode.createRelationshipTo(transcriptNode, withName(CONSEQUENCE_TYPE__TRANSCRIPT.toString()));
+                            ctNode.createRelationshipTo(transcriptNode, withName(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT
+                                    .toString()));
                         } else {
                             log.warn("Transcript " + ct.getEnsemblTranscriptId() + " not found for gene " + ct.getEnsemblGeneId() + ", "
                                     + ct.getGeneName());
@@ -309,18 +310,18 @@ public class Neo4JLoader {
                         log.warn("Transcript null for gene " + ct.getEnsemblGeneId() + ", " + ct.getGeneName());
                     }
 
-                    // SO
+                    // SO_TERM
                     if (CollectionUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
                         for (SequenceOntologyTerm so : ct.getSequenceOntologyTerms()) {
-                            // SO node and relation consequence type - so
+                            // SO_TERM node and relation consequence type - so
                             Node soNode = null;
-//                            Node soNode = graphDb.findNode(Label.label(SO.toString()), "id", so.getAccession());
+//                            Node soNode = graphDb.findNode(Label.label(SO_TERM.toString()), "id", so.getAccession());
                             if (soNode == null) {
-//                                log.info("SO term accession " + so.getAccession() + " not found.");
+//                                log.info("SO_TERM term accession " + so.getAccession() + " not found.");
                                 soNode = createNeo4JNode(new org.opencb.bionetdb.core.models.network.Node(0, so.getAccession(),
-                                        so.getName(), org.opencb.bionetdb.core.models.network.Node.Type.SO));
+                                        so.getName(), org.opencb.bionetdb.core.models.network.Node.Type.SO_TERM));
                             }
-                            ctNode.createRelationshipTo(soNode, withName(CONSEQUENCE_TYPE__SO.toString()));
+                            ctNode.createRelationshipTo(soNode, withName(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM.toString()));
                         }
                     }
 
@@ -330,14 +331,16 @@ public class Neo4JLoader {
 
                         // Protein variant annotation node and relation consequence type - protein variant annotation
                         Node pVANode = createNeo4JNode(NodeBuilder.newNode(0, pVA));
-                        ctNode.createRelationshipTo(pVANode, withName(CONSEQUENCE_TYPE__PROTEIN_VARIANT_ANNOTATION.toString()));
+                        ctNode.createRelationshipTo(pVANode, withName(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___PROTEIN_VARIANT_ANNOTATION
+                                .toString()));
 
                         // Protein relationship management
                         if (pVA.getUniprotAccession() != null) {
                             Node proteinNode = null;
 //                            Node proteinNode = graphDb.findNode(Label.label(PROTEIN.name()), "id", pVA.getUniprotAccession());
                             if (proteinNode != null) {
-                                pVANode.createRelationshipTo(proteinNode, withName(PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString()));
+                                pVANode.createRelationshipTo(proteinNode, withName(ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN
+                                        .toString()));
                             } else {
                                 log.warn("Protein " + pVA.getUniprotAccession() + " node not found for protein variant annotation ("
                                         + ct.getEnsemblGeneId() + ", " + ct.getGeneName() + ", " + ct.getEnsemblTranscriptId() + ")");
@@ -351,9 +354,9 @@ public class Neo4JLoader {
                         if (CollectionUtils.isNotEmpty(ct.getProteinVariantAnnotation().getSubstitutionScores())) {
                             for (Score score: ct.getProteinVariantAnnotation().getSubstitutionScores()) {
                                 Node scoreNode = createNeo4JNode(NodeBuilder.newNode(0, score,
-                                        org.opencb.bionetdb.core.models.network.Node.Type.SUBSTITUTION_SCORE));
+                                        org.opencb.bionetdb.core.models.network.Node.Type.PROTEIN_SUBSTITUTION_SCORE));
                                 pVANode.createRelationshipTo(scoreNode,
-                                        withName(PROTEIN_VARIANT_ANNOTATION__SUBSTITUTION_SCORE.toString()));
+                                        withName(ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN_SUBSTITUTION_SCORE.toString()));
                             }
                         }
                     }
@@ -365,7 +368,7 @@ public class Neo4JLoader {
                 for (PopulationFrequency popFreq : variant.getAnnotation().getPopulationFrequencies()) {
                     // Population frequency node and relation: variant - population frequency
                     Node popFreqNode = createNeo4JNode(NodeBuilder.newNode(0, popFreq));
-                    variantNode.createRelationshipTo(popFreqNode, withName(VARIANT__POPULATION_FREQUENCY.toString()));
+                    variantNode.createRelationshipTo(popFreqNode, withName(ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY.toString()));
                 }
             }
 
@@ -373,8 +376,9 @@ public class Neo4JLoader {
             if (CollectionUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
                 for (Score score: variant.getAnnotation().getConservation()) {
                     // Conservation node and relation: variant - conservation
-                    Node conservatioNode = createNeo4JNode(NodeBuilder.newNode(0, score, CONSERVATION));
-                    variantNode.createRelationshipTo(conservatioNode, withName(VARIANT__CONSERVATION.toString()));
+                    Node conservatioNode = createNeo4JNode(NodeBuilder.newNode(0, score, VARIANT_CONSERVATION_SCORE));
+                    variantNode.createRelationshipTo(conservatioNode, withName(ANNOTATION___VARIANT___VARIANT_CONSERVATION_SCORE
+                            .toString()));
                 }
             }
 
@@ -382,8 +386,8 @@ public class Neo4JLoader {
             if (CollectionUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
                 for (EvidenceEntry evidence: variant.getAnnotation().getTraitAssociation()) {
                     // Trait association node and relation: variant - trait association
-                    Node traitNode = createNeo4JNode(NodeBuilder.newNode(0, evidence, TRAIT_ASSOCIATION));
-                    variantNode.createRelationshipTo(traitNode, withName(VARIANT__TRAIT_ASSOCIATION.toString()));
+                    Node traitNode = createNeo4JNode(NodeBuilder.newNode(0, evidence, CLINICAL_EVIDENCE, null));
+                    variantNode.createRelationshipTo(traitNode, withName(ANNOTATION___VARIANT___CLINICAL_EVIDENCE.toString()));
                 }
             }
 
@@ -391,8 +395,8 @@ public class Neo4JLoader {
             if (CollectionUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
                 for (Score score: variant.getAnnotation().getFunctionalScore()) {
                     // Functional score node and relation: variant - functional score
-                    Node functNode = createNeo4JNode(NodeBuilder.newNode(0, score, FUNCTIONAL_SCORE));
-                    variantNode.createRelationshipTo(functNode, withName(VARIANT__FUNCTIONAL_SCORE.toString()));
+                    Node functNode = createNeo4JNode(NodeBuilder.newNode(0, score, VARIANT_FUNCTIONAL_SCORE));
+                    variantNode.createRelationshipTo(functNode, withName(ANNOTATION___VARIANT___VARIANT_FUNCTIONAL_SCORE.toString()));
                 }
             }
         }

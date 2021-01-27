@@ -549,7 +549,7 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadComplex(BioPAXElement bioPAXElement) {
         Complex complexBP = (Complex) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.COMPLEX);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.PHYSICAL_ENTITY_COMPLEX);
         node.addAttribute("source", source);
 
         // Common properties
@@ -1061,7 +1061,7 @@ public class Neo4jBioPaxBuilder {
             Long componentUid = rdfToUid.get(getBioPaxId(component.getRDFId()));
             Node.Type componentType = uidToType.get(componentUid);
             Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, complexUid, complexType,
-                    Relation.Type.COMPONENT_OF_COMPLEX);
+                    Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
             if (stoichiometryMap.containsKey(componentUid)) {
                 relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
             }

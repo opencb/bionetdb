@@ -45,7 +45,7 @@ public class UtilsTest {
             List<SequenceOntologyTerm> sos = new ArrayList<>();
             for (int j = 0; j < 3; j++) {
                 SequenceOntologyTerm so = new SequenceOntologyTerm();
-                so.setAccession("SO:000" + j);
+                so.setAccession("SO_TERM:000" + j);
                 so.setName("so_name_" + j);
                 sos.add(so);
             }

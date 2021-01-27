@@ -219,25 +219,25 @@ public class Neo4jImporter {
 
         //population frequency: (uid:ID(popFreqId),id,name,study,population,refAlleleFreq,altAlleleFreq)
         attrs = Arrays.asList("popFreqId", "id", "name", "study", "population", "refAlleleFreq", "altAlleleFreq");
-        nodeAttributes.put(Node.Type.POPULATION_FREQUENCY.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.VARIANT_POPULATION_FREQUENCY.toString(), new ArrayList<>(attrs));
 
         //conservation: (uid:ID(consId),id,name,score,source,description)
         attrs = Arrays.asList("consId", "id", "name", "score", "source", "description");
-        nodeAttributes.put(Node.Type.CONSERVATION.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.VARIANT_CONSERVATION_SCORE.toString(), new ArrayList<>(attrs));
 
         //functional score: (uid:ID(consId),id,name,score,source,description)
         attrs = Arrays.asList("funcScoreId", "id", "name", "score", "source", "description");
-        nodeAttributes.put(Node.Type.FUNCTIONAL_SCORE.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.VARIANT_FUNCTIONAL_SCORE.toString(), new ArrayList<>(attrs));
 
         //trait association: (uid:ID(traitId),name,url,heritableTraits,source,alleleOrigin)
         attrs = Arrays.asList("traitId", "id", "name", "url", "heritableTraits", "source", "alleleOrigin");
-        nodeAttributes.put(Node.Type.TRAIT_ASSOCIATION.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.CLINICAL_EVIDENCE.toString(), new ArrayList<>(attrs));
 
         //consequence type: (uid:ID(ctId),id,name,biotype,cdnaPosition,cdsPosition,codon,strand,gene,transcript,
         // transcriptAnnotationFlags,exonOverlap)
         attrs = Arrays.asList("consTypeId", "id", "name", "study", "biotype", "cdnaPosition", "cdsPosition", "codon",
                 "strand", "gene", "transcript", "transcriptAnnotationFlags", "exonOverlap");
-        nodeAttributes.put(Node.Type.CONSEQUENCE_TYPE.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.VARIANT_CONSEQUENCE_TYPE.toString(), new ArrayList<>(attrs));
 
         //protein variant annotation: (uid:ID(protAnnId),id,name,position,reference,alternate,functionalDescription)
         attrs = Arrays.asList("protVarAnnoId", "id", "name", "position", "reference", "alternate",
@@ -302,7 +302,7 @@ public class Neo4jImporter {
 
         //so: (uid:ID(soId),id,name)
         attrs = Arrays.asList("soId", "id", "name");
-        nodeAttributes.put(Node.Type.SO.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.SO_TERM.toString(), new ArrayList<>(attrs));
 
         //proteinVariantAnnotation: (uid:ID(protVarAnnoId),id,name)
         attrs = Arrays.asList("protVarAnnoId", "id", "name");
@@ -310,7 +310,7 @@ public class Neo4jImporter {
 
         //substitutionScore: (uid:ID(substScoreId),id,name)
         attrs = Arrays.asList("substScoreId", "id", "name", "score");
-        nodeAttributes.put(Node.Type.SUBSTITUTION_SCORE.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.PROTEIN_SUBSTITUTION_SCORE.toString(), new ArrayList<>(attrs));
 
         // Panel
         attrs = Arrays.asList("panelId", "id", "name", "author", "version", "date", "sourceProject", "sourceId", "sourceVersion");
@@ -628,25 +628,25 @@ public class Neo4jImporter {
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         String ctId = "ct_" + (uid++);
                         node = NodeBuilder.newNode(0, ct);
-                        pw = csv.csvWriterMap.get(Node.Type.CONSEQUENCE_TYPE.toString());
+                        pw = csv.csvWriterMap.get(Node.Type.VARIANT_CONSEQUENCE_TYPE.toString());
                         pw.println(importNodeLine(ctId, node,
-                                nodeAttributes.get(Node.Type.CONSEQUENCE_TYPE.toString())));
+                                nodeAttributes.get(Node.Type.VARIANT_CONSEQUENCE_TYPE.toString())));
 
                         // Relation: variant - consequence type
                         sb.setLength(0);
                         sb.append(variantId).append(SEPARATOR).append(ctId);
-                        pw = csv.csvWriterMap.get(Relation.Type.VARIANT__CONSEQUENCE_TYPE.toString());
+                        pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE.toString());
                         pw.println(sb.toString());
 
-                        // SO
+                        // SO_TERM
                         if (ListUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
                             prefix = "s";
                             for (SequenceOntologyTerm so : ct.getSequenceOntologyTerms()) {
                                 if (!csv.containsId(prefix + so.getAccession())) {
-                                    node = new Node(0, so.getAccession(), so.getName(), Node.Type.SO);
-                                    pw = csv.csvWriterMap.get(Node.Type.SO.toString());
+                                    node = new Node(0, so.getAccession(), so.getName(), Node.Type.SO_TERM);
+                                    pw = csv.csvWriterMap.get(Node.Type.SO_TERM.toString());
                                     pw.println(importNodeLine(so.getAccession(), node,
-                                            nodeAttributes.get(Node.Type.SO.toString())));
+                                            nodeAttributes.get(Node.Type.SO_TERM.toString())));
 
                                     csv.addId(prefix + so.getAccession());
                                 }
@@ -654,7 +654,7 @@ public class Neo4jImporter {
                                 // Relation: consequence type - so
                                 sb.setLength(0);
                                 sb.append(ctId).append(SEPARATOR).append(so.getAccession());
-                                pw = csv.csvWriterMap.get(Relation.Type.CONSEQUENCE_TYPE__SO.toString());
+                                pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM.toString());
                                 pw.println(sb.toString());
                             }
                         }
@@ -672,7 +672,7 @@ public class Neo4jImporter {
                             sb.setLength(0);
                             sb.append(ctId).append(SEPARATOR).append(protVarAnnoId);
                             pw = csv.csvWriterMap.get(
-                                    Relation.Type.CONSEQUENCE_TYPE__PROTEIN_VARIANT_ANNOTATION.toString());
+                                    Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___PROTEIN_VARIANT_ANNOTATION.toString());
                             pw.println(sb.toString());
 
                             // Protein relationship management
@@ -693,7 +693,7 @@ public class Neo4jImporter {
                                 sb.setLength(0);
                                 sb.append(protVarAnnoId).append(SEPARATOR).append(proteinId);
                                 pw = csv.csvWriterMap.get(
-                                        Relation.Type.PROTEIN_VARIANT_ANNOTATION__PROTEIN.toString());
+                                        Relation.Type.ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN.toString());
                                 pw.println(sb.toString());
                             }
 
@@ -701,16 +701,16 @@ public class Neo4jImporter {
                             if (ListUtils.isNotEmpty(ct.getProteinVariantAnnotation().getSubstitutionScores())) {
                                 for (Score score : ct.getProteinVariantAnnotation().getSubstitutionScores()) {
                                     String substId = "subst_" + (uid++);
-                                    node = NodeBuilder.newNode(0, score, Node.Type.SUBSTITUTION_SCORE);
-                                    pw = csv.csvWriterMap.get(Node.Type.SUBSTITUTION_SCORE.toString());
+                                    node = NodeBuilder.newNode(0, score, Node.Type.PROTEIN_SUBSTITUTION_SCORE);
+                                    pw = csv.csvWriterMap.get(Node.Type.PROTEIN_SUBSTITUTION_SCORE.toString());
                                     pw.println(importNodeLine(substId, node,
-                                            nodeAttributes.get(Node.Type.SUBSTITUTION_SCORE.toString())));
+                                            nodeAttributes.get(Node.Type.PROTEIN_SUBSTITUTION_SCORE.toString())));
 
                                     // Relation: protein variant annotation - substitution score
                                     sb.setLength(0);
                                     sb.append(protVarAnnoId).append(SEPARATOR).append(substId);
                                     pw = csv.csvWriterMap.get(
-                                            Relation.Type.PROTEIN_VARIANT_ANNOTATION__SUBSTITUTION_SCORE.toString());
+                                            Relation.Type.ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN_SUBSTITUTION_SCORE.toString());
                                     pw.println(sb.toString());
                                 }
                             }
@@ -787,7 +787,7 @@ public class Neo4jImporter {
                             // Relation: consequence type - transcript
                             sb.setLength(0);
                             sb.append(ctId).append(SEPARATOR).append(ct.getEnsemblTranscriptId());
-                            pw = csv.csvWriterMap.get(Relation.Type.CONSEQUENCE_TYPE__TRANSCRIPT.toString());
+                            pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT.toString());
                             pw.println(sb.toString());
                         }
 
@@ -807,7 +807,7 @@ public class Neo4jImporter {
                             // Relation: consequence type - gene
                             sb.setLength(0);
                             sb.append(ctId).append(SEPARATOR).append(geneId);
-                            pw = csv.csvWriterMap.get(Relation.Type.CONSEQUENCE_TYPE__GENE.toString());
+                            pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE.toString());
                             pw.println(sb.toString());
                         }
                     }
@@ -819,14 +819,14 @@ public class Neo4jImporter {
                         // Population frequency node
                         String popFreqId = "pop_" + (uid++);
                         node = NodeBuilder.newNode(0, popFreq);
-                        pw = csv.csvWriterMap.get(Node.Type.POPULATION_FREQUENCY.toString());
+                        pw = csv.csvWriterMap.get(Node.Type.VARIANT_POPULATION_FREQUENCY.toString());
                         pw.println(importNodeLine(popFreqId, node,
-                                nodeAttributes.get(Node.Type.POPULATION_FREQUENCY.toString())));
+                                nodeAttributes.get(Node.Type.VARIANT_POPULATION_FREQUENCY.toString())));
 
                         // Relation: variant - population frequency
                         sb.setLength(0);
                         sb.append(variantId).append(SEPARATOR).append(popFreqId);
-                        pw = csv.csvWriterMap.get(Relation.Type.VARIANT__POPULATION_FREQUENCY.toString());
+                        pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY.toString());
                         pw.println(sb.toString());
                     }
                 }
@@ -836,13 +836,13 @@ public class Neo4jImporter {
                     for (Score score : variant.getAnnotation().getConservation()) {
                         // Conservation node
                         String consId = "cons_" + (uid++);
-                        node = NodeBuilder.newNode(0, score, Node.Type.CONSERVATION);
-                        pw = csv.csvWriterMap.get(Node.Type.CONSERVATION.toString());
+                        node = NodeBuilder.newNode(0, score, Node.Type.VARIANT_CONSERVATION_SCORE);
+                        pw = csv.csvWriterMap.get(Node.Type.VARIANT_CONSERVATION_SCORE.toString());
                         pw.println(importNodeLine(consId, node,
-                                nodeAttributes.get(Node.Type.CONSERVATION.toString())));
+                                nodeAttributes.get(Node.Type.VARIANT_CONSERVATION_SCORE.toString())));
 
                         // Relation: variant - conservation
-                        pw = csv.csvWriterMap.get(Relation.Type.VARIANT__CONSERVATION.toString());
+                        pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___VARIANT___VARIANT_CONSERVATION_SCORE.toString());
                         pw.println(importRelationNode(variantId, consId));
                     }
                 }
@@ -886,13 +886,13 @@ public class Neo4jImporter {
                     for (EvidenceEntry evidence : variant.getAnnotation().getTraitAssociation()) {
                         // Trait association node
                         String traitId = "trait_" + (uid++);
-                        node = NodeBuilder.newNode(0, evidence, Node.Type.TRAIT_ASSOCIATION);
-                        pw = csv.csvWriterMap.get(Node.Type.TRAIT_ASSOCIATION.toString());
+                        node = NodeBuilder.newNode(0, evidence, Node.Type.CLINICAL_EVIDENCE, null);
+                        pw = csv.csvWriterMap.get(Node.Type.CLINICAL_EVIDENCE.toString());
                         pw.println(importNodeLine(traitId, node,
-                                nodeAttributes.get(Node.Type.TRAIT_ASSOCIATION.toString())));
+                                nodeAttributes.get(Node.Type.CLINICAL_EVIDENCE.toString())));
 
                         // Relation: variant - trait association
-                        pw = csv.csvWriterMap.get(Relation.Type.VARIANT__TRAIT_ASSOCIATION.toString());
+                        pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___VARIANT___CLINICAL_EVIDENCE.toString());
                         pw.println(importRelationNode(variantId, traitId));
                     }
                 }
@@ -902,13 +902,13 @@ public class Neo4jImporter {
                     for (Score score : variant.getAnnotation().getFunctionalScore()) {
                         // Functional score node
                         String functId = "funct_" + (uid++);
-                        node = NodeBuilder.newNode(0, score, Node.Type.FUNCTIONAL_SCORE);
-                        pw = csv.csvWriterMap.get(Node.Type.FUNCTIONAL_SCORE.toString());
+                        node = NodeBuilder.newNode(0, score, Node.Type.VARIANT_FUNCTIONAL_SCORE);
+                        pw = csv.csvWriterMap.get(Node.Type.VARIANT_FUNCTIONAL_SCORE.toString());
                         pw.println(importNodeLine(functId, node,
-                                nodeAttributes.get(Node.Type.FUNCTIONAL_SCORE.toString())));
+                                nodeAttributes.get(Node.Type.VARIANT_FUNCTIONAL_SCORE.toString())));
 
                         // Relation: variant - functional score
-                        pw = csv.csvWriterMap.get(Relation.Type.VARIANT__FUNCTIONAL_SCORE.toString());
+                        pw = csv.csvWriterMap.get(Relation.Type.ANNOTATION___VARIANT___VARIANT_FUNCTIONAL_SCORE.toString());
                         pw.println(importRelationNode(variantId, functId));
                     }
                 }

@@ -8,8 +8,8 @@ public class Neo4JGeneQueryParser {
 
     public static String parse(NodeQuery query, QueryOptions options) throws BioNetDBException {
         // match (t:TRANSCRIPT)
-        // with t match (t)-[]-(ct:CONSEQUENCE_TYPE) where ct.attr_biotype="protein_coding"
-        // with t, ct match (ct)-[:SO]-(so:SO) where so.name="missense_variant"
+        // with t match (t)-[]-(ct:VARIANT_CONSEQUENCE_TYPE) where ct.attr_biotype="protein_coding"
+        // with t, ct match (ct)-[:SO_TERM]-(so:SO_TERM) where so.name="missense_variant"
         // with t match(t)-[:XREF]-(xref:SAMPLE) where xref.id = "HG00121"
         // return t
 

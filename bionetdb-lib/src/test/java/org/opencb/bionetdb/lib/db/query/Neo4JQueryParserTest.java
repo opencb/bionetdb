@@ -41,7 +41,7 @@ public class Neo4JQueryParserTest {
         List<NodeQuery> nodeQueries = new ArrayList<>();
         nodeQueries.add(new NodeQuery(Node.Type.PROTEIN));
         nodeQueries.add(new NodeQuery(Node.Type.SMALL_MOLECULE));
-        nodeQueries.add(new NodeQuery(Node.Type.COMPLEX));
+        nodeQueries.add(new NodeQuery(Node.Type.PHYSICAL_ENTITY_COMPLEX));
 //        String cypher = parser.parseNodesForNetwork(nodeQueries, QueryOptions.empty());
 //        System.out.println(cypher);
     }
@@ -52,7 +52,7 @@ public class Neo4JQueryParserTest {
         List<NetworkPathQuery> pathQueries = new ArrayList<>();
 
         pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Type.PROTEIN), new NodeQuery(Node.Type.CATALYSIS), null));
-        pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Type.COMPLEX), new NodeQuery(Node.Type.SMALL_MOLECULE), null));
+        pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Type.PHYSICAL_ENTITY_COMPLEX), new NodeQuery(Node.Type.SMALL_MOLECULE), null));
 //        String cypher = parser.parsePathsForNetwork(pathQueries, QueryOptions.empty());
 //        System.out.println(cypher);
     }

@@ -250,10 +250,10 @@ public class Neo4JVariantLoader {
                         networkDBAdaptor.mergeRelation(vCtRel, tx);
 
 
-                        // SO
+                        // SO_TERM
                         if (CollectionUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
                             for (SequenceOntologyTerm so: ct.getSequenceOntologyTerms()) {
-                                Node soNode = new Node(uidCounter, so.getAccession(), so.getName(), Node.Type.SO);
+                                Node soNode = new Node(uidCounter, so.getAccession(), so.getName(), Node.Type.SO_TERM);
                                 networkDBAdaptor.mergeNode(soNode, "id", tx);
 
                                 // Relation: consequence type - so
@@ -307,7 +307,7 @@ public class Neo4JVariantLoader {
                             // Protein substitution scores
                             if (CollectionUtils.isNotEmpty(ct.getProteinVariantAnnotation().getSubstitutionScores())) {
                                 for (Score score: ct.getProteinVariantAnnotation().getSubstitutionScores()) {
-                                    Node subsNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.SUBSTITUTION_SCORE);
+                                    Node subsNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.PROTEIN_SUBSTITUTION_SCORE);
                                     networkDBAdaptor.addNode(subsNode, tx);
 
                                     // Relation: protein variant annotation - substitution score
@@ -384,7 +384,7 @@ public class Neo4JVariantLoader {
                 // Conservation values
                 if (CollectionUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
                     for (Score score: variant.getAnnotation().getConservation()) {
-                        Node consNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.CONSERVATION);
+                        Node consNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.VARIANT_CONSERVATION_SCORE);
                         networkDBAdaptor.addNode(consNode, tx);
 
                         // Relation: variant - conservation
@@ -397,7 +397,7 @@ public class Neo4JVariantLoader {
                 // Trait associations
                 if (CollectionUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
                     for (EvidenceEntry evidence : variant.getAnnotation().getTraitAssociation()) {
-                        Node evNode = NodeBuilder.newNode(++uidCounter, evidence, Node.Type.TRAIT_ASSOCIATION);
+                        Node evNode = NodeBuilder.newNode(++uidCounter, evidence, Node.Type.CLINICAL_EVIDENCE, null);
                         networkDBAdaptor.addNode(evNode, tx);
 
                         // Relation: variant - conservation
@@ -410,7 +410,7 @@ public class Neo4JVariantLoader {
                 // Functional scores
                 if (CollectionUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
                     for (Score score: variant.getAnnotation().getFunctionalScore()) {
-                        Node funcNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.FUNCTIONAL_SCORE);
+                        Node funcNode = NodeBuilder.newNode(++uidCounter, score, Node.Type.VARIANT_FUNCTIONAL_SCORE);
                         networkDBAdaptor.addNode(funcNode, tx);
 
                         // Relation: variant - conservation

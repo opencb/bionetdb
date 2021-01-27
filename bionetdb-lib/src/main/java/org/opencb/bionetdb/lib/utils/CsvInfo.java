@@ -65,16 +65,22 @@ public class CsvInfo {
     protected static Logger logger;
 
     public enum BioPAXRelation {
-        COMPONENT_OF_COMPLEX___COMPLEX___COMPLEX("COMPONENT_OF_COMPLEX___COMPLEX___COMPLEX"),
-        COMPONENT_OF_COMPLEX___PROTEIN___COMPLEX("COMPONENT_OF_COMPLEX___PROTEIN___COMPLEX"),
-        COMPONENT_OF_COMPLEX___SMALL_MOLECULE___COMPLEX("COMPONENT_OF_COMPLEX___SMALL_MOLECULE___COMPLEX"),
-        COMPONENT_OF_COMPLEX___UNDEFINED___COMPLEX("COMPONENT_OF_COMPLEX___UNDEFINED___COMPLEX"),
-        COMPONENT_OF_COMPLEX___DNA___COMPLEX("COMPONENT_OF_COMPLEX___DNA___COMPLEX"),
-        COMPONENT_OF_COMPLEX___RNA___COMPLEX("COMPONENT_OF_COMPLEX___RNA___COMPLEX"),
+        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX
+                ("COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX"),
+        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___PROTEIN___PHYSICAL_ENTITY_COMPLEX
+                ("COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___PROTEIN___PHYSICAL_ENTITY_COMPLEX"),
+        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___SMALL_MOLECULE___PHYSICAL_ENTITY_COMPLEX
+                ("COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___SMALL_MOLECULE___PHYSICAL_ENTITY_COMPLEX"),
+        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___UNDEFINED___PHYSICAL_ENTITY_COMPLEX
+                ("COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___UNDEFINED___PHYSICAL_ENTITY_COMPLEX"),
+        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___DNA___PHYSICAL_ENTITY_COMPLEX
+                ("COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___DNA___PHYSICAL_ENTITY_COMPLEX"),
+        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___RNA___PHYSICAL_ENTITY_COMPLEX
+                ("COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___RNA___PHYSICAL_ENTITY_COMPLEX"),
 
         CELLULAR_LOCATION___PROTEIN___CELLULAR_LOCATION("CELLULAR_LOCATION___PROTEIN___CELLULAR_LOCATION"),
         CELLULAR_LOCATION___RNA___CELLULAR_LOCATION("CELLULAR_LOCATION___RNA___CELLULAR_LOCATION"),
-        CELLULAR_LOCATION___COMPLEX___CELLULAR_LOCATION("CELLULAR_LOCATION___COMPLEX___CELLULAR_LOCATION"),
+        CELLULAR_LOCATION___PHYSICAL_ENTITY_COMPLEX___CELLULAR_LOCATION("CELLULAR_LOCATION___PHYSICAL_ENTITY_COMPLEX___CELLULAR_LOCATION"),
         CELLULAR_LOCATION___SMALL_MOLECULE___CELLULAR_LOCATION("CELLULAR_LOCATION___SMALL_MOLECULE___CELLULAR_LOCATION"),
         CELLULAR_LOCATION___DNA___CELLULAR_LOCATION("CELLULAR_LOCATION___DNA___CELLULAR_LOCATION"),
         CELLULAR_LOCATION___UNDEFINED___CELLULAR_LOCATION("CELLULAR_LOCATION___UNDEFINED___CELLULAR_LOCATION"),
@@ -84,21 +90,21 @@ public class CsvInfo {
 
         REACTANT___REACTION___SMALL_MOLECULE("REACTANT___REACTION___SMALL_MOLECULE"),
         REACTANT___REACTION___PROTEIN("REACTANT___REACTION___PROTEIN"),
-        REACTANT___REACTION___COMPLEX("REACTANT___REACTION___COMPLEX"),
+        REACTANT___REACTION___PHYSICAL_ENTITY_COMPLEX("REACTANT___REACTION___PHYSICAL_ENTITY_COMPLEX"),
         REACTANT___REACTION___UNDEFINED("REACTANT___REACTION___UNDEFINED"),
         REACTANT___REACTION___DNA("REACTANT___REACTION___DNA"),
         REACTANT___REACTION___RNA("REACTANT___REACTION___RNA"),
 
         PRODUCT___REACTION___PROTEIN("PRODUCT___REACTION___PROTEIN"),
         PRODUCT___REACTION___SMALL_MOLECULE("PRODUCT___REACTION___SMALL_MOLECULE"),
-        PRODUCT___REACTION___COMPLEX("PRODUCT___REACTION___COMPLEX"),
+        PRODUCT___REACTION___PHYSICAL_ENTITY_COMPLEX("PRODUCT___REACTION___PHYSICAL_ENTITY_COMPLEX"),
         PRODUCT___REACTION___UNDEFINED("PRODUCT___REACTION___UNDEFINED"),
         PRODUCT___REACTION___RNA("PRODUCT___REACTION___RNA"),
 
         CONTROLLER___CATALYSIS___PROTEIN("CONTROLLER___CATALYSIS___PROTEIN"),
-        CONTROLLER___CATALYSIS___COMPLEX("CONTROLLER___CATALYSIS___COMPLEX"),
+        CONTROLLER___CATALYSIS___PHYSICAL_ENTITY_COMPLEX("CONTROLLER___CATALYSIS___PHYSICAL_ENTITY_COMPLEX"),
         CONTROLLER___CATALYSIS___UNDEFINED("CONTROLLER___CATALYSIS___UNDEFINED"),
-        CONTROLLER___REGULATION___COMPLEX("CONTROLLER___REGULATION___COMPLEX"),
+        CONTROLLER___REGULATION___PHYSICAL_ENTITY_COMPLEX("CONTROLLER___REGULATION___PHYSICAL_ENTITY_COMPLEX"),
         CONTROLLER___REGULATION___PROTEIN("CONTROLLER___REGULATION___PROTEIN"),
         CONTROLLER___REGULATION___UNDEFINED("CONTROLLER___REGULATION___UNDEFINED"),
         CONTROLLER___REGULATION___SMALL_MOLECULE("CONTROLLER___REGULATION___SMALL_MOLECULE"),
@@ -727,29 +733,83 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.VARIANT_OBJECT.toString(), new ArrayList<>(attrs));
 
         // Population frequency
-        attrs = Arrays.asList("popFreqId", "id", "name", "study", "population", "refAlleleFreq", "altAlleleFreq");
-        nodeAttributes.put(Node.Type.POPULATION_FREQUENCY.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("variantPopulationFrequencyId", "id", "name", "study", "population", "refAlleleFreq", "altAlleleFreq");
+        nodeAttributes.put(Node.Type.VARIANT_POPULATION_FREQUENCY.toString(), new ArrayList<>(attrs));
 
         // Conservation
-        attrs = Arrays.asList("consId", "id", "name", "score", "source", "description");
-        nodeAttributes.put(Node.Type.CONSERVATION.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("variantConservationScoreId", "id", "name", "score", "source", "description");
+        nodeAttributes.put(Node.Type.VARIANT_CONSERVATION_SCORE.toString(), new ArrayList<>(attrs));
+
+        // HGV
+        attrs = Arrays.asList("hgvId", "id", "name");
+        nodeAttributes.put(Node.Type.HGV.toString(), new ArrayList<>(attrs));
+
+        // Genomic feature
+        attrs = Arrays.asList("genomicFeatureId", "id", "name", "type", "geneName", "transcriptId");
+        nodeAttributes.put(Node.Type.GENOMIC_FEATURE.toString(), new ArrayList<>(attrs));
 
         // Functional score
-        attrs = Arrays.asList("funcScoreId", "id", "name", "score", "source", "description");
-        nodeAttributes.put(Node.Type.FUNCTIONAL_SCORE.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("variantFunctionalScoreId", "id", "name", "score", "source", "description");
+        nodeAttributes.put(Node.Type.VARIANT_FUNCTIONAL_SCORE.toString(), new ArrayList<>(attrs));
 
-        // Trait association
-        attrs = Arrays.asList("traitId", "id", "name", "url", "heritableTraits", "source", "alleleOrigin",
-                "clinicalSignificance");
-        nodeAttributes.put(Node.Type.TRAIT_ASSOCIATION.toString(), new ArrayList<>(attrs));
+        // Variant drug interaction
+        nodeAttributes.put(Node.Type.VARIANT_DRUG_INTERACTION.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("variantDrugInteractionId", "id", "name", "therapeuticContext", "pathway", "effect", "association", "status",
+                "evidence", "bibliography");
+
+        // Cytoband
+        nodeAttributes.put(Node.Type.CYTOBAND.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("cytobandId", "id", "name", "chromosome", "start", "end", "stain");
+
+        // Repeat
+        nodeAttributes.put(Node.Type.REPEAT.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("repeatId", "id", "name", "chromosome", "start", "end", "period", "consensusSize", "copyNumber",
+                "percentageMatch", "score", "source");
+
+        // Structural variation
+        nodeAttributes.put(Node.Type.STRUCTURAL_VARIATION.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("structuralVariationId", "id", "name", "ciStartLeft", "ciStartRight", "ciEndLeft", "ciEndRight", "copyNumber",
+                "leftSvInSeq", "rightSvInSeq",
+                "type");
+
+        // Breakend
+        nodeAttributes.put(Node.Type.BREAKEND.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("breakendId", "id", "name", "orientation");
+
+        // Breakend mate
+        nodeAttributes.put(Node.Type.BREAKEND_MATE.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("breakendMateId", "id", "name", "chromosome", "position", "ciPositionLeft", "ciPositionRight");
+
+        // Clinical evidence
+        nodeAttributes.put(Node.Type.CLINICAL_EVIDENCE.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("clinicalEvidenceId", "id", "name", "url", "sourceName", "sourceVersion", "sourceDate", "alleleOrigin",
+                "primarySite", "siteSubtype", "primaryHistology", "histologySubtype", "tumorOrigin", "sampleSource", "impact", "confidence",
+                "consistencyStatus", "ethnicity", "penetrance", "variableExpressivity", "description", "bibliography");
+
+        // Evidence submission
+        nodeAttributes.put(Node.Type.EVIDENCE_SUBMISSION.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("evidenceSubmissionId", "id", "name", "submitter", "date");
+
+        // Heritable trait
+        nodeAttributes.put(Node.Type.HERITABLE_TRAIT.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("heritableTraitId", "id", "name", "trait", "inheritanceMode");
+
+        // Property
+        nodeAttributes.put(Node.Type.PROPERTY.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("propertyId", "id", "name", "value");
+
+        // Variant classification
+        attrs = Arrays.asList("variantClassificationId", "id", "name", "acmg", "clinicalSignificance", "drugResponse", "traitAssociation",
+                "functionalEffect", "tumorigenesis");
+        nodeAttributes.put(Node.Type.VARIANT_CLASSIFICATION.toString(), new ArrayList<>(attrs));
 
         // Consequence type
-        attrs = Arrays.asList("consTypeId", "id", "name", "study", "biotype", "cdnaPosition", "cdsPosition", "codon",
+        attrs = Arrays.asList("variantConsequenceTypeId", "id", "name", "study", "biotype", "cdnaPosition", "cdsPosition", "codon",
                 "strand", "gene", "transcript", "transcriptAnnotationFlags", "exonOverlap");
-        nodeAttributes.put(Node.Type.CONSEQUENCE_TYPE.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.VARIANT_CONSEQUENCE_TYPE.toString(), new ArrayList<>(attrs));
 
         // Protein variant annotation
-        attrs = Arrays.asList("protVarAnnoId", "id", "name", "position", "reference", "alternate",
+        attrs = Arrays.asList("proteinVariantAnnotationId", "id", "name", "position", "reference", "alternate",
                 "functionalDescription");
         nodeAttributes.put(Node.Type.PROTEIN_VARIANT_ANNOTATION.toString(), new ArrayList<>(attrs));
 
@@ -763,7 +823,7 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.GENE_OBJECT.toString(), new ArrayList<>(attrs));
 
         // Disease panel
-        attrs = Arrays.asList("panelId", "id", "name", "description", "phenotypeNames", "sourceId", "sourceName",
+        attrs = Arrays.asList("diseasePanelId", "id", "name", "description", "phenotypeNames", "sourceId", "sourceName",
                 "sourceAuthor", "sourceProject", "sourceVersion", "creationDate", "modificationDate");
         nodeAttributes.put(Node.Type.DISEASE_PANEL.toString(), new ArrayList<>(attrs));
 
@@ -806,11 +866,11 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.TRANSCRIPT_CONSTRAINT_SCORE.toString(), new ArrayList<>(attrs));
 
         // Feature ontology term annotation
-        attrs = Arrays.asList("ontologyId", "id", "name", "source", "attributes");
+        attrs = Arrays.asList("featureOntologyTermAnnotationId", "id", "name", "source", "attributes");
         nodeAttributes.put(Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION.toString(), new ArrayList<>(attrs));
 
         // Annotation evidence
-        attrs = Arrays.asList("evidenceId", "id", "name", "references", "qualifier");
+        attrs = Arrays.asList("transcriptAnnotationEvidenceId", "id", "name", "references", "qualifier");
         nodeAttributes.put(Node.Type.TRANSCRIPT_ANNOTATION_EVIDENCE.toString(), new ArrayList<>(attrs));
 
         //        // Target transcript
@@ -847,11 +907,11 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.PROTEIN_OBJECT.toString(), new ArrayList<>(attrs));
 
         // Protein keyword
-        attrs = Arrays.asList("kwId", "id", "name", "evidence");
+        attrs = Arrays.asList("proteinKeywordId", "id", "name", "evidence");
         nodeAttributes.put(Node.Type.PROTEIN_KEYWORD.toString(), new ArrayList<>(attrs));
 
         // Protein feature
-        attrs = Arrays.asList("protFeatureId", "id", "name", "type", "evidence", "locationPosition", "locationBegin",
+        attrs = Arrays.asList("proteinFeatureId", "id", "name", "type", "evidence", "locationPosition", "locationBegin",
                 "locationEnd", "description");
         nodeAttributes.put(Node.Type.PROTEIN_FEATURE.toString(), new ArrayList<>(attrs));
 
@@ -863,17 +923,17 @@ public class CsvInfo {
         attrs = Arrays.asList("sampleId", "id", "name");
         nodeAttributes.put(Node.Type.SAMPLE.toString(), new ArrayList<>(attrs));
 
-        // SO
-        attrs = Arrays.asList("soId", "id", "name");
-        nodeAttributes.put(Node.Type.SO.toString(), new ArrayList<>(attrs));
+        // SO_TERM
+        attrs = Arrays.asList("soTermId", "id", "name");
+        nodeAttributes.put(Node.Type.SO_TERM.toString(), new ArrayList<>(attrs));
 
         // Protein variant annotation
-        attrs = Arrays.asList("protVarAnnoId", "id", "name");
+        attrs = Arrays.asList("proteinVariantAnnotationId", "id", "name");
         nodeAttributes.put(Node.Type.PROTEIN_VARIANT_ANNOTATION.toString(), new ArrayList<>(attrs));
 
         // Substitution score
-        attrs = Arrays.asList("substScoreId", "id", "name", "score");
-        nodeAttributes.put(Node.Type.SUBSTITUTION_SCORE.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("proteinSubstitutionScoreId", "id", "name", "score");
+        nodeAttributes.put(Node.Type.PROTEIN_SUBSTITUTION_SCORE.toString(), new ArrayList<>(attrs));
 
         //
         // BIO PAX: nodes
@@ -900,8 +960,8 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.CATALYSIS.toString(), new ArrayList<>(attrs));
 
         // complex
-        attrs = Arrays.asList("complexId", "id", "name");
-        nodeAttributes.put(Node.Type.COMPLEX.toString(), new ArrayList<>(attrs));
+        attrs = Arrays.asList("physicalEntityComplexId", "id", "name");
+        nodeAttributes.put(Node.Type.PHYSICAL_ENTITY_COMPLEX.toString(), new ArrayList<>(attrs));
 
         // reaction
         attrs = Arrays.asList("reactionId", "id", "name");
@@ -918,6 +978,10 @@ public class CsvInfo {
         // Regulation
         attrs = Arrays.asList("regulationId", "id", "name");
         nodeAttributes.put(Node.Type.REGULATION.toString(), new ArrayList<>(attrs));
+
+        //
+        // Clinical nodes
+        //
 
         // Clinical Analysis
         attrs = Arrays.asList("clinicalAnalysisId", "id", "name", "uuid", "description", "type", "priority", "flags", "creationDate",
@@ -957,11 +1021,6 @@ public class CsvInfo {
         attrs = Arrays.asList("reportedVariantId", "id", "name", "modeOfInheritance", "penetrance", "score", "fullyExplainPhenotypes",
                 "roleInCancer", "actionable", "justification", "tier");
         nodeAttributes.put(Node.Type.REPORTED_EVENT.toString(), new ArrayList<>(attrs));
-
-        // Variant classification
-        attrs = Arrays.asList("variantClassificationId", "id", "name", "acmg", "clinicalSignificance", "drugResponse", "traitAssociation",
-                "functionalEffect", "tumorigenesis");
-        nodeAttributes.put(Node.Type.VARIANT_CLASSIFICATION.toString(), new ArrayList<>(attrs));
 
         return nodeAttributes;
     }

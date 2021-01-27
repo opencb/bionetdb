@@ -121,7 +121,7 @@ public final class VariantNodeQueryParam extends NodeQueryParam {
 //            = new VariantQueryParam("annotationExists", BOOLEAN, ANNOTATION_EXISTS_DESCR);
 //
 //    public static final String ANNOT_CONSEQUENCE_TYPE_DESCR
-//            = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578";
+//            = "Consequence type SO_TERM term list. e.g. missense_variant,stop_lost or SO_TERM:0001583,SO_TERM:0001578";
 //    public static final VariantQueryParam ANNOT_CONSEQUENCE_TYPE
 //            = new VariantQueryParam("annot-ct", TEXT_ARRAY, ANNOT_CONSEQUENCE_TYPE_DESCR);
 //

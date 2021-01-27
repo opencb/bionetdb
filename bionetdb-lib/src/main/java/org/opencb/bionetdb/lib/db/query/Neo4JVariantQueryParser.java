@@ -268,7 +268,7 @@ public class Neo4JVariantQueryParser {
             chromWhere = "";
         }
 
-        // SO
+        // SO_TERM
         if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
             String biotypeValues = "";
             if (!query.containsKey(VariantQueryParam.PANEL.key()) && query.containsKey(VariantQueryParam.ANNOT_BIOTYPE.key())) {
@@ -378,7 +378,8 @@ public class Neo4JVariantQueryParser {
 
     private static Neo4JQueryParser.CypherStatement getTranscriptMatch(String biotypeValues, String chromWhere) {
         // Match2
-        String match = "MATCH (tr1:TRANSCRIPT)-[:CONSEQUENCE_TYPE__TRANSCRIPT]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]"
+        String match = "MATCH (tr1:TRANSCRIPT)-[:ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT]-(ct:VARIANT_CONSEQUENCE_TYPE)-"
+                + "[:ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE]"
                 + "-(v:VARIANT)";
 
         // Where2
@@ -427,7 +428,8 @@ public class Neo4JVariantQueryParser {
         List<String> cts = Arrays.asList(ctValues.split(","));
 
         // Match
-        String match = "MATCH (so:SO)-[:CONSEQUENCE_TYPE__SO]-(ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+        String match = "MATCH (so:SO_TERM)-[:ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM]-(ct:VARIANT_CONSEQUENCE_TYPE)-"
+                + "[:ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE]-(v:VARIANT)";
 
         // Where
         String where = "WHERE " + getConditionString(cts, "so.name", false) + chromWhere;
@@ -445,7 +447,7 @@ public class Neo4JVariantQueryParser {
         List<String> biotypes = Arrays.asList(biotypeValues.split(","));
 
         // Match
-        String match = "MATCH (ct:CONSEQUENCE_TYPE)-[:VARIANT__CONSEQUENCE_TYPE]-(v:VARIANT)";
+        String match = "MATCH (ct:VARIANT_CONSEQUENCE_TYPE)-[:ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE]-(v:VARIANT)";
 
         // Where
         String where = "WHERE " + getConditionString(biotypes, "ct.attr_biotype", false) + chromWhere;
@@ -466,7 +468,7 @@ public class Neo4JVariantQueryParser {
             // OR -> we need only one MATCH statement for all pop. frequencies
 
             // Math
-            String match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
+            String match = "MATCH (v:VARIANT)-[:ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY]-(pf:VARIANT_POPULATION_FREQUENCY)";
 
             // Where
             boolean first = true;
@@ -497,7 +499,8 @@ public class Neo4JVariantQueryParser {
                 matcher = POP_FREQ_PATTERN.matcher(popFreq);
                 if (matcher.find()) {
                     // Match
-                    String match = "MATCH (v:VARIANT)-[:VARIANT__POPULATION_FREQUENCY]-(pf:POPULATION_FREQUENCY)";
+                    String match = "MATCH (v:VARIANT)-[:ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY]-"
+                    + "(pf:VARIANT_POPULATION_FREQUENCY)";
 
                     // Where
                     String where = "WHERE (pf.id = '" + matcher.group(1) + "' AND toFloat(pf.attr_altAlleleFreq)" + matcher.group(2)
@@ -569,7 +572,7 @@ public class Neo4JVariantQueryParser {
         // Match1
         cypher.append("MATCH (tr1:TRANSCRIPT)-[:IS___TRANSCRIPT___PROTEIN]-(prot1:PROTEIN)-");
         if (complexOrReaction) {
-            cypher.append("[:COMPONENT_OF_COMPLEX]-(nex:COMPLEX)-[:COMPONENT_OF_COMPLEX]-");
+            cypher.append("[:COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX]-(nex:PHYSICAL_ENTITY_COMPLEX)-[:COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX]-");
         } else {
             cypher.append("[:REACTANT|:PRODUCT]-(nex:REACTION)-[:REACTANT|:PRODUCT]-");
         }
@@ -589,7 +592,8 @@ public class Neo4JVariantQueryParser {
                 .append(", prot2.name AS ").append(PANEL_PROTEIN).append(", g.id AS ").append(PANEL_GENE).append("\n");
 
         // Match2
-        cypher.append("MATCH (v:VARIANT)-[:VARIANT__CONSEQUENCE_TYPE]-(ct:CONSEQUENCE_TYPE)-[:CONSEQUENCE_TYPE__TRANSCRIPT]")
+        cypher.append("MATCH (v:VARIANT)-[:ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE]-(ct:VARIANT_CONSEQUENCE_TYPE)-"
+                + "[:ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT]")
                 .append("-(tr1:TRANSCRIPT)").append("\n");
 
         // Where2

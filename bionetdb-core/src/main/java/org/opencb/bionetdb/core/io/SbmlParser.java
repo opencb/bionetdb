@@ -111,7 +111,7 @@ public class SbmlParser {
 //            case PROTEIN:
 //                physicalEntity = createProtein(species);
 //                break;
-//            case COMPLEX:
+//            case PHYSICAL_ENTITY_COMPLEX:
 //                physicalEntity = createComplex(species);
 //                break;
 //            case SMALL_MOLECULE:
@@ -145,12 +145,12 @@ public class SbmlParser {
 //            } else if (res.contains("enst")) {
 //                type = PhysicalEntity.Type.RNA;
 //            } else if (res.contains("bind")) {
-//                type = PhysicalEntity.Type.COMPLEX;
+//                type = PhysicalEntity.Type.PHYSICAL_ENTITY_COMPLEX;
 //            }
 //        }
 //
 //        if (description.hasChild("hasPart")) {
-//            type = PhysicalEntity.Type.COMPLEX;
+//            type = PhysicalEntity.Type.PHYSICAL_ENTITY_COMPLEX;
 //        }
 //
 //        return type;
@@ -332,7 +332,7 @@ public class SbmlParser {
 //        // Populating "components" and "componentOfComplex" attributes
 //        List<PhysicalEntity> newPhysicalEntities = new ArrayList<>();
 //        for (PhysicalEntity physicalEntity : physicalEntities) {
-//            if (physicalEntity.getType() == PhysicalEntity.Type.COMPLEX) {
+//            if (physicalEntity.getType() == PhysicalEntity.Type.PHYSICAL_ENTITY_COMPLEX) {
 //                Complex complex = (Complex) physicalEntity;
 //                for (String component : complex.getComponents()) {
 //                    String componentId = component.replace("%3A", ":").split(":")[0].toLowerCase() + ":"
