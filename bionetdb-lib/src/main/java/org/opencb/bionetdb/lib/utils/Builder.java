@@ -705,15 +705,21 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
             PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
             pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___PROTEIN___XREF.toString());
+            Set<String> done = new HashSet<>();
             for (DbReferenceType dbRef: protein.getDbReference()) {
-                Long xrefUid = csv.getLong(dbRef.getType() + "." + dbRef.getId(), Node.Type.XREF.name());
-                if (xrefUid == null) {
-                    n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
-                    pwXref.println(csv.nodeLine(n));
-                    xrefUid = n.getUid();
-                    csv.putLong(dbRef.getType() + "." + dbRef.getId(), Node.Type.XREF.name(), xrefUid);
+                String xrefId = dbRef.getType() + "." + dbRef.getId();
+                if (!done.contains(xrefId)) {
+                    Long xrefUid = csv.getLong(xrefId, Node.Type.XREF.name());
+                    if (xrefUid == null) {
+                        n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
+                        pwXref.println(csv.nodeLine(n));
+                        xrefUid = n.getUid();
+                        csv.putLong(dbRef.getType() + "." + dbRef.getId(), Node.Type.XREF.name(), xrefUid);
+                    }
+                    pw.println(csv.relationLine(uid, xrefUid));
+
+                    done.add(xrefId);
                 }
-                pw.println(csv.relationLine(uid, xrefUid));
             }
         }
 

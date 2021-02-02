@@ -1059,16 +1059,24 @@ public class Neo4jBioPaxBuilder {
         Set<PhysicalEntity> components = complexBP.getComponent();
         for (PhysicalEntity component: components) {
             Long componentUid = rdfToUid.get(getBioPaxId(component.getRDFId()));
-            Node.Type componentType = uidToType.get(componentUid);
-            Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, complexUid, complexType,
-                    Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
-            if (stoichiometryMap.containsKey(componentUid)) {
-                relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
-            }
-            relations.add(relation);
 
-            // Check to add cellular location
-            checkProteinCellularLoc(getBioPaxId(component.getRDFId()), componentType, complexUid, complexType);
+            // Check if that relation already exists
+            String relId = componentUid + "." + complexUid;
+            if (csv.getLong(relId, Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name()) == null) {
+
+                Node.Type componentType = uidToType.get(componentUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, complexUid, complexType,
+                        Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
+                if (stoichiometryMap.containsKey(componentUid)) {
+                    relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
+                }
+                relations.add(relation);
+
+                // Check to add cellular location
+                checkProteinCellularLoc(getBioPaxId(component.getRDFId()), componentType, complexUid, complexType);
+
+                csv.putLong(relId, Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name(), 1);
+            }
         }
     }
 
@@ -1139,28 +1147,40 @@ public class Neo4jBioPaxBuilder {
                 // Reactants
                 if (templateReactBP.getTemplate() != null) {
                     Long reactantUid = rdfToUid.get(getBioPaxId(templateReactBP.getTemplate().getRDFId()));
-                    Node.Type reactantType = uidToType.get(reactantUid);
-                    Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid, templateReactType, reactantUid,
-                            reactantType, Relation.Type.REACTANT);
-                    relations.add(relation);
+                    // Check if that relation already exists
+                    String relId = templateReactUid + "." + reactantUid;
+                    if (csv.getLong(relId, Relation.Type.REACTANT.name()) == null) {
+                        Node.Type reactantType = uidToType.get(reactantUid);
+                        Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid, templateReactType, reactantUid,
+                                reactantType, Relation.Type.REACTANT);
+                        relations.add(relation);
 
-                    // Check to add cellular location
-                    checkProteinCellularLoc(getBioPaxId(templateReactBP.getTemplate().getRDFId()), reactantType, templateReactUid,
-                            templateReactType);
+                        // Check to add cellular location
+                        checkProteinCellularLoc(getBioPaxId(templateReactBP.getTemplate().getRDFId()), reactantType, templateReactUid,
+                                templateReactType);
+
+                        csv.putLong(relId, Relation.Type.REACTANT.name(), 1);
+                    }
                 }
 
                 // Products
                 Set<PhysicalEntity> products = templateReactBP.getProduct();
                 for (PhysicalEntity product: products) {
                     Long productUid = rdfToUid.get(getBioPaxId(product.getRDFId()));
-                    Node.Type productType = uidToType.get(productUid);
-                    Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid, templateReactType, productUid, productType,
-                            Relation.Type.PRODUCT);
-                    relations.add(relation);
+                    // Check if that relation already exists
+                    String relId = templateReactUid + "." + productUid;
+                    if (csv.getLong(relId, Relation.Type.PRODUCT.name()) == null) {
+                        Node.Type productType = uidToType.get(productUid);
+                        Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid, templateReactType, productUid,
+                                productType, Relation.Type.PRODUCT);
+                        relations.add(relation);
 
-                    // Check to add cellular location
-                    checkProteinCellularLoc(getBioPaxId(product.getRDFId()), productType, templateReactUid,
-                            templateReactType);
+                        // Check to add cellular location
+                        checkProteinCellularLoc(getBioPaxId(product.getRDFId()), productType, templateReactUid,
+                                templateReactType);
+
+                        csv.putLong(relId, Relation.Type.PRODUCT.name(), 1);
+                    }
                 }
                 break;
             case "BiochemicalReaction":
@@ -1220,31 +1240,43 @@ public class Neo4jBioPaxBuilder {
 
                 if (type1 != null && type2 != null) {
                     // Reactants
-                    for (String id: leftItems) {
+                    for (String id : leftItems) {
                         Long uid = rdfToUid.get(id);
-                        Node.Type type = uidToType.get(uid);
-                        Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionType, uid, type, type1);
-                        if (stoichiometryMap.containsKey(id)) {
-                            relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
-                        }
-                        relations.add(relation);
+                        // Check if that relation already exists
+                        String relId = conversionUid + "." + uid;
+                        if (csv.getLong(relId, type1.name()) == null) {
+                            Node.Type type = uidToType.get(uid);
+                            Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionType, uid, type, type1);
+                            if (stoichiometryMap.containsKey(id)) {
+                                relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
+                            }
+                            relations.add(relation);
 
-                        // Check to add cellular location
-                        checkProteinCellularLoc(id, type, conversionUid, conversionType);
+                            // Check to add cellular location
+                            checkProteinCellularLoc(id, type, conversionUid, conversionType);
+
+                            csv.putLong(relId, type1.name(), 1);
+                        }
                     }
 
                     // Products
-                    for (String id: rightItems) {
+                    for (String id : rightItems) {
                         Long uid = rdfToUid.get(id);
-                        Node.Type type = uidToType.get(uid);
-                        Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionType, uid, type, type2);
-                        if (stoichiometryMap.containsKey(id)) {
-                            relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
-                        }
-                        relations.add(relation);
+                        // Check if that relation already exists
+                        String relId = conversionUid + "." + uid;
+                        if (csv.getLong(relId, type2.name()) == null) {
+                            Node.Type type = uidToType.get(uid);
+                            Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionType, uid, type, type2);
+                            if (stoichiometryMap.containsKey(id)) {
+                                relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
+                            }
+                            relations.add(relation);
 
-                        // Check to add cellular location
-                        checkProteinCellularLoc(id, type, conversionUid, conversionType);
+                            // Check to add cellular location
+                            checkProteinCellularLoc(id, type, conversionUid, conversionType);
+
+                            csv.putLong(relId, type2.name(), 1);
+                        }
                     }
                 }
 
@@ -1276,40 +1308,59 @@ public class Neo4jBioPaxBuilder {
         Set<Controller> controllers = catalysisBP.getController();
         for (Controller controller: controllers) {
             Long controllerUid = rdfToUid.get(getBioPaxId(controller.getRDFId()));
-            Node.Type controllerType = uidToType.get(controllerUid);
-            Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, controllerUid, controllerType,
-                    Relation.Type.CONTROLLER);
-            relations.add(relation);
+            // Check if that relation already exists
+            String relId = catalysisUid + "." + controllerUid;
+            if (csv.getLong(relId,  Relation.Type.CONTROLLER.name()) == null) {
+                Node.Type controllerType = uidToType.get(controllerUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, controllerUid, controllerType,
+                        Relation.Type.CONTROLLER);
+                relations.add(relation);
 
-            // Check to add cellular location
-            checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerType, catalysisUid, catalysisType);
+                // Check to add cellular location
+                checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerType, catalysisUid, catalysisType);
+
+                csv.putLong(relId, Relation.Type.CONTROLLER.name(), 1);
+            }
         }
 
         // Controlled
         Set<Process> controlledProcesses = catalysisBP.getControlled();
         for (Process controlledProcess: controlledProcesses) {
             Long controlledUid = rdfToUid.get(getBioPaxId(controlledProcess.getRDFId()));
-            Node.Type controlledType = uidToType.get(controlledUid);
-            Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, controlledUid, controlledType,
-                    Relation.Type.CONTROLLED);
-            relations.add(relation);
+            // Check if that relation already exists
+            String relId = catalysisUid + "." + controlledUid;
+            if (csv.getLong(relId,  Relation.Type.CONTROLLED.name()) == null) {
+                Node.Type controlledType = uidToType.get(controlledUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, controlledUid, controlledType,
+                        Relation.Type.CONTROLLED);
+                relations.add(relation);
 
-            // Check to add cellular location
-            checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledType, catalysisUid,
-                    catalysisType);
+                // Check to add cellular location
+                checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledType, catalysisUid,
+                        catalysisType);
+
+                csv.putLong(relId, Relation.Type.CONTROLLED.name(), 1);
+            }
         }
 
         // Cofactor
         Set<PhysicalEntity> cofactors = catalysisBP.getCofactor();
         for (PhysicalEntity cofactor: cofactors) {
             Long cofactorUid = rdfToUid.get(getBioPaxId(cofactor.getRDFId()));
-            Node.Type cofactorType = uidToType.get(cofactorUid);
-            Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, cofactorUid, cofactorType,
-                    Relation.Type.COFACTOR);
-            relations.add(relation);
+            // Check if that relation already exists
+            String relId = catalysisUid + "." + cofactorUid;
+            if (csv.getLong(relId,  Relation.Type.COFACTOR.name()) == null) {
 
-            // Check to add cellular location
-            checkProteinCellularLoc(getBioPaxId(cofactor.getRDFId()), cofactorType, catalysisUid, catalysisType);
+                Node.Type cofactorType = uidToType.get(cofactorUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, cofactorUid, cofactorType,
+                        Relation.Type.COFACTOR);
+                relations.add(relation);
+
+                // Check to add cellular location
+                checkProteinCellularLoc(getBioPaxId(cofactor.getRDFId()), cofactorType, catalysisUid, catalysisType);
+
+                csv.putLong(relId, Relation.Type.COFACTOR.name(), 1);
+            }
         }
     }
 
@@ -1326,26 +1377,40 @@ public class Neo4jBioPaxBuilder {
         Set<Controller> controllers = controlBP.getController();
         for (Controller controller: controllers) {
             Long controllerUid = rdfToUid.get(getBioPaxId(controller.getRDFId()));
-            Node.Type controllerType = uidToType.get(controllerUid);
-            Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlType, controllerUid, controllerType,
-                    Relation.Type.CONTROLLER);
-            relations.add(relation);
+            // Check if that relation already exists
+            String relId = controlUid + "." + controllerUid;
+            if (csv.getLong(relId, Relation.Type.CONTROLLER.name()) == null) {
 
-            // Check to add cellular location
-            checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerType, controlUid, controlType);
+                Node.Type controllerType = uidToType.get(controllerUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlType, controllerUid, controllerType,
+                        Relation.Type.CONTROLLER);
+                relations.add(relation);
+
+                // Check to add cellular location
+                checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerType, controlUid, controlType);
+
+                csv.putLong(relId, Relation.Type.CONTROLLER.name(), 1);
+            }
         }
 
         // Controlled
         Set<Process> controlledProcesses = controlBP.getControlled();
         for (Process controlledProcess: controlledProcesses) {
             Long controlledUid = rdfToUid.get(getBioPaxId(controlledProcess.getRDFId()));
-            Node.Type controlledType = uidToType.get(controlledUid);
-            Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlType, controlledUid, controlledType,
-                    Relation.Type.CONTROLLED);
-            relations.add(relation);
+            // Check if that relation already exists
+            String relId = controlUid + "." + controlledUid;
+            if (csv.getLong(relId, Relation.Type.CONTROLLED.name()) == null) {
 
-            // Check to add cellular location
-            checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledType, controlUid, controlType);
+                Node.Type controlledType = uidToType.get(controlledUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlType, controlledUid, controlledType,
+                        Relation.Type.CONTROLLED);
+                relations.add(relation);
+
+                // Check to add cellular location
+                checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledType, controlUid, controlType);
+
+                csv.putLong(relId, Relation.Type.CONTROLLED.name(), 1);
+            }
         }
     }
 
