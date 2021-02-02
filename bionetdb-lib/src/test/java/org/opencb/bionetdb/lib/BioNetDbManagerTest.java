@@ -66,7 +66,7 @@ public class BioNetDbManagerTest {
         CsvInfo csv = new CsvInfo(input, output);
 
         // Open CSV files
-        csv.openCSVFiles();
+//        csv.openCSVFiles(clinicalVariantFile.toString(), additionalVariantFiles);
 
 //        Neo4jCsvImporter importer = new Neo4jCsvImporter(csv);
 //

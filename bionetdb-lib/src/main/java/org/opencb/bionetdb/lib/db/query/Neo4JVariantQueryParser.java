@@ -317,7 +317,7 @@ public class Neo4JVariantQueryParser {
         sb.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append(st.getWith()).append("\n");
 
         if (query.containsKey(VariantQueryParam.GENOTYPE.key()) && query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
-            sb.append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)\n")
+            sb.append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_SAMPLE_FORMAT)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)\n")
                     .append("WITH DISTINCT v, collect(s.id) AS ").append(NodeBuilder.SAMPLE)
                     .append(", collect(vc.attr_GT) AS ").append(NodeBuilder.GENOTYPE)
                     .append("\n");
@@ -409,7 +409,7 @@ public class Neo4JVariantQueryParser {
 //            String sample = sampleIterator.next().toString();
 //            if (map.get(sample).size() > 0) {
 //                // Match
-//                String match = "MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
+//                String match = "MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_SAMPLE_FORMAT)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)";
 //
 //                // Where
 //                String where = "WHERE " + getConditionString(Collections.singletonList(sample), "s.id", false)
@@ -624,8 +624,8 @@ public class Neo4JVariantQueryParser {
         }
         st = cypherStatements.get(i);
         cypher.append(st.getMatch()).append("\n").append(st.getWhere()).append("\n").append("WITH DISTINCT v").append(systemParams)
-                .append("\n").append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(v:VARIANT)")
-                .append("\n").append("WITH DISTINCT v, collect(s.id) AS ").append(NodeBuilder.SAMPLE)
+                .append("\n").append("MATCH (s:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_SAMPLE_FORMAT)-[:VARIANT__VARIANT_CALL]"
+                + "-(v:VARIANT)").append("\n").append("WITH DISTINCT v, collect(s.id) AS ").append(NodeBuilder.SAMPLE)
                 .append(", collect(vc.attr_GT) AS ").append(NodeBuilder.GENOTYPE)
                 .append("\n");
 

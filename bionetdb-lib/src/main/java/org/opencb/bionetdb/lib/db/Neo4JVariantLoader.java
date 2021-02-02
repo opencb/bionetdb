@@ -218,7 +218,7 @@ public class Neo4JVariantLoader {
 //
 //                        // Relation: sample - variant call
 //                        Relation sVCallRel = new Relation(++uidCounter, sampleNode.getId() + "_" + callNode.getId(), sampleNode.getUid(),
-//                                sampleNode.getType(), callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_CALL);
+//                                sampleNode.getType(), callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_SAMPLE_FORMAT);
 //                        networkDBAdaptor.mergeRelation(sVCallRel, tx);
 //
 //                        // Relation: variant call - variant file info
@@ -229,7 +229,7 @@ public class Neo4JVariantLoader {
 //
 //                        // Relation: variant - variant call
 //                        Relation vCallRel = new Relation(++uidCounter, null, variantNode.getUid(), variantNode.getType(),
-//                                callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_CALL);
+//                                callNode.getUid(), callNode.getType(), Relation.Type.VARIANT_SAMPLE_FORMAT);
 //                        networkDBAdaptor.addRelation(vCallRel, tx);
                     }
                 }

@@ -95,7 +95,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(id)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT + "(name)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_OBJECT + "(id)");
-//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CALL + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_SAMPLE_FORMAT + "(uid)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_FILE_INFO + "(uid)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CONSEQUENCE_TYPE + "(uid)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_POPULATION_FREQUENCY + "(uid)");

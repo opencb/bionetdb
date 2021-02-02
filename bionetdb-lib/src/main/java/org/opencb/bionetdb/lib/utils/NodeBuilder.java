@@ -12,6 +12,7 @@ import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
 import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
 import org.opencb.biodata.models.core.*;
 import org.opencb.biodata.models.core.Xref;
+import org.opencb.biodata.models.metadata.Individual;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
@@ -104,7 +105,7 @@ public class NodeBuilder {
     }
 
     public static Node newNode(long uid, StudyEntry studyEntry, Node variantNode) {
-        Node node = new Node(uid, variantNode.getId() + "_" + studyEntry.getFiles().get(0).getFileId(), "", Node.Type.VARIANT_FILE_INFO);
+        Node node = new Node(uid, variantNode.getId() + "_" + studyEntry.getFiles().get(0).getFileId(), "", Node.Type.VARIANT_FILE_DATA);
         Map<String, String> fileData = studyEntry.getFiles().get(0).getData();
         node.addAttribute("filename", studyEntry.getFiles().get(0).getFileId());
         for (String key : fileData.keySet()) {
@@ -114,7 +115,7 @@ public class NodeBuilder {
     }
 
     public static Node newCallNode(long uid, List<String> formatKeys, List<String> formatValues) {
-        Node node = new Node(uid, formatValues.get(0), formatValues.get(0), Node.Type.VARIANT_CALL);
+        Node node = new Node(uid, formatValues.get(0), formatValues.get(0), Node.Type.VARIANT_SAMPLE_DATA);
         for (int i = 0; i < formatKeys.size(); i++) {
             node.addAttribute(formatKeys.get(i), formatValues.get(i));
         }
@@ -1002,10 +1003,19 @@ public class NodeBuilder {
         return node;
     }
 
+    public static Node newNode(long uid, Individual individual) {
+        Node node = new Node(uid, individual.getId(), individual.getId(), Node.Type.INDIVIDUAL);
+        node.addAttribute("sex", individual.getSex());
+        // TODO: make a relation with the phenotype node ???
+        node.addAttribute("phenotype", individual.getPhenotype());
+        return node;
+    }
+
+
 //    public static Node newNode(long uid, File file) {
 //        // IMPORTANT: software, experiment and sample nodes and relations must be created by the caller!
 //
-//        Node node = new Node(uid, file.getId(), file.getName(), Node.Type.FILE);
+//        Node node = new Node(uid, file.getId(), file.getName(), Node.Type.VARIANT_FILE);
 //        node.addAttribute("uuid", file.getUuid());
 //        if (file.getType() != null) {
 //            node.addAttribute("type", file.getType().name());

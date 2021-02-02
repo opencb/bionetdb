@@ -100,11 +100,11 @@ public class Neo4jImporter {
 
             // Node headers
             Set<Node.Type> exclude = new HashSet<>();
-            exclude.add(Node.Type.VARIANT_CALL);
-            exclude.add(Node.Type.VARIANT_FILE_INFO);
+            exclude.add(Node.Type.VARIANT_SAMPLE_DATA);
+            exclude.add(Node.Type.VARIANT_FILE_DATA);
             createNodeHeaders(exclude);
 
-            // VARIANT_CALL nodes
+            // VARIANT_SAMPLE_FORMAT nodes
             StringBuilder sb = new StringBuilder();
             Collection<VCFFormatHeaderLine> formatHeaderLines = vcfHeader.getFormatHeaderLines();
             sb.setLength(0);
@@ -115,7 +115,7 @@ public class Neo4jImporter {
                 }
                 sb.append("attr_").append(formatHeaderLine.getID());
             }
-            pw = csvWriterMap.get(Node.Type.VARIANT_CALL.toString());
+            pw = csvWriterMap.get(Node.Type.VARIANT_SAMPLE_DATA.toString());
             pw.print("id:ID(variantCallId),name");
             if (sb.length() > 0) {
                 pw.print(",");
@@ -125,7 +125,7 @@ public class Neo4jImporter {
             }
 
             // VARIANT_FILE_INFO nodes
-            pw = csvWriterMap.get(Node.Type.VARIANT_FILE_INFO.toString());
+            pw = csvWriterMap.get(Node.Type.VARIANT_FILE_DATA.toString());
             Collection<VCFInfoHeaderLine> infoHeaderLines = vcfHeader.getInfoHeaderLines();
             sb.setLength(0);
             for (VCFInfoHeaderLine infoHeaderLine: infoHeaderLines) {
@@ -294,11 +294,11 @@ public class Neo4jImporter {
 
         //variantCall: (uid:ID(variantCallId),id,name)
         attrs = Arrays.asList("variantCallId", "id", "name");
-        nodeAttributes.put(Node.Type.VARIANT_CALL.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.VARIANT_SAMPLE_DATA.toString(), new ArrayList<>(attrs));
 
         //variantFileInfo: (uid:ID(variantFileInfoId),id,name)
         attrs = Arrays.asList("variantFileInfoId", "id", "name");
-        nodeAttributes.put(Node.Type.VARIANT_FILE_INFO.toString(), new ArrayList<>(attrs));
+        nodeAttributes.put(Node.Type.VARIANT_FILE_DATA.toString(), new ArrayList<>(attrs));
 
         //so: (uid:ID(soId),id,name)
         attrs = Arrays.asList("soId", "id", "name");
@@ -439,10 +439,10 @@ public class Neo4jImporter {
         //./neo4j stop; rm -rf ../data/databases/graph.db ; ./neo4j-admin import
         // --nodes:SAMPLE /tmp/3.vcf.sample.cvs
         // --nodes:VARIANT /tmp/3.vcf.variant.cvs
-        // --nodes:VARIANT_CALL /tmp/3.vcf.variantcall.cvs
+        // --nodes:VARIANT_SAMPLE_FORMAT /tmp/3.vcf.variantcall.cvs
         // --nodes:VARIANT_FILE_INFO /tmp/3.vcf.variantfileinfo.cvs
-        // --relationships:VARIANT_CALL /tmp/3.vcf.variant_variantcall.cvs
-        // --relationships:VARIANT_CALL /tmp/3.vcf.sample_variantcall.cvs
+        // --relationships:VARIANT_SAMPLE_FORMAT /tmp/3.vcf.variant_variantcall.cvs
+        // --relationships:VARIANT_SAMPLE_FORMAT /tmp/3.vcf.sample_variantcall.cvs
         // --relationships:VARIANT_FILE_INFO /tmp/3.vcf.variantcall_variantfileinfo.cvs  -h ; ./neo4j start
 
     }
@@ -567,7 +567,7 @@ public class Neo4jImporter {
                             sb.append("-");
                         }
                     }
-                    pw = csv.csvWriterMap.get(Node.Type.VARIANT_FILE_INFO.toString());
+                    pw = csv.csvWriterMap.get(Node.Type.VARIANT_FILE_DATA.toString());
                     pw.print(infoId + "," + infoId + "," + filename);
                     if (sb.length() > 0) {
                         pw.print(",");
@@ -596,7 +596,7 @@ public class Neo4jImporter {
 //                                sb.append("-");
 //                            }
                         }
-                        pw = csv.csvWriterMap.get(Node.Type.VARIANT_CALL.toString());
+                        pw = csv.csvWriterMap.get(Node.Type.VARIANT_SAMPLE_DATA.toString());
                         pw.print(formatId + "," + formatId);
                         if (sb.length() > 0) {
                             pw.print(",");

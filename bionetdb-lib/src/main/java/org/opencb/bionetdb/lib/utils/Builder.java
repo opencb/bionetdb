@@ -5,13 +5,20 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.*;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.*;
 import org.opencb.biodata.models.core.Xref;
+import org.opencb.biodata.models.metadata.Individual;
+import org.opencb.biodata.models.metadata.Sample;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.bionetdb.core.models.network.Network;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
@@ -56,6 +63,8 @@ public class Builder {
     private Map<String, Set<String>> filters;
     private ObjectMapper mapper;
 
+    private List<String> sampleIds;
+
     protected static Logger logger;
 
     public Builder(Path inputPath, Path outputPath, Map<String, Set<String>> filters) {
@@ -63,7 +72,6 @@ public class Builder {
         this.inputPath = inputPath;
         this.outputPath = outputPath;
         this.filters = filters;
-
 
         // Prepare CSV object
         csv = new CsvInfo(inputPath, outputPath);
@@ -79,10 +87,8 @@ public class Builder {
     public void build() throws IOException {
         long start;
 
-        // Open CSV files
-        csv.openCSVFiles();
-
         // Check input files
+
         File ensemblGeneFile = new File(inputPath + "/" + ENSEMBL_GENE_FILENAME);
         if (!ensemblGeneFile.exists()) {
             ensemblGeneFile = new File(inputPath + "/" + ENSEMBL_GENE_FILENAME + ".gz");
@@ -114,6 +120,29 @@ public class Builder {
             clinicalVariantFile = new File(inputPath + "/" + CLINICAL_VARIANT_FILENAME + ".gz");
             FileUtils.checkFile(clinicalVariantFile.toPath());
         }
+
+        // Group the variant files before openning the CSV files
+        List<File> variantFiles = new ArrayList<>();
+        variantFiles.add(clinicalVariantFile);
+        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
+            for (String additionalVariantFile : additionalVariantFiles) {
+                File file = Paths.get(additionalVariantFile).toFile();
+                if (file.exists()) {
+                    variantFiles.add(file);
+                } else {
+                    System.out.println("Ignoring variant file " + additionalVariantFile + ": it does not exist.");
+                }
+            }
+        }
+
+        // Create and open CSV files
+        csv.openCSVFiles(variantFiles);
+
+        // Processing metadata files
+        logger.info("Processing metadata files...");
+        start = System.currentTimeMillis();
+        processMetadata(variantFiles);
+        logger.info("Metadata processing done in {} s", (System.currentTimeMillis() - start) / 1000);
 
         // Processing proteins
         logger.info("Processing proteins...");
@@ -150,21 +179,24 @@ public class Builder {
         biopaxProcessing.post();
         logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
 
-        // Processing clinical variants
-        logger.info("Processing clinical variants...");
-        start = System.currentTimeMillis();
-        buildClinicalVariants(clinicalVariantFile.toPath());
-        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
-
         // Processing additional variants
         if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
             for (String additionalVariantFile: additionalVariantFiles) {
+                // Read sample IDs
+                sampleIds = readSampleIds(additionalVariantFile);
+
                 logger.info("Processing additional variant file {}...", additionalVariantFile);
                 start = System.currentTimeMillis();
-                buildClinicalVariants(Paths.get(additionalVariantFile));
+                buildVariants(Paths.get(additionalVariantFile));
                 logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
             }
         }
+
+        // Processing clinical variants
+        logger.info("Processing clinical variants...");
+        start = System.currentTimeMillis();
+        buildVariants(clinicalVariantFile.toPath());
+        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
 
         // Processing additional networks
         if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
@@ -237,51 +269,6 @@ public class Builder {
                     }
                 }
             }
-
-
-            /*
-            // Post-process miRNA nodes
-            logger.info("Post-processing {} miRNA nodes", rnaNodes.size());
-            pwNode = csv.getCsvWriters().get(Node.Type.RNA.toString());
-            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
-            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(
-                    CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE.toString());
-            pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.IS___RNA___MIRNA.toString());
-            for (Node node: rnaNodes) {
-                List<String> miRnaInfo = getMiRnaInfo(node.getName());
-                for (String info: miRnaInfo) {
-                    String[] fields = info.split(":");
-                    String miRnaId = fields[0];
-                    String targetGene = fields[1];
-                    String evidence = fields[2];
-
-                    Long miRnaUid = csv.getLong(miRnaId);
-                    if (miRnaUid == null) {
-                        Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
-                        pwMiRna.println(csv.nodeLine(miRnaNode));
-
-                        // Save the miRNA node uid
-                        miRnaUid = miRnaNode.getUid();
-                        csv.putLong(miRnaId, miRnaUid);
-                    }
-
-                    // Process target gene
-                    Long geneUid = builder.processGene(targetGene, targetGene);
-                    if (geneUid != null) {
-                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
-                            // Write mirna-target gene relation
-                            pwMiRnaTargetRel.println(miRnaUid + "," + geneUid + "," + evidence);
-                            csv.putLong(miRnaUid + "." + geneUid, 1);
-                        }
-                    }
-
-                    // Write rna-mirna relation
-                    pwRel.println(node.getUid() + CsvInfo.SEPARATOR + miRnaUid);
-                }
-                // Write RNA node
-                pwNode.println(builder.getCsvInfo().nodeLine(node));
-            }
-*/
         }
 
         @Override
@@ -576,17 +563,22 @@ public class Builder {
             // Model gene trait association (diseases)
             if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
                 pwRel = csv.getCsvWriters().get(Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
+                Set<String> done = new HashSet<>();
                 for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
                     String diseaseId = disease.getId() + (disease.getHpo() != null ? "_" + disease.getHpo() : "");
-                    Long diseaseUid = csv.getLong(diseaseId, Node.Type.GENE_TRAIT_ASSOCIATION.name());
-                    if (diseaseUid == null) {
-                        n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
-                        updateCSVFiles(uid, n, Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
+                    // It is possible that the same trait association is several times in the list
+                    if (!done.contains(diseaseId)) {
+                        Long diseaseUid = csv.getLong(diseaseId, Node.Type.GENE_TRAIT_ASSOCIATION.name());
+                        if (diseaseUid == null) {
+                            n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
+                            updateCSVFiles(uid, n, Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
 
-                        csv.putLong(diseaseId, Node.Type.GENE_TRAIT_ASSOCIATION.name(), n.getUid());
-                    } else {
-                        // create gene-disease relation
-                        pwRel.println(csv.relationLine(uid, diseaseUid));
+                            csv.putLong(diseaseId, Node.Type.GENE_TRAIT_ASSOCIATION.name(), n.getUid());
+                        } else {
+                            // create gene-disease relation
+                            pwRel.println(csv.relationLine(uid, diseaseUid));
+                        }
+                        done.add(diseaseId);
                     }
                 }
             }
@@ -801,10 +793,15 @@ public class Builder {
         if (transcript.getAnnotation() != null) {
             // Model constraint
             if (CollectionUtils.isNotEmpty(transcript.getAnnotation().getConstraints())) {
+                Set<String> done = new HashSet<>();
                 for (Constraint constraint : transcript.getAnnotation().getConstraints()) {
-                    Long constraintUid = checkConstraint(constraint);
-                    csv.getCsvWriters().get(Relation.Type.ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE.name()).println(
-                            csv.relationLine(uid, constraintUid));
+                    String constraintId = constraint.getName() + "." + constraint.getSource() + "." + constraint.getValue();
+                    if (!done.contains(constraintId)) {
+                        Long constraintUid = checkConstraint(constraint);
+                        csv.getCsvWriters().get(Relation.Type.ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE.name()).println(
+                                csv.relationLine(uid, constraintUid));
+                        done.add(constraintId);
+                    }
                 }
             }
 //
@@ -840,15 +837,21 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(transcript.getXrefs())) {
             PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
             PrintWriter pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___TRANSCRIPT___XREF.toString());
+            Set<String> done = new HashSet<>();
             for (Xref xref: transcript.getXrefs()) {
-                Long xrefUid = csv.getLong(xref.getDbName() + "." + xref.getId(), Node.Type.XREF.name());
-                if (xrefUid == null) {
-                    n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
-                    pwXref.println(csv.nodeLine(n));
-                    xrefUid = n.getUid();
-                    csv.putLong(xref.getDbName() + "." + xref.getId(), Node.Type.XREF.name(), xrefUid);
+                String xrefId = xref.getDbName() + "." + xref.getId();
+                // In the list, one xref can be multiple times :(
+                if (!done.contains(xrefId)) {
+                    Long xrefUid = csv.getLong(xrefId, Node.Type.XREF.name());
+                    if (xrefUid == null) {
+                        n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
+                        pwXref.println(csv.nodeLine(n));
+                        xrefUid = n.getUid();
+                        csv.putLong(xrefId, Node.Type.XREF.name(), xrefUid);
+                    }
+                    pw.println(csv.relationLine(uid, xrefUid));
+                    done.add(xrefId);
                 }
-                pw.println(csv.relationLine(uid, xrefUid));
             }
         }
 
@@ -890,7 +893,7 @@ public class Builder {
         return node;
     }
 
-    private Long processVariant(Variant variant) throws IOException {
+    private Long processVariant(Variant variant) {
         Node variantNode = null;
 
         Long variantUid = csv.getLong(variant.toStringSimple(), Node.Type.VARIANT.name());
@@ -916,6 +919,15 @@ public class Builder {
         pw.println(csv.nodeLine(varNode));
 
         Node node;
+
+        // Create study related nodes
+        createStudyRelatedNodes(varUid, variant);
+
+        //        // Processing clinical variants
+//        logger.info("Processing clinical variants...");
+//        start = System.currentTimeMillis();
+//        buildVariants(clinicalVariantFile.toPath());
+//        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
 
         // Structural variant
         if (variant.getSv() != null) {
@@ -944,11 +956,6 @@ public class Builder {
                     // Transcript
                     Long transcriptUid = processTranscript(ct.getEnsemblTranscriptId());
                     if (transcriptUid != null) {
-                        if (geneUid != null) {
-                            csv.getCsvWriters().get(Relation.Type.HAS___GENE___TRANSCRIPT.toString()).println(csv.relationLine(
-                                    geneUid, transcriptUid));
-                        }
-
                         // Relation: consequence type - transcript
                         pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT.toString());
                         pw.println(csv.relationLine(ctNode.getUid(), transcriptUid));
@@ -1057,12 +1064,13 @@ public class Builder {
             if (CollectionUtils.isNotEmpty(annotation.getRepeat())) {
                 for (Repeat repeat : annotation.getRepeat()) {
                     if (StringUtils.isNotEmpty(repeat.getId())) {
-                        Long repeatUid = csv.getLong(repeat.getId(), Node.Type.REPEAT.name());
+                        String repeatId = repeat.getId() + "." + repeat.getChromosome() + "." + repeat.getStart() + "." + repeat.getEnd();
+                        Long repeatUid = csv.getLong(repeatId, Node.Type.REPEAT.name());
                         if (repeatUid == null) {
                             node = NodeBuilder.newNode(csv.getAndIncUid(), repeat);
                             csv.getCsvWriters().get(Node.Type.REPEAT.name()).println(csv.nodeLine(node));
                             repeatUid = node.getUid();
-                            csv.putLong(repeat.getId(), Node.Type.REPEAT.name(), repeatUid);
+                            csv.putLong(repeatId, Node.Type.REPEAT.name(), repeatUid);
                         }
                         csv.getCsvWriters().get(Relation.Type.ANNOTATION___VARIANT___REPEAT.name()).println(csv.relationLine(varUid,
                                 repeatUid));
@@ -1097,15 +1105,99 @@ public class Builder {
 
             // Constraints
             if (CollectionUtils.isNotEmpty(annotation.getGeneConstraints())) {
+                Set<String> done = new HashSet<>();
                 for (Constraint constraint : annotation.getGeneConstraints()) {
-                    Long constraintUid = checkConstraint(constraint);
-                    csv.getCsvWriters().get(Relation.Type.ANNOTATION___VARIANT___TRANSCRIPT_CONSTRAINT_SCORE.name()).println(
-                            csv.relationLine(varUid, constraintUid));
+                    String constraintId = constraint.getName() + "." + constraint.getSource() + "." + constraint.getValue();
+                    if (!done.contains(constraintId)) {
+                        Long constraintUid = checkConstraint(constraint);
+                        csv.getCsvWriters().get(Relation.Type.ANNOTATION___VARIANT___TRANSCRIPT_CONSTRAINT_SCORE.name()).println(
+                                csv.relationLine(varUid, constraintUid));
+                        done.add(constraintId);
+                    }
                 }
             }
         }
 
         return varNode;
+    }
+
+    private void createStudyRelatedNodes(Long varUid, Variant variant) {
+        if (CollectionUtils.isEmpty(variant.getStudies())) {
+            return;
+        }
+
+        for (StudyEntry studyEntry : variant.getStudies()) {
+            // Process file data
+            if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
+                for (FileEntry fileEntry : studyEntry.getFiles()) {
+                    Long fileUid = csv.getLong(fileEntry.getFileId(), Node.Type.VARIANT_FILE.name());
+                    if (fileUid != null) {
+                        Node fileDataNode = new Node(csv.getAndIncUid(), fileEntry.getFileId(), "", Node.Type.VARIANT_FILE_DATA);
+                        if (MapUtils.isNotEmpty(fileEntry.getData())) {
+                            for (Map.Entry<String, String> entry : fileEntry.getData().entrySet()) {
+                                fileDataNode.addAttribute(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        // Write variant file data node and the relation with variant
+                        updateCSVFiles(varUid, fileDataNode, Relation.Type.DATA___VARIANT___VARIANT_FILE_DATA.toString());
+
+                        // and the relation with file
+                        csv.getCsvWriters().get(Relation.Type.DATA___VARIANT_FILE___VARIANT_FILE_DATA.toString()).println(csv.relationLine(
+                                fileUid, fileDataNode.getUid()));
+                    } else {
+                        logger.info("File ID " + fileEntry.getFileId() + " for variant ID " + variant.toString() + ". Can't make relation: "
+                                + " File - Variant File Data");
+                    }
+                }
+            }
+
+            // Process sample data
+            if (CollectionUtils.isNotEmpty(studyEntry.getSamples())) {
+                for (int sampleIndex = 0; sampleIndex < studyEntry.getSamples().size(); sampleIndex++) {
+                    SampleEntry sampleEntry = studyEntry.getSamples().get(sampleIndex);
+                    String sampleId = sampleIds.get(sampleIndex);
+                    Long sampleUid = csv.getLong(sampleId, Node.Type.SAMPLE.name());
+                    if (sampleUid != null) {
+                        Node sampleDataNode = new Node(csv.getAndIncUid(), sampleId, "", Node.Type.VARIANT_SAMPLE_DATA);
+                        if (CollectionUtils.isNotEmpty(sampleEntry.getData())) {
+                            for (int i = 0; i < sampleEntry.getData().size(); i++) {
+                                sampleDataNode.addAttribute(studyEntry.getSampleDataKeys().get(i), sampleEntry.getData().get(i));
+                            }
+                        }
+                        // Write variant sample data node and the relation with variant
+                        updateCSVFiles(varUid, sampleDataNode, Relation.Type.DATA___VARIANT___VARIANT_SAMPLE_DATA.toString());
+
+                        // and the relation with sample
+                        csv.getCsvWriters().get(Relation.Type.DATA___SAMPLE___VARIANT_SAMPLE_DATA.toString()).println(csv.relationLine(
+                                sampleUid, sampleDataNode.getUid()));
+
+                        // and add relation variant file - sample
+                        if (sampleEntry.getFileIndex() != null && CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
+                            if (sampleEntry.getFileIndex() < studyEntry.getFiles().size()) {
+                                String fileId = studyEntry.getFiles().get(sampleEntry.getFileIndex()).getFileId();
+                                Long fileUid = csv.getLong(fileId, Node.Type.VARIANT_FILE.name());
+                                if (fileUid != null) {
+                                    // First, check that this relation does not exist yet
+                                    Long relUid = csv.getLong(fileId + "." + sampleId, Relation.Type.HAS___VARIANT_FILE___SAMPLE.name());
+                                    if (relUid == null) {
+                                        // and the relation with sample
+                                        csv.getCsvWriters().get(Relation.Type.HAS___VARIANT_FILE___SAMPLE.toString()).println(
+                                                csv.relationLine(fileUid, sampleUid));
+
+                                        // Save this relation
+                                        csv.putLong(fileId + "." + sampleId, Relation.Type.HAS___VARIANT_FILE___SAMPLE.name(), 1);
+                                    }
+                                }
+                            }
+                        }
+
+                    } else {
+                        logger.info("Sample ID " + sampleEntry.getSampleId() + " for variant ID " + variant.toString() + ". Can't make "
+                                + "relation: Sample - Variant Sample Data");
+                    }
+                }
+            }
+        }
     }
 
 
@@ -1283,19 +1375,9 @@ public class Builder {
 //    }
 
 
-    private void buildClinicalVariants(Path path) throws IOException {
+    private void buildVariants(Path path) throws IOException {
         // Reading file line by line, each line a JSON object
         BufferedReader reader = FileUtils.newBufferedReader(path);
-
-//        File metaFile = new File(file.getAbsoluteFile() + ".meta.json");
-//        if (metaFile.exists()) {
-//            csv.openMetadataFile(metaFile);
-//        } else {
-//            metaFile = new File(file.getAbsoluteFile() + ".meta.json.gz");
-//            if (metaFile.exists()) {
-//                csv.openMetadataFile(metaFile);
-//            }
-//        }
 
         long counter = 0;
         ObjectMapper mapper = new ObjectMapper();
@@ -1319,212 +1401,132 @@ public class Builder {
         logger.info("Parsed {} variants from {}. Done!!!", counter, path);
     }
 
-//    private void processSampleInfo(Variant variant, Long variantUid) {
-//        String variantId = variant.toString();
-//
-//        if (CollectionUtils.isNotEmpty(variant.getStudies())) {
-//            PrintWriter pw;
-//
-//            // Only one single study is supported
-//            StudyEntry studyEntry = variant.getStudies().get(0);
-//
-//            if (CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
-//                // INFO management: FILTER, QUAL and info fields
-//                String fileId = studyEntry.getFiles().get(0).getFileId();
-//                String infoId = variantId + "_" + fileId;
-//                Long infoUid = csv.getLong(infoId);
-//                if (infoUid == null) {
-//                    // Variant file info node
-//                    infoUid = csv.getAndIncUid();
-//                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_FILE_INFO.toString());
-//                    pw.println(variantInfoLine(infoUid, studyEntry));
-//                }
-//                Long fileUid = csv.getLong(fileId);
-//                if (fileUid != null) {
-//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_FILE_INFO__FILE.toString());
-//                    pw.println(infoUid + CsvInfo.SEPARATOR + fileUid);
-//                }
-//
-//                // FORMAT: GT and format attributes
-//                for (int i = 0; i < studyEntry.getSamples().size(); i++) {
-//                    String sampleName = CollectionUtils.isEmpty(csv.getSampleNames())
-//                            ? "sample" + (i + 1)
-//                            : csv.getSampleNames().get(i);
-//                    Long sampleUid = csv.getLong(sampleName);
-//                    if (sampleUid == null) {
-//                        sampleUid = csv.getAndIncUid();
-//                        csv.getCsvWriters().get(Node.Type.SAMPLE.toString())
-//                                .println(sampleUid + CsvInfo.SEPARATOR + sampleName + CsvInfo.SEPARATOR + sampleName);
-//                        csv.putLong(sampleName, sampleUid);
-//                    }
-//                    // Variant call node
-//                    Long formatUid = csv.getAndIncUid();
-//                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_CALL.toString());
-//                    pw.println(variantFormatLine(formatUid, studyEntry, i));
-//
-//                    // Relation: variant - variant call
-//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT__VARIANT_CALL.toString());
-//                    pw.println(csv.relationLine(variantUid, formatUid));
-//
-//                    // Relation: sample - variant call
-//                    pw = csv.getCsvWriters().get(Relation.Type.SAMPLE__VARIANT_CALL.toString());
-//                    pw.println(csv.relationLine(sampleUid, formatUid));
-//
-//                    // Relation: variant call - variant file info
-//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString());
-//                    pw.println(csv.relationLine(formatUid, infoUid));
-//                }
-//            }
-//        }
-//    }
-
-//    private String variantInfoLine(long infoUid, StudyEntry studyEntry) {
-//        StringBuilder sb = new StringBuilder("" + infoUid);
-//        Map<String, String> fileData = studyEntry.getFiles().get(0).getData();
-//
-//        Iterator<String> iterator = csv.getInfoFields().iterator();
-//        while (iterator.hasNext()) {
-//            String infoName = iterator.next();
-//            if (sb.length() > 0) {
-//                sb.append(CsvInfo.SEPARATOR);
-//            }
-//            if (fileData.containsKey(infoName)) {
-//                sb.append(fileData.get(infoName));
-//            } else {
-//                sb.append(CsvInfo.MISSING_VALUE);
-//            }
-//        }
-//        return sb.toString();
-//    }
-
-//    private String variantFormatLine(Long formatUid, StudyEntry studyEntry, int index) {
-//        StringBuilder sb = new StringBuilder("" + formatUid);
-//
-//        Iterator<String> iterator = csv.getFormatFields().iterator();
-//        while (iterator.hasNext()) {
-//            String formatName = iterator.next();
-//            if (sb.length() > 0) {
-//                sb.append(CsvInfo.SEPARATOR);
-//            }
-////            if (studyEntry.getFormatPositions().containsKey(formatName)) {
-////                sb.append(studyEntry.getSampleData(index).get(studyEntry.getFormatPositions()
-////                        .get(formatName)));
-////            } else {
-//            sb.append(CsvInfo.MISSING_VALUE);
-////            }
-//        }
-//        return sb.toString();
-//    }
 
     //-------------------------------------------------------------------------
 
 
-//    private void addClinicalAnalysisJsonFile(File file) throws IOException {
-//        // Reading file line by line, each line a JSON object
-//        BufferedReader reader;
-//        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-//
-//        // TODO: how to get metadata from clinical analysis (format field, sample names,...)
-//        boolean done = false;
-//
-//        long counter = 0;
-//        logger.info("Processing JSON file {}", file.getPath());
-//        reader = FileUtils.newBufferedReader(file.toPath());
-//        String line = reader.readLine();
-//        while (line != null) {
-//            ClinicalAnalysis clinicalAnalysis = mapper.readValue(line, ClinicalAnalysis.class);
-//            if (!done) {
-//                done = processMetadataFromClinicalAnalysis(clinicalAnalysis);
-//            }
-//            processClinicalAnalysis(clinicalAnalysis);
-//
-//            // read next line
-//            line = reader.readLine();
-//            if (++counter % 5000 == 0) {
-//                logger.info("Parsing {} clinical analsysis...", counter);
-//            }
-//        }
-//        reader.close();
-//        logger.info("Parsed {} clinical analysis from {}. Done!!!", counter, file.toString());
-//    }
-//
-//    private boolean processMetadataFromClinicalAnalysis(ClinicalAnalysis clinicalAnalysis) {
-//        boolean done = false;
-//        int counter = 0;
-//
-//        Set<String> formats = new HashSet<>();
-//        Set<String> info = new HashSet<>();
-//
-//        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretations())) {
-//            for (Interpretation interpretation : clinicalAnalysis.getInterpretations()) {
-//                if (org.apache.commons.collections.CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
-//                    for (ReportedVariant variant : interpretation.getPrimaryFindings()) {
-//                        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(variant.getStudies())) {
-//                            for (StudyEntry study : variant.getStudies()) {
-//                                // Info fields
-//                                for (FileEntry file : study.getFiles()) {
-//                                    if (MapUtils.isNotEmpty(file.getAttributes())) {
-//                                        info.addAll(file.getAttributes().keySet());
-//                                    }
-//                                }
-//
-//                                // Format fields
-//                                if (org.apache.commons.collections.CollectionUtils.isNotEmpty(study.getFormat())) {
-//                                    formats.addAll(study.getFormat());
-//                                }
-//                            }
-//                        }
-//                        counter++;
-//                        if (counter > 2) {
-//                            break;
-//                        }
-//                    }
-//                }
-//                if (counter > 2) {
-//                    break;
-//                }
-//            }
-//        }
-//
-//        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(info)
-//                && org.apache.commons.collections.CollectionUtils.isNotEmpty(formats)) {
-//
-//            // Variant call
-//            String strType;
-//            List<String> attrs = new ArrayList<>();
-//            attrs.add("variantCallId");
-//            Iterator<String> iterator = formats.iterator();
-//            while (iterator.hasNext()) {
-//                attrs.add(iterator.next());
-//            }
-//            strType = Node.Type.VARIANT_CALL.toString();
-//            Map<String, List<String>> nodeAttributes = csv.getNodeAttributes();
-//            nodeAttributes.put(strType, attrs);
-//            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));
-//            strType = Relation.Type.VARIANT__VARIANT_CALL.toString();
-//            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-//            strType = Relation.Type.SAMPLE__VARIANT_CALL.toString();
-//            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-//
-//            // Variant file info
-//            attrs = new ArrayList<>();
-//            attrs.add("variantFileInfoId");
-//            iterator = info.iterator();
-//            while (iterator.hasNext()) {
-//                attrs.add(iterator.next());
-//            }
-//            strType = Node.Type.VARIANT_FILE_INFO.toString();
-//            nodeAttributes.put(strType, attrs);
-//            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));
-//            strType = Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString();
-//            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-//            strType = Relation.Type.VARIANT_FILE_INFO__FILE.toString();
-//            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-//
-//            done = true;
-//        }
-//        return done;
-//    }
+    private void processMetadata(List<File> variantFiles) {
+        // For variant file info, variant sample format and sample nodes we have to read variant metadata files to know which attributes
+        // are present
+        if (CollectionUtils.isNotEmpty(variantFiles)) {
+            for (File variantFile : variantFiles) {
+                File metaFile = new File(variantFile.getAbsoluteFile() + ".meta.json");
+                if (!metaFile.exists()) {
+                    metaFile = new File(variantFile.getAbsoluteFile() + ".meta.json.gz");
+                }
+                if (!metaFile.exists()) {
+                    continue;
+                }
+
+                // Read info, format and sample from metadata file
+                ObjectMapper mapper = new ObjectMapper();
+                VariantMetadata variantMetadata;
+                try {
+                    BufferedReader bufferedReader = FileUtils.newBufferedReader(metaFile.toPath());
+                    String metadata = bufferedReader.readLine();
+                    bufferedReader.close();
+                    variantMetadata = mapper.readValue(metadata, VariantMetadata.class);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+
+                if (CollectionUtils.isNotEmpty(variantMetadata.getStudies())) {
+                    // IMPORTANT: it considers only the first study
+                    VariantStudyMetadata variantStudyMetadata = variantMetadata.getStudies().get(0);
+
+                    // Create individual and family nodes and relations
+                    for (Individual individual : variantStudyMetadata.getIndividuals()) {
+                        Long individualUid = csv.getLong(individual.getId(), Node.Type.INDIVIDUAL.name());
+                        if (individualUid == null) {
+                            // First, check family
+                            Long familyUid = null;
+                            if (StringUtils.isNotEmpty(individual.getFamily())) {
+                                familyUid = csv.getLong(individual.getFamily(), Node.Type.FAMILY.name());
+                                if (familyUid == null) {
+                                    Node familyNode = new Node(csv.getAndIncUid(), individual.getFamily(), individual.getFamily(),
+                                            Node.Type.FAMILY);
+                                    csv.getCsvWriters().get(Node.Type.FAMILY.name()).println(csv.nodeLine(familyNode));
+                                    familyUid = familyNode.getUid();
+                                    csv.putLong(individual.getFamily(), Node.Type.FAMILY.name(), familyUid);
+                                }
+                            }
+
+                            // Create individual node
+                            Node individualNode = NodeBuilder.newNode(csv.getAndIncUid(), individual);
+                            csv.getCsvWriters().get(Node.Type.INDIVIDUAL.name()).println(csv.nodeLine(individualNode));
+                            if (familyUid != null) {
+                                csv.getCsvWriters().get(Relation.Type.FAMILY_MEMBER___FAMILY___INDIVIDUAL.name()).println(
+                                        csv.relationLine(individualUid, familyUid));
+                            }
+                            individualUid = individualNode.getUid();
+
+                            // Create sample nodes
+                            if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+                                for (Sample sample : individual.getSamples()) {
+                                    if (StringUtils.isNotEmpty(sample.getId())) {
+                                        Node sampleNode = new Node(csv.getAndIncUid(), sample.getId(), sample.getId(), Node.Type.SAMPLE);
+                                        if (MapUtils.isNotEmpty(sample.getAnnotations())) {
+                                            for (Map.Entry<String, String> entry : sample.getAnnotations().entrySet()) {
+                                                sampleNode.addAttribute(entry.getKey(), entry.getValue());
+                                            }
+                                        }
+                                        csv.getCsvWriters().get(Node.Type.SAMPLE.name()).println(csv.nodeLine(sampleNode));
+                                        csv.getCsvWriters().get(Relation.Type.HAS___INDIVIDUAL___SAMPLE.name()).println(
+                                                csv.relationLine(individualUid, sampleNode.getUid()));
+
+                                        // Save sample UID
+                                        csv.putLong(sample.getId(), Node.Type.SAMPLE.name(), sampleNode.getUid());
+                                    }
+                                }
+                            }
+                            csv.putLong(individual.getId(), Node.Type.INDIVIDUAL.name(), individualUid);
+                        }
+                    }
+
+                    // Second loop, to fulfill mother-father relations
+                    for (Individual individual : variantStudyMetadata.getIndividuals()) {
+                        Long individualUid = csv.getLong(individual.getId(), Node.Type.INDIVIDUAL.name());
+                        if (StringUtils.isNotEmpty(individual.getMother())) {
+                            Long motherUid = csv.getLong(individual.getMother(), Node.Type.INDIVIDUAL.name());
+                            if (motherUid != null) {
+                                csv.getCsvWriters().get(Relation.Type.MOTHER_OF___INDIVIDUAL___INDIVIDUAL.name()).println(
+                                        csv.relationLine(motherUid, individualUid));
+                            }
+                        }
+
+                        if (StringUtils.isNotEmpty(individual.getFather())) {
+                            Long fatherUid = csv.getLong(individual.getFather(), Node.Type.INDIVIDUAL.name());
+                            if (fatherUid != null) {
+                                csv.getCsvWriters().get(Relation.Type.FATHER_OF___INDIVIDUAL___INDIVIDUAL.name()).println(
+                                        csv.relationLine(fatherUid, individualUid));
+                            }
+                        }
+                    }
+
+                    // File management
+                    if (CollectionUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
+                        for (VariantFileMetadata fileMetadata : variantStudyMetadata.getFiles()) {
+                            Long fileUid = csv.getLong(fileMetadata.getId(), Node.Type.VARIANT_FILE.name());
+                            if (fileUid == null) {
+                                Node fileNode = new Node(csv.getAndIncUid(), fileMetadata.getId(), fileMetadata.getPath(),
+                                        Node.Type.VARIANT_FILE);
+                                if (MapUtils.isNotEmpty(fileMetadata.getAttributes())) {
+                                    for (Map.Entry<String, String> entry : fileMetadata.getAttributes().entrySet()) {
+                                        fileNode.addAttribute(entry.getKey(), entry.getValue());
+                                    }
+                                }
+                                csv.getCsvWriters().get(Node.Type.VARIANT_FILE.name()).println(csv.nodeLine(fileNode));
+
+                                // Save variant file UID
+                                csv.putLong(fileMetadata.getId(), Node.Type.VARIANT_FILE.name(), fileNode.getUid());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private void updateCSVFiles(long startUid, Node node, String relationType) {
         updateCSVFiles(startUid, node, relationType, false);
@@ -1676,8 +1678,13 @@ public class Builder {
                 }
 
                 if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
+                    Set<String> done = new HashSet<>();
                     for (DbReferenceType dbRef: protein.getDbReference()) {
-                        proteinCache.saveXref(dbRef.getId(), proteinAcc);
+                        // In the list, one db reference can be multiple times
+                        if (!done.contains(dbRef.getId())) {
+                            proteinCache.saveXref(dbRef.getId(), proteinAcc);
+                            done.add(dbRef.getId());
+                        }
                     }
                 }
 
@@ -1745,51 +1752,46 @@ public class Builder {
         }
     }
 
-//    public void indexingMiRnas(Path miRnaPath, Path indexPath, boolean toImport) throws IOException {
-//        csv.indexingMiRnas(miRnaPath, indexPath);
-//
-//        if (toImport) {
-//            // Import miRNAs and genes
-//            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
-//            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE
-//                    .toString());
-//
-//            RocksIterator rocksIterator = csv.getMiRnaRocksDb().newIterator();
-//            rocksIterator.seekToFirst();
-//            while (rocksIterator.isValid()) {
-//                String miRnaId = new String(rocksIterator.key());
-//                String miRnaInfo = new String(rocksIterator.value());
-//
-//                Long miRnaUid = csv.getLong(miRnaId);
-//                if (miRnaUid == null) {
-//                    Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
-//                    pwMiRna.println(csv.nodeLine(miRnaNode));
-//
-//                    // Save the miRNA node uid
-//                    miRnaUid = miRnaNode.getUid();
-//                    csv.putLong(miRnaId, miRnaUid);
-//                }
-//
-//                String[] fields = miRnaInfo.split("::");
-//                for (int i = 0; i < fields.length; i++) {
-//                    String[] subFields = fields[i].split(":");
-//
-//                    // Process target gene
-//                    Long geneUid = processGene(subFields[0], subFields[0]);
-//                    if (geneUid != null) {
-//                        if (csv.getLong(miRnaUid + "." + geneUid) == null) {
-//                            // Write mirna-target gene relation
-//                            pwMiRnaTargetRel.println(miRnaUid + CsvInfo.SEPARATOR + geneUid + CsvInfo.SEPARATOR + subFields[1]);
-//                            csv.putLong(miRnaUid + "." + geneUid, 1);
-//                        }
-//                    }
-//                }
-//
-//                // Next miRNA
-//                rocksIterator.next();
-//            }
-//        }
-//    }
+    private List<String> readSampleIds(String variantFile) {
+        List<String> sampleIds = new ArrayList<>();
+
+        File metaFile = new File(variantFile + ".meta.json");
+        if (!metaFile.exists()) {
+            metaFile = new File(variantFile + ".meta.json.gz");
+        }
+        if (!metaFile.exists()) {
+            return sampleIds;
+        }
+
+        // Read info, format and sample from metadata file
+        ObjectMapper mapper = new ObjectMapper();
+        VariantMetadata variantMetadata;
+        try {
+            BufferedReader bufferedReader = FileUtils.newBufferedReader(metaFile.toPath());
+            String metadata = bufferedReader.readLine();
+            bufferedReader.close();
+            variantMetadata = mapper.readValue(metadata, VariantMetadata.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return sampleIds;
+        }
+
+        if (CollectionUtils.isNotEmpty(variantMetadata.getStudies())) {
+            // IMPORTANT: it considers only the first study
+            VariantStudyMetadata variantStudyMetadata = variantMetadata.getStudies().get(0);
+
+            // Get sample attributes
+            for (Individual individual : variantStudyMetadata.getIndividuals()) {
+                if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+                    for (Sample sample : individual.getSamples()) {
+                        sampleIds.add(sample.getId());
+                    }
+                }
+            }
+        }
+
+        return sampleIds;
+    }
 
     public CsvInfo getCsvInfo() {
         return csv;

@@ -43,7 +43,7 @@ public class TieringInterpretationAnalysis {
 
         for (String individual : individualsID) {
             String genotypeSubstring = getGenericSubstring(individualsGT.get(individual), "vc.attr_GT", true);
-            queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)"
+            queryString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_SAMPLE_FORMAT)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)"
                     + "-[:ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE]-(:VARIANT_CONSEQUENCE_TYPE)-"
                     + "[:ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT]-(:TRANSCRIPT)-"
                     + "[:HAS___GENE___TRANSCRIPT]-(:GENE)-[:XREF]-(ref:XREF)"
@@ -91,7 +91,7 @@ public class TieringInterpretationAnalysis {
         String individualsSubstring = getGenericSubstring(stringListOfIndividuals, "sam.id", false);
         String genesSubstring = getGenericSubstring(listOfGenes, "ref.id", true);
         String chromosomeSubstring = getGenericSubstring(listOfChromosome, "var.attr_chromosome", true);
-        String matchString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_CALL)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)"
+        String matchString = "MATCH (sam:SAMPLE)-[:SAMPLE__VARIANT_CALL]-(vc:VARIANT_SAMPLE_FORMAT)-[:VARIANT__VARIANT_CALL]-(var:VARIANT)"
                 + "-[:ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE]-(:VARIANT_CONSEQUENCE_TYPE)-"
                 + "[:ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT]-(:TRANSCRIPT)-"
                 + "[:HAS___GENE___TRANSCRIPT]-(gene:GENE)-[:XREF]-(ref:XREF)"

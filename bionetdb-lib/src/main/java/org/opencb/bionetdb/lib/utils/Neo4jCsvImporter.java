@@ -770,7 +770,7 @@ public class Neo4jCsvImporter {
 //                    }
 //                    // Variant call node
 //                    Long formatUid = csv.getAndIncUid();
-//                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_CALL.toString());
+//                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_SAMPLE_FORMAT.toString());
 //                    pw.println(variantFormatLine(formatUid, studyEntry, i));
 //
 //                    // Relation: variant - variant call
@@ -908,7 +908,7 @@ public class Neo4jCsvImporter {
 ////            while (iterator.hasNext()) {
 ////                attrs.add(iterator.next());
 ////            }
-////            strType = Node.Type.VARIANT_CALL.toString();
+////            strType = Node.Type.VARIANT_SAMPLE_FORMAT.toString();
 ////            Map<String, List<String>> nodeAttributes = csv.getNodeAttributes();
 ////            nodeAttributes.put(strType, attrs);
 ////            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));

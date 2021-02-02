@@ -405,7 +405,7 @@ public class Neo4JLoader {
     }
 
 //    public Node loadFile(File file) {
-//        Node fileNode = graphDb.findNode(Label.label(FILE.name()), "id", file.getId());
+//        Node fileNode = graphDb.findNode(Label.label(VARIANT_FILE.name()), "id", file.getId());
 //        if (fileNode != null) {
 //            return fileNode;
 //        }

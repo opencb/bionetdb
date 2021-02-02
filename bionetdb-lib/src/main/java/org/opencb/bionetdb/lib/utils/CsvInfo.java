@@ -10,6 +10,12 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.Entry;
 import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.metadata.Individual;
+import org.opencb.biodata.models.metadata.Sample;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.biodata.models.variant.metadata.VariantFileMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.bionetdb.lib.utils.cache.GeneCache;
@@ -20,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -40,9 +46,7 @@ public class CsvInfo {
     private Path inputPath;
     private Path outputPath;
 
-    private List<String> sampleNames;
-    private Set<String> formatFields;
-    private Set<String> infoFields;
+//    private List<String> sampleIds;
 
     private Map<String, PrintWriter> csvWriters;
     private Map<String, PrintWriter> csvAnnotatedWriters;
@@ -166,14 +170,10 @@ public class CsvInfo {
         this.inputPath = inputPath;
         this.outputPath = outputPath;
 
-        sampleNames = new ArrayList<>();
-        infoFields = new HashSet<>();
-        formatFields = new HashSet<>();
+//        sampleIds = new ArrayList<>();
 
         csvWriters = new HashMap<>();
         csvAnnotatedWriters = new HashMap<>();
-        nodeAttributes = createNodeAttributes();
-        noAttributes = createNoAttributes();
 
         rocksDbManager = new RocksDbManager();
         uidRocksDb = this.rocksDbManager.getDBConnection(outputPath.toString() + "/uidRocksDB", true);
@@ -197,12 +197,15 @@ public class CsvInfo {
         return ret;
     }
 
-    public void openCSVFiles() throws IOException {
+    public void openCSVFiles(List<File> variantFiles) throws IOException {
         PrintWriter pw;
         String filename;
 
+        noAttributes = createNoAttributes();
+        nodeAttributes = createNodeAttributes(variantFiles);
+
         // CSV files for nodes
-        for (Node.Type type: Node.Type.values()) {
+        for (Node.Type type : Node.Type.values()) {
             filename = type.toString() + ".csv";
 
             pw = new PrintWriter(outputPath + "/" + filename);
@@ -214,24 +217,24 @@ public class CsvInfo {
         }
 
         // CSV files for relationships
-        for (Relation.Type type: Relation.Type.values()) {
+        for (Relation.Type type : Relation.Type.values()) {
             if (type.toString().contains("__")) {
                 filename = type.toString() + ".csv";
 //                pw = new PrintWriter(new BufferedWriter(new FileWriter(outputPath + "/" + filename, !header)));
                 pw = new PrintWriter(outputPath + "/" + filename);
                 csvWriters.put(type.toString(), pw);
 
-                if (type != Relation.Type.VARIANT__VARIANT_CALL
-                        && type != Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO
-                        && type != Relation.Type.VARIANT_FILE_INFO__FILE
-                        && type != Relation.Type.SAMPLE__VARIANT_CALL) {
-                    pw.println(getRelationHeaderLine(type.toString()));
-                }
+//                if (type != Relation.Type.VARIANT__VARIANT_CALL
+//                        && type != Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO
+//                        && type != Relation.Type.VARIANT_FILE_INFO__FILE
+//                        && type != Relation.Type.SAMPLE__VARIANT_CALL) {
+                pw.println(getRelationHeaderLine(type.toString()));
+//                }
             }
         }
 
         // CSV files for BioPAX relationships
-        for (BioPAXRelation type: BioPAXRelation.values()) {
+        for (BioPAXRelation type : BioPAXRelation.values()) {
             filename = type.toString() + ".csv";
             pw = new PrintWriter(outputPath + "/" + filename);
             csvWriters.put(type.toString(), pw);
@@ -240,12 +243,12 @@ public class CsvInfo {
         }
     }
 
-    public void close() throws FileNotFoundException {
+    public void close() {
         List<Map<String, PrintWriter>> writerMaps = new ArrayList<>();
         writerMaps.add(csvWriters);
         writerMaps.add(csvAnnotatedWriters);
 
-        for (Map<String, PrintWriter> writerMap: writerMaps) {
+        for (Map<String, PrintWriter> writerMap : writerMaps) {
             if (MapUtils.isNotEmpty(writerMap)) {
                 Iterator<PrintWriter> iterator = writerMap.values().iterator();
                 while (iterator.hasNext()) {
@@ -264,22 +267,22 @@ public class CsvInfo {
 ////        String metadata = FileUtils.readFully(new BufferedReader(new FileReader(metafile.getAbsolutePath())));
 //        ObjectMapper mapper = new ObjectMapper();
 //        VariantMetadata variantMetadata = mapper.readValue(metadata, VariantMetadata.class);
-//        if (ListUtils.isNotEmpty(variantMetadata.getStudies())) {
+//        if (CollectionUtils.isNotEmpty(variantMetadata.getStudies())) {
 //            VariantStudyMetadata variantStudyMetadata = variantMetadata.getStudies().get(0);
 //            for (Individual individual: variantStudyMetadata.getIndividuals()) {
 //                sampleNames.add(individual.getSamples().get(0).getId());
 //            }
 //
-//            if (ListUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
+//            if (CollectionUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
 //                for (VariantFileMetadata variantFileMetadata: variantStudyMetadata.getFiles()) {
 //                    if (StringUtils.isNotEmpty(variantFileMetadata.getId())) {
-//                        Long fileUid = getLong(variantFileMetadata.getId());
+//                        Long fileUid = getLong(variantFileMetadata.getId(), Node.Type.VARIANT_FILE.toString());
 //                        if (fileUid == null) {
 //                            // File node
 //                            Node n = new Node(getAndIncUid(), variantFileMetadata.getId(), variantFileMetadata.getPath(),
-//                                    Node.Type.FILE);
-//                            csvWriters.get(Node.Type.FILE.toString()).println(nodeLine(n));
-//                            putLong(variantFileMetadata.getId(), n.getUid());
+//                                    Node.Type.VARIANT_FILE);
+//                            csvWriters.get(Node.Type.VARIANT_FILE.toString()).println(nodeLine(n));
+//                            putLong(variantFileMetadata.getId(), Node.Type.VARIANT_FILE.toString(), n.getUid());
 //                        }
 //                    }
 //
@@ -292,11 +295,9 @@ public class CsvInfo {
 //                            }
 //                        }
 //                    }
-//
 //                }
 //            }
 //        }
-//
 //
 //        // Variant call
 //        String strType;
@@ -306,7 +307,7 @@ public class CsvInfo {
 //        while (iterator.hasNext()) {
 //            attrs.add(iterator.next());
 //        }
-//        strType = Node.Type.VARIANT_CALL.toString();
+//        strType = Node.Type.VARIANT_SAMPLE_FORMAT.toString();
 //        nodeAttributes.put(strType, attrs);
 //        csvWriters.get(strType).println(getNodeHeaderLine(attrs));
 //        strType = Relation.Type.VARIANT__VARIANT_CALL.toString();
@@ -334,7 +335,7 @@ public class CsvInfo {
         Long geneUid = null;
         String geneId = geneCache.getPrimaryId(xrefId);
         if (StringUtils.isNotEmpty(geneId)) {
-            geneUid = getLong(geneId,  Node.Type.GENE.name());
+            geneUid = getLong(geneId, Node.Type.GENE.name());
         } else {
             logger.info("Getting gene UID: Xref not found for gene {}", xrefId);
         }
@@ -718,19 +719,18 @@ public class CsvInfo {
         reader.close();
     }
 
-    private Map<String, List<String>> createNodeAttributes() {
+    private Map<String, List<String>> createNodeAttributes(List<File> variantFiles) {
         List<String> attrs;
         Map<String, List<String>> nodeAttributes = new HashMap<>();
+
+        //
+        // Variant related-nodes
+        //
 
         // Variant
         attrs = Arrays.asList("variantId", "id", "name", "alternativeNames", "chromosome", "start", "end", "strand",
                 "reference", "alternate", "type");
         nodeAttributes.put(Node.Type.VARIANT.toString(), new ArrayList<>(attrs));
-
-        attrs = Arrays.asList("variantObjectId", "id", "name", "core", "studies", "consequenceTypes", "xrefs", "populationFrequencies",
-                "conservation", "geneExpression", "geneTraitAssociation", "geneDrugInteraction", "variantTraitAssociation",
-                "traitAssociation", "functionalScore");
-        nodeAttributes.put(Node.Type.VARIANT_OBJECT.toString(), new ArrayList<>(attrs));
 
         // Population frequency
         attrs = Arrays.asList("variantPopulationFrequencyId", "id", "name", "study", "population", "refAlleleFreq", "altAlleleFreq");
@@ -813,14 +813,29 @@ public class CsvInfo {
                 "functionalDescription");
         nodeAttributes.put(Node.Type.PROTEIN_VARIANT_ANNOTATION.toString(), new ArrayList<>(attrs));
 
+        // File
+        attrs = Arrays.asList("fileId", "id", "name");
+        nodeAttributes.put(Node.Type.VARIANT_FILE.toString(), new ArrayList<>(attrs));
+
+        // Family
+        attrs = Arrays.asList("familyId", "id", "name");
+        nodeAttributes.put(Node.Type.FAMILY.toString(), new ArrayList<>(attrs));
+
+        // Individual
+        attrs = Arrays.asList("individualId", "id", "name", "sex", "phenotype");
+        nodeAttributes.put(Node.Type.INDIVIDUAL.toString(), new ArrayList<>(attrs));
+
+        // Sample, variant file info and variant sample format
+        nodeAttributes.putAll(createSampleRelatedAttrs(variantFiles));
+
+        //
+        // Gene related-nodes
+        //
+
         // Gene
         attrs = Arrays.asList("geneId", "id", "name", "biotype", "chromosome", "start", "end", "strand", "description",
                 "version", "source", "status");
         nodeAttributes.put(Node.Type.GENE.toString(), new ArrayList<>(attrs));
-
-        // Gene object  (object = gz json)
-        attrs = Arrays.asList("geneObjectId", "id", "name", "object");
-        nodeAttributes.put(Node.Type.GENE_OBJECT.toString(), new ArrayList<>(attrs));
 
         // Disease panel
         attrs = Arrays.asList("diseasePanelId", "id", "name", "description", "phenotypeNames", "sourceId", "sourceName",
@@ -898,6 +913,14 @@ public class CsvInfo {
         attrs = Arrays.asList("xrefId", "id", "name", "dbName", "dbDisplayName", "description");
         nodeAttributes.put(Node.Type.XREF.toString(), new ArrayList<>(attrs));
 
+        // SO_TERM
+        attrs = Arrays.asList("soTermId", "id", "name");
+        nodeAttributes.put(Node.Type.SO_TERM.toString(), new ArrayList<>(attrs));
+
+        //
+        // Protein related-nodes
+        //
+
         // Protein
         attrs = Arrays.asList("protId", "id", "name", "accession", "dataset", "proteinExistence", "evidence", "object");
         nodeAttributes.put(Node.Type.PROTEIN.toString(), new ArrayList<>(attrs));
@@ -915,18 +938,6 @@ public class CsvInfo {
                 "locationEnd", "description");
         nodeAttributes.put(Node.Type.PROTEIN_FEATURE.toString(), new ArrayList<>(attrs));
 
-        // File
-        attrs = Arrays.asList("fileId", "id", "name");
-        nodeAttributes.put(Node.Type.FILE.toString(), new ArrayList<>(attrs));
-
-        // Sample
-        attrs = Arrays.asList("sampleId", "id", "name");
-        nodeAttributes.put(Node.Type.SAMPLE.toString(), new ArrayList<>(attrs));
-
-        // SO_TERM
-        attrs = Arrays.asList("soTermId", "id", "name");
-        nodeAttributes.put(Node.Type.SO_TERM.toString(), new ArrayList<>(attrs));
-
         // Protein variant annotation
         attrs = Arrays.asList("proteinVariantAnnotationId", "id", "name");
         nodeAttributes.put(Node.Type.PROTEIN_VARIANT_ANNOTATION.toString(), new ArrayList<>(attrs));
@@ -936,7 +947,7 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.PROTEIN_SUBSTITUTION_SCORE.toString(), new ArrayList<>(attrs));
 
         //
-        // BIO PAX: nodes
+        // Pathway related-nodes
         //
 
         // Cellular location
@@ -980,47 +991,151 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.REGULATION.toString(), new ArrayList<>(attrs));
 
         //
-        // Clinical nodes
+        // Clinical related-nodes
         //
 
-        // Clinical Analysis
-        attrs = Arrays.asList("clinicalAnalysisId", "id", "name", "uuid", "description", "type", "priority", "flags", "creationDate",
-                "modificationDate", "dueDate", "statusName", "statusDate", "statusMessage", "consentPrimaryFindings",
-                "consentSecondaryFindings", "consentCarrierFindings", "consentResearchFindings", "release");
-        nodeAttributes.put(Node.Type.CLINICAL_ANALYSIS.toString(), new ArrayList<>(attrs));
+//        // Clinical Analysis
+//        attrs = Arrays.asList("clinicalAnalysisId", "id", "name", "uuid", "description", "type", "priority", "flags", "creationDate",
+//                "modificationDate", "dueDate", "statusName", "statusDate", "statusMessage", "consentPrimaryFindings",
+//                "consentSecondaryFindings", "consentCarrierFindings", "consentResearchFindings", "release");
+//        nodeAttributes.put(Node.Type.CLINICAL_ANALYSIS.toString(), new ArrayList<>(attrs));
+//
+//        // Clinical analyst
+//        attrs = Arrays.asList("clinicalAnalystId", "id", "name", "assignedBy", "assignee", "date");
+//        nodeAttributes.put(Node.Type.CLINICAL_ANALYST.toString(), new ArrayList<>(attrs));
+//
+//        // Comment
+//        attrs = Arrays.asList("commentId", "id", "name", "author", "type", "text", "date");
+//        nodeAttributes.put(Node.Type.COMMENT.toString(), new ArrayList<>(attrs));
+//
+//        // Interpretation
+//        attrs = Arrays.asList("interpretationId", "id", "name", "uuid", "description", "status", "creationDate", "version");
+//        nodeAttributes.put(Node.Type.INTERPRETATION.toString(), new ArrayList<>(attrs));
+//
+//        // Software
+//        attrs = Arrays.asList("softwareId", "id", "name", "version", "repository", "commit", "website", "params");
+//        nodeAttributes.put(Node.Type.SOFTWARE.toString(), new ArrayList<>(attrs));
+//
+//        // Reported variant
+//        attrs = Arrays.asList("reportedVariantId", "id", "name", "deNovoQualityScore", "status", "attributes");
+//        nodeAttributes.put(Node.Type.REPORTED_VARIANT.toString(), new ArrayList<>(attrs));
+//
+//        // Low covarage
+//        attrs = Arrays.asList("lowCoverageId", "id", "name", "geneName", "chromosome", "start", "end", "meanCoverage", "type");
+//        nodeAttributes.put(Node.Type.LOW_COVERAGE_REGION.toString(), new ArrayList<>(attrs));
+//
+//        // Analyst
+//        attrs = Arrays.asList("analystId", "id", "name", "company", "email");
+//        nodeAttributes.put(Node.Type.ANALYST.toString(), new ArrayList<>(attrs));
+//
+//        // Reported event
+//        attrs = Arrays.asList("reportedVariantId", "id", "name", "modeOfInheritance", "penetrance", "score", "fullyExplainPhenotypes",
+//                "roleInCancer", "actionable", "justification", "tier");
+//        nodeAttributes.put(Node.Type.REPORTED_EVENT.toString(), new ArrayList<>(attrs));
 
-        // Clinical analyst
-        attrs = Arrays.asList("clinicalAnalystId", "id", "name", "assignedBy", "assignee", "date");
-        nodeAttributes.put(Node.Type.CLINICAL_ANALYST.toString(), new ArrayList<>(attrs));
+        return nodeAttributes;
+    }
 
-        // Comment
-        attrs = Arrays.asList("commentId", "id", "name", "author", "type", "text", "date");
-        nodeAttributes.put(Node.Type.COMMENT.toString(), new ArrayList<>(attrs));
 
-        // Interpretation
-        attrs = Arrays.asList("interpretationId", "id", "name", "uuid", "description", "status", "creationDate", "version");
-        nodeAttributes.put(Node.Type.INTERPRETATION.toString(), new ArrayList<>(attrs));
+    private Map<String, List<String>> createSampleRelatedAttrs(List<File> variantFiles) {
+        List<String> attrs;
+        Map<String, List<String>> nodeAttributes = new HashMap<>();
 
-        // Software
-        attrs = Arrays.asList("softwareId", "id", "name", "version", "repository", "commit", "website", "params");
-        nodeAttributes.put(Node.Type.SOFTWARE.toString(), new ArrayList<>(attrs));
+        // For variant file info, variant sample format and sample nodes we have to read variant metadata files to know which attributes
+        // are present
+        Set<String> sampleAttrs = new HashSet<>();
+        Set<String> formatAttrs = new HashSet<>();
+        Set<String> infoAttrs = new HashSet<>();
 
-        // Reported variant
-        attrs = Arrays.asList("reportedVariantId", "id", "name", "deNovoQualityScore", "status", "attributes");
-        nodeAttributes.put(Node.Type.REPORTED_VARIANT.toString(), new ArrayList<>(attrs));
+        if (CollectionUtils.isNotEmpty(variantFiles)) {
+            for (File variantFile : variantFiles) {
+                File metaFile = new File(variantFile.getAbsoluteFile() + ".meta.json");
+                if (!metaFile.exists()) {
+                    metaFile = new File(variantFile.getAbsoluteFile() + ".meta.json.gz");
+                }
+                if (!metaFile.exists()) {
+                    continue;
+                }
 
-        // Low covarage
-        attrs = Arrays.asList("lowCoverageId", "id", "name", "geneName", "chromosome", "start", "end", "meanCoverage", "type");
-        nodeAttributes.put(Node.Type.LOW_COVERAGE_REGION.toString(), new ArrayList<>(attrs));
+                // Read info, format and sample from metadata file
+                ObjectMapper mapper = new ObjectMapper();
+                VariantMetadata variantMetadata;
+                try {
+                    BufferedReader bufferedReader = FileUtils.newBufferedReader(metaFile.toPath());
+                    String metadata = bufferedReader.readLine();
+                    bufferedReader.close();
+                    variantMetadata = mapper.readValue(metadata, VariantMetadata.class);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    continue;
+                }
 
-        // Analyst
-        attrs = Arrays.asList("analystId", "id", "name", "company", "email");
-        nodeAttributes.put(Node.Type.ANALYST.toString(), new ArrayList<>(attrs));
+                if (CollectionUtils.isNotEmpty(variantMetadata.getStudies())) {
+                    // IMPORTANT: it considers only the first study
+                    VariantStudyMetadata variantStudyMetadata = variantMetadata.getStudies().get(0);
 
-        // Reported event
-        attrs = Arrays.asList("reportedVariantId", "id", "name", "modeOfInheritance", "penetrance", "score", "fullyExplainPhenotypes",
-                "roleInCancer", "actionable", "justification", "tier");
-        nodeAttributes.put(Node.Type.REPORTED_EVENT.toString(), new ArrayList<>(attrs));
+                    // Get sample attributes
+                    for (Individual individual : variantStudyMetadata.getIndividuals()) {
+                        if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+                            for (Sample sample : individual.getSamples()) {
+                                if (MapUtils.isNotEmpty(sample.getAnnotations())) {
+                                    sampleAttrs.addAll(sample.getAnnotations().keySet());
+                                }
+                            }
+                        }
+                    }
+
+                    if (CollectionUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
+                        for (VariantFileMetadata variantFileMetadata : variantStudyMetadata.getFiles()) {
+//                            if (StringUtils.isNotEmpty(variantFileMetadata.getId())) {
+//                                Long fileUid = getLong(variantFileMetadata.getId(), Node.Type.VARIANT_FILE.toString());
+//                                if (fileUid == null) {
+//                                    // File node
+//                                    Node n = new Node(getAndIncUid(), variantFileMetadata.getId(), variantFileMetadata.getPath(),
+//                                            Node.Type.VARIANT_FILE);
+//                                    csvWriters.get(Node.Type.VARIANT_FILE.toString()).println(nodeLine(n));
+//                                    putLong(variantFileMetadata.getId(), Node.Type.VARIANT_FILE.toString(), n.getUid());
+//                                }
+//                            }
+
+                            if (variantFileMetadata.getHeader() != null) {
+                                for (VariantFileHeaderComplexLine line : variantFileMetadata.getHeader().getComplexLines()) {
+                                    if ("INFO".equals(line.getKey())) {
+                                        infoAttrs.add(line.getId());
+                                    } else if ("FORMAT".equals(line.getKey())) {
+                                        formatAttrs.add(line.getId());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sample
+        attrs = new ArrayList<>();
+        attrs.addAll(Arrays.asList("sampleId", "id", "name"));
+        if (CollectionUtils.isNotEmpty(sampleAttrs)) {
+            CollectionUtils.addAll(attrs, sampleAttrs.iterator());
+        }
+        nodeAttributes.put(Node.Type.SAMPLE.toString(), attrs);
+
+        // Variant file info
+        attrs = new ArrayList<>();
+        attrs.addAll(Arrays.asList("variantFileDataId", "id", "name"));
+        if (CollectionUtils.isNotEmpty(infoAttrs)) {
+            CollectionUtils.addAll(attrs, infoAttrs.iterator());
+        }
+        nodeAttributes.put(Node.Type.VARIANT_FILE_DATA.toString(), attrs);
+
+        // Variant sample format
+        attrs = new ArrayList<>();
+        attrs.addAll(Arrays.asList("variantSampleDataId", "id", "name"));
+        if (CollectionUtils.isNotEmpty(formatAttrs)) {
+            CollectionUtils.addAll(attrs, formatAttrs.iterator());
+        }
+        nodeAttributes.put(Node.Type.VARIANT_SAMPLE_DATA.toString(), attrs);
 
         return nodeAttributes;
     }
@@ -1054,14 +1169,14 @@ public class CsvInfo {
         return this;
     }
 
-    public List<String> getSampleNames() {
-        return sampleNames;
-    }
-
-    public CsvInfo setSampleNames(List<String> sampleNames) {
-        this.sampleNames = sampleNames;
-        return this;
-    }
+//    public List<String> getSampleNames() {
+//        return sampleNames;
+//    }
+//
+//    public CsvInfo setSampleNames(List<String> sampleNames) {
+//        this.sampleNames = sampleNames;
+//        return this;
+//    }
 
     public Map<String, PrintWriter> getCsvWriters() {
         return csvWriters;
@@ -1087,24 +1202,6 @@ public class CsvInfo {
 
     public CsvInfo setNodeAttributes(Map<String, List<String>> nodeAttributes) {
         this.nodeAttributes = nodeAttributes;
-        return this;
-    }
-
-    public Set<String> getFormatFields() {
-        return formatFields;
-    }
-
-    public CsvInfo setFormatFields(Set<String> formatFields) {
-        this.formatFields = formatFields;
-        return this;
-    }
-
-    public Set<String> getInfoFields() {
-        return infoFields;
-    }
-
-    public CsvInfo setInfoFields(Set<String> infoFields) {
-        this.infoFields = infoFields;
         return this;
     }
 
