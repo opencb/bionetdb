@@ -208,6 +208,9 @@ public class Builder {
             }
         }
 
+        // Set internal config
+        buildInternalConfigNode();
+
         // Close CSV files
         csv.close();
     }
@@ -348,6 +351,12 @@ public class Builder {
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
+
+    private void buildInternalConfigNode() {
+        Node node = new Node(0, null, null, Node.Type.INTERNAL_CONNFIG);
+        node.addAttribute("uidCounter", csv.getUid());
+        csv.getCsvWriters().get(Node.Type.INTERNAL_CONNFIG.name()).println(csv.nodeLine(node));
+    }
 
 //    private void addVariantFiles(List<File> files) throws IOException {
 //        for (int i = 0; i < files.size(); i++) {

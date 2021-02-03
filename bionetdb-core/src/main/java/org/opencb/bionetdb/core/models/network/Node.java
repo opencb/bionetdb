@@ -20,7 +20,7 @@ public class Node {
     private static long counter = 0;
 
     public enum Type {
-        CONFIG("CONFIG"),
+        INTERNAL_CONNFIG("INTERNAL_CONNFIG"),
 
         UNDEFINED("UNDEFINED"),
 

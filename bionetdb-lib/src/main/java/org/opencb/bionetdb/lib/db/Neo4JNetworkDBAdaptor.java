@@ -121,7 +121,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //                tx.run("CREATE INDEX ON :" + Node.Type.PROTEIN_VARIANT_ANNOTATION + "(uid)");
 //                tx.run("CREATE INDEX ON :" + Node.Type.VARIANT_CONSERVATION_SCORE + "(uid)");
 //
-//                tx.run("CREATE INDEX ON :" + Node.Type.CONFIG + "(uid)");
+//                tx.run("CREATE INDEX ON :" + Node.Type.INTERNAL_CONNFIG + "(uid)");
 
 //                tx.success();
             session.close();
@@ -993,7 +993,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private boolean existConfigNode() {
         Session session = this.driver.session();
-        Result statementResult = session.run("match (n:" + Node.Type.CONFIG + "{uid:0}) return count(n) as count");
+        Result statementResult = session.run("match (n:" + Node.Type.INTERNAL_CONNFIG + "{uid:0}) return count(n) as count");
         session.close();
 
         return (statementResult.peek().get(0).asInt() == 1);
@@ -1001,7 +1001,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public long getUidCounter() {
         Session session = this.driver.session();
-        StringBuilder cypher = new StringBuilder("match (n:").append(Node.Type.CONFIG).append("{uid:0}) return n.")
+        StringBuilder cypher = new StringBuilder("match (n:").append(Node.Type.INTERNAL_CONNFIG).append("{uid:0}) return n.")
                 .append(PREFIX_ATTRIBUTES).append("uidCounter");
         System.out.println(cypher.toString());
 
@@ -1016,7 +1016,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public void setUidCounter(long uidCounter) {
         // Build Cypher statement
         StringBuilder cypher = new StringBuilder();
-        cypher.append("merge (n:" + Node.Type.CONFIG + "{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=")
+        cypher.append("merge (n:" + Node.Type.INTERNAL_CONNFIG + "{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=")
                 .append(uidCounter);
         System.out.println(cypher.toString());
 
@@ -1029,7 +1029,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private void createConfigNode() {
         // Create configuration node and set it uid = 0
         Session session = this.driver.session();
-        Node node = new Node(0, "0", "config", Node.Type.CONFIG);
+        Node node = new Node(0, "0", "config", Node.Type.INTERNAL_CONNFIG);
         node.addAttribute("uidCounter", 1);
         try (Transaction tx = session.beginTransaction()) {
             addNode(node, tx);

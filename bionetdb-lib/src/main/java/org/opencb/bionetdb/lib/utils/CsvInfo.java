@@ -1033,6 +1033,13 @@ public class CsvInfo {
 //                "roleInCancer", "actionable", "justification", "tier");
 //        nodeAttributes.put(Node.Type.REPORTED_EVENT.toString(), new ArrayList<>(attrs));
 
+        //
+        // Internal config
+        //
+
+        attrs = Arrays.asList("internalConfigId", "id", "name", "uidCounter");
+        nodeAttributes.put(Node.Type.INTERNAL_CONNFIG.toString(), new ArrayList<>(attrs));
+
         return nodeAttributes;
     }
 
