@@ -128,6 +128,22 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
     }
 
+    public boolean isReady() {
+        Transaction tx = null;
+        try {
+            tx = driver.session().beginTransaction();
+            tx.run("MATCH (n:" + Node.Type.INTERNAL_CONNFIG + "{uid:0}) return n");
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (tx != null) {
+                tx.close();
+            }
+        }
+    }
+
     //-------------------------------------------------------------------------
     // I N S E R T     N E T W O R K S
     //-------------------------------------------------------------------------

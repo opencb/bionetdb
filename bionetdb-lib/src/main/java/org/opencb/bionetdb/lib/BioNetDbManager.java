@@ -116,14 +116,28 @@ public class BioNetDbManager {
         importer.run();
         System.out.println("Importing data into BioNetDB database done!!");
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            logger.info(e.getMessage());
+
+        while (!importer.isRunning()) {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                logger.info(e.getMessage());
+            }
         }
 
-        System.out.println("Indexing BioNetDB database...");
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.configuration);
+        System.out.println("Checking if database is ready.");
+        while (!((Neo4JNetworkDBAdaptor) networkDBAdaptor).isReady()) {
+            System.out.println("Not yet!");
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                logger.info(e.getMessage());
+            }
+        }
+        System.out.println("Now BioNetDB database is ready to be indexed.");
+
+        System.out.println("Indexing BioNetDB database...");
         networkDBAdaptor.index();
         networkDBAdaptor.close();
         System.out.println("Indexing BioNetDB database done!!");

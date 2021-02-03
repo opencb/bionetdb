@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.lib.utils;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.bionetdb.lib.db.Neo4jBioPaxBuilder;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
@@ -21,6 +22,8 @@ public class Importer {
     private String database;
     private Path inputPath;
 
+    private String neo4jHome;
+
     protected static Logger logger;
 
     public Importer() {
@@ -30,7 +33,13 @@ public class Importer {
     public Importer(String database, Path inputPath) {
         this.database = database;
         this.inputPath = inputPath;
+
         this.logger = LoggerFactory.getLogger(this.getClass().toString());
+
+        this.neo4jHome = System.getenv("NEO4J_HOME");
+        if (neo4jHome == null) {
+            logger.error("The environment variable NEO4J_HOME is not defined.");
+        }
     }
 
     public void run() {
@@ -44,11 +53,6 @@ public class Importer {
         StringBuilder sb = new StringBuilder();
         Set<String> validNodes = new HashSet<>();
 
-        String neo4jHome = System.getenv("NEO4J_HOME");
-        if (neo4jHome == null) {
-            logger.error("The environment variable NEO4J_HOME is not defined.");
-            return;
-        }
         sb.append(neo4jHome);
         sb.append("/bin/neo4j stop");
         Command command = new Command(sb.toString());
@@ -112,6 +116,18 @@ public class Importer {
         command.run();
         logger.info("Executing: {}", sb);
         logger.info("Output: {}", command.getOutput());
+    }
+
+    public boolean isRunning() {
+        StringBuilder sb = new StringBuilder(neo4jHome);
+        sb.append("/bin/neo4j status");
+        Command command = new Command(sb.toString());
+        command.run();
+        System.out.println(command.getOutput());
+        if (StringUtils.isNotEmpty(command.getOutput()) && command.getOutput().contains("is running")) {
+            return true;
+        }
+        return false;
     }
 
     private boolean isEmptyCsvFile(File file) {
