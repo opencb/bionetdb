@@ -70,7 +70,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 tx.commit();
                 return 1;
             });
-            
+
             // Wait for indexes been created
             session.writeTransaction(tx -> {
                 tx.run("CALL db.awaitIndexes(3000000)");
