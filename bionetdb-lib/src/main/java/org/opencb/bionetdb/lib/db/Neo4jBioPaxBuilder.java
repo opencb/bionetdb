@@ -55,7 +55,6 @@ public class Neo4jBioPaxBuilder {
     }
 
     public interface BioPAXProcessing {
-        String SEPARATOR = "___";
         void processNodes(List<Node> nodes);
         void processRelations(List<Relation> relations);
     }
@@ -1062,11 +1061,11 @@ public class Neo4jBioPaxBuilder {
 
             // Check if that relation already exists
             String relId = componentUid + "." + complexUid;
-            if (csv.getLong(relId, Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name()) == null) {
+            if (csv.getLong(relId, Relation.Type.COMPONENT_OF.name()) == null) {
 
                 Node.Type componentType = uidToType.get(componentUid);
                 Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, complexUid, complexType,
-                        Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
+                        Relation.Type.COMPONENT_OF);
                 if (stoichiometryMap.containsKey(componentUid)) {
                     relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
                 }
@@ -1075,7 +1074,7 @@ public class Neo4jBioPaxBuilder {
                 // Check to add cellular location
                 checkProteinCellularLoc(getBioPaxId(component.getRDFId()), componentType, complexUid, complexType);
 
-                csv.putLong(relId, Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name(), 1);
+                csv.putLong(relId, Relation.Type.COMPONENT_OF.name(), 1);
             }
         }
     }
@@ -1447,79 +1446,6 @@ public class Neo4jBioPaxBuilder {
             }
         }
     }
-
-    @Deprecated
-    private void addSetXref(Set<Xref> xrefs, Long uid, Node.Type type) {
-        for (Xref xref: xrefs) {
-            String dbName = xref.getDb();
-            String id = xref.getId();
-            if (xref.getDb().toLowerCase().equals("gene ontology")) {
-                dbName = "go";
-                id = xref.getId().split(":")[1];
-            }
-            addXref(id, dbName, uid, type);
-        }
-    }
-
-    @Deprecated
-    private void addXref(String xrefId, String dbName, Long uid, Node.Type type) {
-        if (filters != null && filters.containsKey(Neo4JBioPaxLoader.FilterField.XREF_DBNAME.name())
-                && filters.get(Neo4JBioPaxLoader.FilterField.XREF_DBNAME.name()).contains(dbName)) {
-            return;
-        }
-
-        // Only process XREF for proteins
-        if (type == Node.Type.PROTEIN) {
-            Long xrefUid = csv.getLong("x0." + xrefId, Node.Type.XREF.name());
-            if (xrefUid == null) {
-                Node xrefNode = new Node(csv.getAndIncUid(), xrefId, xrefId, Node.Type.XREF);
-                xrefNode.addAttribute("source", source);
-                xrefNode.addAttribute("dbName", dbName);
-                nodes.add(xrefNode);
-
-                xrefUid = xrefNode.getUid();
-                csv.putLong("x0." + xrefId, Node.Type.XREF.name(), xrefUid);
-                csv.putLong("x1." + xrefId, Node.Type.XREF.name(), uid);
-            }
-
-            Relation relation = new Relation(csv.getAndIncUid(), null, uid, type, xrefUid, Node.Type.XREF, Relation.Type.XREF);
-            relations.add(relation);
-        } else if (type == Node.Type.RNA) {
-            // mix = miRNA Xref, mixt = miRNA Xref target
-            Long xrefUid = csv.getLong("mix." + xrefId, Node.Type.XREF.name());
-            if (xrefUid == null) {
-                Node xrefNode = new Node(csv.getAndIncUid(), xrefId, xrefId, Node.Type.XREF);
-                xrefNode.addAttribute("source", source);
-                xrefNode.addAttribute("dbName", dbName);
-                nodes.add(xrefNode);
-
-                xrefUid = xrefNode.getUid();
-                csv.putLong("mix." + xrefId, Node.Type.XREF.name(), xrefUid);
-                csv.putLong("mixt." + xrefId, Node.Type.XREF.name(), uid);
-            }
-
-            Relation relation = new Relation(csv.getAndIncUid(), null, uid, type, xrefUid,  Node.Type.XREF, Relation.Type.XREF);
-            relations.add(relation);
-        }
-    }
-
-/*
-//        Set<Xref> xrefs = physicalEntityBP.getXref();
-//        for (Xref xref : xrefs) {
-//            if (xref.getDb() != null) {
-//                String source = xref.getDb().toLowerCase();
-//                if (source.equals("sbo") || source.equals("go") || source.equals("mi") || source.equals("ec")) {
-//                    physicalEntity.setOntology(new Ontology(xref.getDb(), xref.getDbVersion(), xref.getId(), xref.getIdVersion()));
-//                } else if (source.equals("pubmed")) {
-//                    physicalEntity.setPublication(new Publication(xref.getDb(), xref.getId()));
-//                } else {
-//                    physicalEntity.setXref(new org.opencb.bionetdb.core.models.Xref(xref.getDb(),
-//                            xref.getDbVersion(), xref.getId(), xref.getIdVersion()));
-//                }
-//            }
-//        }
-
- */
 
     private String getBioPaxId(String rdfId) {
         return rdfId.split("#")[1];

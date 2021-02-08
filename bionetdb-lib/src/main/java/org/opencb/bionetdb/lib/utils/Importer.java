@@ -2,7 +2,6 @@ package org.opencb.bionetdb.lib.utils;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.bionetdb.lib.db.Neo4jBioPaxBuilder;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
@@ -155,8 +154,8 @@ public class Importer {
         boolean isValid = false;
         if (!isEmptyCsvFile(file)) {
             String name = file.getName();
-            if (name.contains(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)) {
-                String[] fields = removeCsvExt(name).split(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR);
+            if (name.contains(CsvInfo.FILENAME_SEPARATOR)) {
+                String[] fields = removeCsvExt(name).split(CsvInfo.FILENAME_SEPARATOR);
                 isValid = nodeNames.contains(fields[1]) && nodeNames.contains(fields[2]);
             } else {
                 String[] fields = removeCsvExt(name).split("__");
@@ -172,8 +171,8 @@ public class Importer {
 
     private String getRelationName(File file) {
         String name = file.getName();
-        if (name.contains(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)) {
-            return name.split(Neo4jBioPaxBuilder.BioPAXProcessing.SEPARATOR)[0];
+        if (name.contains(CsvInfo.FILENAME_SEPARATOR)) {
+            return name.split(CsvInfo.FILENAME_SEPARATOR)[0];
         } else {
             return removeCsvExt(name);
         }

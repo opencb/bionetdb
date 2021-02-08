@@ -243,7 +243,7 @@ public class Neo4jCsvImporter {
 //
 //        // Xrefs
 //        PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
-//        pwRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___GENE___XREF.toString());
+//        pwRel = csv.getCsvWriters().get(CsvInfo.RelationFilename.ANNOTATION___GENE___XREF.toString());
 //        Set<Xref> xrefSet = new HashSet<>();
 //        xrefSet.add(new Xref(gene.getId(), "Ensembl", "Ensembl"));
 //        xrefSet.add(new Xref(gene.getName(), "Ensembl", "Ensembl"));
@@ -345,7 +345,7 @@ public class Neo4jCsvImporter {
 //        // Model Xrefs
 //        if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
 //            PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
-//            pw = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.ANNOTATION___PROTEIN___XREF.toString());
+//            pw = csv.getCsvWriters().get(CsvInfo.RelationFilename.ANNOTATION___PROTEIN___XREF.toString());
 //            for (DbReferenceType dbRef: protein.getDbReference()) {
 //                Long xrefUid = csv.getLong(dbRef.getType() + "." + dbRef.getId());
 //                if (xrefUid == null) {
@@ -1108,7 +1108,7 @@ public class Neo4jCsvImporter {
 //        if (toImport) {
 //            // Import miRNAs and genes
 //            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
-//            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(CsvInfo.BioPAXRelation.TARGET_GENE___MIRNA___GENE
+//            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(CsvInfo.RelationFilename.TARGET_GENE___MIRNA___GENE
 //                    .toString());
 //
 //            RocksIterator rocksIterator = csv.getMiRnaRocksDb().newIterator();

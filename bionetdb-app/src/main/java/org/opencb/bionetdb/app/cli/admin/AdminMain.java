@@ -22,7 +22,6 @@ import org.opencb.bionetdb.app.cli.CommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.executors.BuildCommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.executors.DownloadCommandExecutor;
 import org.opencb.bionetdb.app.cli.admin.executors.ImportCommandExecutor;
-import org.opencb.bionetdb.app.cli.admin.executors.LoadCommandExecutor;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 
 import java.io.IOException;
@@ -66,9 +65,6 @@ public class AdminMain {
                         break;
                     case "import":
                         commandExecutor = new ImportCommandExecutor(cliOptionsParser.getImportCommandOptions());
-                        break;
-                    case "load":
-                        commandExecutor = new LoadCommandExecutor(cliOptionsParser.getLoadCommandOptions());
                         break;
                     default:
                         break;

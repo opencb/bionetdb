@@ -37,16 +37,14 @@ import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
 
 public class CsvInfo {
     public static final String SEPARATOR = "\t";
+    public static final String FILENAME_SEPARATOR = "___";
+
     public static final String ARRAY_SEPARATOR = "|";
     public static final String MISSING_VALUE = ""; //"-";
-
-    private static final String MIRNA_ROCKSDB = "mirnas.rocksdb";
 
     private long uid;
     private Path inputPath;
     private Path outputPath;
-
-//    private List<String> sampleIds;
 
     private Map<String, PrintWriter> csvWriters;
     private Map<String, PrintWriter> csvAnnotatedWriters;
@@ -59,8 +57,6 @@ public class CsvInfo {
     private GeneCache geneCache;
     private ProteinCache proteinCache;
 
-    private RocksDB miRnaRocksDb;
-
     private ObjectMapper mapper;
     private ObjectReader geneReader;
     private ObjectReader proteinReader;
@@ -68,7 +64,80 @@ public class CsvInfo {
 
     protected static Logger logger;
 
-    public enum BioPAXRelation {
+    public enum RelationFilename {
+
+//        XREF___RNA___XREF("XREF___RNA___XREF"),
+//
+
+        HAS___GENE___TRANSCRIPT("HAS___GENE___TRANSCRIPT"),
+        HAS___TRANSCRIPT___EXON("HAS___TRANSCRIPT___EXON"),
+        HAS___VARIANT___STRUCTURAL_VARIANT("HAS___VARIANT___STRUCTURAL_VARIANT"),
+        HAS___FEATURE_ONTOLOGY_TERM_ANNOTATION___TRANSCRIPT_ANNOTATION_EVIDENCE(
+                "HAS___FEATURE_ONTOLOGY_TERM_ANNOTATION___TRANSCRIPT_ANNOTATION_EVIDENCE"),
+        HAS___VARIANT_FILE___SAMPLE("HAS___VARIANT_FILE___SAMPLE"),
+        HAS___FAMILY___INDIVIDUAL("HAS___FAMILY___INDIVIDUAL"),
+        HAS___INDIVIDUAL___SAMPLE("HAS___INDIVIDUAL___SAMPLE"),
+        HAS___DISEASE_PANEL___PANEL_GENE("HAS___DISEASE_PANEL___PANEL_GENE"),
+        HAS___STRUCTURAL_VARIATION___BREAKEND("HAS___STRUCTURAL_VARIATION___BREAKEND"),
+        HAS___CLINICAL_EVIDENCE___EVIDENCE_SUBMISSION("HAS___CLINICAL_EVIDENCE___EVIDENCE_SUBMISSION"),
+        HAS___CLINICAL_EVIDENCE___HERITABLE_TRAIT("HAS___CLINICAL_EVIDENCE___HERITABLE_TRAIT"),
+        HAS___CLINICAL_EVIDENCE___GENOMIC_FEATURE("HAS___CLINICAL_EVIDENCE___GENOMIC_FEATURE"),
+        HAS___CLINICAL_EVIDENCE___VARIANT_CLASSIFICATION("HAS___CLINICAL_EVIDENCE___VARIANT_CLASSIFICATION"),
+        HAS___CLINICAL_EVIDENCE___PROPERTY("HAS___CLINICAL_EVIDENCE___PROPERTY"),
+
+        MATE___BREAKEND___BREAKEND_MATE("MATE___BREAKEND___BREAKEND_MATE"),
+
+        MOTHER_OF___INDIVIDUAL___INDIVIDUAL("MOTHER_OF___INDIVIDUAL___INDIVIDUAL"),
+        FATHER_OF___INDIVIDUAL___INDIVIDUAL("FATHER_OF___INDIVIDUAL___INDIVIDUAL"),
+
+        TARGET___GENE___MIRNA_MATURE("TARGET___GENE___MIRNA_MATURE"),
+
+        IS___GENE___MIRNA("IS___GENE___MIRNA"),
+        IS___RNA___MIRNA("IS___RNA___MIRNA"),
+        IS___DNA___GENE("IS___DNA___GENE"),
+        IS___TRANSCRIPT___PROTEIN("IS___TRANSCRIPT___PROTEIN"),
+
+        ANNOTATION___DRUG___GENE_DRUG_INTERACTION("ANNOTATION___DRUG___GENE_DRUG_INTERACTION"),
+        ANNOTATION___GENE___GENE_DRUG_INTERACTION("ANNOTATION___GENE___GENE_DRUG_INTERACTION"),
+        ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION("ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION"),
+        ANNOTATION___GENE___GENE_EXPRESSION("ANNOTATION___GENE___GENE_EXPRESSION"),
+        ANNOTATION___GENE___XREF("ANNOTATION___GENE___XREF"),
+        ANNOTATION___GENE___PANEL_GENE("ANNOTATION___GENE___PANEL_GENE"),
+        ANNOTATION___PROTEIN___PROTEIN_KEYWORD("ANNOTATION___PROTEIN___PROTEIN_KEYWORD"),
+        ANNOTATION___PROTEIN___PROTEIN_FEATURE("ANNOTATION___PROTEIN___PROTEIN_FEATURE"),
+        ANNOTATION___PROTEIN___XREF("ANNOTATION___PROTEIN___XREF"),
+        ANNOTATION___TRANSCRIPT___XREF("ANNOTATION___TRANSCRIPT___XREF"),
+        ANNOTATION___TRANSCRIPT___TFBS("ANNOTATION___TRANSCRIPT___TFBS"),
+        ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE("ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE"),
+        ANNOTATION___TRANSCRIPT___FEATURE_ONTOLOGY_TERM_ANNOTATION("ANNOTATION___TRANSCRIPT___FEATURE_ONTOLOGY_TERM_ANNOTATION"),
+        ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE("ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE"),
+        ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE("ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE"),
+        ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT("ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT"),
+        ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM("ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM"),
+        ANNOTATION___VARIANT_CONSEQUENCE_TYPE___PROTEIN_VARIANT_ANNOTATION(
+                "ANNOTATION___VARIANT_CONSEQUENCE_TYPE___PROTEIN_VARIANT_ANNOTATION"),
+        ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN("ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN"),
+        ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN_SUBSTITUTION_SCORE(
+                "ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN_SUBSTITUTION_SCORE"),
+        ANNOTATION___VARIANT___HGV("ANNOTATION___VARIANT___HGV"),
+        ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY("ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY"),
+        ANNOTATION___VARIANT___VARIANT_CONSERVATION_SCORE("ANNOTATION___VARIANT___VARIANT_CONSERVATION_SCORE"),
+        ANNOTATION___VARIANT___CLINICAL_EVIDENCE("ANNOTATION___VARIANT___CLINICAL_EVIDENCE"),
+        ANNOTATION___VARIANT___VARIANT_FUNCTIONAL_SCORE("ANNOTATION___VARIANT___VARIANT_FUNCTIONAL_SCORE"),
+        ANNOTATION___VARIANT___REPEAT("ANNOTATION___VARIANT___REPEAT"),
+        ANNOTATION___VARIANT___CYTOBAND("ANNOTATION___VARIANT___CYTOBAND"),
+        ANNOTATION___VARIANT___VARIANT_DRUG_INTERACTION("ANNOTATION___VARIANT___VARIANT_DRUG_INTERACTION"),
+        ANNOTATION___VARIANT___TRANSCRIPT_CONSTRAINT_SCORE("ANNOTATION___VARIANT___TRANSCRIPT_CONSTRAINT_SCORE"),
+        ANNOTATION___GENE___MIRNA_TARGET("ANNOTATION___GENE___MIRNA_TARGET"),
+        ANNOTATION___MIRNA_MATURE___MIRNA_TARGET("ANNOTATION___MIRNA_MATURE___MIRNA_TARGET"),
+
+        DATA___VARIANT___VARIANT_FILE_DATA("DATA___VARIANT___VARIANT_FILE_DATA"),
+        DATA___VARIANT___VARIANT_SAMPLE_DATA("DATA___VARIANT___VARIANT_SAMPLE_DATA"),
+        DATA___VARIANT_FILE___VARIANT_FILE_DATA("DATA___VARIANT_FILE___VARIANT_FILE_DATA"),
+        DATA___SAMPLE___VARIANT_SAMPLE_DATA("DATA___SAMPLE___VARIANT_SAMPLE_DATA"),
+
+        MATURE___MIRNA___MIRNA_MATURE("MATURE___MIRNA___MIRNA_MATURE"),
+
         COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX
                 ("COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX"),
         COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___PROTEIN___PHYSICAL_ENTITY_COMPLEX
@@ -137,28 +206,16 @@ public class CsvInfo {
         PATHWAY_NEXT_STEP___CATALYSIS___PATHWAY("PATHWAY_NEXT_STEP___CATALYSIS___PATHWAY"),
         PATHWAY_NEXT_STEP___PATHWAY___CATALYSIS("PATHWAY_NEXT_STEP___PATHWAY___CATALYSIS"),
         PATHWAY_NEXT_STEP___PATHWAY___REACTION("PATHWAY_NEXT_STEP___PATHWAY___REACTION"),
-        PATHWAY_NEXT_STEP___PATHWAY___REGULATION("PATHWAY_NEXT_STEP___PATHWAY___REGULATION"),
-
-        ANNOTATION___GENE___XREF("ANNOTATION___GENE___XREF"),
-        ANNOTATION___PROTEIN___XREF("ANNOTATION___PROTEIN___XREF"),
-        ANNOTATION___TRANSCRIPT___XREF("ANNOTATION___TRANSCRIPT___XREF"),
-        XREF___RNA___XREF("XREF___RNA___XREF"),
-
-        IS___DNA___GENE("IS___DNA___GENE"),
-        IS___RNA___MIRNA("IS___RNA___MIRNA"),
-
-        IS___GENE___MIRNA("IS___GENE___MIRNA"),
-        TARGET___GENE___MIRNA_MATURE("TARGET___GENE___MIRNA_MATURE"),
-        MATURE___MIRNA___MIRNA_MATURE("MATURE___MIRNA___MIRNA_MATURE");
+        PATHWAY_NEXT_STEP___PATHWAY___REGULATION("PATHWAY_NEXT_STEP___PATHWAY___REGULATION");
 
         private final String relation;
 
-        BioPAXRelation(String relation) {
+        RelationFilename(String relation) {
             this.relation = relation;
         }
 
-        public List<BioPAXRelation> getAll() {
-            List<BioPAXRelation> list = new ArrayList<>();
+        public List<RelationFilename> getAll() {
+            List<RelationFilename> list = new ArrayList<>();
             return list;
         }
     }
@@ -217,30 +274,38 @@ public class CsvInfo {
         }
 
         // CSV files for relationships
-        for (Relation.Type type : Relation.Type.values()) {
-            if (type.toString().contains("__")) {
-                filename = type.toString() + ".csv";
-//                pw = new PrintWriter(new BufferedWriter(new FileWriter(outputPath + "/" + filename, !header)));
-                pw = new PrintWriter(outputPath + "/" + filename);
-                csvWriters.put(type.toString(), pw);
-
-//                if (type != Relation.Type.VARIANT__VARIANT_CALL
-//                        && type != Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO
-//                        && type != Relation.Type.VARIANT_FILE_INFO__FILE
-//                        && type != Relation.Type.SAMPLE__VARIANT_CALL) {
-                pw.println(getRelationHeaderLine(type.toString()));
-//                }
-            }
-        }
-
-        // CSV files for BioPAX relationships
-        for (BioPAXRelation type : BioPAXRelation.values()) {
-            filename = type.toString() + ".csv";
+        for (RelationFilename name : RelationFilename.values()) {
+            filename = name.name() + ".csv";
             pw = new PrintWriter(outputPath + "/" + filename);
-            csvWriters.put(type.toString(), pw);
 
-            pw.println(getBioPAXRelationHeaderLine(type.toString()));
+            // Write header
+            pw.println(getRelationHeaderLine(name.name()));
+
+            // Add writer to the map
+            csvWriters.put(name.name(), pw);
         }
+
+        for (Relation.Type type : Relation.Type.values()) {
+            boolean found = true;
+            for (RelationFilename name : RelationFilename.values()) {
+                if (name.name().startsWith(type.name())) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                filename = type.name() + ".csv";
+                pw = new PrintWriter(outputPath + "/" + filename);
+
+                // Write header
+                pw.println(getRelationHeaderLine(type.name()));
+
+                // Add writer to the map
+                csvWriters.put(type.name(), pw);
+            }
+
+        }
+
     }
 
     public void close() {
@@ -258,78 +323,9 @@ public class CsvInfo {
         }
     }
 
-//    public void openMetadataFile(File metafile) throws IOException {
-//        BufferedReader bufferedReader = FileUtils.newBufferedReader(metafile.toPath());
-//        String metadata = bufferedReader.readLine();
-//        bufferedReader.close();
-//
-//        //FileUtils.readFully(new BufferedReader(new FileReader(metafile.getAbsolutePath())));
-////        String metadata = FileUtils.readFully(new BufferedReader(new FileReader(metafile.getAbsolutePath())));
-//        ObjectMapper mapper = new ObjectMapper();
-//        VariantMetadata variantMetadata = mapper.readValue(metadata, VariantMetadata.class);
-//        if (CollectionUtils.isNotEmpty(variantMetadata.getStudies())) {
-//            VariantStudyMetadata variantStudyMetadata = variantMetadata.getStudies().get(0);
-//            for (Individual individual: variantStudyMetadata.getIndividuals()) {
-//                sampleNames.add(individual.getSamples().get(0).getId());
-//            }
-//
-//            if (CollectionUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
-//                for (VariantFileMetadata variantFileMetadata: variantStudyMetadata.getFiles()) {
-//                    if (StringUtils.isNotEmpty(variantFileMetadata.getId())) {
-//                        Long fileUid = getLong(variantFileMetadata.getId(), Node.Type.VARIANT_FILE.toString());
-//                        if (fileUid == null) {
-//                            // File node
-//                            Node n = new Node(getAndIncUid(), variantFileMetadata.getId(), variantFileMetadata.getPath(),
-//                                    Node.Type.VARIANT_FILE);
-//                            csvWriters.get(Node.Type.VARIANT_FILE.toString()).println(nodeLine(n));
-//                            putLong(variantFileMetadata.getId(), Node.Type.VARIANT_FILE.toString(), n.getUid());
-//                        }
-//                    }
-//
-//                    if (variantFileMetadata.getHeader() != null) {
-//                        for (VariantFileHeaderComplexLine line: variantFileMetadata.getHeader().getComplexLines()) {
-//                            if ("INFO".equals(line.getKey())) {
-//                                infoFields.add(line.getId());
-//                            } else if ("FORMAT".equals(line.getKey())) {
-//                                formatFields.add(line.getId());
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        // Variant call
-//        String strType;
-//        List<String> attrs = new ArrayList<>();
-//        attrs.add("variantCallId");
-//        Iterator<String> iterator = formatFields.iterator();
-//        while (iterator.hasNext()) {
-//            attrs.add(iterator.next());
-//        }
-//        strType = Node.Type.VARIANT_SAMPLE_FORMAT.toString();
-//        nodeAttributes.put(strType, attrs);
-//        csvWriters.get(strType).println(getNodeHeaderLine(attrs));
-//        strType = Relation.Type.VARIANT__VARIANT_CALL.toString();
-//        csvWriters.get(strType).println(getRelationHeaderLine(strType));
-//        strType = Relation.Type.SAMPLE__VARIANT_CALL.toString();
-//        csvWriters.get(strType).println(getRelationHeaderLine(strType));
-//
-//        // Variant file info
-//        attrs = new ArrayList<>();
-//        attrs.add("variantFileInfoId");
-//        iterator = infoFields.iterator();
-//        while (iterator.hasNext()) {
-//            attrs.add(iterator.next());
-//        }
-//        strType = Node.Type.VARIANT_FILE_INFO.toString();
-//        nodeAttributes.put(strType, attrs);
-//        csvWriters.get(strType).println(getNodeHeaderLine(attrs));
-//        strType = Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString();
-//        csvWriters.get(strType).println(getRelationHeaderLine(strType));
-//        strType = Relation.Type.VARIANT_FILE_INFO__FILE.toString();
-//        csvWriters.get(strType).println(getRelationHeaderLine(strType));
-//    }
+    public PrintWriter getWriter(String filename) {
+        return csvWriters.get(filename);
+    }
 
     public Long getGeneUid(String xrefId) {
         Long geneUid = null;
@@ -398,38 +394,14 @@ public class CsvInfo {
         return proteinCache.get(xrefId);
     }
 
-    public String getMiRnaInfo(String id) {
-        String info = rocksDbManager.getString(id, miRnaRocksDb);
-        if (StringUtils.isNotEmpty(info)) {
-            return id + ":" + info;
-        }
-
-        return info;
-    }
-
     public Long getLong(String id, String type) {
         return rocksDbManager.getLong(id + "." + type, uidRocksDb);
     }
-
-//    public Long getLong(String key) {
-//        return rocksDbManager.getLong(key, uidRocksDb);
-//    }
-
-//    public String getString(String key) {
-//        return rocksDbManager.getString(key, uidRocksDb);
-//    }
 
     public void putLong(String id, String type, long value) {
         rocksDbManager.putLong(id + "." + type, value, uidRocksDb);
     }
 
-//    public void putLong(String key, long value) {
-//        rocksDbManager.putLong(key, value, uidRocksDb);
-//    }
-
-//    public void putString(String key, String value) {
-//        rocksDbManager.putString(key, value, uidRocksDb);
-//    }
 
     protected String getNodeHeaderLine(List<String> attrs) {
         StringBuilder sb = new StringBuilder();
@@ -470,19 +442,6 @@ public class CsvInfo {
             if (CollectionUtils.isEmpty(nodeAttributes.get(dest))) {
                 logger.info("Attributes empty for " + dest + ", from getRelationHeaderLine: " + type);
             }
-        }
-        return sb.toString();
-    }
-
-    private String getBioPAXRelationHeaderLine(String type) {
-        StringBuilder sb = new StringBuilder();
-        String[] split = type.split("___");
-        sb.append(":START_ID(").append(nodeAttributes.get(split[1]).get(0)).append(")").append(SEPARATOR).append(":END_ID(")
-                .append(nodeAttributes.get(split[2]).get(0)).append(")");
-        if (type.equals(BioPAXRelation.TARGET___GENE___MIRNA_MATURE.toString())) {
-            sb.append(CsvInfo.SEPARATOR + PREFIX_ATTRIBUTES + "experiment");
-            sb.append(CsvInfo.SEPARATOR + PREFIX_ATTRIBUTES + "evidence");
-            sb.append(CsvInfo.SEPARATOR + PREFIX_ATTRIBUTES + "pubmed");
         }
         return sb.toString();
     }
@@ -588,135 +547,6 @@ public class CsvInfo {
         } else {
             return null;
         }
-    }
-
-//    public void buildGenes(Path inputPath) throws IOException {
-////        geneCache.index(inputPath, indexPath);
-//
-////        String objFilename = output.toString() + "/genes.rocksdb";
-////        String xrefObjFilename = output.toString() + "/xref.genes.rocksdb";
-//
-////        if (Paths.get(objFilename).toFile().exists()
-////                && Paths.get(xrefObjFilename).toFile().exists()) {
-////            objRocksDb = rocksDbManager.getDBConnection(objFilename, true);
-////            xrefObjRocksDb = rocksDbManager.getDBConnection(xrefObjFilename, true);
-////            logger.info("\tGene index already created!");
-////            return;
-////        }
-//
-////        // Delete protein RocksDB files
-////        Paths.get(objFilename).toFile().delete();
-////        Paths.get(xrefObjFilename).toFile().delete();
-////
-////        // Create gene RocksDB files (protein and xrefs)
-////        RocksDB objRocksDb = rocksDbManager.getDBConnection(objFilename, true);
-////        RocksDB xrefObjRocksDb = rocksDbManager.getDBConnection(xrefObjFilename, true);
-//
-//        BufferedReader reader = org.opencb.commons.utils.FileUtils.newBufferedReader(inputPath);
-//        String jsonGene = reader.readLine();
-//        long geneCounter = 0;
-//        while (jsonGene != null) {
-//            Gene gene = geneCache.getObjReader().readValue(jsonGene);
-//            String geneId = gene.getId();
-//            if (org.apache.commons.lang3.StringUtils.isNotEmpty(geneId)) {
-//                geneCounter++;
-//                if (geneCounter % 5000 == 0) {
-//                    logger.info("Indexing {} genes...", geneCounter);
-//                }
-//                // Save gene
-//                rocksDbManager.putString(geneId, jsonGene, geneCache.getObjRocksDb());
-//
-//                // Save xrefs for that gene
-//                rocksDbManager.putString(geneId, geneId, geneCache.getXrefObjRocksDb());
-//                if (org.apache.commons.lang3.StringUtils.isNotEmpty(gene.getName())) {
-//                    rocksDbManager.putString(gene.getName(), geneId, geneCache.getXrefObjRocksDb());
-//                }
-//
-//                if (ListUtils.isNotEmpty(gene.getTranscripts())) {
-//                    for (Transcript transcr : gene.getTranscripts()) {
-//                        if (ListUtils.isNotEmpty(transcr.getXrefs())) {
-//                            for (Xref xref: transcr.getXrefs()) {
-//                                if (org.apache.commons.lang3.StringUtils.isNotEmpty(xref.getId())) {
-//                                    rocksDbManager.putString(xref.getId(), geneId, geneCache.getXrefObjRocksDb());
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            } else {
-//                logger.info("Skipping indexing gene: missing gene ID from JSON file");
-//            }
-//
-//            // Next line
-//            jsonGene = reader.readLine();
-//        }
-//        logger.info("Indexing {} genes. Done.", geneCounter);
-//
-//        reader.close();
-//    }
-
-//    public void buildProteins(Path inputPath, Path indexPath) throws IOException {
-//        proteinCache.index(inputPath, indexPath);
-//    }
-
-    public void indexingMiRnas(Path miRnaPath, Path indexPath) throws IOException {
-        RocksDbManager rocksDbManager = new RocksDbManager();
-
-        if (indexPath.toFile().exists()) {
-            logger.info("\tmiRNA index already created!");
-            miRnaRocksDb = rocksDbManager.getDBConnection(indexPath.toString(), false);
-            return;
-        }
-        miRnaRocksDb = rocksDbManager.getDBConnection(indexPath.toString(), false);
-
-        BufferedReader reader = FileUtils.newBufferedReader(miRnaPath);
-        String line = reader.readLine();
-        String[] fields = line.split(",");
-        int indexMiRnaId = -1, indexTargetGene = -1, indexEvidence = -1;
-        for (int i = 0; i < fields.length; i++) {
-            if (fields[i].equals("miRNA")) {
-                indexMiRnaId = i;
-            } else if (fields[i].equals("Target Gene")) {
-                indexTargetGene = i;
-            } else if (fields[i].equals("Support Type")) {
-                indexEvidence = i;
-            }
-        }
-        if (indexMiRnaId == -1 || indexTargetGene == -1 || indexEvidence == -1) {
-            logger.error("MiRNA file header is invalid, check your the header fields: miRNA, Target Gene and Support"
-                    + " Type");
-            return;
-        }
-
-        // Main loop, read miRNA CSV file
-        String miRna, targetGene, evidence;
-        line = reader.readLine();
-        long miRnaCounter = 0;
-        while (line != null) {
-            miRnaCounter++;
-            if (miRnaCounter % 5000 == 0) {
-                logger.info("Indexing {} miRNAs...", miRnaCounter);
-            }
-            fields = line.split(",");
-            miRna = fields[indexMiRnaId];
-            targetGene = fields[indexTargetGene];
-            evidence = fields[indexEvidence];
-            if (StringUtils.isNotEmpty(miRna)) {
-                String info = rocksDbManager.getString(miRna, miRnaRocksDb);
-                if (info == null) {
-                    info = targetGene + ":" + evidence;
-                } else {
-                    info = info + "::" + targetGene + ":" + evidence;
-                }
-                rocksDbManager.putString(miRna, info, miRnaRocksDb);
-            }
-
-            // Next line
-            line = reader.readLine();
-        }
-        logger.info("Indexing {} miRNAs. Done.", miRnaCounter);
-
-        reader.close();
     }
 
     private Map<String, List<String>> createNodeAttributes(List<File> variantFiles) {
@@ -888,10 +718,6 @@ public class CsvInfo {
         attrs = Arrays.asList("transcriptAnnotationEvidenceId", "id", "name", "references", "qualifier");
         nodeAttributes.put(Node.Type.TRANSCRIPT_ANNOTATION_EVIDENCE.toString(), new ArrayList<>(attrs));
 
-        //        // Target transcript
-//        attrs = Arrays.asList("rnaId", "id", "name", "evidence");
-//        nodeAttributes.put(Node.Type.TARGET_TRANSCRIPT.toString(), new ArrayList<>(attrs));
-
         // miRNA
         attrs = Arrays.asList("miRnaId", "id", "name", "accession", "status", "sequence");
         nodeAttributes.put(Node.Type.MIRNA.toString(), new ArrayList<>(attrs));
@@ -924,10 +750,6 @@ public class CsvInfo {
         // Protein
         attrs = Arrays.asList("protId", "id", "name", "accession", "dataset", "proteinExistence", "evidence", "object");
         nodeAttributes.put(Node.Type.PROTEIN.toString(), new ArrayList<>(attrs));
-
-        // Protein object  (object = gz json)
-        attrs = Arrays.asList("proteinObjectId", "id", "name", "object");
-        nodeAttributes.put(Node.Type.PROTEIN_OBJECT.toString(), new ArrayList<>(attrs));
 
         // Protein keyword
         attrs = Arrays.asList("proteinKeywordId", "id", "name", "evidence");
@@ -991,49 +813,6 @@ public class CsvInfo {
         nodeAttributes.put(Node.Type.REGULATION.toString(), new ArrayList<>(attrs));
 
         //
-        // Clinical related-nodes
-        //
-
-//        // Clinical Analysis
-//        attrs = Arrays.asList("clinicalAnalysisId", "id", "name", "uuid", "description", "type", "priority", "flags", "creationDate",
-//                "modificationDate", "dueDate", "statusName", "statusDate", "statusMessage", "consentPrimaryFindings",
-//                "consentSecondaryFindings", "consentCarrierFindings", "consentResearchFindings", "release");
-//        nodeAttributes.put(Node.Type.CLINICAL_ANALYSIS.toString(), new ArrayList<>(attrs));
-//
-//        // Clinical analyst
-//        attrs = Arrays.asList("clinicalAnalystId", "id", "name", "assignedBy", "assignee", "date");
-//        nodeAttributes.put(Node.Type.CLINICAL_ANALYST.toString(), new ArrayList<>(attrs));
-//
-//        // Comment
-//        attrs = Arrays.asList("commentId", "id", "name", "author", "type", "text", "date");
-//        nodeAttributes.put(Node.Type.COMMENT.toString(), new ArrayList<>(attrs));
-//
-//        // Interpretation
-//        attrs = Arrays.asList("interpretationId", "id", "name", "uuid", "description", "status", "creationDate", "version");
-//        nodeAttributes.put(Node.Type.INTERPRETATION.toString(), new ArrayList<>(attrs));
-//
-//        // Software
-//        attrs = Arrays.asList("softwareId", "id", "name", "version", "repository", "commit", "website", "params");
-//        nodeAttributes.put(Node.Type.SOFTWARE.toString(), new ArrayList<>(attrs));
-//
-//        // Reported variant
-//        attrs = Arrays.asList("reportedVariantId", "id", "name", "deNovoQualityScore", "status", "attributes");
-//        nodeAttributes.put(Node.Type.REPORTED_VARIANT.toString(), new ArrayList<>(attrs));
-//
-//        // Low covarage
-//        attrs = Arrays.asList("lowCoverageId", "id", "name", "geneName", "chromosome", "start", "end", "meanCoverage", "type");
-//        nodeAttributes.put(Node.Type.LOW_COVERAGE_REGION.toString(), new ArrayList<>(attrs));
-//
-//        // Analyst
-//        attrs = Arrays.asList("analystId", "id", "name", "company", "email");
-//        nodeAttributes.put(Node.Type.ANALYST.toString(), new ArrayList<>(attrs));
-//
-//        // Reported event
-//        attrs = Arrays.asList("reportedVariantId", "id", "name", "modeOfInheritance", "penetrance", "score", "fullyExplainPhenotypes",
-//                "roleInCancer", "actionable", "justification", "tier");
-//        nodeAttributes.put(Node.Type.REPORTED_EVENT.toString(), new ArrayList<>(attrs));
-
-        //
         // Internal config
         //
 
@@ -1094,17 +873,6 @@ public class CsvInfo {
 
                     if (CollectionUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
                         for (VariantFileMetadata variantFileMetadata : variantStudyMetadata.getFiles()) {
-//                            if (StringUtils.isNotEmpty(variantFileMetadata.getId())) {
-//                                Long fileUid = getLong(variantFileMetadata.getId(), Node.Type.VARIANT_FILE.toString());
-//                                if (fileUid == null) {
-//                                    // File node
-//                                    Node n = new Node(getAndIncUid(), variantFileMetadata.getId(), variantFileMetadata.getPath(),
-//                                            Node.Type.VARIANT_FILE);
-//                                    csvWriters.get(Node.Type.VARIANT_FILE.toString()).println(nodeLine(n));
-//                                    putLong(variantFileMetadata.getId(), Node.Type.VARIANT_FILE.toString(), n.getUid());
-//                                }
-//                            }
-
                             if (variantFileMetadata.getHeader() != null) {
                                 for (VariantFileHeaderComplexLine line : variantFileMetadata.getHeader().getComplexLines()) {
                                     if ("INFO".equals(line.getKey())) {
@@ -1176,23 +944,14 @@ public class CsvInfo {
         return this;
     }
 
-//    public List<String> getSampleNames() {
-//        return sampleNames;
+//    public Map<String, PrintWriter> getCsvWriters() {
+//        return csvWriters;
 //    }
 //
-//    public CsvInfo setSampleNames(List<String> sampleNames) {
-//        this.sampleNames = sampleNames;
+//    public CsvInfo setCsvWriters(Map<String, PrintWriter> csvWriters) {
+//        this.csvWriters = csvWriters;
 //        return this;
 //    }
-
-    public Map<String, PrintWriter> getCsvWriters() {
-        return csvWriters;
-    }
-
-    public CsvInfo setCsvWriters(Map<String, PrintWriter> csvWriters) {
-        this.csvWriters = csvWriters;
-        return this;
-    }
 
     public Map<String, PrintWriter> getCsvAnnotatedWriters() {
         return csvAnnotatedWriters;
@@ -1223,10 +982,6 @@ public class CsvInfo {
 
     public RocksDB getUidRocksDb() {
         return uidRocksDb;
-    }
-
-    public RocksDB getMiRnaRocksDb() {
-        return miRnaRocksDb;
     }
 
     public GeneCache getGeneCache() {

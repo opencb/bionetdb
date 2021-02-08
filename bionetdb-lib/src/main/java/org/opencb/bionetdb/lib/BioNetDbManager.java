@@ -2,7 +2,6 @@ package org.opencb.bionetdb.lib;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.collections.CollectionUtils;
-import org.neo4j.driver.Session;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
@@ -15,9 +14,7 @@ import org.opencb.bionetdb.lib.analysis.interpretation.TieringInterpretationAnal
 import org.opencb.bionetdb.lib.api.NetworkDBAdaptor;
 import org.opencb.bionetdb.lib.api.iterators.NetworkPathIterator;
 import org.opencb.bionetdb.lib.api.iterators.RowIterator;
-import org.opencb.bionetdb.lib.db.Neo4JBioPaxLoader;
 import org.opencb.bionetdb.lib.db.Neo4JNetworkDBAdaptor;
-import org.opencb.bionetdb.lib.db.Neo4JVariantLoader;
 import org.opencb.bionetdb.lib.executors.NetworkQueryExecutor;
 import org.opencb.bionetdb.lib.executors.NodeQueryExecutor;
 import org.opencb.bionetdb.lib.executors.PathQueryExecutor;
@@ -30,12 +27,9 @@ import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
-
-import static org.neo4j.driver.Values.parameters;
 
 /**
  * Created by joaquin on 1/29/18.
@@ -43,16 +37,11 @@ import static org.neo4j.driver.Values.parameters;
 public class BioNetDbManager {
 
     private BioNetDBConfiguration configuration;
-//    private ClientConfiguration cellbaseClientConfiguration;
-//    private CellBaseClient cellBaseClient;
 
     private NetworkDBAdaptor networkDBAdaptor;
 
     private Logger logger;
 
-    private Map<String, Long> idToUidMap;
-
-    private static final int VARIANT_BATCH_SIZE = 10000;
     private static final int QUERY_MAX_RESULTS = 50000;
     private TieringInterpretationAnalysis tieringInterpretationAnalysis;
 
@@ -71,14 +60,6 @@ public class BioNetDbManager {
 //        boolean createIndex = false; // true
         networkDBAdaptor = new Neo4JNetworkDBAdaptor(this.configuration);
 //        tieringInterpretationAnalysis = new TieringInterpretationAnalysis(((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver());
-
-//        // We create CellBase client
-//        cellbaseClientConfiguration = new ClientConfiguration();
-//        cellbaseClientConfiguration.setVersion("v4");
-//        cellbaseClientConfiguration.setRest(new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 30000));
-//        cellBaseClient = new CellBaseClient(this.configuration.findDatabase(database).getSpecies(), cellbaseClientConfiguration);
-
-        idToUidMap = new HashMap<>();
     }
 
     //-------------------------------------------------------------------------
@@ -178,208 +159,9 @@ public class BioNetDbManager {
 
     //---------------------------------------------
 
-
-    public void loadBioPax(java.nio.file.Path path) throws IOException, BioNetDBException {
-        loadBioPax(path, null);
-    }
-
-    public void loadBioPax(java.nio.file.Path path, Map<String, Set<String>> filters) throws IOException, BioNetDBException {
-        // BioPax loader
-        Neo4JBioPaxLoader neo4JBioPaxLoader = new Neo4JBioPaxLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor, filters);
-        neo4JBioPaxLoader.loadBioPaxFile(path);
-    }
-
-    public void loadVcf(java.nio.file.Path path) throws BioNetDBException {
-        // VCF loader
-        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
-        neo4JVariantLoader.loadVCFFile(path);
-    }
-
-    public void loadClinicalAnalysis(Path inputPath) throws IOException {
-        Session session = ((Neo4JNetworkDBAdaptor) this.networkDBAdaptor).getDriver().session();
-
-        // Reading file line by line, each line a JSON object (corresponding to a clinical analysis)
-        BufferedReader reader = FileUtils.newBufferedReader(inputPath);
-
-        long counter = 0;
-        String line = reader.readLine();
-        while (line != null) {
-            counter++;
-            System.out.println("Loading clinical analysis #" + counter + ". Size: " + line.length() + " bytes");
-
-            // Call user defined procedure: loadClinicalAnalysis
-            session.run("CALL org.opencb.bionetdb.core.neo4j.loadClinicalAnalysis($caJson)",
-                    parameters("caJson", line));
-
-            // Read next line
-            line = reader.readLine();
-        }
-        System.out.println("Loaded " + counter + " clinical analysis");
-
-        reader.close();
-    }
-
-    public void importFiles(Path inputPath, Path outputPath, Path neo4jHome) throws BioNetDBException, IOException, InterruptedException {
-        // Import
-        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
-        neo4JVariantLoader.importFiles(inputPath, outputPath, neo4jHome);
-    }
-
-//    public void loadClinicalVariant() throws IOException, BioNetDBException {
-//        Neo4JVariantLoader neo4JVariantLoader = new Neo4JVariantLoader((Neo4JNetworkDBAdaptor) networkDBAdaptor);
-//        neo4JVariantLoader.loadClinivalVariants(cellBaseClient.getClinicalClient());
-//    }
-
-    public void annotate() {
-
-    }
-
-//    public void annotateGenes(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
-//        GeneClient geneClient = cellBaseClient.getGeneClient();
-//        networkDBAdaptor.annotateGenes(query, options, geneClient);
-//    }
-//
-//    public void annotateGenes(List<String> geneIds) throws IOException, BioNetDBException {
-//        GeneClient geneClient = cellBaseClient.getGeneClient();
-//        networkDBAdaptor.annotateGenes(geneIds, geneClient);
-//    }
-//
-//    public void annotateVariants(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
-//        VariantClient variationClient = cellBaseClient.getVariantClient();
-//        networkDBAdaptor.annotateVariants(query, options, variationClient);
-//    }
-//
-//    public void annotateVariants(List<String> variantIds) throws IOException, BioNetDBException {
-//        VariantClient variationClient = cellBaseClient.getVariantClient();
-//        networkDBAdaptor.annotateVariants(variantIds, variationClient);
-//    }
-//
-//    public void annotateProteins(NodeQuery query, QueryOptions options) throws IOException, BioNetDBException {
-//        ProteinClient proteinClient = cellBaseClient.getProteinClient();
-//        networkDBAdaptor.annotateProteins(query, options, proteinClient);
-//    }
-//
-//    public void annotateProteins(List<String> proteinIds) throws IOException, BioNetDBException {
-//        ProteinClient proteinClient = cellBaseClient.getProteinClient();
-//        networkDBAdaptor.annotateProteins(proteinIds, proteinClient);
-//    }
-
-    /*
-        long uidCounter = getUidCounter();
-        long maxUid = 0;
-
-        Session session = this.driver.session();
-
-        // First, insert Neo4J nodes
-        for (Node node: network.getNodes()) {
-            long uid = uidCounter + node.getUid();
-            if (uid > maxUid) {
-                maxUid = uid;
-            }
-            session.writeTransaction(tx -> {
-                node.setUid(uid);
-                addNode(tx, node);
-                return 1;
-            });
-        }
-
-        // Second, insert Neo4J relationships
-        for (Relation relation: network.getRelations()) {
-            long uid = uidCounter + relation.getUid();
-            if (uid > maxUid) {
-                maxUid = uid;
-            }
-            session.writeTransaction(tx -> {
-                relation.setUid(uid);
-                relation.setOrigUid(relation.getOrigUid() + uidCounter);
-                relation.setDestUid(relation.getDestUid() + uidCounter);
-                addRelation(tx, relation);
-                return 1;
-            });
-        }
-
-        setUidCounter(maxUid + 1);
-
-        session.close();
-     */
-
     public void close() throws Exception {
         networkDBAdaptor.close();
     }
-
-    //=========================================================================
-    // S I M P L E     Q U E R I E S: NODES, PATHS, NETWORK
-    //=========================================================================
-
-    //-------------------------------------------------------------------------
-    // N O D E S
-    //-------------------------------------------------------------------------
-
-    //-------------------------------------------------------------------------
-    // T A B L E S
-    //   - a table is a list of rows
-    //   - a row is a list of strings
-    //-------------------------------------------------------------------------
-
-//    public QueryResult<List<Object>> table(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-//        RowIterator rowIterator = rowIterator(query, queryOptions);
-//        return getQueryResult(rowIterator);
-//    }
-//
-//    public QueryResult<List<Object>> table(String cypher) throws BioNetDBException {
-//        RowIterator rowIterator = rowIterator(cypher);
-//        return getQueryResult(rowIterator);
-//    }
-//
-//    public RowIterator rowIterator(NodeQuery query, QueryOptions queryOptions) throws BioNetDBException {
-//        return networkDBAdaptor.rowIterator(query, queryOptions);
-//    }
-//
-//    public RowIterator rowIterator(String cypher) throws BioNetDBException {
-//        return networkDBAdaptor.rowIterator(cypher);
-//    }
-
-    //-------------------------------------------------------------------------
-    // P A T H S
-    //-------------------------------------------------------------------------
-
-//    public QueryResult<NetworkPath> pathQuery(NetworkPathQuery networkPathQuery, QueryOptions queryOptions)
-//            throws BioNetDBException {
-//        NetworkPathIterator networkPathIterator = pathIterator(networkPathQuery, queryOptions);
-//        return getQueryResult(networkPathIterator);
-//    }
-//
-//    public QueryResult<NetworkPath> pathQuery(String cypher) throws BioNetDBException {
-//        NetworkPathIterator networkPathIterator = pathIterator(cypher);
-//        return getQueryResult(networkPathIterator);
-//    }
-//
-//    public NetworkPathIterator pathIterator(NetworkPathQuery networkPathQuery, QueryOptions queryOptions) throws BioNetDBException {
-//        return networkDBAdaptor.networkPathIterator(networkPathQuery, queryOptions);
-//    }
-//
-//    public NetworkPathIterator pathIterator(String cypher) throws BioNetDBException {
-//        return networkDBAdaptor.networkPathIterator(cypher);
-//    }
-
-    //-------------------------------------------------------------------------
-    // N E T W O R K S
-    //-------------------------------------------------------------------------
-
-//    public DataResult<Network> networkQuery(List<NodeQuery> nodeQueries, QueryOptions queryOptions)
-//            throws BioNetDBException {
-//        return networkDBAdaptor.networkQuery(nodeQueries, queryOptions);
-//    }
-//
-//    public DataResult<Network> networkQueryByPaths(List<NetworkPathQuery> pathQueries, QueryOptions queryOptions)
-//            throws BioNetDBException {
-//        return networkDBAdaptor.networkQueryByPaths(pathQueries, queryOptions);
-//    }
-//
-//    public DataResult<Network> networkQuery(String cypher) throws BioNetDBException {
-//        return networkDBAdaptor.networkQuery(cypher);
-//    }
-
 
     //-------------------------------------------------------------------------
     // P R I V A T E     M E T H O D S
@@ -395,30 +177,6 @@ public class BioNetDbManager {
         return variants;
     }
 
-
-//    private void updateNodeUids(Node.Type type, Query query, QueryOptions queryOptions, NetworkManager netManager)
-//            throws BioNetDBException {
-//        // Get network nodes
-//        List<Node> nodes = netManager.getNodes(type);
-//
-//        for (Node node : nodes) {
-//            String key = type.name() + ":" + node.getId();
-//            if (idToUidMap.containsKey(key)) {
-//                netManager.replaceUid(node.getUid(), idToUidMap.get(key));
-//            } else {
-//                QueryResult<Node> vNodes = getNode(node.getId());
-//                if (vNodes.getResult().size() > 0) {
-//                    Node n = vNodes.getResult().get(0);
-//                    netManager.replaceUid(node.getUid(), n.getUid());
-//
-//                    idToUidMap.put(key, n.getUid());
-//                }
-//            }
-//
-////            System.out.println("node " + node.getType().name() + ": uid=" + node.getUid() + ", id=" + node.getId() + ", name="
-////                    + node.getName());
-//        }
-//    }
 
     private DataResult<List<Object>> getQueryResult(RowIterator rowIterator) {
         List<List<Object>> rows = new ArrayList<>();

@@ -4,12 +4,10 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.formats.protein.uniprot.v202003jaxb.*;
-import org.opencb.biodata.models.clinical.ClinicalAnalyst;
-import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
-import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.core.*;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.biodata.models.metadata.Individual;
@@ -18,7 +16,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.models.network.Node;
-import org.opencb.bionetdb.core.models.network.Relation;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.List;
@@ -138,8 +135,8 @@ public class NodeBuilder {
             if (sv.getBreakend().getOrientation() != null) {
                 breakendNode.addAttribute("orientation", sv.getBreakend().getOrientation().name());
             }
-            csvInfo.getCsvWriters().get(Node.Type.BREAKEND.toString()).println(csvInfo.nodeLine(breakendNode));
-            csvInfo.getCsvWriters().get(Relation.Type.HAS___STRUCTURAL_VARIATION___BREAKEND.toString()).println(csvInfo.relationLine(
+            csvInfo.getWriter(Node.Type.BREAKEND.name()).println(csvInfo.nodeLine(breakendNode));
+            csvInfo.getWriter(CsvInfo.RelationFilename.HAS___STRUCTURAL_VARIATION___BREAKEND.name()).println(csvInfo.relationLine(
                     node.getUid(), breakendNode.getUid()));
 
             if (sv.getBreakend().getMate() != null) {
@@ -149,11 +146,12 @@ public class NodeBuilder {
                 mateNode.addAttribute("ciPositionLeft", sv.getBreakend().getMate().getCiPositionLeft());
                 mateNode.addAttribute("ciPositionRight", sv.getBreakend().getMate().getCiPositionRight());
 
-                csvInfo.getCsvWriters().get(Node.Type.BREAKEND_MATE.toString()).println(csvInfo.nodeLine(mateNode));
-                csvInfo.getCsvWriters().get(Relation.Type.MATE.toString()).println(csvInfo.relationLine(
+                csvInfo.getWriter(Node.Type.BREAKEND_MATE.name()).println(csvInfo.nodeLine(mateNode));
+                csvInfo.getWriter(CsvInfo.RelationFilename.MATE___BREAKEND___BREAKEND_MATE.name()).println(csvInfo.relationLine(
                         breakendNode.getUid(), mateNode.getUid()));
             }
         }
+
         return node;
     }
 
@@ -198,8 +196,8 @@ public class NodeBuilder {
         if (CollectionUtils.isNotEmpty(evidence.getSubmissions())) {
             for (EvidenceSubmission submission : evidence.getSubmissions()) {
                 Node submissionNode = newNode(csvInfo.getAndIncUid(), submission);
-                csvInfo.getCsvWriters().get(Node.Type.EVIDENCE_SUBMISSION.toString()).println(csvInfo.nodeLine(submissionNode));
-                csvInfo.getCsvWriters().get("HAS___" + nodeType.name() + "___EVIDENCE_SUBMISSION").println(csvInfo.relationLine(
+                csvInfo.getWriter(Node.Type.EVIDENCE_SUBMISSION.toString()).println(csvInfo.nodeLine(submissionNode));
+                csvInfo.getWriter("HAS___" + nodeType.name() + "___EVIDENCE_SUBMISSION").println(csvInfo.relationLine(
                         node.getUid(), submissionNode.getUid()));
             }
 
@@ -217,8 +215,8 @@ public class NodeBuilder {
         if (CollectionUtils.isNotEmpty(evidence.getHeritableTraits())) {
             for (HeritableTrait heritableTrait : evidence.getHeritableTraits()) {
                 Node heritableNode = newNode(csvInfo.getAndIncUid(), heritableTrait);
-                csvInfo.getCsvWriters().get(Node.Type.HERITABLE_TRAIT.toString()).println(csvInfo.nodeLine(heritableNode));
-                csvInfo.getCsvWriters().get("HAS___" + nodeType.name() + "___HERITABLE_TRAIT").println(csvInfo.relationLine(
+                csvInfo.getWriter(Node.Type.HERITABLE_TRAIT.name()).println(csvInfo.nodeLine(heritableNode));
+                csvInfo.getWriter("HAS___" + nodeType.name() + "___HERITABLE_TRAIT").println(csvInfo.relationLine(
                         node.getUid(), heritableNode.getUid()));
             }
         }
@@ -226,16 +224,16 @@ public class NodeBuilder {
         if (CollectionUtils.isNotEmpty(evidence.getGenomicFeatures())) {
             for (org.opencb.biodata.models.variant.avro.GenomicFeature genomicFeature : evidence.getGenomicFeatures()) {
                 Node featureNode = newNode(csvInfo.getAndIncUid(), genomicFeature);
-                csvInfo.getCsvWriters().get(Node.Type.GENOMIC_FEATURE.toString()).println(csvInfo.nodeLine(featureNode));
-                csvInfo.getCsvWriters().get("HAS___" + nodeType.name() + "___GENOMIC_FEATURE").println(csvInfo.relationLine(
+                csvInfo.getWriter(Node.Type.GENOMIC_FEATURE.name()).println(csvInfo.nodeLine(featureNode));
+                csvInfo.getWriter("HAS___" + nodeType.name() + "___GENOMIC_FEATURE").println(csvInfo.relationLine(
                         node.getUid(), featureNode.getUid()));
             }
         }
 
         if (evidence.getVariantClassification() != null) {
             Node varClassificationNode = newNode(csvInfo.getAndIncUid(), evidence.getVariantClassification());
-            csvInfo.getCsvWriters().get(Node.Type.VARIANT_CLASSIFICATION.toString()).println(csvInfo.nodeLine(varClassificationNode));
-            csvInfo.getCsvWriters().get("HAS___" + nodeType.name() + "___VARIANT_CLASSIFICATION").println(csvInfo.relationLine(
+            csvInfo.getWriter(Node.Type.VARIANT_CLASSIFICATION.name()).println(csvInfo.nodeLine(varClassificationNode));
+            csvInfo.getWriter("HAS___" + nodeType.name() + "___VARIANT_CLASSIFICATION").println(csvInfo.relationLine(
                     node.getUid(), varClassificationNode.getUid()));
         }
 
@@ -250,8 +248,8 @@ public class NodeBuilder {
         if (CollectionUtils.isNotEmpty(evidence.getAdditionalProperties())) {
             for (Property property : evidence.getAdditionalProperties()) {
                 Node propertyNode = newNode(csvInfo.getAndIncUid(), property);
-                csvInfo.getCsvWriters().get(Node.Type.PROPERTY.toString()).println(csvInfo.nodeLine(propertyNode));
-                csvInfo.getCsvWriters().get("HAS___" + nodeType.name() + "___PROPERTY").println(csvInfo.relationLine(
+                csvInfo.getWriter(Node.Type.PROPERTY.name()).println(csvInfo.nodeLine(propertyNode));
+                csvInfo.getWriter("HAS___" + nodeType.name() + "___PROPERTY").println(csvInfo.relationLine(
                         node.getUid(), propertyNode.getUid()));
             }
         }
@@ -668,147 +666,6 @@ public class NodeBuilder {
         return node;
     }
 
-    //    public static Node newNode(long uid, ClinicalAnalysis clinicalAnalysis) {
-//        Node node = new Node(uid, clinicalAnalysis.getId(), clinicalAnalysis.getId(), Node.Type.CLINICAL_ANALYSIS);
-//        node.addAttribute("uuid", clinicalAnalysis.getUuid());
-//        node.addAttribute("description", clinicalAnalysis.getDescription());
-//        if (clinicalAnalysis.getType() != null) {
-//            node.addAttribute("type", clinicalAnalysis.getType().name());
-//        }
-//        if (clinicalAnalysis.getPriority() != null) {
-//            node.addAttribute("priority", clinicalAnalysis.getPriority().name());
-//        }
-//        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getFlags())) {
-//            node.addAttribute("flags", StringUtils.join(clinicalAnalysis.getFlags(), ";"));
-//        }
-//        node.addAttribute("creationDate", clinicalAnalysis.getCreationDate());
-//        node.addAttribute("modificationDate", clinicalAnalysis.getModificationDate());
-//        node.addAttribute("dueDate", clinicalAnalysis.getModificationDate());
-//        addStatus(clinicalAnalysis.getStatus(), node);
-//        if (clinicalAnalysis.getConsent() != null) {
-//            node.addAttribute("consent_primaryFindings", clinicalAnalysis.getConsent().getPrimaryFindings().name());
-//            node.addAttribute("consent_secondaryFindings", clinicalAnalysis.getConsent().getSecondaryFindings().name());
-//            node.addAttribute("consent_carrierFindings", clinicalAnalysis.getConsent().getCarrierFindings().name());
-//            node.addAttribute("consent_researchFindings",  clinicalAnalysis.getConsent().getResearchFindings().name());
-//        }
-//        node.addAttribute("release", clinicalAnalysis.getRelease());
-//        return node;
-//    }
-
-    public static Node newNode(long uid, ClinicalComment comment) {
-        Node node = new Node(uid, "" + uid, "" + uid, Node.Type.COMMENT);
-        node.addAttribute("author", comment.getAuthor());
-        if (CollectionUtils.isNotEmpty(comment.getTags())) {
-            node.addAttribute("tags", StringUtils.join(comment.getTags(), ","));
-        }
-        node.addAttribute("message", comment.getMessage());
-        node.addAttribute("date", comment.getDate());
-        return node;
-    }
-
-    public static Node newNode(long uid, ClinicalAnalyst analyst) {
-        Node node = new Node(uid, "" + uid, "" + uid, Node.Type.CLINICAL_ANALYST);
-        node.addAttribute("assignedBy", analyst.getAssignedBy());
-        node.addAttribute("id", analyst.getId());
-        node.addAttribute("name", analyst.getName());
-        node.addAttribute("email", analyst.getEmail());
-        node.addAttribute("date", analyst.getDate());
-        return node;
-    }
-
-    public static Node newNode(long uid, Interpretation interpretation) {
-        Node node = new Node(uid, "" + uid, "" + uid, Node.Type.INTERPRETATION);
-        node.addAttribute("uuid", interpretation.getUuid());
-        node.addAttribute("description", interpretation.getDescription());
-        node.addAttribute("status", interpretation.getStatus());
-        node.addAttribute("creationDate", interpretation.getCreationDate());
-        node.addAttribute("version", interpretation.getVersion());
-        //addObjectMap(interpretation.getFilters(), node, "filters_");
-        return node;
-    }
-
-    public static Node newNode(long uid, Software software) {
-        String id = getSoftwareId(software);
-        Node node = new Node(uid, id, software.getName(), Node.Type.SOFTWARE);
-        node.addAttribute("version", software.getVersion());
-        node.addAttribute("repository", software.getRepository());
-        node.addAttribute("commit", software.getCommit());
-        node.addAttribute("website", software.getWebsite());
-        addMap(software.getParams(), node, "params_");
-        return node;
-    }
-
-    public static Node newNode(long uid, ClinicalVariant clinicalVariant) {
-        Node node = new Node(uid, clinicalVariant.toStringSimple(), clinicalVariant.getId(), Node.Type.REPORTED_VARIANT);
-        node.addAttribute("status", clinicalVariant.getStatus().name());
-        addObjectMap(clinicalVariant.getAttributes(), node);
-        return node;
-    }
-
-//    public static Node newNode(long uid, Analyst analyst) {
-//        Node node = new Node(uid, analyst.getName(), analyst.getName(), Node.Type.ANALYST);
-//        node.addAttribute("company", analyst.getCompany());
-//        node.addAttribute("email", analyst.getEmail());
-//        return node;
-//    }
-
-    public static Node newNode(long uid, ClinicalVariantEvidence clinicalVariantEvidence) {
-        Node node = new Node(uid, "" + uid, "" + uid, Node.Type.REPORTED_EVENT);
-        if (clinicalVariantEvidence.getModeOfInheritance() != null) {
-            node.addAttribute("modeOfInheritance", clinicalVariantEvidence.getModeOfInheritance().name());
-        }
-        if (clinicalVariantEvidence.getPenetrance() != null) {
-            node.addAttribute("penetrance", clinicalVariantEvidence.getPenetrance().name());
-        }
-        if (CollectionUtils.isNotEmpty(clinicalVariantEvidence.getCompoundHeterozygousVariantIds())) {
-            node.addAttribute("compoundHeterozygousVariantIds", StringUtils.join(clinicalVariantEvidence
-                    .getCompoundHeterozygousVariantIds(), ","));
-        }
-        node.addAttribute("score", clinicalVariantEvidence.getScore());
-        node.addAttribute("fullyExplainPhenotypes", clinicalVariantEvidence.isFullyExplainPhenotypes());
-        if (clinicalVariantEvidence.getRoleInCancer() != null) {
-            node.addAttribute("roleInCancer", clinicalVariantEvidence.getRoleInCancer().name());
-        }
-        node.addAttribute("actionable", clinicalVariantEvidence.isActionable());
-        node.addAttribute("justification", clinicalVariantEvidence.getJustification());
-        if (clinicalVariantEvidence.getClassification() != null) {
-            VariantClassification classification = clinicalVariantEvidence.getClassification();
-            // Tier
-            if (StringUtils.isNotEmpty(classification.getTier())) {
-                node.addAttribute("classification_tier", classification.getTier());
-            }
-            // ACMG
-            if (CollectionUtils.isNotEmpty(classification.getAcmg())) {
-                node.addAttribute("classification_acmg", StringUtils.join(classification.getAcmg(), ","));
-            }
-            // Clinical significance
-            if (classification.getClinicalSignificance() != null) {
-                node.addAttribute("classification_clinicalSignificance", classification.getClinicalSignificance().name());
-            }
-            // Drug response
-            if (classification.getDrugResponse() != null) {
-                node.addAttribute("classification_drugResponse", classification.getDrugResponse().name());
-            }
-            // Trait association
-            if (classification.getTraitAssociation() != null) {
-                node.addAttribute("classification_traitAssociation", classification.getTraitAssociation().name());
-            }
-            // Functional effect
-            if (classification.getFunctionalEffect() != null) {
-                node.addAttribute("classification_functionalEffect", classification.getFunctionalEffect().name());
-            }
-            // Tumorigenesis
-            if (classification.getTumorigenesis() != null) {
-                node.addAttribute("classification_tumorigenesis", classification.getTumorigenesis().name());
-            }
-            // Other
-            if (CollectionUtils.isNotEmpty(classification.getOther())) {
-                node.addAttribute("classification_other", StringUtils.join(classification.getOther(), "---"));
-            }
-        }
-        return node;
-    }
-
     public static Node newNode(long uid, GenomicFeature genomicFeature) {
         Node node = new Node(uid, genomicFeature.getId(), genomicFeature.getId(), Node.Type.GENOMIC_FEATURE);
         node.addAttribute("type", genomicFeature.getType());
@@ -839,125 +696,6 @@ public class NodeBuilder {
         }
         return node;
     }
-
-//    public static Node newNode(long uid, Disorder disorder) {
-//        // IMPORTANT: phenotype nodes and relations must be created by the caller of this function!!!
-//
-//        Node node = new Node(uid, disorder.getId(), disorder.getName(), Node.Type.DISORDER);
-//        node.addAttribute("description", disorder.getDescription());
-//        node.addAttribute("source", disorder.getSource());
-//        if (MapUtils.isNotEmpty(disorder.getAttributes())) {
-//            for (String key : disorder.getAttributes().keySet()) {
-//                node.addAttribute("attributes_" + key, disorder.getAttributes().get(key));
-//            }
-//        }
-//        return node;
-//    }
-
-//    public static Node newNode(long uid, Individual individual) {
-//        // IMPORTANT: father, mother, phenotypes, disorders, samples nodes and relations must be created by the caller of this
-//        // function!!!
-//
-//        Node node = new Node(uid, individual.getId(), individual.getName(), Node.Type.INDIVIDUAL);
-//        node.addAttribute("uuid", individual.getUuid());
-//        if (individual.getLocation() != null) {
-//            node.addAttribute("location_address", individual.getLocation().getAddress());
-//            node.addAttribute("location_city", individual.getLocation().getCity());
-//            node.addAttribute("location_postalCode", individual.getLocation().getPostalCode());
-//            node.addAttribute("location_state", individual.getLocation().getState());
-//            node.addAttribute("location_country", individual.getLocation().getCountry());
-//        }
-//        if (individual.getSex() != null) {
-//            node.addAttribute("sex", individual.getSex().name());
-//        }
-//        if (individual.getKaryotypicSex() != null) {
-//            node.addAttribute("karyotypicSex", individual.getKaryotypicSex().name());
-//        }
-//        node.addAttribute("ethnicity", individual.getEthnicity());
-//        if (individual.getPopulation() != null) {
-//            node.addAttribute("population_name", individual.getPopulation().getName());
-//            node.addAttribute("population_subpopulation", individual.getPopulation().getSubpopulation());
-//            node.addAttribute("population_description", individual.getPopulation().getDescription());
-//        }
-////        if (individual.getMultiples() != null) {
-////            node.addAttribute("multiples_type", individual.getMultiples().getType());
-////            node.addAttribute("multiples_siblings", StringUtils.join(individual.getMultiples().getSiblings(), ","));
-////        }
-//        node.addAttribute("dateOfBirth", individual.getDateOfBirth());
-//        node.addAttribute("release", individual.getRelease());
-//        node.addAttribute("version", individual.getRelease());
-//        node.addAttribute("creationDate", individual.getCreationDate());
-//        node.addAttribute("modificationDate", individual.getModificationDate());
-//        addStatus(individual.getStatus(), node);
-//        if (individual.getLifeStatus() != null) {
-//            node.addAttribute("lifeStatus", individual.getLifeStatus().name());
-//        }
-//        node.addAttribute("parentalConsanguinity", individual.isParentalConsanguinity());
-//        if (MapUtils.isNotEmpty(individual.getAttributes())) {
-//            for (String key : individual.getAttributes().keySet()) {
-//                node.addAttribute("attributes_" + key, individual.getAttributes().get(key).toString());
-//            }
-//        }
-//        return node;
-//    }
-//
-//    public static Node newNode(long uid, Sample sample) {
-//        // IMPORTANT: phenotypes nodes and relations must be created by the caller of this function!!!
-//
-//        Node node = new Node(uid, sample.getId(), sample.getId(), Node.Type.SAMPLE);
-//        node.addAttribute("uuid", sample.getUuid());
-//        if (sample.getProcessing() != null) {
-//            node.addAttribute("processing_product", sample.getProcessing().getProduct());
-//            node.addAttribute("processing_preparationMethod", sample.getProcessing().getPreparationMethod());
-//            node.addAttribute("processing_extractionMethod", sample.getProcessing().getExtractionMethod());
-//            node.addAttribute("processing_labSampleId", sample.getProcessing().getLabSampleId());
-//            node.addAttribute("processing_quantity", sample.getProcessing().getQuantity());
-//            node.addAttribute("processing_date", sample.getProcessing().getDate());
-//            // TODO: sample.getProcessing().getAttributes()
-//        }
-//        if (sample.getCollection() != null) {
-//            node.addAttribute("collection_tissue", sample.getCollection().getTissue());
-//            node.addAttribute("collection_organ", sample.getCollection().getOrgan());
-//            node.addAttribute("collection_quantity", sample.getCollection().getQuantity());
-//            node.addAttribute("collection_method", sample.getCollection().getMethod());
-//            node.addAttribute("collection_date", sample.getCollection().getDate());
-//            // TODO: sample.getCollection().getAttributes()
-//        }
-//        node.addAttribute("release", sample.getRelease());
-//        node.addAttribute("version", sample.getRelease());
-//        node.addAttribute("creationDate", sample.getCreationDate());
-//        node.addAttribute("modificationDate", sample.getModificationDate());
-//        addStatus(sample.getStatus(), node);
-//        node.addAttribute("description", sample.getDescription());
-////        node.addAttribute("type", sample.getType());
-//        node.addAttribute("somatic", sample.isSomatic());
-//        if (MapUtils.isNotEmpty(sample.getAttributes())) {
-//            for (String key : sample.getAttributes().keySet()) {
-//                node.addAttribute("attributes_" + key, sample.getAttributes().get(key).toString());
-//            }
-//        }
-//        return node;
-//    }
-//
-//    public static Node newNode(long uid, Family family) {
-//        // IMPORTANT: phenotypes, disorder and members, nodes and relations must be created by the caller!
-//
-//        Node node = new Node(uid, family.getId(), family.getName(), Node.Type.FAMILY);
-//        node.addAttribute("uuid", family.getUuid());
-//        node.addAttribute("creationDate", family.getCreationDate());
-//        node.addAttribute("modificationDate", family.getModificationDate());
-//        addStatus(family.getStatus(), node);
-//        node.addAttribute("expectedSize", family.getExpectedSize());
-//        node.addAttribute("description", family.getDescription());
-//        node.addAttribute("release", family.getRelease());
-//        node.addAttribute("version", family.getRelease());
-//        if (MapUtils.isNotEmpty(family.getAttributes())) {
-//            for (String key : family.getAttributes().keySet()) {
-//                node.addAttribute("attributes_" + key, family.getAttributes().get(key).toString());
-//            }
-//        }
-//        return node;
-//    }
 
     public static Node newNode(long uid, DiseasePanel.GenePanel panelGene) {
         // IMPORTANT: phenotypes nodes and relations must be created by the caller!

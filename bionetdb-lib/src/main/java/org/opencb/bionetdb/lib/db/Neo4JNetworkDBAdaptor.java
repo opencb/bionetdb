@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static org.opencb.bionetdb.core.models.network.Node.Type.*;
 import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
 
 /**
@@ -62,7 +63,12 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         if (session != null) {
             // Create indexes
             session.writeTransaction(tx -> {
-                for (Node.Type nodeType : Node.Type.values()) {
+
+                List<String> nodeTypes = new ArrayList<>(Arrays.asList(GENE.name(), ENSEMBL_GENE.name(), REFSEQ_GENE.name(),
+                        TRANSCRIPT.name(), ENSEMBL_TRANSCRIPT.name(), REFSEQ_TRANSCRIPT.name(), PROTEIN.name(), VARIANT.name(),
+                        SAMPLE.name(), INDIVIDUAL.name(), XREF.name(), DISEASE_PANEL.name()));
+
+                for (String nodeType: nodeTypes) {
                     tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + nodeType + ") ON (n.uid)");
                     tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + nodeType + ") ON (n.id)");
                     tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + nodeType + ") ON (n.name)");

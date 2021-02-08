@@ -42,7 +42,7 @@ public class BioNetDBMainTest {
         node2 = new Node(uid++, null, "COCA", Node.Type.GENE_DRUG_INTERACTION);
         network.getNodes().add(node2);
         relation1 = new Relation(uid++, "rel1", node1.getUid(), Node.Type.GENE, node2.getUid(), Node.Type.GENE_DRUG_INTERACTION,
-                Relation.Type.ANNOTATION___GENE___GENE_DRUG_INTERACTION);
+                Relation.Type.ANNOTATION);
         network.getRelations().add(relation1);
 
         File file = new File("/tmp/network1.json");
@@ -68,10 +68,10 @@ public class BioNetDBMainTest {
         node3 = new Node(uid++, "ALCOHOL", "ALCOHOL", Node.Type.GENE_DRUG_INTERACTION);
         network.getNodes().add(node3);
         relation2 = new Relation(uid++, "rel2", node1.getUid(), Node.Type.GENE, node2.getUid(), Node.Type.GENE_DRUG_INTERACTION,
-                Relation.Type.ANNOTATION___GENE___GENE_DRUG_INTERACTION);
+                Relation.Type.ANNOTATION);
         network.getRelations().add(relation2);
         relation3 = new Relation(uid++, "rel3", node1.getUid(), Node.Type.GENE, node3.getUid(), Node.Type.GENE_DRUG_INTERACTION,
-                Relation.Type.ANNOTATION___GENE___GENE_DRUG_INTERACTION);
+                Relation.Type.ANNOTATION);
         network.getRelations().add(relation3);
 
         file = new File("/tmp/network2.json");

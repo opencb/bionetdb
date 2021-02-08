@@ -1,6 +1,7 @@
 package org.opencb.bionetdb.lib.utils.cache;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -42,6 +43,7 @@ public abstract class Cache<T> {
         objMapper = new ObjectMapper();
         objMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        objMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         logger = LoggerFactory.getLogger(this.getClass());
     }

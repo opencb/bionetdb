@@ -302,7 +302,7 @@ public class BioPaxParser {
 //            } else {
 //                int origUid = rdfToUidMap.get(id);
 //                Relation relation = new Relation(uidCounter++, null, origUid, complex.getUid(),
-//                        Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
+//                        Relation.Type.COMPONENT_OF);
 //                network.addRelation(relation);
 //            }
 //        }
@@ -444,7 +444,7 @@ public class BioPaxParser {
 //            } else {
 //                long destUid = rdfToUidMap.get(complexId);
 //                Relation relation = new Relation(uidCounter++, null, physicalEntity.getUid(), destUid,
-// Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
+// Relation.Type.COMPONENT_OF);
 //                network.addRelation(relation);
 //            }
 //        }

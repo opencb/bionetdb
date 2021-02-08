@@ -572,7 +572,7 @@ public class Neo4JVariantQueryParser {
         // Match1
         cypher.append("MATCH (tr1:TRANSCRIPT)-[:IS___TRANSCRIPT___PROTEIN]-(prot1:PROTEIN)-");
         if (complexOrReaction) {
-            cypher.append("[:COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX]-(nex:PHYSICAL_ENTITY_COMPLEX)-[:COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX]-");
+            cypher.append("[:COMPONENT_OF]-(nex:PHYSICAL_ENTITY_COMPLEX)-[:COMPONENT_OF]-");
         } else {
             cypher.append("[:REACTANT|:PRODUCT]-(nex:REACTION)-[:REACTANT|:PRODUCT]-");
         }
