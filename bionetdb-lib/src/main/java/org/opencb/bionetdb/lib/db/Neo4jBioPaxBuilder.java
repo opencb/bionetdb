@@ -1061,11 +1061,11 @@ public class Neo4jBioPaxBuilder {
 
             // Check if that relation already exists
             String relId = componentUid + "." + complexUid;
-            if (csv.getLong(relId, Relation.Type.COMPONENT_OF.name()) == null) {
+            if (csv.getLong(relId, Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name()) == null) {
 
                 Node.Type componentType = uidToType.get(componentUid);
                 Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, complexUid, complexType,
-                        Relation.Type.COMPONENT_OF);
+                        Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
                 if (stoichiometryMap.containsKey(componentUid)) {
                     relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
                 }
@@ -1074,7 +1074,7 @@ public class Neo4jBioPaxBuilder {
                 // Check to add cellular location
                 checkProteinCellularLoc(getBioPaxId(component.getRDFId()), componentType, complexUid, complexType);
 
-                csv.putLong(relId, Relation.Type.COMPONENT_OF.name(), 1);
+                csv.putLong(relId, Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name(), 1);
             }
         }
     }
