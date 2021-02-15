@@ -419,7 +419,7 @@ public class PsiMiTabParser {
 
     private Interaction createColocalization(BinaryInteraction binaryInteraction) {
         Interaction colocalization = new Interaction();
-        colocalization.setType(Interaction.Type.COLOCALIZATION);
+        colocalization.setLabels(Interaction.Label.COLOCALIZATION);
 
         // Common properties
         setInteractionCommonProperties(binaryInteraction, colocalization);
@@ -491,7 +491,7 @@ public class PsiMiTabParser {
     private void createUndefinedProducts(Network network) {
         // TODO: update code to the new Network and NetworkManager refactoring
 //        for (Relation relationship: network.getRelations()) {
-//            if (relationship.getType() == Relation.Type.REACTION) {
+//            if (relationship.getLabels() == Relation.Label.REACTION) {
 //                Reaction reaction = (Reaction) relationship;
 //                for (String productId : reaction.getProducts()) {
 //                    Undefined undefined = new Undefined(productId, productId, Collections.<String>emptyList());

@@ -94,9 +94,9 @@ public class Neo4jConverter {
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
             Relation relation = new Relation(key, neoRelation.get("name") == null ? "" : neoRelation.get("name").asString(),
-                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
-                    nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
-                    Relation.Type.valueOf(neoRelation.type()));
+                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getLabels().get(0),
+                    nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getLabels().get(0),
+                    Relation.Label.valueOf(neoRelation.type()));
             for (String k: neoRelation.asMap().keySet()) {
                 relation.addAttribute(k.substring(PREFIX_ATTRIBUTES_LENGTH), neoRelation.get(k).asObject());
             }
@@ -131,17 +131,13 @@ public class Neo4jConverter {
             node.setName(neoNode.get("name").asString());
         }
 
-        // Set type and tags
-        boolean first = true;
+        // Set labels
+        List<Node.Label> labels = new ArrayList<>();
         Iterator<String> iterator = neoNode.labels().iterator();
         while (iterator.hasNext()) {
-            if (first) {
-                node.setType(Node.Type.valueOf(iterator.next()));
-                first = false;
-            } else {
-                node.addTag(iterator.next());
-            }
+            labels.add(Node.Label.valueOf(iterator.next()));
         }
+        node.setLabels(labels);
 
         // Set attributes
         for (String k: neoNode.keys()) {
@@ -180,9 +176,9 @@ public class Neo4jConverter {
         for (long key: relationshipMap.keySet()) {
             Relationship neoRelation = relationshipMap.get(key);
             Relation relation = new Relation(key, neoRelation.get("name") == null ? "" : neoRelation.get("name").asString(),
-                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getType(),
-                    nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getType(),
-                    Relation.Type.valueOf(neoRelation.type()));
+                    nodeMap.get(neoRelation.startNodeId()).getUid(), nodeMap.get(neoRelation.startNodeId()).getLabels().get(0),
+                    nodeMap.get(neoRelation.endNodeId()).getUid(), nodeMap.get(neoRelation.endNodeId()).getLabels().get(0),
+                    Relation.Label.valueOf(neoRelation.type()));
             for (String k: neoRelation.asMap().keySet()) {
                 if (k.startsWith(PREFIX_ATTRIBUTES)) {
                     relation.addAttribute(k.substring(PREFIX_ATTRIBUTES_LENGTH), neoRelation.get(k).asObject());

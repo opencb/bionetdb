@@ -29,7 +29,7 @@ public class Neo4jBioPaxBuilder {
     private Map<String, Set<String>> filters;
 
     private Map<String, Long> rdfToUid;
-    private Map<Long, Node.Type> uidToType;
+    private Map<Long, Node.Label> uidToType;
     private Map<String, Long> protRdfIdToCelLocUid;
     private Set<String> celLocUidSet;
 
@@ -140,7 +140,7 @@ public class Neo4jBioPaxBuilder {
 //                    String rnaName = ((Rna) bioPAXElement).getDisplayName();
 //                    if (isMicroRNA(rnaName)) {
 //                        // Process miRNA
-//                        Long rnaUid = csv.getLong(rnaName, Node.Type.MIRNA.name());
+//                        Long rnaUid = csv.getLong(rnaName, Node.Label.MIRNA.name());
 //                        if (rnaUid == null) {
 //                            // miRNA not registered yet
 //                            node = loadRna(bioPAXElement);
@@ -148,13 +148,13 @@ public class Neo4jBioPaxBuilder {
 //
 //                            updatePhysicalEntity(bioPAXElement);
 //                            if (node.getName() != null) {
-//                                csv.putLong(node.getName(), Node.Type.MIRNA.name(), node.getUid());
+//                                csv.putLong(node.getName(), Node.Label.MIRNA.name(), node.getUid());
 //                            }
 //                        } else {
 //                            // miRNA already registered
 //                            // Get the RDF ID and save it to be referenced later for the possible relationships
 //                            String rnaRDFId = getBioPaxId(bioPAXElement.getRDFId());
-//                            updateAuxMaps(rnaRDFId, rnaUid, Node.Type.RNA);
+//                            updateAuxMaps(rnaRDFId, rnaUid, Node.Label.RNA);
 //                        }
 //                    } else {
 //                        node = loadRna(bioPAXElement);
@@ -199,36 +199,36 @@ public class Neo4jBioPaxBuilder {
                         }
                     }
 
-                    Long protUid = (protPrimaryId == null ? null : csv.getLong(protPrimaryId, Node.Type.PROTEIN.name()));
+                    Long protUid = (protPrimaryId == null ? null : csv.getLong(protPrimaryId, Node.Label.PROTEIN.name()));
                     if (protUid == null) {
                         node = loadProtein(bioPAXElement);
                         updateAuxMaps(node);
 
                         updatePhysicalEntity(bioPAXElement);
-                        csv.putLong(protPrimaryId, Node.Type.PROTEIN.name(), node.getUid());
+                        csv.putLong(protPrimaryId, Node.Label.PROTEIN.name(), node.getUid());
                     } else {
                         // The protein node exists, get the RDF ID and save it to be
                         // referenced later for the possible relationships (interaction, complex,...)
                         String protRDFId = getBioPaxId(bioPAXElement.getRDFId());
-                        updateAuxMaps(protRDFId, protUid, Node.Type.PROTEIN);
+                        updateAuxMaps(protRDFId, protUid, Node.Label.PROTEIN);
 
                         // And create the cellular location node and relationship if necessary
                         Long celLocUid;
                         Node cellularLocNode;
                         for (String name: ((PhysicalEntity) bioPAXElement).getCellularLocation().getTerm()) {
-                            celLocUid = csv.getLong(name, Node.Type.CELLULAR_LOCATION.name());
+                            celLocUid = csv.getLong(name, Node.Label.CELLULAR_LOCATION.name());
                             if (celLocUid == null) {
-                                cellularLocNode = new Node(csv.getAndIncUid(), null, name, Node.Type.CELLULAR_LOCATION);
+                                cellularLocNode = new Node(csv.getAndIncUid(), null, name, Node.Label.CELLULAR_LOCATION);
                                 cellularLocNode.addAttribute("source", source);
                                 nodes.add(cellularLocNode);
                                 celLocUid = cellularLocNode.getUid();
-                                csv.putLong(name, Node.Type.CELLULAR_LOCATION.name(), celLocUid);
+                                csv.putLong(name, Node.Label.CELLULAR_LOCATION.name(), celLocUid);
                             }
                             protRdfIdToCelLocUid.put(protRDFId, celLocUid);
 
                             if (!celLocUidSet.contains(protUid + "." + celLocUid)) {
-                                Relation relation = new Relation(csv.getAndIncUid(), null, protUid, Node.Type.PROTEIN, celLocUid,
-                                        Node.Type.CELLULAR_LOCATION, Relation.Type.CELLULAR_LOCATION);
+                                Relation relation = new Relation(csv.getAndIncUid(), null, protUid, Node.Label.PROTEIN, celLocUid,
+                                        Node.Label.CELLULAR_LOCATION, Relation.Label.CELLULAR_LOCATION);
                                 relations.add(relation);
                                 celLocUidSet.add(protUid + "." + celLocUid);
                             }
@@ -385,7 +385,7 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadUndefinedEntity(BioPAXElement bioPAXElement) {
         PhysicalEntity physicalEntityBP = (PhysicalEntity) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.UNDEFINED);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.UNDEFINED);
         node.addAttribute("source", source);
 
         // Common properties
@@ -396,7 +396,8 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadDna(BioPAXElement bioPAXElement) {
         Dna dnaBP = (Dna) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.DNA);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.DNA);
+        node.getLabels().add(Node.Label.PHYSICAL_ENTITY);
         node.addAttribute("source", source);
 
         // Common properties
@@ -434,7 +435,8 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadRna(BioPAXElement bioPAXElement) {
         Rna rnaBP = (Rna) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.RNA);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.RNA);
+        node.getLabels().add(Node.Label.PHYSICAL_ENTITY);
         node.addAttribute("source", source);
 
         // Common properties
@@ -472,7 +474,8 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadProtein(BioPAXElement bioPAXElement) {
         Protein proteinBP = (Protein) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.PROTEIN);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.PROTEIN);
+        node.getLabels().add(Node.Label.PHYSICAL_ENTITY);
         node.addAttribute("source", source);
 
         // Common properties
@@ -510,7 +513,8 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadSmallMolecule(BioPAXElement bioPAXElement) {
         SmallMolecule smallMoleculeBP = (SmallMolecule) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.SMALL_MOLECULE);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.SMALL_MOLECULE);
+        node.getLabels().add(Node.Label.PHYSICAL_ENTITY);
         node.addAttribute("source", source);
 
         // Common properties
@@ -548,7 +552,8 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadComplex(BioPAXElement bioPAXElement) {
         Complex complexBP = (Complex) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.PHYSICAL_ENTITY_COMPLEX);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.PHYSICAL_ENTITY_COMPLEX);
+        node.getLabels().add(Node.Label.PHYSICAL_ENTITY);
         node.addAttribute("source", source);
 
         // Common properties
@@ -694,7 +699,7 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadPathway(BioPAXElement bioPAXElement) {
         Pathway pathwayBP = (Pathway) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), getBioPaxId(pathwayBP.getRDFId()), pathwayBP.getDisplayName(), Node.Type.PATHWAY);
+        Node node = new Node(csv.getAndIncUid(), getBioPaxId(pathwayBP.getRDFId()), pathwayBP.getDisplayName(), Node.Label.PATHWAY);
         node.addAttribute("source", source);
 
         // Common properties
@@ -705,7 +710,8 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadReaction(BioPAXElement bioPAXElement) {
         String className = bioPAXElement.getModelInterface().getSimpleName();
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.REACTION);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.REACTION);
+        node.getLabels().add(Node.Label.INTERACTION);
         node.addAttribute("source", source);
 
         switch (className) {
@@ -713,7 +719,7 @@ public class Neo4jBioPaxBuilder {
                 TemplateReaction templateReactBP = (TemplateReaction) bioPAXElement;
 
                 // Setting up reaction type
-                node.setType(Node.Type.REACTION);
+//                node.setLabels(Node.Label.REACTION);
 
                 // Common Interaction properties
                 setInteractionCommonProperties(templateReactBP, node);
@@ -733,16 +739,16 @@ public class Neo4jBioPaxBuilder {
 
                 // Setting up reaction type
                 switch (className) {
-                    case "BiochemicalReaction":
-                    case "Degradation":
-                        node.setType(Node.Type.REACTION);
-                        break;
+//                    case "BiochemicalReaction":
+//                    case "Degradation":
+//                        node.setLabels(Node.Label.REACTION);
+//                        break;
                     case "ComplexAssembly":
-                        node.setType(Node.Type.ASSEMBLY);
+                        node.getLabels().add(Node.Label.COMPLEX_ASSEMBLY);
                         break;
                     case "Transport":
                     case "TransportWithBiochemicalReaction":
-                        node.setType(Node.Type.TRANSPORT);
+                        node.getLabels().add(Node.Label.TRANSPORT);
                         break;
                     default:
                         break;
@@ -779,7 +785,7 @@ public class Neo4jBioPaxBuilder {
                 MolecularInteraction molecularInteractionBP = (MolecularInteraction) bioPAXElement;
 
                 // Setting up reaction type
-                node.setType(Node.Type.ASSEMBLY);
+//                node.setLabels(Node.Label.ASSEMBLY);
 
                 // Common Interaction properties
                 setInteractionCommonProperties(molecularInteractionBP, node);
@@ -793,7 +799,8 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadCatalysis(BioPAXElement bioPAXElement) {
         Catalysis catalysisBP = (Catalysis) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.CATALYSIS);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.CATALYSIS);
+        node.getLabels().add(Node.Label.INTERACTION);
         node.addAttribute("source", source);
 
         // Common Interaction properties
@@ -814,7 +821,8 @@ public class Neo4jBioPaxBuilder {
 
     private Node loadRegulation(BioPAXElement bioPAXElement) {
         Control controlBP = (Control) bioPAXElement;
-        Node node = new Node(csv.getAndIncUid(), null, null, Node.Type.REGULATION);
+        Node node = new Node(csv.getAndIncUid(), null, null, Node.Label.REGULATION);
+        node.getLabels().add(Node.Label.INTERACTION);
         node.addAttribute("source", source);
 
         // Common Interaction properties
@@ -944,37 +952,37 @@ public class Neo4jBioPaxBuilder {
 
         String physicalEntityId = getBioPaxId(physicalEntityBP.getRDFId());
         Long physicalEntityUid = rdfToUid.get(physicalEntityId);
-        Node.Type physicalEntityType = uidToType.get(physicalEntityUid);
+        Node.Label physicalEntityLabel = uidToType.get(physicalEntityUid);
 
         // = SPECIFIC PROPERTIES =
 
         // name
 //        if (physicalEntityBP.getDisplayName() != null) {
-//            addXref(physicalEntityBP.getDisplayName(), REACTOME_FEAT + "biopax", physicalEntityUid, physicalEntityType);
+//            addXref(physicalEntityBP.getDisplayName(), REACTOME_FEAT + "biopax", physicalEntityUid, physicalEntityLabel);
 //        }
 
         // altNames
 //        for (String name: physicalEntityBP.getName()) {
-//            addXref(name, REACTOME_FEAT + "biopax", physicalEntityUid, physicalEntityType);
+//            addXref(name, REACTOME_FEAT + "biopax", physicalEntityUid, physicalEntityLabel);
 //        }
 
         // cellularLocation
         Node cellularLocNode = null;
         for (String name: physicalEntityBP.getCellularLocation().getTerm()) {
-            Long celLocUid = csv.getLong(name, Node.Type.CELLULAR_LOCATION.name());
+            Long celLocUid = csv.getLong(name, Node.Label.CELLULAR_LOCATION.name());
             if (celLocUid == null) {
-                cellularLocNode = new Node(csv.getAndIncUid(), null, name, Node.Type.CELLULAR_LOCATION);
+                cellularLocNode = new Node(csv.getAndIncUid(), null, name, Node.Label.CELLULAR_LOCATION);
                 cellularLocNode.addAttribute("source", source);
                 nodes.add(cellularLocNode);
                 celLocUid = cellularLocNode.getUid();
-                csv.putLong(name, Node.Type.CELLULAR_LOCATION.name(), celLocUid);
+                csv.putLong(name, Node.Label.CELLULAR_LOCATION.name(), celLocUid);
             }
             if (!celLocUidSet.contains(physicalEntityUid + "." + celLocUid)) {
                 Relation relation = new Relation(csv.getAndIncUid(), null, physicalEntityUid, uidToType.get(physicalEntityUid), celLocUid,
-                        Node.Type.CELLULAR_LOCATION, Relation.Type.CELLULAR_LOCATION);
+                        Node.Label.CELLULAR_LOCATION, Relation.Label.CELLULAR_LOCATION);
                 relations.add(relation);
                 celLocUidSet.add(physicalEntityUid + "." + celLocUid);
-                if (physicalEntityType == Node.Type.PROTEIN) {
+                if (physicalEntityLabel == Node.Label.PROTEIN) {
                     protRdfIdToCelLocUid.put(physicalEntityId, celLocUid);
                 }
             }
@@ -983,7 +991,7 @@ public class Neo4jBioPaxBuilder {
 
 //        if (cellularLocNode != null) {
 //            addSetXref(physicalEntityBP.getCellularLocation().getXref(), cellularLocNode.getUid(),
-//                    cellularLocNode.getType());
+//                    cellularLocNode.getLabels());
 //        }
 
 //        // source
@@ -1002,7 +1010,7 @@ public class Neo4jBioPaxBuilder {
         // members, memberOfSet, componentOfComplex and participantOfInteraction relationships are added later
 
         // xrefs
-//        addSetXref(physicalEntityBP.getXref(), physicalEntityUid, physicalEntityType);
+//        addSetXref(physicalEntityBP.getXref(), physicalEntityUid, physicalEntityLabel);
 
         // publications
 //        for (Evidence evidence : physicalEntityBP.getEvidence()) {
@@ -1043,7 +1051,7 @@ public class Neo4jBioPaxBuilder {
 
         String complexId = getBioPaxId(complexBP.getRDFId());
         Long complexUid = rdfToUid.get(complexId);
-        Node.Type complexType = uidToType.get(complexUid);
+        Node.Label complexLabel = uidToType.get(complexUid);
 
         // Stoichiometry
         Map<Long, Float> stoichiometryMap = new HashMap<>();
@@ -1061,20 +1069,20 @@ public class Neo4jBioPaxBuilder {
 
             // Check if that relation already exists
             String relId = componentUid + "." + complexUid;
-            if (csv.getLong(relId, Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name()) == null) {
+            if (csv.getLong(relId, Relation.Label.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name()) == null) {
 
-                Node.Type componentType = uidToType.get(componentUid);
-                Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, complexUid, complexType,
-                        Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
+                Node.Label componentLabel = uidToType.get(componentUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentLabel, complexUid, complexLabel,
+                        Relation.Label.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX);
                 if (stoichiometryMap.containsKey(componentUid)) {
                     relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(componentUid));
                 }
                 relations.add(relation);
 
                 // Check to add cellular location
-                checkProteinCellularLoc(getBioPaxId(component.getRDFId()), componentType, complexUid, complexType);
+                checkProteinCellularLoc(getBioPaxId(component.getRDFId()), componentLabel, complexUid, complexLabel);
 
-                csv.putLong(relId, Relation.Type.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name(), 1);
+                csv.putLong(relId, Relation.Label.COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX.name(), 1);
             }
         }
     }
@@ -1085,15 +1093,15 @@ public class Neo4jBioPaxBuilder {
 
         String pathwayId = getBioPaxId(pathwayBP.getRDFId());
         Long pathwayUid = rdfToUid.get(pathwayId);
-        Node.Type pathwayType = uidToType.get(pathwayUid);
+        Node.Label pathwayLabel = uidToType.get(pathwayUid);
 
         // Components
         Set<Process> components = pathwayBP.getPathwayComponent();
         for (Process component: components) {
             Long componentUid = rdfToUid.get(getBioPaxId(component.getRDFId()));
-            Node.Type componentType = uidToType.get(componentUid);
-            Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentType, pathwayUid, pathwayType,
-                    Relation.Type.COMPONENT_OF_PATHWAY);
+            Node.Label componentLabel = uidToType.get(componentUid);
+            Relation relation = new Relation(csv.getAndIncUid(), null, componentUid, componentLabel, pathwayUid, pathwayLabel,
+                    Relation.Label.COMPONENT_OF_PATHWAY);
             relations.add(relation);
         }
 
@@ -1102,26 +1110,26 @@ public class Neo4jBioPaxBuilder {
         for (PathwayStep pathwayStep: pathwayOrder) {
             for (Process currentStep: pathwayStep.getStepProcess()) {
                 Long currentStepUid = rdfToUid.get(getBioPaxId(currentStep.getRDFId()));
-                Node.Type currentStepType = uidToType.get(currentStepUid);
+                Node.Label currentStepLabel = uidToType.get(currentStepUid);
 
                 for (PathwayStep pathwayNextStep: pathwayStep.getNextStep()) {
                     for (Process nextStep: pathwayNextStep.getStepProcess()) {
                         if (rdfToUid.containsKey(getBioPaxId(nextStep.getRDFId()))) {
                             Long nextStepUid = rdfToUid.get(getBioPaxId(nextStep.getRDFId()));
-                            Node.Type nextStepType = uidToType.get(nextStepUid);
+                            Node.Label nextStepLabel = uidToType.get(nextStepUid);
                             try {
-                                if (csv.getLong(currentStepUid + "." + nextStepUid, Node.Type.PATHWAY.name()) == null) {
-                                    Relation relation = new Relation(csv.getAndIncUid(), null, currentStepUid, currentStepType, nextStepUid,
-                                            nextStepType, Relation.Type.PATHWAY_NEXT_STEP);
+                                if (csv.getLong(currentStepUid + "." + nextStepUid, Node.Label.PATHWAY.name()) == null) {
+                                    Relation relation = new Relation(csv.getAndIncUid(), null, currentStepUid, currentStepLabel,
+                                            nextStepUid, nextStepLabel, Relation.Label.PATHWAY_NEXT_STEP);
                                     relations.add(relation);
-                                    csv.putLong(currentStepUid + "." + nextStepUid, Node.Type.PATHWAY.name(), 1L);
+                                    csv.putLong(currentStepUid + "." + nextStepUid, Node.Label.PATHWAY.name(), 1L);
                                 }
                             } catch (Exception e) {
                                 logger.info("impossible create realtionship: " + e.getMessage());
                                 logger.info("current step: {}, uid {}, type {}", currentStep.getRDFId(), currentStepUid,
-                                        currentStepType);
+                                        currentStepLabel);
                                 logger.info("next step   : {}, uid {}, type {}", nextStep.getRDFId(), nextStepUid,
-                                        nextStepType);
+                                        nextStepLabel);
                             }
                         }
                     }
@@ -1139,7 +1147,7 @@ public class Neo4jBioPaxBuilder {
 
                 String templateReactId = getBioPaxId(templateReactBP.getRDFId());
                 Long templateReactUid = rdfToUid.get(templateReactId);
-                Node.Type templateReactType = uidToType.get(templateReactUid);
+                Node.Label templateReactLabel = uidToType.get(templateReactUid);
 
                 // TemplateReaction properties
 
@@ -1148,17 +1156,17 @@ public class Neo4jBioPaxBuilder {
                     Long reactantUid = rdfToUid.get(getBioPaxId(templateReactBP.getTemplate().getRDFId()));
                     // Check if that relation already exists
                     String relId = templateReactUid + "." + reactantUid;
-                    if (csv.getLong(relId, Relation.Type.REACTANT.name()) == null) {
-                        Node.Type reactantType = uidToType.get(reactantUid);
-                        Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid, templateReactType, reactantUid,
-                                reactantType, Relation.Type.REACTANT);
+                    if (csv.getLong(relId, Relation.Label.REACTANT.name()) == null) {
+                        Node.Label reactantLabel = uidToType.get(reactantUid);
+                        Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid, templateReactLabel, reactantUid,
+                                reactantLabel, Relation.Label.REACTANT);
                         relations.add(relation);
 
                         // Check to add cellular location
-                        checkProteinCellularLoc(getBioPaxId(templateReactBP.getTemplate().getRDFId()), reactantType, templateReactUid,
-                                templateReactType);
+                        checkProteinCellularLoc(getBioPaxId(templateReactBP.getTemplate().getRDFId()), reactantLabel, templateReactUid,
+                                templateReactLabel);
 
-                        csv.putLong(relId, Relation.Type.REACTANT.name(), 1);
+                        csv.putLong(relId, Relation.Label.REACTANT.name(), 1);
                     }
                 }
 
@@ -1168,17 +1176,17 @@ public class Neo4jBioPaxBuilder {
                     Long productUid = rdfToUid.get(getBioPaxId(product.getRDFId()));
                     // Check if that relation already exists
                     String relId = templateReactUid + "." + productUid;
-                    if (csv.getLong(relId, Relation.Type.PRODUCT.name()) == null) {
-                        Node.Type productType = uidToType.get(productUid);
-                        Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid, templateReactType, productUid,
-                                productType, Relation.Type.PRODUCT);
+                    if (csv.getLong(relId, Relation.Label.PRODUCT.name()) == null) {
+                        Node.Label productLabel = uidToType.get(productUid);
+                        Relation relation = new Relation(csv.getAndIncUid(), null, templateReactUid, templateReactLabel, productUid,
+                                productLabel, Relation.Label.PRODUCT);
                         relations.add(relation);
 
                         // Check to add cellular location
-                        checkProteinCellularLoc(getBioPaxId(product.getRDFId()), productType, templateReactUid,
-                                templateReactType);
+                        checkProteinCellularLoc(getBioPaxId(product.getRDFId()), productLabel, templateReactUid,
+                                templateReactLabel);
 
-                        csv.putLong(relId, Relation.Type.PRODUCT.name(), 1);
+                        csv.putLong(relId, Relation.Label.PRODUCT.name(), 1);
                     }
                 }
                 break;
@@ -1191,7 +1199,7 @@ public class Neo4jBioPaxBuilder {
 
                 String conversionId = getBioPaxId(conversionBP.getRDFId());
                 Long conversionUid = rdfToUid.get(conversionId);
-                Node.Type conversionType = uidToType.get(conversionUid);
+                Node.Label conversionLabel = uidToType.get(conversionUid);
 
                 // Left items
                 List<String> leftItems = new ArrayList<>();
@@ -1207,26 +1215,26 @@ public class Neo4jBioPaxBuilder {
                     rightItems.add(getBioPaxId(right.getRDFId()));
                 }
 
-                Relation.Type type1 = null;
-                Relation.Type type2 = null;
+                Relation.Label label1 = null;
+                Relation.Label label2 = null;
                 if (conversionBP.getConversionDirection() != null) {
                     switch (conversionBP.getConversionDirection().toString()) {
                         case "LEFT-TO-RIGHT":
                         case "LEFT_TO_RIGHT":
-                            type1 = Relation.Type.REACTANT;
-                            type2 = Relation.Type.PRODUCT;
+                            label1 = Relation.Label.REACTANT;
+                            label2 = Relation.Label.PRODUCT;
                             break;
                         case "RIGHT-TO-LEFT":
                         case "RIGHT_TO_LEFT":
-                            type1 = Relation.Type.PRODUCT;
-                            type2 = Relation.Type.REACTANT;
+                            label1 = Relation.Label.PRODUCT;
+                            label2 = Relation.Label.REACTANT;
                             break;
                         default:
                             break;
                     }
                 } else {
-                    type1 = Relation.Type.REACTANT;
-                    type2 = Relation.Type.PRODUCT;
+                    label1 = Relation.Label.REACTANT;
+                    label2 = Relation.Label.PRODUCT;
                 }
 
                 // Stoichiometry
@@ -1237,24 +1245,24 @@ public class Neo4jBioPaxBuilder {
                             stoichiometryItem.getStoichiometricCoefficient());
                 }
 
-                if (type1 != null && type2 != null) {
+                if (label1 != null && label2 != null) {
                     // Reactants
                     for (String id : leftItems) {
                         Long uid = rdfToUid.get(id);
                         // Check if that relation already exists
                         String relId = conversionUid + "." + uid;
-                        if (csv.getLong(relId, type1.name()) == null) {
-                            Node.Type type = uidToType.get(uid);
-                            Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionType, uid, type, type1);
+                        if (csv.getLong(relId, label1.name()) == null) {
+                            Node.Label label = uidToType.get(uid);
+                            Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionLabel, uid, label, label1);
                             if (stoichiometryMap.containsKey(id)) {
                                 relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
                             }
                             relations.add(relation);
 
                             // Check to add cellular location
-                            checkProteinCellularLoc(id, type, conversionUid, conversionType);
+                            checkProteinCellularLoc(id, label, conversionUid, conversionLabel);
 
-                            csv.putLong(relId, type1.name(), 1);
+                            csv.putLong(relId, label1.name(), 1);
                         }
                     }
 
@@ -1263,18 +1271,18 @@ public class Neo4jBioPaxBuilder {
                         Long uid = rdfToUid.get(id);
                         // Check if that relation already exists
                         String relId = conversionUid + "." + uid;
-                        if (csv.getLong(relId, type2.name()) == null) {
-                            Node.Type type = uidToType.get(uid);
-                            Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionType, uid, type, type2);
+                        if (csv.getLong(relId, label2.name()) == null) {
+                            Node.Label label = uidToType.get(uid);
+                            Relation relation = new Relation(csv.getAndIncUid(), null, conversionUid, conversionLabel, uid, label, label2);
                             if (stoichiometryMap.containsKey(id)) {
                                 relation.addAttribute("stoichiometricCoeff", stoichiometryMap.get(id));
                             }
                             relations.add(relation);
 
                             // Check to add cellular location
-                            checkProteinCellularLoc(id, type, conversionUid, conversionType);
+                            checkProteinCellularLoc(id, label, conversionUid, conversionLabel);
 
-                            csv.putLong(relId, type2.name(), 1);
+                            csv.putLong(relId, label2.name(), 1);
                         }
                     }
                 }
@@ -1301,7 +1309,7 @@ public class Neo4jBioPaxBuilder {
 
         String catalysisId = getBioPaxId(catalysisBP.getRDFId());
         Long catalysisUid = rdfToUid.get(catalysisId);
-        Node.Type catalysisType = uidToType.get(catalysisUid);
+        Node.Label catalysisLabel = uidToType.get(catalysisUid);
 
         // Controllers
         Set<Controller> controllers = catalysisBP.getController();
@@ -1309,16 +1317,16 @@ public class Neo4jBioPaxBuilder {
             Long controllerUid = rdfToUid.get(getBioPaxId(controller.getRDFId()));
             // Check if that relation already exists
             String relId = catalysisUid + "." + controllerUid;
-            if (csv.getLong(relId,  Relation.Type.CONTROLLER.name()) == null) {
-                Node.Type controllerType = uidToType.get(controllerUid);
-                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, controllerUid, controllerType,
-                        Relation.Type.CONTROLLER);
+            if (csv.getLong(relId,  Relation.Label.CONTROLLER.name()) == null) {
+                Node.Label controllerLabel = uidToType.get(controllerUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisLabel, controllerUid, controllerLabel,
+                        Relation.Label.CONTROLLER);
                 relations.add(relation);
 
                 // Check to add cellular location
-                checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerType, catalysisUid, catalysisType);
+                checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerLabel, catalysisUid, catalysisLabel);
 
-                csv.putLong(relId, Relation.Type.CONTROLLER.name(), 1);
+                csv.putLong(relId, Relation.Label.CONTROLLER.name(), 1);
             }
         }
 
@@ -1328,17 +1336,17 @@ public class Neo4jBioPaxBuilder {
             Long controlledUid = rdfToUid.get(getBioPaxId(controlledProcess.getRDFId()));
             // Check if that relation already exists
             String relId = catalysisUid + "." + controlledUid;
-            if (csv.getLong(relId,  Relation.Type.CONTROLLED.name()) == null) {
-                Node.Type controlledType = uidToType.get(controlledUid);
-                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, controlledUid, controlledType,
-                        Relation.Type.CONTROLLED);
+            if (csv.getLong(relId,  Relation.Label.CONTROLLED.name()) == null) {
+                Node.Label controlledLabel = uidToType.get(controlledUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisLabel, controlledUid, controlledLabel,
+                        Relation.Label.CONTROLLED);
                 relations.add(relation);
 
                 // Check to add cellular location
-                checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledType, catalysisUid,
-                        catalysisType);
+                checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledLabel, catalysisUid,
+                        catalysisLabel);
 
-                csv.putLong(relId, Relation.Type.CONTROLLED.name(), 1);
+                csv.putLong(relId, Relation.Label.CONTROLLED.name(), 1);
             }
         }
 
@@ -1348,17 +1356,17 @@ public class Neo4jBioPaxBuilder {
             Long cofactorUid = rdfToUid.get(getBioPaxId(cofactor.getRDFId()));
             // Check if that relation already exists
             String relId = catalysisUid + "." + cofactorUid;
-            if (csv.getLong(relId,  Relation.Type.COFACTOR.name()) == null) {
+            if (csv.getLong(relId,  Relation.Label.COFACTOR.name()) == null) {
 
-                Node.Type cofactorType = uidToType.get(cofactorUid);
-                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisType, cofactorUid, cofactorType,
-                        Relation.Type.COFACTOR);
+                Node.Label cofactorLabel = uidToType.get(cofactorUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, catalysisUid, catalysisLabel, cofactorUid, cofactorLabel,
+                        Relation.Label.COFACTOR);
                 relations.add(relation);
 
                 // Check to add cellular location
-                checkProteinCellularLoc(getBioPaxId(cofactor.getRDFId()), cofactorType, catalysisUid, catalysisType);
+                checkProteinCellularLoc(getBioPaxId(cofactor.getRDFId()), cofactorLabel, catalysisUid, catalysisLabel);
 
-                csv.putLong(relId, Relation.Type.COFACTOR.name(), 1);
+                csv.putLong(relId, Relation.Label.COFACTOR.name(), 1);
             }
         }
     }
@@ -1368,7 +1376,7 @@ public class Neo4jBioPaxBuilder {
 
         String controlId = getBioPaxId(controlBP.getRDFId());
         Long controlUid = rdfToUid.get(controlId);
-        Node.Type controlType = uidToType.get(controlUid);
+        Node.Label controlLabel = uidToType.get(controlUid);
 
         // Regulation properties
 
@@ -1378,17 +1386,17 @@ public class Neo4jBioPaxBuilder {
             Long controllerUid = rdfToUid.get(getBioPaxId(controller.getRDFId()));
             // Check if that relation already exists
             String relId = controlUid + "." + controllerUid;
-            if (csv.getLong(relId, Relation.Type.CONTROLLER.name()) == null) {
+            if (csv.getLong(relId, Relation.Label.CONTROLLER.name()) == null) {
 
-                Node.Type controllerType = uidToType.get(controllerUid);
-                Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlType, controllerUid, controllerType,
-                        Relation.Type.CONTROLLER);
+                Node.Label controllerLabel = uidToType.get(controllerUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlLabel, controllerUid, controllerLabel,
+                        Relation.Label.CONTROLLER);
                 relations.add(relation);
 
                 // Check to add cellular location
-                checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerType, controlUid, controlType);
+                checkProteinCellularLoc(getBioPaxId(controller.getRDFId()), controllerLabel, controlUid, controlLabel);
 
-                csv.putLong(relId, Relation.Type.CONTROLLER.name(), 1);
+                csv.putLong(relId, Relation.Label.CONTROLLER.name(), 1);
             }
         }
 
@@ -1398,28 +1406,28 @@ public class Neo4jBioPaxBuilder {
             Long controlledUid = rdfToUid.get(getBioPaxId(controlledProcess.getRDFId()));
             // Check if that relation already exists
             String relId = controlUid + "." + controlledUid;
-            if (csv.getLong(relId, Relation.Type.CONTROLLED.name()) == null) {
+            if (csv.getLong(relId, Relation.Label.CONTROLLED.name()) == null) {
 
-                Node.Type controlledType = uidToType.get(controlledUid);
-                Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlType, controlledUid, controlledType,
-                        Relation.Type.CONTROLLED);
+                Node.Label controlledLabel = uidToType.get(controlledUid);
+                Relation relation = new Relation(csv.getAndIncUid(), null, controlUid, controlLabel, controlledUid, controlledLabel,
+                        Relation.Label.CONTROLLED);
                 relations.add(relation);
 
                 // Check to add cellular location
-                checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledType, controlUid, controlType);
+                checkProteinCellularLoc(getBioPaxId(controlledProcess.getRDFId()), controlledLabel, controlUid, controlLabel);
 
-                csv.putLong(relId, Relation.Type.CONTROLLED.name(), 1);
+                csv.putLong(relId, Relation.Label.CONTROLLED.name(), 1);
             }
         }
     }
 
-    private void checkProteinCellularLoc(String proteinRdfId, Node.Type proteinType, long targetUid, Node.Type targetType) {
-        if (proteinType == Node.Type.PROTEIN) {
+    private void checkProteinCellularLoc(String proteinRdfId, Node.Label proteinLabel, long targetUid, Node.Label targetLabel) {
+        if (proteinLabel == Node.Label.PROTEIN) {
             if (protRdfIdToCelLocUid.containsKey(proteinRdfId)) {
                 long celLocUid = protRdfIdToCelLocUid.get(proteinRdfId);
                 if (!celLocUidSet.contains(targetUid + "." + celLocUid)) {
-                    Relation relation = new Relation(csv.getAndIncUid(), null, targetUid, targetType, celLocUid,
-                            Node.Type.CELLULAR_LOCATION, Relation.Type.CELLULAR_LOCATION);
+                    Relation relation = new Relation(csv.getAndIncUid(), null, targetUid, targetLabel, celLocUid,
+                            Node.Label.CELLULAR_LOCATION, Relation.Label.CELLULAR_LOCATION);
                     relations.add(relation);
                     celLocUidSet.add(targetUid + "." + celLocUid);
                 }
@@ -1453,12 +1461,13 @@ public class Neo4jBioPaxBuilder {
 
     private void updateAuxMaps(Node node) {
         rdfToUid.put(node.getId(), node.getUid());
-        uidToType.put(node.getUid(), node.getType());
+        uidToType.put(node.getUid(), node.getLabels().get(0));
+
     }
 
-    private void updateAuxMaps(String rdfId, Long uid, Node.Type type) {
+    private void updateAuxMaps(String rdfId, Long uid, Node.Label label) {
         rdfToUid.put(rdfId, uid);
-        uidToType.put(uid, type);
+        uidToType.put(uid, label);
     }
 
     private boolean isMicroRNA(String rnaName) {

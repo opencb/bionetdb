@@ -1,10 +1,6 @@
 package org.opencb.bionetdb.core.models.network;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class Relation {
 
@@ -13,253 +9,73 @@ public class Relation {
     private String name;
 
     private long origUid;
-    private Node.Type origType;
+    private Node.Label origLabel;
 
     private long destUid;
-    private Node.Type destType;
+    private Node.Label destLabel;
 
-    private Type type;
-    private List<String> tags;
+    private Label label;
 
     private ObjectMap attributes;
 
     private static long counter = 0;
 
-    public Relation(long uid, String name, long origUid, Node.Type origType, long destUid, Node.Type destType, Type type) {
+    public Relation(long uid, String name, long origUid, Node.Label origLabel, long destUid, Node.Label destLabel, Label label) {
         this.uid = uid;
 
         this.name = name;
 
         this.origUid = origUid;
-        this.origType = origType;
+        this.origLabel = origLabel;
 
         this.destUid = destUid;
-        this.destType = destType;
+        this.destLabel = destLabel;
 
-        this.type = type;
-        this.tags = new ArrayList<>(1);
-        if (StringUtils.isNotEmpty(type.name())) {
-            tags.add(type.name());
-        }
+        this.label = label;
 
         this.attributes = new ObjectMap();
 
         counter++;
     }
 
-    public enum Type {
-
-        //        CONSEQUENCE_TYPE    ("VARIANT_CONSEQUENCE_TYPE"),
-//        TRANSCRIPT          ("TRANSCRIPT"),
-//        SO                  ("SO_TERM"),
-//        GENE                ("GENE"),
-//        XREF                ("XREF"),
-//        POPULATION_FREQUENCY("VARIANT_POPULATION_FREQUENCY"),
-//        CONSERVATION        ("VARIANT_CONSERVATION_SCORE"),
-//        FUNCTIONAL_SCORE    ("VARIANT_FUNCTIONAL_SCORE"),
-//        SUBSTITUTION_SCORE("PROTEIN_SUBSTITUTION_SCORE"),
-//        PROTEIN("PROTEIN"),
-//        PROTEIN_FEATURE("PROTEIN_FEATURE"),
-//        TRAIT_ASSOCIATION("CLINICAL_EVIDENCE"),
-//        ANNOTATION("ANNOTATION"),
-//        DISEASE("GENE_TRAIT_ASSOCIATION"),
-//        DRUG("DRUG"),
-//        ANNOTATION___GENE___GENE_EXPRESSION("ANNOTATION___GENE___GENE_EXPRESSION"),
-//        INTERACTION("INTERACTION"),
-//        STOICHIOMETRY("STOICHIOMETRY"),
-//        ONTOLOGY("ONTOLOGY"),
+    public enum Label {
 
         // REACTOME
 
-        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX("COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX"),
-        COMPONENT_OF_PATHWAY("COMPONENT_OF_PATHWAY"),
-        PATHWAY_NEXT_STEP("PATHWAY_NEXT_STEP"),
-        INTERACTION("INTERACTION"),
-        REACTION("REACTION"),
-        CATALYSIS("CATALYSIS"),
-        REGULATION("REGULATION"),
-        COLOCALIZATION("COLOCALIZATION"),
-        CELLULAR_LOCATION("CELLULAR_LOCATION"),
-        CONTROLLED("CONTROLLED"),
-        CONTROLLER("CONTROLLER"),
-        COFACTOR("COFACTOR"),
-        PRODUCT("PRODUCT"),
-        REACTANT("REACTANT"),
-
-
-//        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX___PHYSICAL_ENTITY_COMPLEX
-
-
-
-
-
-//        FAMILY_MEMBER___FAMILY___INDIVIDUAL("FAMILY_MEMBER___FAMILY___INDIVIDUAL"),
-//        HAS___INDIVIDUAL___SAMPLE("HAS___INDIVIDUAL___SAMPLE"),
-//
-//        TRANSCRIPT_ANNOTATION_FLAG("TRANSCRIPT_ANNOTATION_FLAG"),
-//        EXON_OVERLAP("EXON_OVERLAP"),
-//        PROTEIN_KEYWORD("PROTEIN_KEYWORD"),
-//        PROTEIN_VARIANT_ANNOTATION("PROTEIN_VARIANT_ANNOTATION"),
-//        TFBS("TFBS"),
-//
-////        RNA__MIRNA("RNA__MIRNA"),
-//        ANNOTATION___GENE___MIRNA_TARGET("ANNOTATION___GENE___MIRNA_TARGET"),
-//        ANNOTATION___MIRNA_MATURE___MIRNA_TARGET("ANNOTATION___MIRNA_MATURE___MIRNA_TARGET"),
-//        TARGET_GENE         ("TARGET_GENE"),
-//        MIRNA__TARGET_TRANSCRIPT("MIRNA__TARGET_TRANSCRIPT"),
-//
-//        TARGET_TRANSCRIPT__TRANSCRIPT("TARGET_TRANSCRIPT__TRANSCRIPT"),
-//
-//        IS___TRANSCRIPT___PROTEIN("IS___TRANSCRIPT___PROTEIN"),
-//        VARIANT__VARIANT_CALL("VARIANT__VARIANT_CALL"),
-//        ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE("ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE"),
-//        DATA___VARIANT___VARIANT_FILE_DATA("DATA___VARIANT___VARIANT_FILE_DATA"),
-//        DATA___VARIANT___VARIANT_SAMPLE_DATA("DATA___VARIANT___VARIANT_SAMPLE_DATA"),
-//        DATA___VARIANT_FILE___VARIANT_FILE_DATA("DATA___VARIANT_FILE___VARIANT_FILE_DATA"),
-//        DATA___SAMPLE___VARIANT_SAMPLE_DATA("DATA___SAMPLET___VARIANT_SAMPLE_DATA"),
-//        HAS___VARIANT_FILE___SAMPLE("HAS___VARIANT_FILE___SAMPLE"),
-//        HAS___VARIANT___STRUCTURAL_VARIANT("HAS___VARIANT___STRUCTURAL_VARIANT"),
-//        HAS___STRUCTURAL_VARIATION___BREAKEND("HAS___STRUCTURAL_VARIATION___BREAKEND"),
-//        MATE("MATE"),
-//        ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY("ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY"),
-//        ANNOTATION___VARIANT___VARIANT_CONSERVATION_SCORE("ANNOTATION___VARIANT___VARIANT_CONSERVATION_SCORE"),
-//        ANNOTATION___VARIANT___HGV("ANNOTATION___VARIANT___HGV"),
-//        ANNOTATION___VARIANT___CLINICAL_EVIDENCE("ANNOTATION___VARIANT___CLINICAL_EVIDENCE"),
-//        ANNOTATION___VARIANT___VARIANT_FUNCTIONAL_SCORE("ANNOTATION___VARIANT___VARIANT_FUNCTIONAL_SCORE"),
-//        ANNOTATION___VARIANT___REPEAT("ANNOTATION___VARIANT___REPEAT"),
-//        ANNOTATION___VARIANT___CYTOBAND("ANNOTATION___VARIANT___CYTOBAND"),
-//        ANNOTATION___VARIANT___VARIANT_DRUG_INTERACTION("ANNOTATION___VARIANT___VARIANT_DRUG_INTERACTION"),
-//        ANNOTATION___VARIANT___TRANSCRIPT_CONSTRAINT_SCORE("ANNOTATION___VARIANT___TRANSCRIPT_CONSTRAINT_SCORE"),
-//        HAS___CLINICAL_EVIDENCE___EVIDENCE_SUBMISSION("HAS___CLINICAL_EVIDENCE___EVIDENCE_SUBMISSION"),
-//        HAS___CLINICAL_EVIDENCE___HERITABLE_TRAIT("HAS___CLINICAL_EVIDENCE___HERITABLE_TRAIT"),
-//        HAS___CLINICAL_EVIDENCE___GENOMIC_FEATURE("HAS___CLINICAL_EVIDENCE___GENOMIC_FEATURE"),
-//        HAS___CLINICAL_EVIDENCE___VARIANT_CLASSIFICATION("HAS___CLINICAL_EVIDENCE___VARIANT_CLASSIFICATION"),
-//        HAS___CLINICAL_EVIDENCE___PROPERTY("HAS___CLINICAL_EVIDENCE___PROPERTY"),
-//        ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM("ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM"),
-//        ANNOTATION___VARIANT_CONSEQUENCE_TYPE___PROTEIN_VARIANT_ANNOTATION
-//                ("ANNOTATION___VARIANT_CONSEQUENCE_TYPE___PROTEIN_VARIANT_ANNOTATION"),
-//        ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE("ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE"),
-//        ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT("ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT"),
-//        HAS___GENE___TRANSCRIPT("HAS___GENE___TRANSCRIPT"),
-//        ANNOTATION___GENE___GENE_DRUG_INTERACTION("ANNOTATION___GENE___GENE_DRUG_INTERACTION"),
-//        ANNOTATION___DRUG___GENE_DRUG_INTERACTION("ANNOTATION___DRUG___GENE_DRUG_INTERACTION"),
-//        ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION("ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION"),
-//        GENE__CONSTRAINT("GENE__CONSTRAINT"),
-//        HAS___TRANSCRIPT___EXON("HAS___TRANSCRIPT___EXON"),
-//        ANNOTATION___TRANSCRIPT___TFBS("ANNOTATION___TRANSCRIPT___TFBS"),
-//        ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE("ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE"),
-//        ANNOTATION___TRANSCRIPT___FEATURE_ONTOLOGY_TERM_ANNOTATION("ANNOTATION___TRANSCRIPT___FEATURE_ONTOLOGY_TERM_ANNOTATION"),
-//        HAS___FEATURE_ONTOLOGY_TERM_ANNOTATION___TRANSCRIPT_ANNOTATION_EVIDENCE(
-//                "HAS___FEATURE_ONTOLOGY_TERM_ANNOTATION___TRANSCRIPT_ANNOTATION_EVIDENCE"),
-//        ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN("ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN"),
-//        ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN_SUBSTITUTION_SCORE
-//                ("ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN_SUBSTITUTION_SCORE"),
-//        PROTEIN_VARIANT_ANNOTATION__PROTEIN_KEYWORD("PROTEIN_VARIANT_ANNOTATION__PROTEIN_KEYWORD"),
-//        PROTEIN_VARIANT_ANNOTATION__PROTEIN_FEATURE("PROTEIN_VARIANT_ANNOTATION__PROTEIN_FEATURE"),
-//        ANNOTATION___PROTEIN___PROTEIN_KEYWORD("ANNOTATION___PROTEIN___PROTEIN_KEYWORD"),
-//        ANNOTATION___PROTEIN___PROTEIN_FEATURE("ANNOTATION___PROTEIN___PROTEIN_FEATURE"),
-//        SAMPLE__VARIANT_CALL("SAMPLE__VARIANT_CALL"),
-//        VARIANT_FILE_INFO__FILE("VARIANT_FILE_INFO__FILE"),
-//        VARIANT_CALL__VARIANT_FILE_INFO("VARIANT_CALL__VARIANT_FILE_INFO"),
-//
-//        FILE__SOFTWARE("FILE__SOFTWARE"),
-//        FILE__EXPERIMENT("FILE__EXPERIMENT"),
-//        FILE__SAMPLE("FILE__SAMPLE"),
-//
-////        DNA__GENE("DNA__GENE");
-//
-//        ANNOTATION___GENE___PANEL_GENE("ANNOTATION___GENE___PANEL_GENE"),
-//        HAS___DISEASE_PANEL___PANEL_GENE("HAS___DISEASE_PANEL___PANEL_GENE"),
-//        PANEL__PANEL_GENE("PANEL__PANEL_GENE"),
-//        PANEL__PANEL_VARIANT("PANEL__PANEL_VARIANT"),
-//        PANEL__PANEL_STR("PANEL__PANEL_STR"),
-//        PANEL__PANEL_REGION("PANEL__PANEL_REGION"),
-//        PANEL__DISORDER("PANEL__DISORDER"),
-//        PHENOTYPE__ONTOLOGY_TERM("PHENOTYPE__ONTOLOGY_TERM"),
-//        PANEL_GENE__GENE("PANEL_GENE__GENE"),
-//        PANEL_GENE__ONTOLOGY_TERM("PANEL_GENE__ONTOLOGY_TERM"),
-//        PANEL_VARIANT__VARIANT("PANEL_VARIANT__VARIANT"),
-//        PANEL_VARIANT__ONTOLOGY_TERM("PANEL_VARIANT__ONTOLOGY_TERM"),
-//        PANEL_STR__ONTOLOGY_TERM("PANEL_STR__ONTOLOGY_TERM"),
-//        PANEL_REGION__ONTOLOGY_TERM("PANEL_REGION__ONTOLOGY_TERM"),
-//
-//        VARIANT__VARIANT_OBJECT("VARIANT__VARIANT_OBJECT"),
-//        GENE__GENE_OBJECT("GENE__GENE_OBJECT"),
-//        PROTEIN__PROTEIN_OBJECT("PROTEIN__PROTEIN_OBJECT"),
-//
-//        FAMILY__PHENOTYPE("FAMILY__PHENOTYPE"),
-//        FAMILY__DISORDER("FAMILY__DISORDER"),
-//        FAMILY__INDIVIDUAL("FAMILY__INDIVIDUAL"),
-//        FATHER_OF___INDIVIDUAL___INDIVIDUAL("FATHER_OF___INDIVIDUAL___INDIVIDUAL"),
-//        MOTHER_OF___INDIVIDUAL___INDIVIDUAL("MOTHER_OF___INDIVIDUAL___INDIVIDUAL"),
-//        INDIVIDUAL__PHENOTYPE("INDIVIDUAL__PHENOTYPE"),
-//        INDIVIDUAL__DISORDER("INDIVIDUAL__DISORDER"),
-//        INDIVIDUAL__SAMPLE("INDIVIDUAL__SAMPLE"),
-//        DISORDER__PHENOTYPE("DISORDER__PHENOTYPE"),
-//        SAMPLE__PHENOTYPE("SAMPLE__PHENOTYPE"),
-//
-//        CLINICAL_ANALYSIS__DISORDER("CLINICAL_ANALYSIS__DISORDER"),
-//        CLINICAL_ANALYSIS__FAMILY("CLINICAL_ANALYSIS__FAMILY"),
-//        CLINICAL_ANALYSIS__FILE("CLINICAL_ANALYSIS__FILE"),
-//        PROBAND___CLINICAL_ANALYSIS___INDIVIDUAL("PROBAND___CLINICAL_ANALYSIS___INDIVIDUAL"),
-//        CLINICAL_ANALYSIS__CLINICAL_ANALYST("CLINICAL_ANALYSIS__CLINICAL_ANALYST"),
-//        CLINICAL_ANALYSIS__COMMENT("CLINICAL_ANALYSIS__COMMENT"),
-//        CLINICAL_ANALYSIS__ALERT("CLINICAL_ANALYSIS__ALERT"),
-//        CLINICAL_ANALYSIS__INTERPRETATION("CLINICAL_ANALYSIS__INTERPRETATION"),
-//
-//        INTERPRETATION__PANEL("INTERPRETATION__PANEL"),
-//        PRIMARY_FINDING___INTERPRETATION___REPORTED_VARIANT("PRIMARY_FINDING___INTERPRETATION___REPORTED_VARIANT"),
-//        SECONDARY_FINDING___INTERPRETATION___REPORTED_VARIANT("SECONDARY_FINDING___INTERPRETATION___REPORTED_VARIANT"),
-//        INTERPRETATION__COMMENT("INTERPRETATION__COMMENT"),
-//        INTERPRETATION__SOFTWARE("INTERPRETATION__SOFTWARE"),
-//        INTERPRETATION__LOW_COVERAGE_REGION("INTERPRETATION__LOW_COVERAGE_REGION"),
-//        REPORTED_VARIANT__VARIANT("REPORTED_VARIANT__VARIANT"),
-//        REPORTED_VARIANT__REPORTED_EVENT("REPORTED_VARIANT__REPORTED_EVENT"),
-//        REPORTED_VARIANT__COMMENT("REPORTED_VARIANT__COMMENT"),
-//        REPORTED_EVENT__PHENOTYPE("REPORTED_EVENT__PHENOTYPE"),
-//        REPORTED_EVENT__SO("REPORTED_EVENT__SO"),
-//        REPORTED_EVENT__GENOMIC_FEATURE("REPORTED_EVENT__GENOMIC_FEATURE"),
-//        REPORTED_EVENT__PANEL("REPORTED_EVENT__PANEL");
+        COMPONENT_OF_PHYSICAL_ENTITY_COMPLEX,
+        COMPONENT_OF_PATHWAY,
+        PATHWAY_NEXT_STEP,
+        INTERACTION,
+        REACTION,
+        CATALYSIS,
+        REGULATION,
+        COLOCALIZATION,
+        CELLULAR_LOCATION,
+        CONTROLLED,
+        CONTROLLER,
+        COFACTOR,
+        PRODUCT,
+        REACTANT,
 
         // GENERAL
 
-        HAS("HAS"),
-        MOTHER_OF("MOTHER_OF"),
-        FATHER_OF("FATHER_OF"),
-        TARGET("TARGET"),
-        IS("IS"),
-        ANNOTATION("ANNOTATION"),
-        DATA("DATA"),
-        MATURE("MATURE");
-
-        private final String type;
-
-        Type(String type) {
-            this.type = type;
-        }
-    }
-
-    public static boolean isInteraction(Relation r) {
-        switch (r.type) {
-            case REACTION:
-            case CATALYSIS:
-            case REGULATION:
-            case COLOCALIZATION:
-                return true;
-            default:
-                return false;
-        }
+        HAS,
+        MOTHER_OF,
+        FATHER_OF,
+        TARGET,
+        IS,
+        ANNOTATION,
+        DATA,
+        MATURE
     }
 
     public Relation() {
-        tags = new ArrayList<>();
         attributes = new ObjectMap();
     }
 
     public Relation(long uid) {
         this.uid = uid;
 
-        tags = new ArrayList<>();
         attributes = new ObjectMap();
     }
 
@@ -296,16 +112,16 @@ public class Relation {
         return this;
     }
 
-    public Node.Type getOrigType() {
-        return origType;
+    public Node.Label getOrigLabel() {
+        return origLabel;
     }
 
     public long getDestUid() {
         return destUid;
     }
 
-    public Node.Type getDestType() {
-        return destType;
+    public Node.Label getDestLabel() {
+        return destLabel;
     }
 
     public Relation setDestUid(long destUid) {
@@ -313,27 +129,13 @@ public class Relation {
         return this;
     }
 
-    public Type getType() {
-        return type;
+    public Label getLabel() {
+        return label;
     }
 
-    public Relation setType(Type type) {
-        this.type = type;
-        addTag(type.name());
+    public Relation setLabel(Label label) {
+        this.label = label;
         return this;
-    }
-
-    public List<String> getTags() {
-        return this.tags;
-    }
-
-    public Relation setTags(List<String> tags) {
-        this.tags = tags;
-        return this;
-    }
-
-    public void addTag(String tag) {
-        this.tags.add(tag);
     }
 
     public ObjectMap getAttributes() {

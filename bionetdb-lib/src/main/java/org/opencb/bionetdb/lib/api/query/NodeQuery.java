@@ -5,22 +5,22 @@ import org.opencb.commons.datastore.core.Query;
 
 public class NodeQuery extends Query {
 
-    private Node.Type type;
+    private Node.Label label;
 
     public NodeQuery() {
-        this.type = null;
+        this.label = null;
     }
 
-    public NodeQuery(Node.Type type) {
-        this.type = type;
+    public NodeQuery(Node.Label label) {
+        this.label = label;
     }
 
-    public Node.Type getType() {
-        return type;
+    public Node.Label getLabel() {
+        return label;
     }
 
-    public NodeQuery setType(Node.Type type) {
-        this.type = type;
+    public NodeQuery setLabel(Node.Label label) {
+        this.label = label;
         return this;
     }
 }

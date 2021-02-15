@@ -37,7 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.bionetdb.core.models.network.Node.Type.*;
+import static org.opencb.bionetdb.core.models.network.Node.Label.*;
 import static org.opencb.bionetdb.lib.utils.CsvInfo.FILENAME_SEPARATOR;
 import static org.opencb.bionetdb.lib.utils.CsvInfo.RelationFilename.*;
 import static org.opencb.bionetdb.lib.utils.CsvInfo.SEPARATOR;
@@ -283,25 +283,27 @@ public class Builder {
         public void processNodes(List<Node> nodes) {
             PrintWriter pw;
             for (Node node: nodes) {
-                pw = builder.getCsvInfo().getWriter(node.getType().name());
+                if (CollectionUtils.isNotEmpty(node.getLabels())) {
+                    pw = builder.getCsvInfo().getWriter(node.getLabels().get(0).name());
 
-                if (StringUtils.isNotEmpty(node.getName())) {
-                    if (node.getType() == PROTEIN) {
-                        // Complete node proteins
-                        node = builder.completeProteinNode(node);
-                    } else if (node.getType() == DNA) {
-                        // Save save gene nodes to process further, in the post-processing phase
-                        dnaNodes.add(node);
-                        continue;
-                    } else if (node.getType() == RNA) {
-                        // Save save miRNA nodes to process further, in the post-processing phase
-                        rnaNodes.add(node);
-                        continue;
+                    if (StringUtils.isNotEmpty(node.getName())) {
+                        if (node.getLabels().contains(PROTEIN)) {
+                            // Complete node proteins
+                            node = builder.completeProteinNode(node);
+                        } else if (node.getLabels().contains(DNA)) {
+                            // Save save gene nodes to process further, in the post-processing phase
+                            dnaNodes.add(node);
+                            continue;
+                        } else if (node.getLabels().contains(RNA)) {
+                            // Save save miRNA nodes to process further, in the post-processing phase
+                            rnaNodes.add(node);
+                            continue;
+                        }
                     }
-                }
 
-                // Write node to CSV file
-                pw.println(builder.getCsvInfo().nodeLine(node));
+                    // Write node to CSV file
+                    pw.println(builder.getCsvInfo().nodeLine(node));
+                }
             }
         }
 
@@ -309,7 +311,8 @@ public class Builder {
         public void processRelations(List<Relation> relations) {
             PrintWriter pw;
             for (Relation relation: relations) {
-                String id = relation.getType() + FILENAME_SEPARATOR + relation.getOrigType() + FILENAME_SEPARATOR + relation.getDestType();
+                String id = relation.getLabel() + FILENAME_SEPARATOR + relation.getOrigLabel() + FILENAME_SEPARATOR
+                        + relation.getDestLabel();
                 pw = builder.getCsvInfo().getWriter(id);
                 if (pw == null) {
                     logger.info("BioPAX relationship not yet supported {}", id);
@@ -489,6 +492,7 @@ public class Builder {
                     Long drugUid = csv.getLong(drugInteraction.getDrugName(), DRUG.name());
                     if (drugUid == null) {
                         Node drugNode = new Node(csv.getAndIncUid(), drugInteraction.getDrugName(), drugInteraction.getChemblId(), DRUG);
+                        drugNode.getLabels().add(PHYSICAL_ENTITY);
                         csv.getWriter(DRUG.name()).println(csv.nodeLine(drugNode));
 
                         // Save drug and gene-drug UIDs
@@ -681,7 +685,7 @@ public class Builder {
 //                        if (protein != null) {
 //                            // Create protein node and write the CSV file
 //                            Node proteinNode = createProteinNode(protein);
-//                            csv.getWriter(Node.Type.PROTEIN.name()).println(csv.nodeLine(proteinNode));
+//                            csv.getWriter(Node.Label.PROTEIN.name()).println(csv.nodeLine(proteinNode));
 //                            proteinUid = proteinNode.getUid();
 //
 //                            // Save protein UID
@@ -709,7 +713,7 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(transcript.getExons())) {
             PrintWriter pwRel = csv.getWriter(HAS___TRANSCRIPT___EXON.name());
             for (Exon exon : transcript.getExons()) {
-                Long exonUid = csv.getLong(exon.getId(), Node.Type.EXON.name());
+                Long exonUid = csv.getLong(exon.getId(), Node.Label.EXON.name());
                 if (exonUid == null) {
                     n = createExonNode(exon, transcript.getSource());
                     exonUid = n.getUid();
@@ -750,7 +754,7 @@ public class Builder {
                     n = createFeatureOntologyTermAnnotationNode(ontology);
                     pwRel.println(uid + SEPARATOR + n.getUid());
 
-//                    Long ontologyUid = csv.getLong(ontology.getId(), Node.Type.FEATURE_ONTOLOGY_TERM_ANNOTATION.name());
+//                    Long ontologyUid = csv.getLong(ontology.getId(), Node.Label.FEATURE_ONTOLOGY_TERM_ANNOTATION.name());
 //                    if (ontologyUid == null) {
 //                        n = createFeatureOntologyTermAnnotationNode(ontology);
 //                        ontologyUid = n.getUid();
@@ -794,8 +798,8 @@ public class Builder {
     private Node createExonNode(Exon exon, Long uid, String source) {
         // Create exon node and save UId and wrrite CSV file
         Node node = NodeBuilder.newNode(uid, exon, source);
-        csv.getWriter(Node.Type.EXON.name()).println(csv.nodeLine(node));
-        csv.putLong(exon.getId(), Node.Type.EXON.name(), uid);
+        csv.getWriter(Node.Label.EXON.name()).println(csv.nodeLine(node));
+        csv.putLong(exon.getId(), Node.Label.EXON.name(), uid);
 
         return node;
     }
@@ -1142,16 +1146,18 @@ public class Builder {
         // First, nodes
         if (CollectionUtils.isNotEmpty(network.getNodes())) {
             for (Node node: network.getNodes()) {
-                Long uid = csv.getLong(node.getId(), node.getType().name());
-                if (uid == null) {
-                    // Node does not exist in the !
-                    nodeUidMap.put(node.getUid(), csv.getAndIncUid());
-                    // Update UID and append node to the CSV file
-                    node.setUid(nodeUidMap.get(node.getUid()));
-                    csv.getWriter(node.getType().name()).println(csv.nodeLine(node));
-                } else {
-                    // Node already exists !!
-                    nodeUidMap.put(node.getUid(), uid);
+                if (CollectionUtils.isNotEmpty(node.getLabels())) {
+                    Long uid = csv.getLong(node.getId(), node.getLabels().get(0).name());
+                    if (uid == null) {
+                        // Node does not exist in the !
+                        nodeUidMap.put(node.getUid(), csv.getAndIncUid());
+                        // Update UID and append node to the CSV file
+                        node.setUid(nodeUidMap.get(node.getUid()));
+                        csv.getWriter(node.getLabels().get(0).name()).println(csv.nodeLine(node));
+                    } else {
+                        // Node already exists !!
+                        nodeUidMap.put(node.getUid(), uid);
+                    }
                 }
             }
         }
@@ -1160,7 +1166,7 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(network.getRelations())) {
             for (Relation relation: network.getRelations()) {
                 relation.setUid(csv.getAndIncUid());
-                csv.getWriter(relation.getType().name()).println(csv.relationLine(nodeUidMap.get(relation.getOrigUid()),
+                csv.getWriter(relation.getLabel().name()).println(csv.relationLine(nodeUidMap.get(relation.getOrigUid()),
                         nodeUidMap.get(relation.getDestUid())));
             }
         }
@@ -1329,14 +1335,8 @@ public class Builder {
     }
 
     private void updateCSVFiles(long startUid, Node node, String relationType) {
-        updateCSVFiles(startUid, node, relationType, false);
-    }
-
-    private void updateCSVFiles(long startUid, Node node, String relationType, boolean annotated) {
         // Update node CSV file
-        PrintWriter pw = annotated
-                ? csv.getCsvAnnotatedWriters().get(node.getType().name())
-                : csv.getWriter(node.getType().name());
+        PrintWriter pw = csv.getWriter(node.getLabels().get(0).name());
         pw.println(csv.nodeLine(node));
 
         // Update relation CSV file

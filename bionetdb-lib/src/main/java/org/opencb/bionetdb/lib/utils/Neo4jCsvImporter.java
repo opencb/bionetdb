@@ -101,12 +101,12 @@ public class Neo4jCsvImporter {
 //            } else {
 //                // Special case, gene not annotated!
 //                logger.info("Processing gene {}, {}, unknown!!", geneId, geneName);
-//                node = new Node(csv.getAndIncUid(), geneId, geneName, Node.Type.GENE);
+//                node = new Node(csv.getAndIncUid(), geneId, geneName, Node.Label.GENE);
 //                // Save gene UID
 //                csv.saveUnknownGeneUid(geneId, geneName, node.getUid());
 //            }
 //            // Write gene node into the CSV file
-//            csv.getCsvWriters().get(Node.Type.GENE.toString()).println(csv.nodeLine(node));
+//            csv.getCsvWriters().get(Node.Label.GENE.toString()).println(csv.nodeLine(node));
 //            return node.getUid();
 //        } else {
 //            return geneUid;
@@ -129,12 +129,12 @@ public class Neo4jCsvImporter {
 //            } else {
 //                // Special case, protein not annotated!
 //                logger.info("Processing protein {}, {}, unknown!!", proteinId, proteinName);
-//                node = new Node(csv.getAndIncUid(), proteinId, proteinName, Node.Type.PROTEIN);
+//                node = new Node(csv.getAndIncUid(), proteinId, proteinName, Node.Label.PROTEIN);
 //                // Save protein UID
 //                csv.saveUnknownProteinUid(proteinId, proteinName, node.getUid());
 //            }
 //            // Write protein node into the CSV file
-//            csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).println(csv.nodeLine(node));
+//            csv.getCsvWriters().get(Node.Label.PROTEIN.toString()).println(csv.nodeLine(node));
 //            proteinUid = node.getUid();
 //        }
 ////        if (proteinUid == 3943776) {
@@ -165,13 +165,13 @@ public class Neo4jCsvImporter {
 //        // Gene object node management
 //        try {
 //            // Create gene object node and write
-//            Node geneObjectNode = new Node(csv.getAndIncUid(), geneNode.getId(), geneNode.getName(), Node.Type.GENE_OBJECT);
+//            Node geneObjectNode = new Node(csv.getAndIncUid(), geneNode.getId(), geneNode.getName(), Node.Label.GENE_OBJECT);
 //            geneObjectNode.addAttribute("object", Utils.compress(gene, mapper));
-//            PrintWriter pw = csv.getCsvWriters().get(Node.Type.GENE_OBJECT.toString());
+//            PrintWriter pw = csv.getCsvWriters().get(Node.Label.GENE_OBJECT.toString());
 //            pw.println(csv.nodeLine(geneObjectNode));
 //
 //            // Create relation to gene node and write
-//            pw = csv.getCsvWriters().get(Relation.Type.GENE__GENE_OBJECT.toString());
+//            pw = csv.getCsvWriters().get(Relation.Label.GENE__GENE_OBJECT.toString());
 //            pw.println(uid + CsvInfo.SEPARATOR + geneObjectNode.getUid());
 //        } catch (IOException e) {
 //            logger.warn("Unable to create GZ JSON object for gene '{}': {}", gene.getId(), e.getMessage());
@@ -179,8 +179,8 @@ public class Neo4jCsvImporter {
 //
 //        // Model transcripts
 //        if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
-//            pwRel = csv.getCsvWriters().get(Relation.Type.HAS___GENE___TRANSCRIPT.toString());
-//            PrintWriter pwTranscr = csv.getCsvWriters().get(Node.Type.TRANSCRIPT.toString());
+//            pwRel = csv.getCsvWriters().get(Relation.Label.HAS___GENE___TRANSCRIPT.toString());
+//            PrintWriter pwTranscr = csv.getCsvWriters().get(Node.Label.TRANSCRIPT.toString());
 //            for (Transcript transcript: gene.getTranscripts()) {
 //                Long transcrUid = csv.getLong(transcript.getId());
 //                if (transcrUid == null) {
@@ -201,12 +201,12 @@ public class Neo4jCsvImporter {
 //        if (gene.getAnnotation() != null) {
 //            // Model drugs
 //            if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
-//                pwRel = csv.getCsvWriters().get(Relation.Type.GENE__DRUG.toString());
+//                pwRel = csv.getCsvWriters().get(Relation.Label.GENE__DRUG.toString());
 //                for (GeneDrugInteraction drug: gene.getAnnotation().getDrugs()) {
 //                    Long drugUid = csv.getLong(drug.getDrugName());
 //                    if (drugUid == null) {
 //                        n = NodeBuilder.newNode(csv.getAndIncUid(), drug);
-//                        updateCSVFiles(uid, n, Relation.Type.GENE__DRUG.toString());
+//                        updateCSVFiles(uid, n, Relation.Label.GENE__DRUG.toString());
 //                        // Save drug and gene-drug UIDs
 //                        csv.putLong(drug.getDrugName(), n.getUid());
 //                        csv.putLong(uid + "." + n.getUid(), 1);
@@ -223,13 +223,13 @@ public class Neo4jCsvImporter {
 //
 //                // Model diseases
 //                if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
-//                    pwRel = csv.getCsvWriters().get(Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
+//                    pwRel = csv.getCsvWriters().get(Relation.Label.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
 //                    for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
 //                        String diseaseId = disease.getId() + "_" + (disease.getHpo() != null ? disease.getHpo() : "");
 //                        Long diseaseUid = csv.getLong(diseaseId);
 //                        if (diseaseUid == null) {
 //                            n = NodeBuilder.newNode(csv.getAndIncUid(), disease);
-//                            updateCSVFiles(uid, n, Relation.Type.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
+//                            updateCSVFiles(uid, n, Relation.Label.ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.toString());
 //
 //                            csv.putLong(diseaseId, n.getUid());
 //                        } else {
@@ -242,7 +242,7 @@ public class Neo4jCsvImporter {
 //        }
 //
 //        // Xrefs
-//        PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
+//        PrintWriter pwXref = csv.getCsvWriters().get(Node.Label.XREF.toString());
 //        pwRel = csv.getCsvWriters().get(CsvInfo.RelationFilename.ANNOTATION___GENE___XREF.toString());
 //        Set<Xref> xrefSet = new HashSet<>();
 //        xrefSet.add(new Xref(gene.getId(), "Ensembl", "Ensembl"));
@@ -306,13 +306,13 @@ public class Neo4jCsvImporter {
 //        // Protein object node management
 //        try {
 //            // Create gene object node and write
-//            Node proteinObjectNode = new Node(csv.getAndIncUid(), proteinNode.getId(), proteinNode.getName(), Node.Type.PROTEIN_OBJECT);
+//            Node proteinObjectNode = new Node(csv.getAndIncUid(), proteinNode.getId(), proteinNode.getName(), Node.Label.PROTEIN_OBJECT);
 //            proteinObjectNode.addAttribute("object", Utils.compress(protein, mapper));
-//            pw = csv.getCsvWriters().get(Node.Type.PROTEIN_OBJECT.toString());
+//            pw = csv.getCsvWriters().get(Node.Label.PROTEIN_OBJECT.toString());
 //            pw.println(csv.nodeLine(proteinObjectNode));
 //
 //            // Create relation to gene node and write
-//            pw = csv.getCsvWriters().get(Relation.Type.PROTEIN__PROTEIN_OBJECT.toString());
+//            pw = csv.getCsvWriters().get(Relation.Label.PROTEIN__PROTEIN_OBJECT.toString());
 //            pw.println(uid + CsvInfo.SEPARATOR + proteinObjectNode.getUid());
 //        } catch (IOException e) {
 //            logger.warn("Unable to create GZ JSON object for protein '{}': {}", proteinNode.getId(), e.getMessage());
@@ -320,12 +320,12 @@ public class Neo4jCsvImporter {
 //
 //        // Model protein keywords
 //        if (CollectionUtils.isNotEmpty(protein.getKeyword())) {
-//            pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___PROTEIN___PROTEIN_KEYWORD.toString());
+//            pw = csv.getCsvWriters().get(Relation.Label.ANNOTATION___PROTEIN___PROTEIN_KEYWORD.toString());
 //            for (KeywordType keyword: protein.getKeyword()) {
 //                Long kwUid = csv.getLong(keyword.getId());
 //                if (kwUid == null) {
-//                    n = new Node(csv.getAndIncUid(), keyword.getId(), keyword.getValue(), Node.Type.PROTEIN_KEYWORD);
-//                    updateCSVFiles(uid, n, Relation.Type.ANNOTATION___PROTEIN___PROTEIN_KEYWORD.toString());
+//                    n = new Node(csv.getAndIncUid(), keyword.getId(), keyword.getValue(), Node.Label.PROTEIN_KEYWORD);
+//                    updateCSVFiles(uid, n, Relation.Label.ANNOTATION___PROTEIN___PROTEIN_KEYWORD.toString());
 //                    csv.putLong(keyword.getId(), n.getUid());
 //                } else {
 //                    // Create protein - protein keyword relation
@@ -338,21 +338,21 @@ public class Neo4jCsvImporter {
 //        if (CollectionUtils.isNotEmpty(protein.getFeature())) {
 //            for (FeatureType feature: protein.getFeature()) {
 //                n = NodeBuilder.newNode(csv.getAndIncUid(), feature);
-//                updateCSVFiles(uid, n, Relation.Type.ANNOTATION___PROTEIN___PROTEIN_FEATURE.toString());
+//                updateCSVFiles(uid, n, Relation.Label.ANNOTATION___PROTEIN___PROTEIN_FEATURE.toString());
 //            }
 //        }
 //
 //        // Model Xrefs
 //        if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
-//            PrintWriter pwXref = csv.getCsvWriters().get(Node.Type.XREF.toString());
+//            PrintWriter pwXref = csv.getCsvWriters().get(Node.Label.XREF.toString());
 //            pw = csv.getCsvWriters().get(CsvInfo.RelationFilename.ANNOTATION___PROTEIN___XREF.toString());
 //            for (DbReferenceType dbRef: protein.getDbReference()) {
-//                Long xrefUid = csv.getLong(dbRef.getType() + "." + dbRef.getId());
+//                Long xrefUid = csv.getLong(dbRef.getLabels() + "." + dbRef.getId());
 //                if (xrefUid == null) {
 //                    n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
 //                    pwXref.println(csv.nodeLine(n));
 //                    xrefUid = n.getUid();
-//                    csv.putLong(dbRef.getType() + "." + dbRef.getId(), xrefUid);
+//                    csv.putLong(dbRef.getLabels() + "." + dbRef.getId(), xrefUid);
 //                }
 //                pw.println(csv.relationLine(uid, xrefUid));
 //            }
@@ -385,7 +385,7 @@ public class Neo4jCsvImporter {
 //                        if (protein != null) {
 //                            // Create protein node and write the CSV file
 //                            Node proteinNode = createProteinNode(protein);
-//                            csv.getCsvWriters().get(Node.Type.PROTEIN.toString()).println(csv.nodeLine(proteinNode));
+//                            csv.getCsvWriters().get(Node.Label.PROTEIN.toString()).println(csv.nodeLine(proteinNode));
 //                            proteinUid = proteinNode.getUid();
 //
 //                            // Save protein UID
@@ -396,7 +396,7 @@ public class Neo4jCsvImporter {
 //                    }
 //
 //                    // Write transcript-protein relation
-//                    csv.getCsvWriters().get(Relation.Type.IS___TRANSCRIPT___PROTEIN.toString()).println(uid + CsvInfo.SEPARATOR
+//                    csv.getCsvWriters().get(Relation.Label.IS___TRANSCRIPT___PROTEIN.toString()).println(uid + CsvInfo.SEPARATOR
 // + proteinUid);
 //                    break;
 //                }
@@ -407,7 +407,7 @@ public class Neo4jCsvImporter {
 //        if (CollectionUtils.isNotEmpty(transcript.getTfbs())) {
 //            for (TranscriptTfbs tfbs: transcript.getTfbs()) {
 //                n = NodeBuilder.newNode(csv.getAndIncUid(), tfbs);
-//                updateCSVFiles(uid, n, Relation.Type.ANNOTATION___TRANSCRIPT___TFBS.toString());
+//                updateCSVFiles(uid, n, Relation.Label.ANNOTATION___TRANSCRIPT___TFBS.toString());
 //            }
 //        }
 //
@@ -441,7 +441,7 @@ public class Neo4jCsvImporter {
 //
 //    public Node createVariantNode(Variant variant, Long varUid) {
 //        Node varNode = NodeBuilder.newNode(varUid, variant);
-//        PrintWriter pw = csv.getCsvWriters().get(Node.Type.VARIANT.toString());
+//        PrintWriter pw = csv.getCsvWriters().get(Node.Label.VARIANT.toString());
 //        pw.println(csv.nodeLine(varNode));
 //
 //        // Annotation management
@@ -452,13 +452,13 @@ public class Neo4jCsvImporter {
 //                // Consequence type nodes
 //                for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
 //                    Node ctNode = NodeBuilder.newNode(csv.getAndIncUid(), ct);
-//                    updateCSVFiles(varUid, ctNode, Relation.Type.ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE.toString());
+//                    updateCSVFiles(varUid, ctNode, Relation.Label.ANNOTATION___VARIANT___VARIANT_CONSEQUENCE_TYPE.toString());
 //
 //                    // Gene
 //                    Long geneUid = processGene(ct.getEnsemblGeneId(), ct.getGeneName());
 ////                    if (geneUid != null) {
 ////                        // Relation: consequence type - gene
-////                        pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE.toString());
+////                        pw = csv.getCsvWriters().get(Relation.Label.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE.toString());
 ////                        pw.println(csv.relationLine(ctNode.getUid(), geneUid));
 ////                    }
 //
@@ -466,13 +466,13 @@ public class Neo4jCsvImporter {
 //                    Long transcriptUid = processTranscript(ct.getEnsemblTranscriptId());
 //                    if (transcriptUid != null) {
 ////                        if (geneUid != null && csv.getLong(geneUid + "." + transcriptUid) == null) {
-////                            csv.getCsvWriters().get(Relation.Type.HAS___GENE___TRANSCRIPT.toString()).println(csv.relationLine(
+////                            csv.getCsvWriters().get(Relation.Label.HAS___GENE___TRANSCRIPT.toString()).println(csv.relationLine(
 ////                                    geneUid, transcriptUid));
 ////                            csv.putLong(geneUid + "." + transcriptUid, 1);
 ////                        }
 //
 //                        // Relation: consequence type - transcript
-//                        pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT.toString());
+//                        pw = csv.getCsvWriters().get(Relation.Label.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT.toString());
 //                        pw.println(csv.relationLine(ctNode.getUid(), transcriptUid));
 ////                    } else {
 ////                        if (geneUid != null) {
@@ -489,13 +489,13 @@ public class Neo4jCsvImporter {
 //                            if (soId != null) {
 //                                Long soUid = csv.getLong(soId);
 //                                if (soUid == null) {
-//                                    Node soNode = new Node(csv.getAndIncUid(), so.getAccession(), so.getName(), Node.Type.SO_TERM);
-//                                    updateCSVFiles(ctNode.getUid(), soNode, Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM
+//                                    Node soNode = new Node(csv.getAndIncUid(), so.getAccession(), so.getName(), Node.Label.SO_TERM);
+//                                    updateCSVFiles(ctNode.getUid(), soNode, Relation.Label.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM
 // .toString());
 //                                    csv.putLong(soId, soNode.getUid());
 //                                } else {
 //                                    // Relation: consequence type - so
-//                                    pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM
+//                                    pw = csv.getCsvWriters().get(Relation.Label.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM
 // .toString());
 //                                    pw.println(csv.relationLine(ctNode.getUid(), soUid));
 //                                }
@@ -508,23 +508,23 @@ public class Neo4jCsvImporter {
 //                        // Protein variant annotation node
 //                        Node pVANode = NodeBuilder.newNode(csv.getAndIncUid(), ct.getProteinVariantAnnotation());
 //                        updateCSVFiles(ctNode.getUid(), pVANode,
-//                                Relation.Type.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___PROTEIN_VARIANT_ANNOTATION.toString());
+//                                Relation.Label.ANNOTATION___VARIANT_CONSEQUENCE_TYPE___PROTEIN_VARIANT_ANNOTATION.toString());
 //
 //                        // Protein relationship management
 //                        Long protUid = processProtein(ct.getProteinVariantAnnotation().getUniprotAccession(),
 //                                ct.getProteinVariantAnnotation().getUniprotName());
 //                        if (protUid != null) {
 //                            // Relation: protein variant annotation - protein
-//                            pw = csv.getCsvWriters().get(Relation.Type.ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN.toString());
+//                            pw = csv.getCsvWriters().get(Relation.Label.ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN.toString());
 //                            pw.println(csv.relationLine(pVANode.getUid(), protUid));
 //                        }
 //
 //                        // Protein substitution scores
 //                        if (CollectionUtils.isNotEmpty(ct.getProteinVariantAnnotation().getSubstitutionScores())) {
 //                            for (Score score: ct.getProteinVariantAnnotation().getSubstitutionScores()) {
-//                                Node scoreNode = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Type.PROTEIN_SUBSTITUTION_SCORE);
+//                                Node scoreNode = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Label.PROTEIN_SUBSTITUTION_SCORE);
 //                                updateCSVFiles(pVANode.getUid(), scoreNode,
-//                                        Relation.Type.ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN_SUBSTITUTION_SCORE.toString());
+//                                        Relation.Label.ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN_SUBSTITUTION_SCORE.toString());
 //                            }
 //                        }
 //                    }
@@ -538,7 +538,7 @@ public class Neo4jCsvImporter {
 //                for (PopulationFrequency popFreq : variant.getAnnotation().getPopulationFrequencies()) {
 //                    // Population frequency node
 //                    node = NodeBuilder.newNode(csv.getAndIncUid(), popFreq);
-//                    updateCSVFiles(varUid, node, Relation.Type.ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY.toString());
+//                    updateCSVFiles(varUid, node, Relation.Label.ANNOTATION___VARIANT___VARIANT_POPULATION_FREQUENCY.toString());
 //                }
 //            }
 //
@@ -546,8 +546,8 @@ public class Neo4jCsvImporter {
 //            if (CollectionUtils.isNotEmpty(variant.getAnnotation().getConservation())) {
 //                for (Score score: variant.getAnnotation().getConservation()) {
 //                    // Conservation node
-//                    node = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Type.VARIANT_CONSERVATION_SCORE);
-//                    updateCSVFiles(varUid, node, Relation.Type.ANNOTATION___VARIANT___VARIANT_CONSERVATION_SCORE.toString());
+//                    node = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Label.VARIANT_CONSERVATION_SCORE);
+//                    updateCSVFiles(varUid, node, Relation.Label.ANNOTATION___VARIANT___VARIANT_CONSERVATION_SCORE.toString());
 //                }
 //            }
 //
@@ -555,8 +555,8 @@ public class Neo4jCsvImporter {
 //            if (CollectionUtils.isNotEmpty(variant.getAnnotation().getTraitAssociation())) {
 //                for (EvidenceEntry evidence: variant.getAnnotation().getTraitAssociation()) {
 //                    // Trait association node
-//                    node = NodeBuilder.newNode(csv.getAndIncUid(), evidence, Node.Type.CLINICAL_EVIDENCE);
-//                    updateCSVFiles(varUid, node, Relation.Type.ANNOTATION___VARIANT___CLINICAL_EVIDENCE.toString());
+//                    node = NodeBuilder.newNode(csv.getAndIncUid(), evidence, Node.Label.CLINICAL_EVIDENCE);
+//                    updateCSVFiles(varUid, node, Relation.Label.ANNOTATION___VARIANT___CLINICAL_EVIDENCE.toString());
 //                }
 //            }
 //
@@ -564,8 +564,8 @@ public class Neo4jCsvImporter {
 //            if (CollectionUtils.isNotEmpty(variant.getAnnotation().getFunctionalScore())) {
 //                for (Score score: variant.getAnnotation().getFunctionalScore()) {
 //                    // Functional score node
-//                    node = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Type.VARIANT_FUNCTIONAL_SCORE);
-//                    updateCSVFiles(varUid, node, Relation.Type.ANNOTATION___VARIANT___VARIANT_FUNCTIONAL_SCORE.toString());
+//                    node = NodeBuilder.newNode(csv.getAndIncUid(), score, Node.Label.VARIANT_FUNCTIONAL_SCORE);
+//                    updateCSVFiles(varUid, node, Relation.Label.ANNOTATION___VARIANT___VARIANT_FUNCTIONAL_SCORE.toString());
 //                }
 //            }
 //        }
@@ -591,18 +591,18 @@ public class Neo4jCsvImporter {
 ////
 ////    public Node createClinicalAnalysisNode(ClinicalAnalysis clinicalAnalysis, Long caUid) throws IOException {
 ////        Node caNode = NodeBuilder.newNode(caUid, clinicalAnalysis);
-////        PrintWriter pw = csv.getCsvWriters().get(Node.Type.CLINICAL_ANALYSIS.toString());
+////        PrintWriter pw = csv.getCsvWriters().get(Node.Label.CLINICAL_ANALYSIS.toString());
 ////        pw.println(csv.nodeLine(caNode));
 ////
 ////        // Comments
 ////        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getComments())) {
 ////            for (Comment comment : clinicalAnalysis.getComments()) {
 ////                Node commentNode = NodeBuilder.newNode(csv.getAndIncUid(), comment);
-////                pw = csv.getCsvWriters().get(Node.Type.COMMENT.toString());
+////                pw = csv.getCsvWriters().get(Node.Label.COMMENT.toString());
 ////                pw.println(csv.nodeLine(commentNode));
 ////
 ////                // Relation: clinical analysis - comment
-////                pw = csv.getCsvWriters().get(Relation.Type.CLINICAL_ANALYSIS__COMMENT.toString());
+////                pw = csv.getCsvWriters().get(Relation.Label.CLINICAL_ANALYSIS__COMMENT.toString());
 ////                pw.println(csv.relationLine(caUid, commentNode.getUid()));
 ////            }
 ////        }
@@ -610,22 +610,22 @@ public class Neo4jCsvImporter {
 ////        // Clinical Analyst
 ////        if (clinicalAnalysis.getAnalyst() != null) {
 ////            Node analystNode = NodeBuilder.newNode(csv.getAndIncUid(), clinicalAnalysis.getAnalyst());
-////            pw = csv.getCsvWriters().get(Node.Type.CLINICAL_ANALYST.toString());
+////            pw = csv.getCsvWriters().get(Node.Label.CLINICAL_ANALYST.toString());
 ////            pw.println(csv.nodeLine(analystNode));
 ////
 ////            // Relation: clinical analysis - comment
-////            pw = csv.getCsvWriters().get(Relation.Type.CLINICAL_ANALYSIS__CLINICAL_ANALYST.toString());
+////            pw = csv.getCsvWriters().get(Relation.Label.CLINICAL_ANALYSIS__CLINICAL_ANALYST.toString());
 ////            pw.println(csv.relationLine(caUid, analystNode.getUid()));
 ////        }
 //
 ////        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretations())) {
 ////            for (Interpretation interpretation : clinicalAnalysis.getInterpretations()) {
 ////                Node interpretationNode = NodeBuilder.newNode(csv.getAndIncUid(), interpretation);
-////                pw = csv.getCsvWriters().get(Node.Type.INTERPRETATION.toString());
+////                pw = csv.getCsvWriters().get(Node.Label.INTERPRETATION.toString());
 ////                pw.println(csv.nodeLine(interpretationNode));
 ////
 ////                // Relation: clinical analysis - interpretation
-////                pw = csv.getCsvWriters().get(Relation.Type.CLINICAL_ANALYSIS__INTERPRETATION.toString());
+////                pw = csv.getCsvWriters().get(Relation.Label.CLINICAL_ANALYSIS__INTERPRETATION.toString());
 ////                pw.println(csv.relationLine(caUid, interpretationNode.getUid()));
 ////
 ////                // Primary findings
@@ -650,11 +650,11 @@ public class Neo4jCsvImporter {
 ////                if (CollectionUtils.isNotEmpty(interpretation.getComments())) {
 ////                    for (Comment comment : interpretation.getComments()) {
 ////                        Node commentNode = NodeBuilder.newNode(csv.getAndIncUid(), comment);
-////                        pw = csv.getCsvWriters().get(Node.Type.COMMENT.toString());
+////                        pw = csv.getCsvWriters().get(Node.Label.COMMENT.toString());
 ////                        pw.println(csv.nodeLine(commentNode));
 ////
 ////                        // Relation: clinical analysis - comment
-////                        pw = csv.getCsvWriters().get(Relation.Type.INTERPRETATION__COMMENT.toString());
+////                        pw = csv.getCsvWriters().get(Relation.Label.INTERPRETATION__COMMENT.toString());
 ////                        pw.println(csv.relationLine(interpretation.getUid(), commentNode.getUid()));
 ////                    }
 ////                }
@@ -672,22 +672,22 @@ public class Neo4jCsvImporter {
 //    private void processReportedVariants(List<ClinicalVariant> findings, Long interpretationUid, boolean arePrimaryFindings)
 //            throws IOException {
 //        PrintWriter pw;
-//        Relation.Type interpretationRelation;
+//        Relation.Label interpretationRelation;
 //        if (arePrimaryFindings) {
-//            interpretationRelation = Relation.Type.PRIMARY_FINDING___INTERPRETATION___REPORTED_VARIANT;
+//            interpretationRelation = Relation.Label.PRIMARY_FINDING___INTERPRETATION___REPORTED_VARIANT;
 //
 //        } else {
-//            interpretationRelation = Relation.Type.SECONDARY_FINDING___INTERPRETATION___REPORTED_VARIANT;
+//            interpretationRelation = Relation.Label.SECONDARY_FINDING___INTERPRETATION___REPORTED_VARIANT;
 //        }
 //
 //        for (ClinicalVariant finding : findings) {
 //            Node findingNode = NodeBuilder.newNode(csv.getAndIncUid(), finding);
-//            pw = csv.getCsvWriters().get(Node.Type.REPORTED_VARIANT.toString());
+//            pw = csv.getCsvWriters().get(Node.Label.REPORTED_VARIANT.toString());
 //            pw.println(csv.nodeLine(findingNode));
 //
 //            // Process variant and relation it to the reported variant
 //            Long variantUid = processVariant(finding);
-//            pw = csv.getCsvWriters().get(Relation.Type.REPORTED_VARIANT__VARIANT.toString());
+//            pw = csv.getCsvWriters().get(Relation.Label.REPORTED_VARIANT__VARIANT.toString());
 //            pw.println(csv.relationLine(findingNode.getUid(), variantUid));
 //
 //            // Relation: interpretation - primary finding
@@ -747,12 +747,12 @@ public class Neo4jCsvImporter {
 //                if (infoUid == null) {
 //                    // Variant file info node
 //                    infoUid = csv.getAndIncUid();
-//                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_FILE_INFO.toString());
+//                    pw = csv.getCsvWriters().get(Node.Label.VARIANT_FILE_INFO.toString());
 //                    pw.println(variantInfoLine(infoUid, studyEntry));
 //                }
 //                Long fileUid = csv.getLong(fileId);
 //                if (fileUid != null) {
-//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_FILE_INFO__FILE.toString());
+//                    pw = csv.getCsvWriters().get(Relation.Label.VARIANT_FILE_INFO__FILE.toString());
 //                    pw.println(infoUid + CsvInfo.SEPARATOR + fileUid);
 //                }
 //
@@ -764,25 +764,25 @@ public class Neo4jCsvImporter {
 //                    Long sampleUid = csv.getLong(sampleName);
 //                    if (sampleUid == null) {
 //                        sampleUid = csv.getAndIncUid();
-//                        csv.getCsvWriters().get(Node.Type.SAMPLE.toString())
+//                        csv.getCsvWriters().get(Node.Label.SAMPLE.toString())
 //                                .println(sampleUid + CsvInfo.SEPARATOR + sampleName + CsvInfo.SEPARATOR + sampleName);
 //                        csv.putLong(sampleName, sampleUid);
 //                    }
 //                    // Variant call node
 //                    Long formatUid = csv.getAndIncUid();
-//                    pw = csv.getCsvWriters().get(Node.Type.VARIANT_SAMPLE_FORMAT.toString());
+//                    pw = csv.getCsvWriters().get(Node.Label.VARIANT_SAMPLE_FORMAT.toString());
 //                    pw.println(variantFormatLine(formatUid, studyEntry, i));
 //
 //                    // Relation: variant - variant call
-//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT__VARIANT_CALL.toString());
+//                    pw = csv.getCsvWriters().get(Relation.Label.VARIANT__VARIANT_CALL.toString());
 //                    pw.println(csv.relationLine(variantUid, formatUid));
 //
 //                    // Relation: sample - variant call
-//                    pw = csv.getCsvWriters().get(Relation.Type.SAMPLE__VARIANT_CALL.toString());
+//                    pw = csv.getCsvWriters().get(Relation.Label.SAMPLE__VARIANT_CALL.toString());
 //                    pw.println(csv.relationLine(sampleUid, formatUid));
 //
 //                    // Relation: variant call - variant file info
-//                    pw = csv.getCsvWriters().get(Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString());
+//                    pw = csv.getCsvWriters().get(Relation.Label.VARIANT_CALL__VARIANT_FILE_INFO.toString());
 //                    pw.println(csv.relationLine(formatUid, infoUid));
 //                }
 //            }
@@ -908,13 +908,13 @@ public class Neo4jCsvImporter {
 ////            while (iterator.hasNext()) {
 ////                attrs.add(iterator.next());
 ////            }
-////            strType = Node.Type.VARIANT_SAMPLE_FORMAT.toString();
+////            strType = Node.Label.VARIANT_SAMPLE_FORMAT.toString();
 ////            Map<String, List<String>> nodeAttributes = csv.getNodeAttributes();
 ////            nodeAttributes.put(strType, attrs);
 ////            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));
-////            strType = Relation.Type.VARIANT__VARIANT_CALL.toString();
+////            strType = Relation.Label.VARIANT__VARIANT_CALL.toString();
 ////            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-////            strType = Relation.Type.SAMPLE__VARIANT_CALL.toString();
+////            strType = Relation.Label.SAMPLE__VARIANT_CALL.toString();
 ////            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
 ////
 ////            // Variant file info
@@ -924,12 +924,12 @@ public class Neo4jCsvImporter {
 ////            while (iterator.hasNext()) {
 ////                attrs.add(iterator.next());
 ////            }
-////            strType = Node.Type.VARIANT_FILE_INFO.toString();
+////            strType = Node.Label.VARIANT_FILE_INFO.toString();
 ////            nodeAttributes.put(strType, attrs);
 ////            csv.getCsvWriters().get(strType).println(csv.getNodeHeaderLine(attrs));
-////            strType = Relation.Type.VARIANT_CALL__VARIANT_FILE_INFO.toString();
+////            strType = Relation.Label.VARIANT_CALL__VARIANT_FILE_INFO.toString();
 ////            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
-////            strType = Relation.Type.VARIANT_FILE_INFO__FILE.toString();
+////            strType = Relation.Label.VARIANT_FILE_INFO__FILE.toString();
 ////            csv.getCsvWriters().get(strType).println(csv.getRelationHeaderLine(strType));
 ////
 ////            done = true;
@@ -944,8 +944,8 @@ public class Neo4jCsvImporter {
 //    private void updateCSVFiles(long startUid, Node node, String relationType, boolean annotated) {
 //        // Update node CSV file
 //        PrintWriter pw = annotated
-//                ? csv.getCsvAnnotatedWriters().get(node.getType().toString())
-//                : csv.getCsvWriters().get(node.getType().toString());
+//                ? csv.getCsvAnnotatedWriters().get(node.getLabels().toString())
+//                : csv.getCsvWriters().get(node.getLabels().toString());
 //        pw.println(csv.nodeLine(node));
 //
 //        // Update relation CSV file
@@ -1072,8 +1072,8 @@ public class Neo4jCsvImporter {
 //        ObjectReader reader = mapper.reader(DiseasePanel.class);
 //
 //        // Get CSV file writers
-//        PrintWriter pwNode = csv.getCsvWriters().get(Node.Type.DISEASE_PANEL.toString());
-//        PrintWriter pwRel = csv.getCsvWriters().get(Relation.Type.PANEL__GENE.toString());
+//        PrintWriter pwNode = csv.getCsvWriters().get(Node.Label.DISEASE_PANEL.toString());
+//        PrintWriter pwRel = csv.getCsvWriters().get(Relation.Label.PANEL__GENE.toString());
 //
 //        for (File panelFile: panelFiles) {
 //            if (panelFile.getName().endsWith("json")) {
@@ -1107,7 +1107,7 @@ public class Neo4jCsvImporter {
 //
 //        if (toImport) {
 //            // Import miRNAs and genes
-//            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Type.MIRNA.toString());
+//            PrintWriter pwMiRna = csv.getCsvWriters().get(Node.Label.MIRNA.toString());
 //            PrintWriter pwMiRnaTargetRel = csv.getCsvWriters().get(CsvInfo.RelationFilename.TARGET_GENE___MIRNA___GENE
 //                    .toString());
 //
@@ -1119,7 +1119,7 @@ public class Neo4jCsvImporter {
 //
 //                Long miRnaUid = csv.getLong(miRnaId);
 //                if (miRnaUid == null) {
-//                    Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Type.MIRNA);
+//                    Node miRnaNode = new Node(csv.getAndIncUid(), miRnaId, miRnaId, Node.Label.MIRNA);
 //                    pwMiRna.println(csv.nodeLine(miRnaNode));
 //
 //                    // Save the miRNA node uid
@@ -1154,7 +1154,7 @@ public class Neo4jCsvImporter {
 //
 //    private void createVariantObjectNode(Variant variant, Node variantNode) throws IOException {
 //        // Create variant object node
-//        Node variantObjectNode = new Node(csv.getAndIncUid(), variant.toString(), variant.getId(), Node.Type.VARIANT_OBJECT);
+//        Node variantObjectNode = new Node(csv.getAndIncUid(), variant.toString(), variant.getId(), Node.Label.VARIANT_OBJECT);
 //
 //        // Studies
 //        String value = "";
@@ -1232,12 +1232,12 @@ public class Neo4jCsvImporter {
 //        variantObjectNode.addAttribute("core", Utils.compress(variant, mapper));
 //
 //        // Write node to CSV file
-//        PrintWriter pw = csv.getCsvWriters().get(Node.Type.VARIANT_OBJECT.toString());
+//        PrintWriter pw = csv.getCsvWriters().get(Node.Label.VARIANT_OBJECT.toString());
 //        pw.println(csv.nodeLine(variantObjectNode));
 //
 //
 //        // Create relation to gene node and write
-//        pw = csv.getCsvWriters().get(Relation.Type.VARIANT__VARIANT_OBJECT.toString());
+//        pw = csv.getCsvWriters().get(Relation.Label.VARIANT__VARIANT_OBJECT.toString());
 //        pw.println(variantNode.getUid() + CsvInfo.SEPARATOR + variantObjectNode.getUid());
 //    }
 }

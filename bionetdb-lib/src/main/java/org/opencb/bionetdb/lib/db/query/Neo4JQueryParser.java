@@ -78,9 +78,9 @@ public class Neo4JQueryParser {
         }
 
 //        // Parse pseudo-attributes
-//        if (query.getType() == Node.Type.GENE) {
+//        if (query.getLabels() == Node.Label.GENE) {
 //            where.append(parseGeneNode(query, options));
-//        } else if (query.getType() == Node.Type.VARIANT) {
+//        } else if (query.getLabels() == Node.Label.VARIANT) {
 //            where.append(parseVariantNode(query, options));
 //        }
 

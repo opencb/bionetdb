@@ -23,6 +23,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -206,17 +207,17 @@ public class NodeWSServer extends GenericRestWSServer {
     @Path("/link")
     @ApiOperation(httpMethod = "GET", value = "Link origin node to destination node")
     public Response link(@ApiParam(value = "Origin node ID. E.g.: ENSG00000279457") @QueryParam("origId") String origId,
-                         @ApiParam(value = "Origin node type. E.g.: GENE") @QueryParam("origType") String origType,
+                         @ApiParam(value = "Origin node label. E.g.: GENE") @QueryParam("origLabel") String origLabel,
                          @ApiParam(value = "Destination node ID. E.g.: ENST00000023435") @QueryParam("destId") String destId,
-                         @ApiParam(value = "Destination node type. E.g.: TRANSCRIPT") @QueryParam("destType") String destType,
-                         @ApiParam(value = "Relation type. E.g.: GENE") @QueryParam("relationType") String relationType,
+                         @ApiParam(value = "Destination node label. E.g.: TRANSCRIPT") @QueryParam("destLabel") String destLabel,
+                         @ApiParam(value = "Relation label. E.g.: HAS") @QueryParam("relationLabel") String relationType,
                          @ApiParam(value = "Comma-separated list of relation attributes. E.g.: time=11869") @QueryParam("attribute") String
                                      relationAttr
     ) {
         try {
             // Create node
-            Node origNode = buildNode(origId, null, origType, null);
-            Node destNode = buildNode(destId, null, destType, null);
+            Node origNode = buildNode(origId, null, origLabel, null);
+            Node destNode = buildNode(destId, null, destLabel, null);
 
             Relation relation = buildRelation(relationType, relationAttr);
 
@@ -234,19 +235,19 @@ public class NodeWSServer extends GenericRestWSServer {
     @Path("/updateLink")
     @ApiOperation(httpMethod = "GET", value = "Update link")
     public Response updateLink(@ApiParam(value = "Origin node ID. E.g.: ENSG00000279457") @QueryParam("origId") String origId,
-                               @ApiParam(value = "Origin node type. E.g.: GENE") @QueryParam("origType") String origType,
+                               @ApiParam(value = "Origin node label. E.g.: GENE") @QueryParam("origLabel") String origLabel,
                                @ApiParam(value = "Destination node ID. E.g.: ENST00000023435") @QueryParam("destId") String destId,
-                               @ApiParam(value = "Destination node type. E.g.: TRANSCRIPT") @QueryParam("destType") String destType,
-                               @ApiParam(value = "Relation type. E.g.: GENE") @QueryParam("relationType") String relationType,
+                               @ApiParam(value = "Destination node label. E.g.: TRANSCRIPT") @QueryParam("destLabel") String destLabel,
+                               @ApiParam(value = "Relation label. E.g.: HAS") @QueryParam("relationLabel") String relationLabel,
                                @ApiParam(value = "Comma-separated list of relation attributes. E.g.: time=11869") @QueryParam("attribute")
                                            String relationAttr
     ) {
         try {
             // Create node
-            Node origNode = buildNode(origId, null, origType, null);
-            Node destNode = buildNode(destId, null, destType, null);
+            Node origNode = buildNode(origId, null, origLabel, null);
+            Node destNode = buildNode(destId, null, destLabel, null);
 
-            Relation relation = buildRelation(relationType, relationAttr);
+            Relation relation = buildRelation(relationLabel, relationAttr);
 
             // Link origin and destination nodes
             BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
@@ -262,18 +263,18 @@ public class NodeWSServer extends GenericRestWSServer {
     @Path("/unlink")
     @ApiOperation(httpMethod = "GET", value = "Delete link")
     public Response unlink(@ApiParam(value = "Origin node ID. E.g.: ENSG00000279457") @QueryParam("origId") String origId,
-                           @ApiParam(value = "Origin node type. E.g.: GENE") @QueryParam("origType") String origType,
+                           @ApiParam(value = "Origin node label. E.g.: GENE") @QueryParam("origLabel") String origLabel,
                            @ApiParam(value = "Destination node ID. E.g.: ENST00000023435") @QueryParam("destId") String destId,
-                           @ApiParam(value = "Destination node type. E.g.: TRANSCRIPT") @QueryParam("destType") String destType,
-                           @ApiParam(value = "Relation type. E.g.: HAS") @QueryParam("relationType") String relationType
+                           @ApiParam(value = "Destination node label. E.g.: TRANSCRIPT") @QueryParam("destLabel") String destLabel,
+                           @ApiParam(value = "Relation label. E.g.: HAS") @QueryParam("relationLabel") String relationLabel
     ) {
         try {
             // Create origin and destionation nodes
-            Node origNode = buildNode(origId, null, origType, null);
-            Node destNode = buildNode(destId, null, destType, null);
+            Node origNode = buildNode(origId, null, origLabel, null);
+            Node destNode = buildNode(destId, null, destLabel, null);
 
             // Create relation
-            Relation relation = buildRelation(relationType, null);
+            Relation relation = buildRelation(relationLabel, null);
 
             // Delete origin-destination link
             BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
@@ -295,17 +296,20 @@ public class NodeWSServer extends GenericRestWSServer {
         }
 
         if (StringUtils.isEmpty(label)) {
-            throw new BioNetDBException("Missing node type");
+            throw new BioNetDBException("Missing node label");
         }
 
         List<String> tags = Arrays.asList(label.split(","));
+        List<Node.Label> labels = new ArrayList<>();
+        for (String tag : tags) {
+            labels.add(Node.Label.valueOf(tag));
+        }
 
         // Create node
         Node node = new Node()
                 .setId(id)
                 .setName(name)
-                .setType(Node.Type.valueOf(tags.get(0)))
-                .setTags(tags);
+                .setLabels(labels);
 
         // Parse attributes
         ObjectMap attrs = new ObjectMap();
@@ -322,14 +326,14 @@ public class NodeWSServer extends GenericRestWSServer {
 
     //-------------------------------------------------------------------------
 
-    private Relation buildRelation(String type, String attribute) throws BioNetDBException {
-        if (StringUtils.isEmpty(type)) {
-            throw new BioNetDBException("Missing relation type");
+    private Relation buildRelation(String label, String attribute) throws BioNetDBException {
+        if (StringUtils.isEmpty(label)) {
+            throw new BioNetDBException("Missing relation label");
         }
 
-        // Create node
+        // Create relation
         Relation relation = new Relation()
-                .setType(Relation.Type.valueOf(type));
+                .setLabel(Relation.Label.valueOf(label));
 
         // Parse attributes
         ObjectMap attrs = new ObjectMap();

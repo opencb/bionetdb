@@ -23,7 +23,7 @@ public class DotExporter {
 
         // Connecting Nodes and Relationships
         for (Relation relation : network.getRelations()) {
-            switch(relation.getType()) {
+            switch(relation.getLabels()) {
                 case REACTION:
                     Reaction reaction = (Reaction) relation;
                     for (String product : reaction.getProducts()) {

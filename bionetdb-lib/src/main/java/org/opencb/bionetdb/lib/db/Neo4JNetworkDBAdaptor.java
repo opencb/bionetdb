@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.bionetdb.core.models.network.Node.Type.*;
+import static org.opencb.bionetdb.core.models.network.Node.Label.*;
 import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
 
 /**
@@ -91,7 +91,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Transaction tx = null;
         try {
             tx = driver.session().beginTransaction();
-            tx.run("MATCH (n:" + Node.Type.INTERNAL_CONNFIG + "{uid:0}) return n");
+            tx.run("MATCH (n:" + Node.Label.INTERNAL_CONNFIG + "{uid:0}) return n");
             tx.commit();
             return true;
         } catch (Exception e) {
@@ -243,7 +243,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //        // ... prepare list of protein id/names from xref/protein nodes
 //        List<String> proteinIds = new ArrayList<>();
 //        for (Node node: network.getNodes()) {
-//            if (node.getType() == Node.Type.XREF) {
+//            if (node.getLabels() == Node.Label.XREF) {
 //                proteinIds.add(node.getId());
 //            }
 //        }
@@ -372,8 +372,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
             // Create the desired node
             StringBuilder cypher = new StringBuilder("CREATE (n");
-            if (CollectionUtils.isNotEmpty(node.getTags())) {
-                cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
+            if (CollectionUtils.isNotEmpty(node.getLabels())) {
+                cypher.append(":").append(StringUtils.join(node.getLabels(), ":"));
             }
             cypher.append(")");
             if (CollectionUtils.isNotEmpty(props)) {
@@ -412,8 +412,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
             // Match the desired node
             StringBuilder cypher = new StringBuilder("MATCh (n");
-            if (CollectionUtils.isNotEmpty(node.getTags())) {
-                cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
+            if (CollectionUtils.isNotEmpty(node.getLabels())) {
+                cypher.append(":").append(StringUtils.join(node.getLabels(), ":"));
             }
             cypher.append(")");
             cypher.append(" WHERE n.id=\"").append(node.getId()).append("\"");
@@ -431,7 +431,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public void deleteNode(Node node) throws BioNetDBException {
         checkNode(node);
 
-        Query query = new Query("id", node.getId()).append("type", node.getType());
+        Query query = new Query("id", node.getId()).append("type", node.getLabels());
         BioNetDBResult<Node> result = nodeQuery(query, QueryOptions.empty());
 
         if (result.getNumResults() == 0) {
@@ -444,7 +444,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         Session session = driver.session();
         try (Transaction tx = session.beginTransaction()) {
-            String cypher = "MATCH (n:" + node.getType() + "{id: '" + node.getId() + "'}) DETACH DELETE n";
+            String cypher = "MATCH (n:" + node.getLabels() + "{id: '" + node.getId() + "'}) DETACH DELETE n";
             tx.run(cypher);
             tx.commit();
         }
@@ -455,7 +455,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public boolean existNode(Node node) throws BioNetDBException {
         checkNode(node);
 
-        Query query = new Query("id", node.getId()).append("type", node.getType().name());
+        Query query = new Query("id", node.getId()).append("label", node.getLabels().get(0).name());
         BioNetDBResult<Node> result = nodeQuery(query, QueryOptions.empty());
 
         return result.getNumResults() == 0 ? false : true;
@@ -476,11 +476,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String propsJoined = "{" + String.join(",", props) + "}";
 
         StringBuilder cypher = new StringBuilder();
-        cypher.append("MATCH (o:").append(origNode.getType()).append("{id:\"")
-                .append(origNode.getId()).append("\"}) MATCH (d:").append(destNode.getType()).append("{id:\"")
-                .append(destNode.getId()).append("\"}) USING INDEX d:").append(destNode.getType())
-                .append("(id) MERGE (o)-[r:")
-                .append(StringUtils.join(relation.getTags(), ":"));
+        cypher.append("MATCH (o:").append(origNode.getLabels()).append("{id:\"")
+                .append(origNode.getId()).append("\"}) MATCH (d:").append(destNode.getLabels()).append("{id:\"")
+                .append(destNode.getId()).append("\"}) USING INDEX d:").append(destNode.getLabels())
+                .append("(id) MERGE (o)-[r:").append(relation.getLabel());
         if (CollectionUtils.isNotEmpty(props)) {
             cypher.append(propsJoined);
         }
@@ -509,8 +508,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         }
 
         StringBuilder cypher = new StringBuilder();
-        cypher.append("MATCH (o:").append(origNode.getType()).append("{id:\"")
-                .append(origNode.getId()).append("\"})-[r:").append(relation.getType()).append("]-(d:").append(destNode.getType())
+        cypher.append("MATCH (o:").append(origNode.getLabels()).append("{id:\"")
+                .append(origNode.getId()).append("\"})-[r:").append(relation.getLabel()).append("]-(d:").append(destNode.getLabels())
                 .append("{id:\"").append(destNode.getId()).append("\"})");
         if (CollectionUtils.isNotEmpty(props)) {
             cypher.append(" SET ").append(StringUtils.join(props, ","));
@@ -540,8 +539,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String propsJoined = "{" + String.join(",", props) + "}";
 
         StringBuilder cypher = new StringBuilder();
-        cypher.append("MATCH (o:").append(origNode.getType()).append("{id:\"")
-                .append(origNode.getId()).append("\"})-[r:").append(relation.getType()).append("]-(d:").append(destNode.getType())
+        cypher.append("MATCH (o:").append(origNode.getLabels()).append("{id:\"")
+                .append(origNode.getId()).append("\"})-[r:").append(relation.getLabel()).append("]-(d:").append(destNode.getLabels())
                 .append("{id:\"").append(destNode.getId()).append("\"}) DELETE r");
 
         System.out.println(cypher.toString());
@@ -567,7 +566,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             throw new BioNetDBException("Missing node ID");
         }
 
-        if (node.getType() == null) {
+        if (node.getLabels() == null) {
             throw new BioNetDBException("Missing node type");
         }
     }
@@ -816,8 +815,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
         // Create the desired node
         StringBuilder cypher = new StringBuilder("CREATE (n");
-        if (CollectionUtils.isNotEmpty(node.getTags())) {
-            cypher.append(":").append(StringUtils.join(node.getTags(), ":"));
+        if (CollectionUtils.isNotEmpty(node.getLabels())) {
+            cypher.append(":").append(StringUtils.join(node.getLabels(), ":"));
         }
         cypher.append(")");
         if (CollectionUtils.isNotEmpty(props)) {
@@ -846,8 +845,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 break;
         }
         StringBuilder cypher = new StringBuilder("MATCH (n");
-        if (node.getType() != null) {
-            cypher.append(":").append(node.getType());
+        if (node.getLabels() != null) {
+            cypher.append(":").append(node.getLabels());
         }
         cypher.append(") WHERE n.").append(byKey);
         if (value instanceof String) {
@@ -894,8 +893,8 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
             }
         }
         StringBuilder cypher = new StringBuilder("MATCH (n");
-        if (node.getType() != null) {
-            cypher.append(":").append(node.getType());
+        if (node.getLabels() != null) {
+            cypher.append(":").append(node.getLabels());
         }
         cypher.append(") WHERE ");
         for (int i = 0; i < 2; i++) {
@@ -944,11 +943,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         String propsJoined = "{" + String.join(",", props) + "}";
 
         StringBuilder statementTemplate = new StringBuilder();
-        statementTemplate.append("MATCH (o:").append(relation.getOrigType()).append("{uid:")
-                .append(relation.getOrigUid()).append("}) MATCH (d:").append(relation.getDestType()).append("{uid:")
-                .append(relation.getDestUid()).append("}) USING INDEX d:").append(relation.getDestType())
-                .append("(uid) MERGE (o)-[r:")
-                .append(StringUtils.join(relation.getTags(), ":"));
+        statementTemplate.append("MATCH (o:").append(relation.getOrigLabel()).append("{uid:")
+                .append(relation.getOrigUid()).append("}) MATCH (d:").append(relation.getDestLabel()).append("{uid:")
+                .append(relation.getDestUid()).append("}) USING INDEX d:").append(relation.getDestLabel())
+                .append("(uid) MERGE (o)-[r:").append(relation.getLabel());
         if (CollectionUtils.isNotEmpty(props)) {
             statementTemplate.append(propsJoined);
         }
@@ -968,7 +966,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     private boolean existConfigNode() {
         Session session = this.driver.session();
-        Result statementResult = session.run("match (n:" + Node.Type.INTERNAL_CONNFIG + "{uid:0}) return count(n) as count");
+        Result statementResult = session.run("match (n:" + Node.Label.INTERNAL_CONNFIG + "{uid:0}) return count(n) as count");
         session.close();
 
         return (statementResult.peek().get(0).asInt() == 1);
@@ -976,7 +974,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 
     public long getUidCounter() {
         Session session = this.driver.session();
-        StringBuilder cypher = new StringBuilder("match (n:").append(Node.Type.INTERNAL_CONNFIG).append("{uid:0}) return n.")
+        StringBuilder cypher = new StringBuilder("match (n:").append(Node.Label.INTERNAL_CONNFIG).append("{uid:0}) return n.")
                 .append(PREFIX_ATTRIBUTES).append("uidCounter");
         System.out.println(cypher.toString());
 
@@ -991,7 +989,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     public void setUidCounter(long uidCounter) {
         // Build Cypher statement
         StringBuilder cypher = new StringBuilder();
-        cypher.append("merge (n:" + Node.Type.INTERNAL_CONNFIG + "{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=")
+        cypher.append("merge (n:" + Node.Label.INTERNAL_CONNFIG + "{uid:0}) set n.").append(PREFIX_ATTRIBUTES).append("uidCounter=")
                 .append(uidCounter);
         System.out.println(cypher.toString());
 
@@ -1004,7 +1002,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
     private void createConfigNode() {
         // Create configuration node and set it uid = 0
         Session session = this.driver.session();
-        Node node = new Node(0, "0", "config", Node.Type.INTERNAL_CONNFIG);
+        Node node = new Node(0, "0", "config", Node.Label.INTERNAL_CONNFIG);
         node.addAttribute("uidCounter", 1);
         try (Transaction tx = session.beginTransaction()) {
             addNode(node, tx);
@@ -1048,7 +1046,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
         Long startUid = System.currentTimeMillis();
         List<Node> nodes = new ArrayList<>();
         for (int i = 0; i < 10000; i++) {
-            Node node = new Node(i, "id_" + i, "name_" + i, Node.Type.CELLULAR_LOCATION);
+            Node node = new Node(i, "id_" + i, "name_" + i, Node.Label.CELLULAR_LOCATION);
             node.getAttributes().put("uid", node.getUid());
             node.getAttributes().put("id", node.getId());
             node.getAttributes().put("name", node.getName());
@@ -1072,10 +1070,10 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 //                    node.setUid(ret.peek().get("ID").asLong());
 
 //                    String cypher = "CREATE (n:PROTEIN)";
-                    //String cypher = "CREATE (n:" + node.getType() + ") SET n.id = '" + node.getId() + "'";
+                    //String cypher = "CREATE (n:" + node.getLabels() + ") SET n.id = '" + node.getId() + "'";
                     // SET n.uid = " + (node.getUid() + (nodes.size() * j)) + ", n.name = '" + node.getName() + "', n.id = '"
                     // + node.getId() + "'";
-//                    String cypher = "CREATE (n:" + node.getType() + ") SET n.uid = " + (node.getUid() + (nodes.size() * j))
+//                    String cypher = "CREATE (n:" + node.getLabels() + ") SET n.uid = " + (node.getUid() + (nodes.size() * j))
 // + ", n.name = '" + node.getName() + "', n.id = '" + node.getId() + "'";
 //                    String cypher = "CREATE (n:PROTEIN{id:'" + node.getId() + "', name:'" + node.getName() + "'}) RETURN ID(n)";
 //                    StatementResult ret = tx.run(cypher);
@@ -1109,7 +1107,7 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     Node node = nodes.get(r.nextInt(10000));
 
                     cypher.setLength(0);
-                    cypher.append("merge (n:").append(Node.Type.CELLULAR_LOCATION);
+                    cypher.append("merge (n:").append(Node.Label.CELLULAR_LOCATION);
                     cypher.append("{name:'").append(node.getName());
                     cypher.append("'})");
                     cypher.append(" set n.toto={toto}");
@@ -1131,14 +1129,14 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                 for (long i = startUid; i < (startUid + 1000); i++) {
                     cypher.setLength(0);
                     long sourceUid = i + (j * 1000);
-                    cypher.append("match (s:").append(Node.Type.CELLULAR_LOCATION);
-                    cypher.append("), (d:").append(Node.Type.CELLULAR_LOCATION);
+                    cypher.append("match (s:").append(Node.Label.CELLULAR_LOCATION);
+                    cypher.append("), (d:").append(Node.Label.CELLULAR_LOCATION);
                     cypher.append(") where s.uid=").append(sourceUid).append(" AND d.uid=").append(sourceUid + 1000);
 
-//                    cypher.append(" match (d:").append(Node.Type.CELLULAR_LOCATION).append(") where d.uid=").append(sourceUid + 1000);
-//                    cypher.append("match (s:").append(Node.Type.CELLULAR_LOCATION).append(") where s.uid=").append(sourceUid);
-//                    cypher.append(" match (d:").append(Node.Type.CELLULAR_LOCATION).append(") where d.uid=").append(sourceUid + 1000);
-                    cypher.append(" create (s)-[r:").append(Node.Type.CELLULAR_LOCATION).append("{uid:").append(++uid).append("}]->(d)");
+//                    cypher.append(" match (d:").append(Node.Label.CELLULAR_LOCATION).append(") where d.uid=").append(sourceUid + 1000);
+//                    cypher.append("match (s:").append(Node.Label.CELLULAR_LOCATION).append(") where s.uid=").append(sourceUid);
+//                    cypher.append(" match (d:").append(Node.Label.CELLULAR_LOCATION).append(") where d.uid=").append(sourceUid + 1000);
+                    cypher.append(" create (s)-[r:").append(Node.Label.CELLULAR_LOCATION).append("{uid:").append(++uid).append("}]->(d)");
 //                    cypher.append(" return r.uid");
                     Result ret = tx.run(cypher.toString());
 
@@ -1152,9 +1150,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
 ////                    node.setUid(ret.peek().get("ID").asLong());
 //
 ////                    String cypher = "CREATE (n:PROTEIN)";
-//                    //String cypher = "CREATE (n:" + node.getType() + ") SET n.id = '" + node.getId() + "'"; //SET n.uid = "
+//                    //String cypher = "CREATE (n:" + node.getLabels() + ") SET n.id = '" + node.getId() + "'"; //SET n.uid = "
 // + (node.getUid() + (nodes.size() * j)) + ", n.name = '" + node.getName() + "', n.id = '" + node.getId() + "'";
-////                    String cypher = "CREATE (n:" + node.getType() + ") SET n.uid = " + (node.getUid() + (nodes.size() * j))
+////                    String cypher = "CREATE (n:" + node.getLabels() + ") SET n.uid = " + (node.getUid() + (nodes.size() * j))
 // + ", n.name = '" + node.getName() + "', n.id = '" + node.getId() + "'";
 ////                    String cypher = "CREATE (n:PROTEIN{id:'" + node.getId() + "', name:'" + node.getName() + "'}) RETURN ID(n)";
 ////                    StatementResult ret = tx.run(cypher);

@@ -123,10 +123,10 @@ public class SbmlParser {
 //        return physicalEntity;
 //    }
 //
-//    private PhysicalEntity.Type getClassToConvert(Species species) {
+//    private PhysicalEntity.Label getClassToConvert(Species species) {
 //
 //        XMLNode description = species.getAnnotation().getChild("RDF").getChild("Description");
-//        PhysicalEntity.Type type = PhysicalEntity.Type.UNDEFINED;
+//        PhysicalEntity.Label type = PhysicalEntity.Label.UNDEFINED;
 //
 //        StringBuilder sb = new StringBuilder();
 //        if (description.hasChild("is")) {
@@ -137,20 +137,20 @@ public class SbmlParser {
 //            String res = sb.toString().toLowerCase();
 //
 //            if (res.contains("uniprot") || res.contains("interpro") || res.contains("pirsf")) {
-//                type = PhysicalEntity.Type.PROTEIN;
+//                type = PhysicalEntity.Label.PROTEIN;
 //            } else if (res.contains("kegg") || res.contains("chebi")) {
-//                type = PhysicalEntity.Type.SMALL_MOLECULE;
+//                type = PhysicalEntity.Label.SMALL_MOLECULE;
 //            } else if (res.contains("ensg")) {
-//                type = PhysicalEntity.Type.DNA;
+//                type = PhysicalEntity.Label.DNA;
 //            } else if (res.contains("enst")) {
-//                type = PhysicalEntity.Type.RNA;
+//                type = PhysicalEntity.Label.RNA;
 //            } else if (res.contains("bind")) {
-//                type = PhysicalEntity.Type.PHYSICAL_ENTITY_COMPLEX;
+//                type = PhysicalEntity.Label.PHYSICAL_ENTITY_COMPLEX;
 //            }
 //        }
 //
 //        if (description.hasChild("hasPart")) {
-//            type = PhysicalEntity.Type.PHYSICAL_ENTITY_COMPLEX;
+//            type = PhysicalEntity.Label.PHYSICAL_ENTITY_COMPLEX;
 //        }
 //
 //        return type;
@@ -332,7 +332,7 @@ public class SbmlParser {
 //        // Populating "components" and "componentOfComplex" attributes
 //        List<PhysicalEntity> newPhysicalEntities = new ArrayList<>();
 //        for (PhysicalEntity physicalEntity : physicalEntities) {
-//            if (physicalEntity.getType() == PhysicalEntity.Type.PHYSICAL_ENTITY_COMPLEX) {
+//            if (physicalEntity.getLabels() == PhysicalEntity.Label.PHYSICAL_ENTITY_COMPLEX) {
 //                Complex complex = (Complex) physicalEntity;
 //                for (String component : complex.getComponents()) {
 //                    String componentId = component.replace("%3A", ":").split(":")[0].toLowerCase() + ":"
@@ -396,7 +396,7 @@ public class SbmlParser {
 //    private void setParticipantOfInteractionInfo(Network network) {
 //        for (Interaction interaction : network.getInteractions()) {
 //            for (String participant : interaction.getParticipants()) {
-//                if (network.getNetworkElementType(participant) == Network.Type.PHYSICALENTITY) {
+//                if (network.getNetworkElementType(participant) == Network.Label.PHYSICALENTITY) {
 //                    network.getPhysicalEntity(participant).getParticipantOfInteraction().add(interaction.getId());
 //                }
 //            }

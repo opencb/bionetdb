@@ -1,5 +1,6 @@
 package org.opencb.bionetdb.core.models.network;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 
 import java.util.ArrayList;
@@ -70,11 +71,13 @@ public class NetworkManager {
         return nodes;
     }
 
-    public List<Node> getNodes(Node.Type type) {
+    public List<Node> getNodes(Node.Label label) {
         List<Node> nodes = new ArrayList<>();
         for (Node node: network.getNodes()) {
-            if (node.getType() == type) {
-                nodes.add(node);
+            if (CollectionUtils.isNotEmpty(node.getLabels())) {
+                if (node.getLabels().contains(label)) {
+                    nodes.add(node);
+                }
             }
         }
         return nodes;

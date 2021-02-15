@@ -18,7 +18,7 @@ public class Neo4JQueryParserTest {
     @Test
     public void parseNode() throws Exception {
         Neo4JQueryParser parser = new Neo4JQueryParser();
-        NodeQuery query = new NodeQuery(Node.Type.PROTEIN);
+        NodeQuery query = new NodeQuery(Node.Label.PROTEIN);
         query.put("name", "RDH11");
         String cypher = parser.parseNodeQuery(query, QueryOptions.empty());
         System.out.println(cypher);
@@ -27,8 +27,8 @@ public class Neo4JQueryParserTest {
     @Test
     public void parsePath() throws Exception {
         Neo4JQueryParser parser = new Neo4JQueryParser();
-        NodeQuery srcQuery = new NodeQuery(Node.Type.CATALYSIS);
-        NodeQuery destQuery = new NodeQuery(Node.Type.SMALL_MOLECULE);
+        NodeQuery srcQuery = new NodeQuery(Node.Label.CATALYSIS);
+        NodeQuery destQuery = new NodeQuery(Node.Label.SMALL_MOLECULE);
         //query.put("name", "RDH11");
         NetworkPathQuery networkPathQuery = new NetworkPathQuery(srcQuery, destQuery, null);
 //        String cypher = parser.parsePath(networkPathQuery, QueryOptions.empty());
@@ -39,9 +39,9 @@ public class Neo4JQueryParserTest {
     public void parseNodesForNetwork() throws Exception {
         Neo4JQueryParser parser = new Neo4JQueryParser();
         List<NodeQuery> nodeQueries = new ArrayList<>();
-        nodeQueries.add(new NodeQuery(Node.Type.PROTEIN));
-        nodeQueries.add(new NodeQuery(Node.Type.SMALL_MOLECULE));
-        nodeQueries.add(new NodeQuery(Node.Type.PHYSICAL_ENTITY_COMPLEX));
+        nodeQueries.add(new NodeQuery(Node.Label.PROTEIN));
+        nodeQueries.add(new NodeQuery(Node.Label.SMALL_MOLECULE));
+        nodeQueries.add(new NodeQuery(Node.Label.PHYSICAL_ENTITY_COMPLEX));
 //        String cypher = parser.parseNodesForNetwork(nodeQueries, QueryOptions.empty());
 //        System.out.println(cypher);
     }
@@ -51,8 +51,8 @@ public class Neo4JQueryParserTest {
         Neo4JQueryParser parser = new Neo4JQueryParser();
         List<NetworkPathQuery> pathQueries = new ArrayList<>();
 
-        pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Type.PROTEIN), new NodeQuery(Node.Type.CATALYSIS), null));
-        pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Type.PHYSICAL_ENTITY_COMPLEX), new NodeQuery(Node.Type.SMALL_MOLECULE), null));
+        pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Label.PROTEIN), new NodeQuery(Node.Label.CATALYSIS), null));
+        pathQueries.add(new NetworkPathQuery(new NodeQuery(Node.Label.PHYSICAL_ENTITY_COMPLEX), new NodeQuery(Node.Label.SMALL_MOLECULE), null));
 //        String cypher = parser.parsePathsForNetwork(pathQueries, QueryOptions.empty());
 //        System.out.println(cypher);
     }
