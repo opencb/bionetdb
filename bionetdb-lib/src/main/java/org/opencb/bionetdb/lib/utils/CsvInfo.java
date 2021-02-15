@@ -450,11 +450,11 @@ public class CsvInfo {
     private Set<String> notdefined = new HashSet<>();
 
     public String nodeLine(Node node) {
-        List<String> attrs = nodeAttributes.get(node.getLabels().toString());
+        List<String> attrs = nodeAttributes.get(node.getLabels().get(0).name());
         StringBuilder sb = new StringBuilder();
         if (CollectionUtils.isEmpty(attrs)) {
-            if (!notdefined.contains(node.getLabels().toString())) {
-                System.out.println("Attributes not defined for " + node.getLabels());
+            if (!notdefined.contains(node.getLabels().get(0).name())) {
+                System.out.println("Attributes not defined for " + node.getLabels().get(0));
                 notdefined.add(node.getLabels().toString());
             }
         } else {

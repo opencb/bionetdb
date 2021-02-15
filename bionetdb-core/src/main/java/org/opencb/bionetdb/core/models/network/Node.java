@@ -3,6 +3,7 @@ package org.opencb.bionetdb.core.models.network;
 import org.apache.commons.collections4.MapUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -133,7 +134,16 @@ public class Node {
     }
 
     public Node(long uid, String id, String name, Label label) {
-        this(uid, id, name, Collections.singletonList(label));
+        this.labels = new ArrayList<>();
+        this.labels.add(label);
+
+        attributes = new ObjectMap();
+
+        setUid(uid);
+        setId(id);
+        setName(name);
+
+        counter++;
     }
 
     public Node(long uid, String id, String name, List<Label> labels) {
