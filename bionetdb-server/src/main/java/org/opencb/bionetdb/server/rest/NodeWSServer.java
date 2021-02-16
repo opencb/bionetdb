@@ -204,8 +204,8 @@ public class NodeWSServer extends GenericRestWSServer {
     }
 
     @GET
-    @Path("/link")
-    @ApiOperation(httpMethod = "GET", value = "Link origin node to destination node")
+    @Path("/relation/add")
+    @ApiOperation(httpMethod = "GET", value = "Add relation between the origin node and the destination node")
     public Response link(@ApiParam(value = "Origin node ID. E.g.: ENSG00000279457") @QueryParam("origId") String origId,
                          @ApiParam(value = "Origin node label. E.g.: GENE") @QueryParam("origLabel") String origLabel,
                          @ApiParam(value = "Destination node ID. E.g.: ENST00000023435") @QueryParam("destId") String destId,
@@ -225,15 +225,15 @@ public class NodeWSServer extends GenericRestWSServer {
             BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
             bioNetDbManager.getNodeQueryExecutor().link(origNode, destNode, relation);
 
-            return createOkResponse("Linked.");
+            return createOkResponse("Relation added.");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/updateLink")
-    @ApiOperation(httpMethod = "GET", value = "Update link")
+    @Path("/relation/update")
+    @ApiOperation(httpMethod = "GET", value = "Update relation")
     public Response updateLink(@ApiParam(value = "Origin node ID. E.g.: ENSG00000279457") @QueryParam("origId") String origId,
                                @ApiParam(value = "Origin node label. E.g.: GENE") @QueryParam("origLabel") String origLabel,
                                @ApiParam(value = "Destination node ID. E.g.: ENST00000023435") @QueryParam("destId") String destId,
@@ -253,15 +253,15 @@ public class NodeWSServer extends GenericRestWSServer {
             BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
             bioNetDbManager.getNodeQueryExecutor().updateLink(origNode, destNode, relation);
 
-            return createOkResponse("Updated.");
+            return createOkResponse("Relation updated.");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/unlink")
-    @ApiOperation(httpMethod = "GET", value = "Delete link")
+    @Path("/relation/delete")
+    @ApiOperation(httpMethod = "GET", value = "Delete relation")
     public Response unlink(@ApiParam(value = "Origin node ID. E.g.: ENSG00000279457") @QueryParam("origId") String origId,
                            @ApiParam(value = "Origin node label. E.g.: GENE") @QueryParam("origLabel") String origLabel,
                            @ApiParam(value = "Destination node ID. E.g.: ENST00000023435") @QueryParam("destId") String destId,
@@ -280,7 +280,7 @@ public class NodeWSServer extends GenericRestWSServer {
             BioNetDbManager bioNetDbManager = new BioNetDbManager(bioNetDBConfiguration);
             bioNetDbManager.getNodeQueryExecutor().unlink(origNode, destNode, relation);
 
-            return createOkResponse("Unliked.");
+            return createOkResponse("Relation deleted.");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
