@@ -73,7 +73,9 @@ public class Neo4JNetworkDBAdaptor implements NetworkDBAdaptor {
                     tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + nodeType + ") ON (n.id)");
                     tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + nodeType + ") ON (n.name)");
                 }
+                tx.run("CREATE INDEX IF NOT EXISTS FOR (n:" + Node.Label.CUSTOM.name() + ") ON (n.attr_type)");
                 tx.commit();
+
                 return 1;
             });
 
