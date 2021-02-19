@@ -29,10 +29,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -40,7 +37,6 @@ import java.util.*;
 import static org.opencb.bionetdb.core.models.network.Node.Label.*;
 import static org.opencb.bionetdb.lib.utils.CsvInfo.FILENAME_SEPARATOR;
 import static org.opencb.bionetdb.lib.utils.CsvInfo.RelationFilename.*;
-import static org.opencb.bionetdb.lib.utils.CsvInfo.SEPARATOR;
 
 public class Builder {
     public static final Object ENSEMBL_GENE_FILENAME = "gene.json";
@@ -237,34 +233,31 @@ public class Builder {
             rnaNodes = new ArrayList<>();
         }
 
-        public void post() {
+        public void post() throws IOException {
             CsvInfo csv = builder.getCsvInfo();
-            PrintWriter pwNode, pwRel;
+            BufferedWriter bwNode, bwRel;
 
             // Post-process DNA nodes
             logger.info("Post-processing {} dna nodes", dnaNodes.size());
-            pwNode = csv.getWriter(DNA.name());
-            pwRel = csv.getWriter(IS___DNA___GENE.name());
             for (Node node: dnaNodes) {
                 List<String> geneIds = getGeneIds(node.getName());
                 for (String geneId: geneIds) {
                     Long geneUid = builder.processGene(geneId, geneId);
                     if (geneUid != null) {
                         // Write dna-gene relation
-                        pwRel.println(node.getUid() + CsvInfo.SEPARATOR + geneUid);
+                        writeNodeLine(node);
+                        writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
                     }
                 }
                 // Write DNA node
-                pwNode.println(csv.nodeLine(node));
+                writeNodeLine(node);
             }
 
             // Post-process RNA nodes
             logger.info("Post-processing {} rna nodes", rnaNodes.size());
-            pwNode = csv.getWriter(RNA.name());
-            pwRel = csv.getWriter(IS___RNA___MIRNA.name());
             for (Node node: rnaNodes) {
                 // Write RNA node
-                pwNode.println(csv.nodeLine(node));
+                writeNodeLine(node);
 
                 if (StringUtils.isNotEmpty(node.getName())) {
                     if (node.getName().startsWith("miR")) {
@@ -272,7 +265,7 @@ public class Builder {
                         Long miRnaUid = csv.getLong(id, MIRNA.name());
                         if (miRnaUid != null) {
                             // Write relation rna - mirna
-                            pwRel.println(csv.relationLine(node.getUid(), miRnaUid));
+                            writeRelationLine(IS___RNA___MIRNA.name(), node.getUid(), miRnaUid);
                         }
                     }
                 }
@@ -280,11 +273,11 @@ public class Builder {
         }
 
         @Override
-        public void processNodes(List<Node> nodes) {
-            PrintWriter pw;
+        public void processNodes(List<Node> nodes) throws IOException {
+            BufferedWriter bw;
             for (Node node: nodes) {
                 if (CollectionUtils.isNotEmpty(node.getLabels())) {
-                    pw = builder.getCsvInfo().getWriter(node.getLabels().get(0).name());
+                    bw = builder.getCsvInfo().getWriter(node.getLabels().get(0).name());
 
                     if (StringUtils.isNotEmpty(node.getName())) {
                         if (node.getLabels().contains(PROTEIN)) {
@@ -302,23 +295,25 @@ public class Builder {
                     }
 
                     // Write node to CSV file
-                    pw.println(builder.getCsvInfo().nodeLine(node));
+                    bw.write(builder.getCsvInfo().nodeLine(node));
+                    bw.newLine();
                 }
             }
         }
 
         @Override
-        public void processRelations(List<Relation> relations) {
-            PrintWriter pw;
+        public void processRelations(List<Relation> relations) throws IOException {
+            BufferedWriter bw;
             for (Relation relation: relations) {
                 String id = relation.getLabel() + FILENAME_SEPARATOR + relation.getOrigLabel() + FILENAME_SEPARATOR
                         + relation.getDestLabel();
-                pw = builder.getCsvInfo().getWriter(id);
-                if (pw == null) {
+                bw = builder.getCsvInfo().getWriter(id);
+                if (bw == null) {
                     logger.info("BioPAX relationship not yet supported {}", id);
                 } else {
                     // Write relation to CSV file
-                    pw.println(builder.getCsvInfo().relationLine(relation.getOrigUid(), relation.getDestUid()));
+                    bw.write(builder.getCsvInfo().relationLine(relation.getOrigUid(), relation.getDestUid()));
+                    bw.newLine();
                 }
             }
         }
@@ -340,13 +335,13 @@ public class Builder {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private void buildInternalConfigNode() {
+    private void buildInternalConfigNode() throws IOException {
         Node node = new Node(0, null, null, INTERNAL_CONNFIG);
         node.addAttribute("uidCounter", csv.getUid());
-        csv.getWriter(INTERNAL_CONNFIG.name()).println(csv.nodeLine(node));
+        writeNodeLine(node);
     }
 
-    private Long processGene(String geneId, String geneName) {
+    private Long processGene(String geneId, String geneName) throws IOException {
         if (StringUtils.isEmpty(geneId)) {
             logger.info("Skip processing gene, (id, name) = (" + geneId + ", " + geneName + ")");
             return null;
@@ -367,15 +362,19 @@ public class Builder {
                 // Save gene UID
                 csv.saveUnknownGeneUid(geneId, geneName, node.getUid());
             }
+
             // Write gene node into the CSV file
-            csv.getWriter(GENE.name()).println(csv.nodeLine(node));
+            BufferedWriter bw = csv.getWriter(GENE.name());
+            bw.write(csv.nodeLine(node));
+            bw.newLine();
+
             return node.getUid();
         } else {
             return geneUid;
         }
     }
 
-    private Long processProtein(String proteinId, String proteinName) {
+    private Long processProtein(String proteinId, String proteinName) throws IOException {
         if (StringUtils.isEmpty(proteinId)) {
             return null;
         }
@@ -397,7 +396,7 @@ public class Builder {
                 csv.saveUnknownProteinUid(proteinId, proteinName, node.getUid());
             }
             // Write protein node into the CSV file
-            csv.getWriter(PROTEIN.name()).println(csv.nodeLine(node));
+            writeNodeLine(node);
             proteinUid = node.getUid();
         }
 
@@ -411,13 +410,12 @@ public class Builder {
         return csv.getLong(transcriptId, TRANSCRIPT.name());
     }
 
-    private Node createGeneNode(Gene gene) {
+    private Node createGeneNode(Gene gene) throws IOException {
         return createGeneNode(gene, csv.getAndIncUid());
     }
 
-    private Node createGeneNode(Gene gene, Long uid) {
+    private Node createGeneNode(Gene gene, Long uid) throws IOException {
         Node n;
-        PrintWriter pwRel;
 
 //        logger.info("----> creating gene node: " + gene.getId() + ", " + gene.getName());
 
@@ -426,27 +424,23 @@ public class Builder {
 
         // Model transcripts
         if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
-            pwRel = csv.getWriter(HAS___GENE___TRANSCRIPT.name());
-            PrintWriter pwTranscr = csv.getWriter(TRANSCRIPT.name());
             for (Transcript transcript: gene.getTranscripts()) {
                 Long transcrUid = csv.getLong(transcript.getId(), TRANSCRIPT.name());
                 if (transcrUid == null) {
                     // Create gene node and write the CSV file
                     Node transcrNode = createTranscriptNode(transcript);
                     transcrUid = transcrNode.getUid();
-                    pwTranscr.println(csv.nodeLine(transcrNode));
+                    writeNodeLine(transcrNode);
                 }
 
                 // Write gene-transcript relation
-                pwRel.println(uid + SEPARATOR + transcrUid);
+                writeRelationLine(HAS___GENE___TRANSCRIPT.name(), uid, transcrUid);
             }
         }
 
         // Model miRNA gene and mature miRNA
         if (gene.getMirna() != null) {
             MiRnaGene miRna = gene.getMirna();
-            PrintWriter pwRelGeneMiRna = csv.getWriter(IS___GENE___MIRNA.name());
-            PrintWriter pwMiRna = csv.getWriter(MIRNA.name());
             Long miRnaUid = csv.getLong(miRna.getId(), MIRNA.name());
             if (miRnaUid == null) {
                 // Create miRNA node and write the CSV file
@@ -454,12 +448,10 @@ public class Builder {
                 Node miRnaNode = NodeBuilder.newNode(miRnaUid, miRna);
 
                 csv.putLong(miRna.getId(), MIRNA.name(), miRnaUid);
-                pwMiRna.println(csv.nodeLine(miRnaNode));
+                writeNodeLine(miRnaNode);
 
                 // Mature miRna
                 if (CollectionUtils.isNotEmpty(miRna.getMatures())) {
-                    PrintWriter pwMature = csv.getWriter(MIRNA_MATURE.name());
-                    PrintWriter pwRelMatureMiRna = csv.getWriter(MATURE___MIRNA___MIRNA_MATURE.name());
                     for (MiRnaMature mature : miRna.getMatures()) {
                         Long matureUid = csv.getLong(mature.getId(), MIRNA_MATURE.name());
                         if (matureUid == null) {
@@ -467,22 +459,21 @@ public class Builder {
                             // Create mature miRNA node and write the CSV file
                             Node matureNode = NodeBuilder.newNode(matureUid, mature);
                             csv.putLong(mature.getId(), MIRNA_MATURE.name(), matureUid);
-                            pwMature.println(csv.nodeLine(matureNode));
+                            writeNodeLine(matureNode);
                         }
                         // Write mirna-mature relation
-                        pwRelMatureMiRna.println(miRnaUid + SEPARATOR + matureUid);
+                        writeRelationLine(MATURE___MIRNA___MIRNA_MATURE.name(), miRnaUid, matureUid);
                     }
                 }
             }
             // Write gene-mirna relation
-            pwRelGeneMiRna.println(uid + SEPARATOR + miRnaUid);
+            writeRelationLine(IS___GENE___MIRNA.name(), uid, miRnaUid);
         }
 
         // Model gene annotation: drugs, diseases,...
         if (gene.getAnnotation() != null) {
             // Model drugs
             if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDrugs())) {
-                pwRel = csv.getWriter(ANNOTATION___DRUG___GENE_DRUG_INTERACTION.name());
                 for (GeneDrugInteraction drugInteraction : gene.getAnnotation().getDrugs()) {
                     // Gene drug interaction node
                     n = NodeBuilder.newNode(csv.getAndIncUid(), drugInteraction);
@@ -493,20 +484,19 @@ public class Builder {
                     if (drugUid == null) {
                         Node drugNode = new Node(csv.getAndIncUid(), drugInteraction.getDrugName(), drugInteraction.getChemblId(), DRUG);
                         drugNode.getLabels().add(PHYSICAL_ENTITY);
-                        csv.getWriter(DRUG.name()).println(csv.nodeLine(drugNode));
+                        writeNodeLine(drugNode);
 
                         // Save drug and gene-drug UIDs
                         drugUid = drugNode.getUid();
                         csv.putLong(drugNode.getName(), DRUG.name(), drugUid);
                         csv.putLong(drugNode.getId(), DRUG.name(), drugUid);
                     }
-                    pwRel.println(csv.relationLine(drugUid, n.getUid()));
+                    writeRelationLine(ANNOTATION___DRUG___GENE_DRUG_INTERACTION.name(), drugUid, n.getUid());
                 }
             }
 
             // Model gene trait association (diseases)
             if (CollectionUtils.isNotEmpty(gene.getAnnotation().getDiseases())) {
-                pwRel = csv.getWriter(ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.name());
                 Set<String> done = new HashSet<>();
                 for (GeneTraitAssociation disease : gene.getAnnotation().getDiseases()) {
                     String diseaseId = disease.getId() + (disease.getHpo() != null ? "_" + disease.getHpo() : "");
@@ -520,7 +510,7 @@ public class Builder {
                             csv.putLong(diseaseId, GENE_TRAIT_ASSOCIATION.name(), n.getUid());
                         } else {
                             // create gene-disease relation
-                            pwRel.println(csv.relationLine(uid, diseaseUid));
+                            writeRelationLine(ANNOTATION___GENE___GENE_TRAIT_ASSOCIATION.name(), uid, diseaseUid);
                         }
                         done.add(diseaseId);
                     }
@@ -538,8 +528,6 @@ public class Builder {
         }
 
         // Xrefs
-        PrintWriter pwXref = csv.getWriter(XREF.name());
-        pwRel = csv.getWriter(ANNOTATION___GENE___XREF.name());
         Set<Xref> xrefSet = new HashSet<>();
         xrefSet.add(new Xref(gene.getId(), "Ensembl", "Ensembl"));
         xrefSet.add(new Xref(gene.getName(), "Ensembl", "Ensembl"));
@@ -558,17 +546,18 @@ public class Builder {
             Long xrefUid = csv.getLong(xref.getDbName() + "." + xref.getId(), XREF.name());
             if (xrefUid == null) {
                 n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
-                pwXref.println(csv.nodeLine(n));
+                writeNodeLine(n);
+
                 xrefUid = n.getUid();
                 csv.putLong(xref.getDbName() + "." + xref.getId(), XREF.name(), xrefUid);
             }
-            pwRel.println(csv.relationLine(uid, xrefUid));
+            writeRelationLine(ANNOTATION___GENE___XREF.name(), uid, xrefUid);
         }
 
         return geneNode;
     }
 
-    private Node completeProteinNode(Node node) {
+    private Node completeProteinNode(Node node) throws IOException {
         Entry protein = csv.getProtein(node.getName());
         if (protein == null) {
             return node;
@@ -588,11 +577,11 @@ public class Builder {
         return newNode;
     }
 
-    private Node createProteinNode(Entry protein) {
+    private Node createProteinNode(Entry protein) throws IOException {
         return createProteinNode(protein, csv.getAndIncUid());
     }
 
-    private Node createProteinNode(Entry protein, Long uid) {
+    private Node createProteinNode(Entry protein, Long uid) throws IOException {
         Node n;
         PrintWriter pw;
 
@@ -601,7 +590,6 @@ public class Builder {
 
         // Model protein keywords
         if (CollectionUtils.isNotEmpty(protein.getKeyword())) {
-            pw = csv.getWriter(ANNOTATION___PROTEIN___PROTEIN_KEYWORD.name());
             for (KeywordType keyword: protein.getKeyword()) {
                 Long kwUid = csv.getLong(keyword.getId(), PROTEIN_KEYWORD.name());
                 if (kwUid == null) {
@@ -610,14 +598,13 @@ public class Builder {
                     csv.putLong(keyword.getId(), PROTEIN_KEYWORD.name(), n.getUid());
                 } else {
                     // Create protein - protein keyword relation
-                    pw.println(csv.relationLine(uid, kwUid));
+                    writeRelationLine(ANNOTATION___PROTEIN___PROTEIN_KEYWORD.name(), uid, kwUid);
                 }
             }
         }
 
         // Model protein features
         if (CollectionUtils.isNotEmpty(protein.getFeature())) {
-            pw = csv.getWriter(ANNOTATION___PROTEIN___PROTEIN_FEATURE.name());
             for (FeatureType feature: protein.getFeature()) {
                 if (StringUtils.isNotEmpty(feature.getId())) {
                     Long featureUid = csv.getLong(feature.getId(), PROTEIN_FEATURE.name());
@@ -627,7 +614,7 @@ public class Builder {
                         csv.putLong(feature.getId(), PROTEIN_FEATURE.name(), n.getUid());
                     } else {
                         // Create protein - protein feature relation
-                        pw.println(csv.relationLine(uid, featureUid));
+                        writeRelationLine(ANNOTATION___PROTEIN___PROTEIN_FEATURE.name(), uid, featureUid);
                     }
                 } else {
                     n = NodeBuilder.newNode(csv.getAndIncUid(), feature);
@@ -638,8 +625,6 @@ public class Builder {
 
         // Model Xrefs
         if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
-            PrintWriter pwXref = csv.getWriter(XREF.name());
-            pw = csv.getWriter(ANNOTATION___PROTEIN___XREF.name());
             Set<String> done = new HashSet<>();
             for (DbReferenceType dbRef: protein.getDbReference()) {
                 String xrefId = dbRef.getType() + "." + dbRef.getId();
@@ -647,11 +632,12 @@ public class Builder {
                     Long xrefUid = csv.getLong(xrefId, XREF.name());
                     if (xrefUid == null) {
                         n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
-                        pwXref.println(csv.nodeLine(n));
+                        writeNodeLine(n);
+
                         xrefUid = n.getUid();
                         csv.putLong(dbRef.getType() + "." + dbRef.getId(), XREF.name(), xrefUid);
                     }
-                    pw.println(csv.relationLine(uid, xrefUid));
+                    writeRelationLine(ANNOTATION___PROTEIN___XREF.name(), uid, xrefUid);
 
                     done.add(xrefId);
                 }
@@ -662,11 +648,11 @@ public class Builder {
         return proteinNode;
     }
 
-    private Node createTranscriptNode(Transcript transcript) {
+    private Node createTranscriptNode(Transcript transcript) throws IOException {
         return createTranscriptNode(transcript, csv.getAndIncUid());
     }
 
-    private Node createTranscriptNode(Transcript transcript, Long uid) {
+    private Node createTranscriptNode(Transcript transcript, Long uid) throws IOException {
         // Create transcript node and save transcript UId
         Node node = NodeBuilder.newNode(uid, transcript);
         csv.putLong(transcript.getId(), TRANSCRIPT.name(), uid);
@@ -697,8 +683,7 @@ public class Builder {
 
                     if (proteinUid != null) {
                         // Write transcript-protein relation
-                        csv.getWriter(IS___TRANSCRIPT___PROTEIN.name()).println(uid + SEPARATOR
-                                + proteinUid);
+                        writeRelationLine(IS___TRANSCRIPT___PROTEIN.name(), uid, proteinUid);
                         break;
                     }
                 }
@@ -711,7 +696,6 @@ public class Builder {
 
         // Model exon
         if (CollectionUtils.isNotEmpty(transcript.getExons())) {
-            PrintWriter pwRel = csv.getWriter(HAS___TRANSCRIPT___EXON.name());
             for (Exon exon : transcript.getExons()) {
                 Long exonUid = csv.getLong(exon.getId(), Node.Label.EXON.name());
                 if (exonUid == null) {
@@ -719,7 +703,7 @@ public class Builder {
                     exonUid = n.getUid();
                 }
                 // Add relation transcript-ontology to CSV file
-                pwRel.println(uid + SEPARATOR + exonUid);
+                writeRelationLine(HAS___TRANSCRIPT___EXON.name(), uid, exonUid);
             }
         }
 
@@ -739,8 +723,7 @@ public class Builder {
                     String constraintId = constraint.getName() + "." + constraint.getSource() + "." + constraint.getValue();
                     if (!done.contains(constraintId)) {
                         Long constraintUid = checkConstraint(constraint);
-                        csv.getWriter(ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE.name()).println(csv.relationLine(uid,
-                                constraintUid));
+                        writeRelationLine(ANNOTATION___TRANSCRIPT___TRANSCRIPT_CONSTRAINT_SCORE.name(), uid, constraintUid);
                         done.add(constraintId);
                     }
                 }
@@ -748,11 +731,10 @@ public class Builder {
 
             // Model feature ontology term annotation
             if (CollectionUtils.isNotEmpty(transcript.getAnnotation().getOntologies())) {
-                PrintWriter pwRel = csv.getWriter(ANNOTATION___TRANSCRIPT___FEATURE_ONTOLOGY_TERM_ANNOTATION.name());
                 for (FeatureOntologyTermAnnotation ontology : transcript.getAnnotation().getOntologies()) {
                     // Create the feature ontology term annotation node and the relation with the transcript to CSV file
                     n = createFeatureOntologyTermAnnotationNode(ontology);
-                    pwRel.println(uid + SEPARATOR + n.getUid());
+                    writeRelationLine(ANNOTATION___TRANSCRIPT___FEATURE_ONTOLOGY_TERM_ANNOTATION.name(), uid, n.getUid());
 
 //                    Long ontologyUid = csv.getLong(ontology.getId(), Node.Label.FEATURE_ONTOLOGY_TERM_ANNOTATION.name());
 //                    if (ontologyUid == null) {
@@ -767,8 +749,6 @@ public class Builder {
 
         // Model Xrefs
         if (CollectionUtils.isNotEmpty(transcript.getXrefs())) {
-            PrintWriter pwXref = csv.getWriter(XREF.name());
-            PrintWriter pw = csv.getWriter(ANNOTATION___TRANSCRIPT___XREF.name());
             Set<String> done = new HashSet<>();
             for (Xref xref: transcript.getXrefs()) {
                 String xrefId = xref.getDbName() + "." + xref.getId();
@@ -777,11 +757,11 @@ public class Builder {
                     Long xrefUid = csv.getLong(xrefId, XREF.name());
                     if (xrefUid == null) {
                         n = NodeBuilder.newNode(csv.getAndIncUid(), xref);
-                        pwXref.println(csv.nodeLine(n));
+                        writeNodeLine(n);
                         xrefUid = n.getUid();
                         csv.putLong(xrefId, XREF.name(), xrefUid);
                     }
-                    pw.println(csv.relationLine(uid, xrefUid));
+                    writeRelationLine(ANNOTATION___TRANSCRIPT___XREF.name(), uid, xrefUid);
                     done.add(xrefId);
                 }
             }
@@ -791,27 +771,27 @@ public class Builder {
         return node;
     }
 
-    private Node createExonNode(Exon exon, String source) {
+    private Node createExonNode(Exon exon, String source) throws IOException {
         return createExonNode(exon, csv.getAndIncUid(), source);
     }
 
-    private Node createExonNode(Exon exon, Long uid, String source) {
+    private Node createExonNode(Exon exon, Long uid, String source) throws IOException {
         // Create exon node and save UId and wrrite CSV file
         Node node = NodeBuilder.newNode(uid, exon, source);
-        csv.getWriter(Node.Label.EXON.name()).println(csv.nodeLine(node));
+        writeNodeLine(node);
         csv.putLong(exon.getId(), Node.Label.EXON.name(), uid);
 
         return node;
     }
 
-    private Node createFeatureOntologyTermAnnotationNode(FeatureOntologyTermAnnotation ontology) {
+    private Node createFeatureOntologyTermAnnotationNode(FeatureOntologyTermAnnotation ontology) throws IOException {
         return createFeatureOntologyTermAnnotationNode(ontology, csv.getAndIncUid());
     }
 
-    private Node createFeatureOntologyTermAnnotationNode(FeatureOntologyTermAnnotation ontology, Long uid) {
+    private Node createFeatureOntologyTermAnnotationNode(FeatureOntologyTermAnnotation ontology, Long uid) throws IOException {
         // Create ontology node and save UId and wrrite CSV file
         Node node = NodeBuilder.newNode(uid, ontology);
-        csv.getWriter(FEATURE_ONTOLOGY_TERM_ANNOTATION.name()).println(csv.nodeLine(node));
+        writeNodeLine(node);
         csv.putLong(ontology.getId(), FEATURE_ONTOLOGY_TERM_ANNOTATION.name(), uid);
 
         if (CollectionUtils.isNotEmpty(ontology.getEvidence())) {
@@ -825,7 +805,7 @@ public class Builder {
         return node;
     }
 
-    private Long processVariant(Variant variant) {
+    private Long processVariant(Variant variant) throws IOException {
         Node variantNode = null;
 
         Long variantUid = csv.getLong(variant.toStringSimple(), VARIANT.name());
@@ -835,20 +815,16 @@ public class Builder {
             csv.putLong(variant.toStringSimple(), VARIANT.name(), variantUid);
         }
 
-        // Process sample info
-//        processSampleInfo(variant, variantUid);
-
         return variantUid;
     }
 
-    private Node createVariantNode(Variant variant) {
+    private Node createVariantNode(Variant variant) throws IOException {
         return createVariantNode(variant, csv.getAndIncUid());
     }
 
-    private Node createVariantNode(Variant variant, Long varUid) {
+    private Node createVariantNode(Variant variant, Long varUid) throws IOException {
         Node varNode = NodeBuilder.newNode(varUid, variant);
-        PrintWriter pw = csv.getWriter(VARIANT.name());
-        pw.println(csv.nodeLine(varNode));
+        writeNodeLine(varNode);
 
         Node node;
 
@@ -881,16 +857,14 @@ public class Builder {
                     Long geneUid = processGene(ct.getEnsemblGeneId(), ct.getGeneName());
                     if (geneUid != null) {
                         // Relation: consequence type - gene
-                        pw = csv.getWriter(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE.name());
-                        pw.println(csv.relationLine(ctNode.getUid(), geneUid));
+                        writeRelationLine(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___GENE.name(), ctNode.getUid(), geneUid);
                     }
 
                     // Transcript
                     Long transcriptUid = processTranscript(ct.getEnsemblTranscriptId());
                     if (transcriptUid != null) {
                         // Relation: consequence type - transcript
-                        pw = csv.getWriter(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT.name());
-                        pw.println(csv.relationLine(ctNode.getUid(), transcriptUid));
+                        writeRelationLine(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___TRANSCRIPT.name(), ctNode.getUid(), transcriptUid);
                     } else {
                         if (geneUid != null) {
                             logger.info("Transcript UID is null for {} (gene {}), maybe version mismatch!!"
@@ -912,8 +886,7 @@ public class Builder {
                                     csv.putLong(soId, SO_TERM.name(), soNode.getUid());
                                 } else {
                                     // Relation: consequence type - so
-                                    pw = csv.getWriter(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM.name());
-                                    pw.println(csv.relationLine(ctNode.getUid(), soUid));
+                                    writeRelationLine(ANNOTATION___VARIANT_CONSEQUENCE_TYPE___SO_TERM.name(), ctNode.getUid(), soUid);
                                 }
                             }
                         }
@@ -930,8 +903,7 @@ public class Builder {
                                 ct.getProteinVariantAnnotation().getUniprotName());
                         if (protUid != null) {
                             // Relation: protein variant annotation - protein
-                            pw = csv.getWriter(ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN.name());
-                            pw.println(csv.relationLine(pVANode.getUid(), protUid));
+                            writeRelationLine(ANNOTATION___PROTEIN_VARIANT_ANNOTATION___PROTEIN.name(), pVANode.getUid(), protUid);
                         }
 
                         // Protein substitution scores
@@ -999,11 +971,11 @@ public class Builder {
                         Long repeatUid = csv.getLong(repeatId, REPEAT.name());
                         if (repeatUid == null) {
                             node = NodeBuilder.newNode(csv.getAndIncUid(), repeat);
-                            csv.getWriter(REPEAT.name()).println(csv.nodeLine(node));
+                            writeNodeLine(node);
                             repeatUid = node.getUid();
                             csv.putLong(repeatId, REPEAT.name(), repeatUid);
                         }
-                        csv.getWriter(ANNOTATION___VARIANT___REPEAT.name()).println(csv.relationLine(varUid, repeatUid));
+                        writeRelationLine(ANNOTATION___VARIANT___REPEAT.name(), varUid, repeatUid);
                     }
                 }
             }
@@ -1015,11 +987,11 @@ public class Builder {
                         Long cytobandUid = csv.getLong(cytoband.getName(), CYTOBAND.name());
                         if (cytobandUid == null) {
                             node = NodeBuilder.newNode(csv.getAndIncUid(), cytoband);
-                            csv.getWriter(CYTOBAND.name()).println(csv.nodeLine(node));
+                            writeNodeLine(node);
                             cytobandUid = node.getUid();
                             csv.putLong(cytoband.getName(), CYTOBAND.name(), cytobandUid);
                         }
-                        csv.getWriter(ANNOTATION___VARIANT___CYTOBAND.name()).println(csv.relationLine(varUid, cytobandUid));
+                        writeRelationLine(ANNOTATION___VARIANT___CYTOBAND.name(), varUid, cytobandUid);
                     }
                 }
             }
@@ -1039,8 +1011,7 @@ public class Builder {
                     String constraintId = constraint.getName() + "." + constraint.getSource() + "." + constraint.getValue();
                     if (!done.contains(constraintId)) {
                         Long constraintUid = checkConstraint(constraint);
-                        csv.getWriter(ANNOTATION___VARIANT___TRANSCRIPT_CONSTRAINT_SCORE.name()).println(csv.relationLine(varUid,
-                                constraintUid));
+                        writeRelationLine(ANNOTATION___VARIANT___TRANSCRIPT_CONSTRAINT_SCORE.name(), varUid, constraintUid);
                         done.add(constraintId);
                     }
                 }
@@ -1050,7 +1021,7 @@ public class Builder {
         return varNode;
     }
 
-    private void createStudyRelatedNodes(Long varUid, Variant variant) {
+    private void createStudyRelatedNodes(Long varUid, Variant variant) throws IOException {
         if (CollectionUtils.isEmpty(variant.getStudies())) {
             return;
         }
@@ -1071,8 +1042,7 @@ public class Builder {
                         updateCSVFiles(varUid, fileDataNode, DATA___VARIANT___VARIANT_FILE_DATA.name());
 
                         // and the relation with file
-                        csv.getWriter(DATA___VARIANT_FILE___VARIANT_FILE_DATA.name()).println(csv.relationLine(
-                                fileUid, fileDataNode.getUid()));
+                        writeRelationLine(DATA___VARIANT_FILE___VARIANT_FILE_DATA.name(), fileUid, fileDataNode.getUid());
                     } else {
                         logger.info("File ID " + fileEntry.getFileId() + " for variant ID " + variant.toString() + ". Can't make relation: "
                                 + " File - Variant File Data");
@@ -1097,8 +1067,7 @@ public class Builder {
                         updateCSVFiles(varUid, sampleDataNode, DATA___VARIANT___VARIANT_SAMPLE_DATA.name());
 
                         // and the relation with sample
-                        csv.getWriter(DATA___SAMPLE___VARIANT_SAMPLE_DATA.name()).println(csv.relationLine(
-                                sampleUid, sampleDataNode.getUid()));
+                        writeRelationLine(DATA___SAMPLE___VARIANT_SAMPLE_DATA.name(), sampleUid, sampleDataNode.getUid());
 
                         // and add relation variant file - sample
                         if (sampleEntry.getFileIndex() != null && CollectionUtils.isNotEmpty(studyEntry.getFiles())) {
@@ -1110,8 +1079,7 @@ public class Builder {
                                     Long relUid = csv.getLong(fileId + "." + sampleId, HAS___VARIANT_FILE___SAMPLE.name());
                                     if (relUid == null) {
                                         // and the relation with sample
-                                        csv.getWriter(HAS___VARIANT_FILE___SAMPLE.name()).println(
-                                                csv.relationLine(fileUid, sampleUid));
+                                        writeRelationLine(HAS___VARIANT_FILE___SAMPLE.name(), fileUid, sampleUid);
 
                                         // Save this relation
                                         csv.putLong(fileId + "." + sampleId, HAS___VARIANT_FILE___SAMPLE.name(), 1);
@@ -1153,7 +1121,7 @@ public class Builder {
                         nodeUidMap.put(node.getUid(), csv.getAndIncUid());
                         // Update UID and append node to the CSV file
                         node.setUid(nodeUidMap.get(node.getUid()));
-                        csv.getWriter(node.getLabels().get(0).name()).println(csv.nodeLine(node));
+                        writeNodeLine(node);
                     } else {
                         // Node already exists !!
                         nodeUidMap.put(node.getUid(), uid);
@@ -1166,20 +1134,18 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(network.getRelations())) {
             for (Relation relation: network.getRelations()) {
                 relation.setUid(csv.getAndIncUid());
-                csv.getWriter(relation.getLabel().name()).println(csv.relationLine(nodeUidMap.get(relation.getOrigUid()),
-                        nodeUidMap.get(relation.getDestUid())));
+                writeRelationLine(relation.getLabel().name(), nodeUidMap.get(relation.getOrigUid()), nodeUidMap.get(relation.getDestUid()));
             }
         }
     }
 
-    private Long checkConstraint(Constraint constraint) {
+    private Long checkConstraint(Constraint constraint) throws IOException {
         Long constraintUid = csv.getLong(constraint.getName() + "." + constraint.getValue(), TRANSCRIPT_CONSTRAINT_SCORE.name());
         if (constraintUid == null) {
             Node node = NodeBuilder.newNode(csv.getAndIncUid(), constraint);
-            csv.getWriter(TRANSCRIPT_CONSTRAINT_SCORE.name()).println(csv.nodeLine(node));
+            writeNodeLine(node);
             constraintUid = node.getUid();
-            csv.putLong(constraint.getName() + "." + constraint.getValue(), TRANSCRIPT_CONSTRAINT_SCORE.name(),
-                    constraintUid);
+            csv.putLong(constraint.getName() + "." + constraint.getValue(), TRANSCRIPT_CONSTRAINT_SCORE.name(), constraintUid);
         }
         return constraintUid;
     }
@@ -1211,10 +1177,22 @@ public class Builder {
     }
 
 
+    private void writeNodeLine(Node node) throws IOException {
+        BufferedWriter bw = csv.getWriter(node.getLabels().get(0).name());
+        bw.write(csv.nodeLine(node));
+        bw.newLine();
+    }
+
+    private void writeRelationLine(String filename, Long origUid, Long destUid) throws IOException {
+        BufferedWriter bw = csv.getWriter(filename);
+        bw.write(csv.relationLine(origUid, destUid));
+        bw.newLine();
+    }
+
     //-------------------------------------------------------------------------
 
 
-    private void processMetadata(List<File> variantFiles) {
+    private void processMetadata(List<File> variantFiles) throws IOException {
         // For variant file info, variant sample format and sample nodes we have to read variant metadata files to know which attributes
         // are present
         if (CollectionUtils.isNotEmpty(variantFiles)) {
@@ -1254,7 +1232,7 @@ public class Builder {
                                 familyUid = csv.getLong(individual.getFamily(), FAMILY.name());
                                 if (familyUid == null) {
                                     Node familyNode = new Node(csv.getAndIncUid(), individual.getFamily(), individual.getFamily(), FAMILY);
-                                    csv.getWriter(FAMILY.name()).println(csv.nodeLine(familyNode));
+                                    writeNodeLine(familyNode);
                                     familyUid = familyNode.getUid();
                                     csv.putLong(individual.getFamily(), FAMILY.name(), familyUid);
                                 }
@@ -1262,9 +1240,9 @@ public class Builder {
 
                             // Create individual node
                             Node individualNode = NodeBuilder.newNode(csv.getAndIncUid(), individual);
-                            csv.getWriter(INDIVIDUAL.name()).println(csv.nodeLine(individualNode));
+                            writeNodeLine(individualNode);
                             if (familyUid != null) {
-                                csv.getWriter(HAS___FAMILY___INDIVIDUAL.name()).println(csv.relationLine(individualUid, familyUid));
+                                writeRelationLine(HAS___FAMILY___INDIVIDUAL.name(), individualUid, familyUid);
                             }
                             individualUid = individualNode.getUid();
 
@@ -1278,9 +1256,8 @@ public class Builder {
                                                 sampleNode.addAttribute(entry.getKey(), entry.getValue());
                                             }
                                         }
-                                        csv.getWriter(SAMPLE.name()).println(csv.nodeLine(sampleNode));
-                                        csv.getWriter(HAS___INDIVIDUAL___SAMPLE.name()).println(csv.relationLine(individualUid,
-                                                sampleNode.getUid()));
+                                        writeNodeLine(sampleNode);
+                                        writeRelationLine(HAS___INDIVIDUAL___SAMPLE.name(), individualUid, sampleNode.getUid());
 
                                         // Save sample UID
                                         csv.putLong(sample.getId(), SAMPLE.name(), sampleNode.getUid());
@@ -1297,16 +1274,14 @@ public class Builder {
                         if (StringUtils.isNotEmpty(individual.getMother())) {
                             Long motherUid = csv.getLong(individual.getMother(), INDIVIDUAL.name());
                             if (motherUid != null) {
-                                csv.getWriter(MOTHER_OF___INDIVIDUAL___INDIVIDUAL.name()).println(csv.relationLine(motherUid,
-                                        individualUid));
+                                writeRelationLine(MOTHER_OF___INDIVIDUAL___INDIVIDUAL.name(), motherUid, individualUid);
                             }
                         }
 
                         if (StringUtils.isNotEmpty(individual.getFather())) {
                             Long fatherUid = csv.getLong(individual.getFather(), INDIVIDUAL.name());
                             if (fatherUid != null) {
-                                csv.getWriter(FATHER_OF___INDIVIDUAL___INDIVIDUAL.name()).println(csv.relationLine(fatherUid,
-                                        individualUid));
+                                writeRelationLine(FATHER_OF___INDIVIDUAL___INDIVIDUAL.name(), fatherUid, individualUid);
                             }
                         }
                     }
@@ -1322,7 +1297,7 @@ public class Builder {
                                         fileNode.addAttribute(entry.getKey(), entry.getValue());
                                     }
                                 }
-                                csv.getWriter(VARIANT_FILE.name()).println(csv.nodeLine(fileNode));
+                                writeNodeLine(fileNode);
 
                                 // Save variant file UID
                                 csv.putLong(fileMetadata.getId(), VARIANT_FILE.name(), fileNode.getUid());
@@ -1334,14 +1309,12 @@ public class Builder {
         }
     }
 
-    private void updateCSVFiles(long startUid, Node node, String relationType) {
+    private void updateCSVFiles(long startUid, Node node, String relationType) throws IOException {
         // Update node CSV file
-        PrintWriter pw = csv.getWriter(node.getLabels().get(0).name());
-        pw.println(csv.nodeLine(node));
+        writeNodeLine(node);
 
         // Update relation CSV file
-        pw = csv.getWriter(relationType);
-        pw.println(csv.relationLine(startUid, node.getUid()));
+        writeRelationLine(relationType, startUid, node.getUid());
     }
 
     public void buildGenes(Path genePath) throws IOException {
@@ -1399,7 +1372,6 @@ public class Builder {
             if (gene.getAnnotation() != null && CollectionUtils.isNotEmpty(gene.getAnnotation().getMirnaTargets())) {
                 Long geneUid = csv.getLong(gene.getId(), GENE.name());
                 if (geneUid != null) {
-                    PrintWriter pw = csv.getWriter(TARGET___GENE___MIRNA_MATURE.name());
                     for (MirnaTarget mirnaTarget : gene.getAnnotation().getMirnaTargets()) {
                         Long matureUid = csv.getLong(mirnaTarget.getSourceId(), MIRNA_MATURE.name());
                         if (matureUid != null) {
@@ -1410,15 +1382,13 @@ public class Builder {
                                 targetNode.addAttribute("pubmed", target.getPubmed());
 
                                 // Write mirna target node into the CSV file
-                                csv.getWriter(MIRNA_TARGET.name()).println(csv.nodeLine(targetNode));
+                                writeNodeLine(targetNode);
 
                                 // Write mirna target - gene relation
-                                csv.getWriter(ANNOTATION___GENE___MIRNA_TARGET.name()).println(geneUid
-                                        + SEPARATOR + targetNode.getUid());
+                                writeRelationLine(ANNOTATION___GENE___MIRNA_TARGET.name(), geneUid, targetNode.getUid());
 
                                 // And write mirna target - mirna mature relation
-                                csv.getWriter(ANNOTATION___MIRNA_MATURE___MIRNA_TARGET.name()).println(matureUid + SEPARATOR
-                                        + targetNode.getUid());
+                                writeRelationLine(ANNOTATION___MIRNA_MATURE___MIRNA_TARGET.name(), matureUid, targetNode.getUid());
                             }
                         }
                     }
@@ -1506,9 +1476,6 @@ public class Builder {
         ObjectReader mapperReader = new ObjectMapper().reader(DiseasePanel.class);
 
         // Get CSV file writers
-        PrintWriter pwDiseasePanelNode = csv.getWriter(DISEASE_PANEL.name());
-        PrintWriter pwPanelGeneNode = csv.getWriter(PANEL_GENE.name());
-
         BufferedReader reader = FileUtils.newBufferedReader(panelPath);
 
         String jsonDiseasePanel = reader.readLine();
@@ -1517,15 +1484,14 @@ public class Builder {
 
             // Create disease panel node and save CSV file
             Node diseasePanelNode = NodeBuilder.newNode(csv.getAndIncUid(), diseasePanel);
-            pwDiseasePanelNode.println(csv.nodeLine(diseasePanelNode));
+            writeNodeLine(diseasePanelNode);
 
             for (DiseasePanel.GenePanel panelGene : diseasePanel.getGenes()) {
                 // Create panel gene node and save CSV file
                 Node panelGeneNode = NodeBuilder.newNode(csv.getAndIncUid(), panelGene);
-                pwPanelGeneNode.println(csv.nodeLine(panelGeneNode));
+                writeNodeLine(panelGeneNode);
 
-                csv.getWriter(HAS___DISEASE_PANEL___PANEL_GENE.name()).println(diseasePanelNode.getUid()
-                        + SEPARATOR + panelGeneNode.getUid());
+                writeRelationLine(HAS___DISEASE_PANEL___PANEL_GENE.name(), diseasePanelNode.getUid(), panelGeneNode.getUid());
 
                 if (StringUtils.isNotEmpty(panelGene.getId())) {
                     Long geneUid = csv.getGeneUid(panelGene.getId());
@@ -1536,8 +1502,7 @@ public class Builder {
 //                    Long geneUid = processGene(panelGene.getId(), panelGene.getName());
                     if (geneUid != null) {
                         // Add relation to CSV file
-                        csv.getWriter(ANNOTATION___GENE___PANEL_GENE.name()).println(geneUid + SEPARATOR
-                                + panelGeneNode.getUid());
+                        writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), geneUid, panelGeneNode.getUid());
                     } else {
                         String msg = "Not found!!! Gene " + panelGene.getId() + " (" + panelGene.getName() + ") from disease panel "
                                 + diseasePanel.getId();

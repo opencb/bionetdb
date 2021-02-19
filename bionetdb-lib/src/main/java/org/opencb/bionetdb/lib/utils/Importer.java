@@ -71,7 +71,7 @@ public class Importer {
         for (File file : inputPath.toFile().listFiles()) {
             if (file.isFile()) {
                 String filename = file.getName();
-                if (filename.endsWith(".csv")) {
+                if (filename.endsWith(".csv.gz")) {
                     if (filename.contains("__")) {
                         relationFiles.add(file);
                     } else {
@@ -181,7 +181,7 @@ public class Importer {
     private String removeCsvExt(String filename) {
         String name = null;
         if (filename != null) {
-            return filename.replace(".csv", "");
+            return filename.replace(".csv.gz", "");
         }
         return name;
     }

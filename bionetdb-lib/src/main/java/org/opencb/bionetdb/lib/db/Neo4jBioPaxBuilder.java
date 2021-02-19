@@ -55,8 +55,8 @@ public class Neo4jBioPaxBuilder {
     }
 
     public interface BioPAXProcessing {
-        void processNodes(List<Node> nodes);
-        void processRelations(List<Relation> relations);
+        void processNodes(List<Node> nodes) throws IOException;
+        void processRelations(List<Relation> relations) throws IOException;
     }
 
     public Neo4jBioPaxBuilder(CsvInfo csv, BioPAXProcessing bioPAXProcessing) {

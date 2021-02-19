@@ -25,14 +25,10 @@ import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
 
-import static org.opencb.bionetdb.core.models.network.Node.Label.*;
 import static org.opencb.bionetdb.lib.utils.Utils.PREFIX_ATTRIBUTES;
 
 public class CsvInfo {
@@ -46,8 +42,7 @@ public class CsvInfo {
     private Path inputPath;
     private Path outputPath;
 
-    private Map<String, PrintWriter> csvWriters;
-    private Map<String, PrintWriter> csvAnnotatedWriters;
+    private Map<String, BufferedWriter> csvWriters;
     private Map<String, List<String>> nodeAttributes;
     private Set<String> noAttributes;
 
@@ -222,15 +217,11 @@ public class CsvInfo {
 
     public CsvInfo(Path inputPath, Path outputPath) {
         uid = 1;
-        //this.bioPAXImporter = new Neo4jBioPaxBuilder()
 
         this.inputPath = inputPath;
         this.outputPath = outputPath;
 
-//        sampleIds = new ArrayList<>();
-
         csvWriters = new HashMap<>();
-        csvAnnotatedWriters = new HashMap<>();
 
         rocksDbManager = new RocksDbManager();
         uidRocksDb = this.rocksDbManager.getDBConnection(outputPath.toString() + "/uidRocksDB", true);
@@ -255,7 +246,7 @@ public class CsvInfo {
     }
 
     public void openCSVFiles(List<File> variantFiles) throws IOException {
-        PrintWriter pw;
+        BufferedWriter bw;
         String filename;
 
         noAttributes = createNoAttributes();
@@ -263,26 +254,28 @@ public class CsvInfo {
 
         // CSV files for nodes
         for (Node.Label label : Node.Label.values()) {
-            filename = label.toString() + ".csv";
+            filename = label.toString() + ".csv.gz";
 
-            pw = new PrintWriter(outputPath + "/" + filename);
-            csvWriters.put(label.toString(), pw);
+            bw = FileUtils.newBufferedWriter(outputPath.resolve(filename));
+            csvWriters.put(label.toString(), bw);
 
             if (CollectionUtils.isNotEmpty(nodeAttributes.get(label.toString()))) {
-                pw.println(getNodeHeaderLine(nodeAttributes.get(label.toString())));
+                bw.write(getNodeHeaderLine(nodeAttributes.get(label.toString())));
+                bw.newLine();
             }
         }
 
         // CSV files for relationships
         for (RelationFilename name : RelationFilename.values()) {
-            filename = name.name() + ".csv";
-            pw = new PrintWriter(outputPath + "/" + filename);
+            filename = name.name() + ".csv.gz";
+            bw = FileUtils.newBufferedWriter(outputPath.resolve(filename));
 
             // Write header
-            pw.println(getRelationHeaderLine(name.name()));
+            bw.write(getRelationHeaderLine(name.name()));
+            bw.newLine();
 
             // Add writer to the map
-            csvWriters.put(name.name(), pw);
+            csvWriters.put(name.name(), bw);
         }
 
         for (Relation.Label label : Relation.Label.values()) {
@@ -295,27 +288,27 @@ public class CsvInfo {
             }
             if (!found) {
                 filename = label.name() + ".csv";
-                pw = new PrintWriter(outputPath + "/" + filename);
+                bw = FileUtils.newBufferedWriter(outputPath.resolve(filename));
 
                 // Write header
-                pw.println(getRelationHeaderLine(label.name()));
+                bw.write(getRelationHeaderLine(label.name()));
+                bw.newLine();
 
                 // Add writer to the map
-                csvWriters.put(label.name(), pw);
+                csvWriters.put(label.name(), bw);
             }
 
         }
 
     }
 
-    public void close() {
-        List<Map<String, PrintWriter>> writerMaps = new ArrayList<>();
+    public void close() throws IOException {
+        List<Map<String, BufferedWriter>> writerMaps = new ArrayList<>();
         writerMaps.add(csvWriters);
-        writerMaps.add(csvAnnotatedWriters);
 
-        for (Map<String, PrintWriter> writerMap : writerMaps) {
+        for (Map<String, BufferedWriter> writerMap : writerMaps) {
             if (MapUtils.isNotEmpty(writerMap)) {
-                Iterator<PrintWriter> iterator = writerMap.values().iterator();
+                Iterator<BufferedWriter> iterator = writerMap.values().iterator();
                 while (iterator.hasNext()) {
                     iterator.next().close();
                 }
@@ -323,7 +316,7 @@ public class CsvInfo {
         }
     }
 
-    public PrintWriter getWriter(String filename) {
+    public BufferedWriter getWriter(String filename) {
         return csvWriters.get(filename);
     }
 
@@ -937,34 +930,12 @@ public class CsvInfo {
         return this;
     }
 
-    public static String getSEPARATOR() {
-        return SEPARATOR;
-    }
-
     public Path getOutputPath() {
         return outputPath;
     }
 
     public CsvInfo setOutputPath(Path outputPath) {
         this.outputPath = outputPath;
-        return this;
-    }
-
-//    public Map<String, PrintWriter> getCsvWriters() {
-//        return csvWriters;
-//    }
-//
-//    public CsvInfo setCsvWriters(Map<String, PrintWriter> csvWriters) {
-//        this.csvWriters = csvWriters;
-//        return this;
-//    }
-
-    public Map<String, PrintWriter> getCsvAnnotatedWriters() {
-        return csvAnnotatedWriters;
-    }
-
-    public CsvInfo setCsvAnnotatedWriters(Map<String, PrintWriter> csvAnnotatedWriters) {
-        this.csvAnnotatedWriters = csvAnnotatedWriters;
         return this;
     }
 

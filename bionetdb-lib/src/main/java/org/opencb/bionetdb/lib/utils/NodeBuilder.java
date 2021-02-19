@@ -18,6 +18,8 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -120,7 +122,7 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, StructuralVariation sv, CsvInfo csvInfo) {
+    public static Node newNode(long uid, StructuralVariation sv, CsvInfo csvInfo) throws IOException {
         Node node = new Node(uid, null, null, Node.Label.STRUCTURAL_VARIATION);
         node.addAttribute("ciStartLeft", sv.getCiStartLeft());
         node.addAttribute("ciStartRight", sv.getCiStartRight());
@@ -132,13 +134,19 @@ public class NodeBuilder {
         node.addAttribute("type", sv.getType());
 
         if (sv.getBreakend() != null) {
+            BufferedWriter bw;
+
             Node breakendNode = new Node(csvInfo.getAndIncUid(), null, null, Node.Label.BREAKEND);
             if (sv.getBreakend().getOrientation() != null) {
                 breakendNode.addAttribute("orientation", sv.getBreakend().getOrientation().name());
             }
-            csvInfo.getWriter(Node.Label.BREAKEND.name()).println(csvInfo.nodeLine(breakendNode));
-            csvInfo.getWriter(CsvInfo.RelationFilename.HAS___STRUCTURAL_VARIATION___BREAKEND.name()).println(csvInfo.relationLine(
-                    node.getUid(), breakendNode.getUid()));
+            bw = csvInfo.getWriter(Node.Label.BREAKEND.name());
+            bw.write(csvInfo.nodeLine(breakendNode));
+            bw.newLine();
+
+            bw = csvInfo.getWriter(CsvInfo.RelationFilename.HAS___STRUCTURAL_VARIATION___BREAKEND.name());
+            bw.write(csvInfo.relationLine(node.getUid(), breakendNode.getUid()));
+            bw.newLine();
 
             if (sv.getBreakend().getMate() != null) {
                 Node mateNode = new Node(csvInfo.getAndIncUid(), null, null, Node.Label.BREAKEND_MATE);
@@ -147,9 +155,13 @@ public class NodeBuilder {
                 mateNode.addAttribute("ciPositionLeft", sv.getBreakend().getMate().getCiPositionLeft());
                 mateNode.addAttribute("ciPositionRight", sv.getBreakend().getMate().getCiPositionRight());
 
-                csvInfo.getWriter(Node.Label.BREAKEND_MATE.name()).println(csvInfo.nodeLine(mateNode));
-                csvInfo.getWriter(CsvInfo.RelationFilename.MATE___BREAKEND___BREAKEND_MATE.name()).println(csvInfo.relationLine(
-                        breakendNode.getUid(), mateNode.getUid()));
+                bw = csvInfo.getWriter(Node.Label.BREAKEND_MATE.name());
+                bw.write(csvInfo.nodeLine(mateNode));
+                bw.newLine();
+
+                bw = csvInfo.getWriter(CsvInfo.RelationFilename.MATE___BREAKEND___BREAKEND_MATE.name());
+                bw.write(csvInfo.relationLine(breakendNode.getUid(), mateNode.getUid()));
+                bw.newLine();
             }
         }
 
@@ -173,7 +185,7 @@ public class NodeBuilder {
         return node;
     }
 
-    public static Node newNode(long uid, EvidenceEntry evidence, Node.Label nodeLabel, CsvInfo csvInfo) {
+    public static Node newNode(long uid, EvidenceEntry evidence, Node.Label nodeLabel, CsvInfo csvInfo) throws IOException {
         Node node = new Node(uid, evidence.getId(), evidence.getId(), nodeLabel);
         node.addAttribute("url", evidence.getUrl());
 
@@ -194,12 +206,19 @@ public class NodeBuilder {
             node.addAttribute("alleleOrigin", alleleOri.toString());
         }
 
+        BufferedWriter bw;
+
         if (CollectionUtils.isNotEmpty(evidence.getSubmissions())) {
             for (EvidenceSubmission submission : evidence.getSubmissions()) {
                 Node submissionNode = newNode(csvInfo.getAndIncUid(), submission);
-                csvInfo.getWriter(Node.Label.EVIDENCE_SUBMISSION.toString()).println(csvInfo.nodeLine(submissionNode));
-                csvInfo.getWriter("HAS___" + nodeLabel.name() + "___EVIDENCE_SUBMISSION").println(csvInfo.relationLine(
-                        node.getUid(), submissionNode.getUid()));
+
+                bw = csvInfo.getWriter(Node.Label.EVIDENCE_SUBMISSION.toString());
+                bw.write(csvInfo.nodeLine(submissionNode));
+                bw.newLine();
+
+                bw = csvInfo.getWriter("HAS___" + nodeLabel.name() + "___EVIDENCE_SUBMISSION");
+                bw.write(csvInfo.relationLine(node.getUid(), submissionNode.getUid()));
+                bw.newLine();
             }
 
         }
@@ -216,26 +235,41 @@ public class NodeBuilder {
         if (CollectionUtils.isNotEmpty(evidence.getHeritableTraits())) {
             for (HeritableTrait heritableTrait : evidence.getHeritableTraits()) {
                 Node heritableNode = newNode(csvInfo.getAndIncUid(), heritableTrait);
-                csvInfo.getWriter(Node.Label.HERITABLE_TRAIT.name()).println(csvInfo.nodeLine(heritableNode));
-                csvInfo.getWriter("HAS___" + nodeLabel.name() + "___HERITABLE_TRAIT").println(csvInfo.relationLine(
-                        node.getUid(), heritableNode.getUid()));
+
+                bw = csvInfo.getWriter(Node.Label.HERITABLE_TRAIT.name());
+                bw.write(csvInfo.nodeLine(heritableNode));
+                bw.newLine();
+
+                bw = csvInfo.getWriter("HAS___" + nodeLabel.name() + "___HERITABLE_TRAIT");
+                bw.write(csvInfo.relationLine(node.getUid(), heritableNode.getUid()));
+                bw.newLine();
             }
         }
 
         if (CollectionUtils.isNotEmpty(evidence.getGenomicFeatures())) {
             for (org.opencb.biodata.models.variant.avro.GenomicFeature genomicFeature : evidence.getGenomicFeatures()) {
                 Node featureNode = newNode(csvInfo.getAndIncUid(), genomicFeature);
-                csvInfo.getWriter(Node.Label.GENOMIC_FEATURE.name()).println(csvInfo.nodeLine(featureNode));
-                csvInfo.getWriter("HAS___" + nodeLabel.name() + "___GENOMIC_FEATURE").println(csvInfo.relationLine(
-                        node.getUid(), featureNode.getUid()));
+
+                bw = csvInfo.getWriter(Node.Label.GENOMIC_FEATURE.name());
+                bw.write(csvInfo.nodeLine(featureNode));
+                bw.newLine();
+
+                bw = csvInfo.getWriter("HAS___" + nodeLabel.name() + "___GENOMIC_FEATURE");
+                bw.write(csvInfo.relationLine(node.getUid(), featureNode.getUid()));
+                bw.newLine();
             }
         }
 
         if (evidence.getVariantClassification() != null) {
             Node varClassificationNode = newNode(csvInfo.getAndIncUid(), evidence.getVariantClassification());
-            csvInfo.getWriter(Node.Label.VARIANT_CLASSIFICATION.name()).println(csvInfo.nodeLine(varClassificationNode));
-            csvInfo.getWriter("HAS___" + nodeLabel.name() + "___VARIANT_CLASSIFICATION").println(csvInfo.relationLine(
-                    node.getUid(), varClassificationNode.getUid()));
+
+            bw = csvInfo.getWriter(Node.Label.VARIANT_CLASSIFICATION.name());
+            bw.write(csvInfo.nodeLine(varClassificationNode));
+            bw.newLine();
+
+            bw = csvInfo.getWriter("HAS___" + nodeLabel.name() + "___VARIANT_CLASSIFICATION");
+            bw.write(csvInfo.relationLine(node.getUid(), varClassificationNode.getUid()));
+            bw.newLine();
         }
 
         node.addAttribute("impact", evidence.getImpact());
@@ -249,9 +283,14 @@ public class NodeBuilder {
         if (CollectionUtils.isNotEmpty(evidence.getAdditionalProperties())) {
             for (Property property : evidence.getAdditionalProperties()) {
                 Node propertyNode = newNode(csvInfo.getAndIncUid(), property);
-                csvInfo.getWriter(Node.Label.PROPERTY.name()).println(csvInfo.nodeLine(propertyNode));
-                csvInfo.getWriter("HAS___" + nodeLabel.name() + "___PROPERTY").println(csvInfo.relationLine(
-                        node.getUid(), propertyNode.getUid()));
+
+                bw = csvInfo.getWriter(Node.Label.PROPERTY.name());
+                bw.write(csvInfo.nodeLine(propertyNode));
+                bw.newLine();
+
+                bw = csvInfo.getWriter("HAS___" + nodeLabel.name() + "___PROPERTY");
+                bw.write(csvInfo.relationLine(node.getUid(), propertyNode.getUid()));
+                bw.newLine();
             }
         }
 
