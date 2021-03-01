@@ -240,17 +240,17 @@ public class Builder {
             // Post-process DNA nodes
             logger.info("Post-processing {} dna nodes", dnaNodes.size());
             for (Node node: dnaNodes) {
+                // Write DNA node
+                writeNodeLine(node);
+
                 List<String> geneIds = getGeneIds(node.getName());
                 for (String geneId: geneIds) {
                     Long geneUid = builder.processGene(geneId, geneId);
                     if (geneUid != null) {
                         // Write dna-gene relation
-                        writeNodeLine(node);
                         writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
                     }
                 }
-                // Write DNA node
-                writeNodeLine(node);
             }
 
             // Post-process RNA nodes
