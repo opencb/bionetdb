@@ -50,7 +50,17 @@ public class NodeBuilder {
     public static final String PANEL_GENE = BIONETDB_PREFIX + "panelGene";
 
     public static Node newNode(long uid, Variant variant) {
-        Node node = new Node(uid, variant.toStringSimple(), variant.getId(), Node.Label.VARIANT);
+        // Since Neo4J can not index long IDs, the allele sequence is removed for the DELETION and INSERTION variant IDs
+        String varId = variant.toStringSimple();
+        if (variant.getType() == VariantType.DELETION) {
+            String[] split = varId.split(":");
+            varId = split[0] + ":" + split[1]  + ":DEL:-";
+        } else if (variant.getType() == VariantType.INSERTION) {
+            String[] split = varId.split(":");
+            varId = split[0] + ":" + split[1]  + ":-:INS";
+        }
+
+        Node node = new Node(uid, varId, varId, Node.Label.VARIANT);
         node.getLabels().add(Node.Label.PHYSICAL_ENTITY);
         if (CollectionUtils.isNotEmpty(variant.getNames())) {
             node.addAttribute("alternativeNames", StringUtils.join(variant.getNames(), ";"));
