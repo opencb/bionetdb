@@ -243,13 +243,36 @@ public class Builder {
                 // Write DNA node
                 writeNodeLine(node);
 
+                // Search for Ensembl and RefSeq genes to relation to
+                Long geneUid;
+                boolean ensemblFound = false;
+                boolean refseqFound = false;
                 List<String> geneIds = getGeneIds(node.getName());
                 for (String geneId: geneIds) {
-                    Long geneUid = builder.processGene(geneId, geneId);
-                    if (geneUid != null) {
-                        // Write dna-gene relation
-                        writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
+                    // Search ensembl gene
+                    if (!ensemblFound) {
+                        geneUid = csv.getLong(geneId, "ensembl");
+                        if (geneUid != null) {
+                            ensemblFound = true;
+                            // Write dna-gene relation
+                            writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
+                        }
                     }
+
+                    // Search refseq gene
+                    if (!refseqFound) {
+                        geneUid = csv.getLong(geneId, "refseq");
+                        if (geneUid != null) {
+                            refseqFound = true;
+                            // Write dna-gene relation
+                            writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
+                        }
+                    }
+//                    Long geneUid = builder.processGene(geneId, geneId);
+//                    if (geneUid != null) {
+//                        // Write dna-gene relation
+//                        writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
+//                    }
                 }
             }
 
@@ -1352,8 +1375,11 @@ public class Builder {
                     }
                 }
 
-                // And process gene to save to CSV file
-                processGene(gene.getId(), gene.getName());
+                // Process gene to save to CSV file and save gene name, source and uid for post-processing DNA, disease panels...
+                Long geneUid = processGene(gene.getId(), gene.getName());
+                if (geneUid != null && StringUtils.isNotEmpty(gene.getName())) {
+                    csv.putLong(gene.getName(), gene.getSource(), geneUid);
+                }
             } else {
                 logger.info("Skipping indexing gene: missing gene ID from JSON file");
             }
