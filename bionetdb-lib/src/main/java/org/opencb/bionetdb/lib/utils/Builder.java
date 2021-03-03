@@ -1520,20 +1520,37 @@ public class Builder {
                 writeRelationLine(HAS___DISEASE_PANEL___PANEL_GENE.name(), diseasePanelNode.getUid(), panelGeneNode.getUid());
 
                 if (StringUtils.isNotEmpty(panelGene.getId())) {
-                    Long geneUid = csv.getGeneUid(panelGene.getId());
-                    if (geneUid == null) {
-                        geneUid = csv.getGeneUid(panelGene.getName());
-                    }
+                    Gene gene = csv.getGeneCache().get(panelGene.getId());
+                    if (gene != null) {
+                        if (StringUtils.isNotEmpty(gene.getName())) {
+                            Long geneUid = csv.getLong(gene.getName(), "ensembl");
+                            if (geneUid != null) {
+                                // Add relation to CSV file
+                                writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), geneUid, panelGeneNode.getUid());
+                            }
+                            geneUid = csv.getLong(gene.getName(), "refseq");
+                            if (geneUid != null) {
+                                // Add relation to CSV file
+                                writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), geneUid, panelGeneNode.getUid());
+                            }
+                        }
+                    } else {
+//                        System.out.println(">>>> Panel gene " + panelGene.getId() + " not found from panel " + diseasePanel.getId());
+                        Long geneUid = csv.getGeneUid(panelGene.getId());
+                        if (geneUid == null) {
+                            geneUid = csv.getGeneUid(panelGene.getName());
+                        }
 
 //                    Long geneUid = processGene(panelGene.getId(), panelGene.getName());
-                    if (geneUid != null) {
-                        // Add relation to CSV file
-                        writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), geneUid, panelGeneNode.getUid());
-                    } else {
-                        String msg = "Not found!!! Gene " + panelGene.getId() + " (" + panelGene.getName() + ") from disease panel "
-                                + diseasePanel.getId();
-                        logger.warn(msg);
+                        if (geneUid != null) {
+                            // Add relation to CSV file
+                            writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), geneUid, panelGeneNode.getUid());
+                        } else {
+                            String msg = "Not found!!! Gene " + panelGene.getId() + " (" + panelGene.getName() + ") from disease panel "
+                                    + diseasePanel.getId();
+                            logger.warn(msg);
 //                        System.out.println(msg);
+                        }
                     }
                 }
             }
