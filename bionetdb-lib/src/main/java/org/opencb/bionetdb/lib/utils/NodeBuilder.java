@@ -578,10 +578,10 @@ public class NodeBuilder {
         node.getLabels().add(Node.Label.PHYSICAL_ENTITY);
         switch (source) {
             case "ensembl":
-                node.getLabels().add(Node.Label.ENSEMBL_GENE);
+                node.getLabels().add(Node.Label.ENSEMBL_EXON);
                 break;
             case "refseq":
-                node.getLabels().add(Node.Label.REFSEQ_GENE);
+                node.getLabels().add(Node.Label.REFSEQ_EXON);
                 break;
             default:
                 break;
