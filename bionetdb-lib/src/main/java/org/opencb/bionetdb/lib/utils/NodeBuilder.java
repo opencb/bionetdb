@@ -17,9 +17,11 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.bionetdb.core.models.network.Node;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.CryptoUtils;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,15 +51,11 @@ public class NodeBuilder {
     public static final String PANEL_PROTEIN = BIONETDB_PREFIX + "panelProtein";
     public static final String PANEL_GENE = BIONETDB_PREFIX + "panelGene";
 
-    public static Node newNode(long uid, Variant variant) {
-        // Since Neo4J can not index long IDs, the allele sequence is removed for the DELETION and INSERTION variant IDs
+    public static Node newNode(long uid, Variant variant) throws NoSuchAlgorithmException {
+        // Since Neo4J can not index long IDs, they will be compressed when their size are bigger than 50 char
         String varId = variant.toStringSimple();
-        if (variant.getType() == VariantType.DELETION) {
-            String[] split = varId.split(":");
-            varId = split[0] + ":" + split[1]  + ":DEL:-";
-        } else if (variant.getType() == VariantType.INSERTION) {
-            String[] split = varId.split(":");
-            varId = split[0] + ":" + split[1]  + ":-:INS";
+        if (varId.length() > 50) {
+            varId = CryptoUtils.sha256(varId);
         }
 
         Node node = new Node(uid, varId, varId, Node.Label.VARIANT);

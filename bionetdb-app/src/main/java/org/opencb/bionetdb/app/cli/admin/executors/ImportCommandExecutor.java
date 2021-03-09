@@ -10,6 +10,7 @@ import org.opencb.commons.utils.FileUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Created by jtarraga on 21/06/18.

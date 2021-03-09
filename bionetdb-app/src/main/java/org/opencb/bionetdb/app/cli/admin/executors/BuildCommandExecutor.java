@@ -9,6 +9,7 @@ import org.opencb.commons.utils.FileUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Created by imedina on 05/08/15.
@@ -35,7 +36,7 @@ public class BuildCommandExecutor extends CommandExecutor {
 
             BioNetDbManager manager = new BioNetDbManager(configuration);
             manager.build(inputPath, outputPath, buildCommandOptions.variantFiles, buildCommandOptions.networkFiles, buildCommandOptions.exclude);
-        } catch (IOException | BioNetDBException e) {
+        } catch (IOException | NoSuchAlgorithmException | BioNetDBException e) {
             e.printStackTrace();
         }
     }

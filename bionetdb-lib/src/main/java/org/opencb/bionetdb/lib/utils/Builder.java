@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static org.opencb.bionetdb.core.models.network.Node.Label.*;
@@ -85,7 +86,7 @@ public class Builder {
         this.logger = LoggerFactory.getLogger(this.getClass().toString());
     }
 
-    public void build() throws IOException {
+    public void build() throws IOException, NoSuchAlgorithmException {
         long start;
 
         // Check input files
@@ -828,7 +829,7 @@ public class Builder {
         return node;
     }
 
-    private Long processVariant(Variant variant) throws IOException {
+    private Long processVariant(Variant variant) throws IOException, NoSuchAlgorithmException {
         Node variantNode = null;
 
         Long variantUid = csv.getLong(variant.toStringSimple(), VARIANT.name());
@@ -841,11 +842,11 @@ public class Builder {
         return variantUid;
     }
 
-    private Node createVariantNode(Variant variant) throws IOException {
+    private Node createVariantNode(Variant variant) throws IOException, NoSuchAlgorithmException {
         return createVariantNode(variant, csv.getAndIncUid());
     }
 
-    private Node createVariantNode(Variant variant, Long varUid) throws IOException {
+    private Node createVariantNode(Variant variant, Long varUid) throws IOException, NoSuchAlgorithmException {
         Node varNode = NodeBuilder.newNode(varUid, variant);
         writeNodeLine(varNode);
 
@@ -1173,7 +1174,7 @@ public class Builder {
         return constraintUid;
     }
 
-    private void buildVariants(Path path) throws IOException {
+    private void buildVariants(Path path) throws IOException, NoSuchAlgorithmException {
         // Reading file line by line, each line a JSON object
         BufferedReader reader = FileUtils.newBufferedReader(path);
 

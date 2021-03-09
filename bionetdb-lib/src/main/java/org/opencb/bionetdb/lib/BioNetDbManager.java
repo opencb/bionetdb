@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 /**
@@ -73,12 +74,12 @@ public class BioNetDbManager {
 
     //-------------------------------------------------------------------------
 
-    public void build(Path inputPath, Path outputPath, List<String> exclude) throws IOException {
+    public void build(Path inputPath, Path outputPath, List<String> exclude) throws IOException, NoSuchAlgorithmException {
         build(inputPath, outputPath, null, null, exclude);
     }
 
     public void build(Path inputPath, Path outputPath, List<String> variantFiles, List<String> networkFiles, List<String> exclude)
-            throws IOException {
+            throws IOException, NoSuchAlgorithmException {
         Builder builder = new Builder(inputPath, outputPath, parseFilters(exclude));
         if (CollectionUtils.isNotEmpty(variantFiles)) {
             builder.setAdditionalVariantFiles(variantFiles);
