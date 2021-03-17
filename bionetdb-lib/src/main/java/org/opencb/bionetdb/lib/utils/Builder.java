@@ -304,10 +304,11 @@ public class Builder {
                     bw = builder.getCsvInfo().getWriter(node.getLabels().get(0).name());
 
                     if (StringUtils.isNotEmpty(node.getName())) {
-                        if (node.getLabels().contains(PROTEIN)) {
-                            // Complete node proteins
-                            node = builder.completeProteinNode(node);
-                        } else if (node.getLabels().contains(DNA)) {
+//                        if (node.getLabels().contains(PROTEIN)) {
+//                            // Complete node proteins
+//                            node = builder.completeProteinNode(node);
+//                        } else
+                        if (node.getLabels().contains(DNA)) {
                             // Save save gene nodes to process further, in the post-processing phase
                             dnaNodes.add(node);
                             continue;
@@ -607,7 +608,6 @@ public class Builder {
 
     private Node createProteinNode(Entry protein, Long uid) throws IOException {
         Node n;
-        PrintWriter pw;
 
         // Create protein node and save protein UID
         Node proteinNode = NodeBuilder.newNode(uid, protein);
@@ -651,19 +651,40 @@ public class Builder {
         if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
             Set<String> done = new HashSet<>();
             for (DbReferenceType dbRef: protein.getDbReference()) {
+                if ("Ensembl".equals(dbRef.getType())) {
+                    for (PropertyType propertyType : dbRef.getProperty()) {
+                        if ("protein sequence ID".equals(propertyType.getType())) {
+                            String xrefId = dbRef.getType() + "." + propertyType.getValue();
+                            // In the list, one db reference can be multiple times
+                            if (!done.contains(xrefId)) {
+                                n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
+                                n.setId(propertyType.getValue());
+                                updateCSVFiles(uid, n, ANNOTATION___PROTEIN___XREF.name());
+
+                                done.add(xrefId);
+                            }
+                            break;
+                        }
+                    }
+                }
                 String xrefId = dbRef.getType() + "." + dbRef.getId();
                 if (!done.contains(xrefId)) {
-                    Long xrefUid = csv.getLong(xrefId, XREF.name());
-                    if (xrefUid == null) {
-                        n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
-                        writeNodeLine(n);
-
-                        xrefUid = n.getUid();
-                        csv.putLong(dbRef.getType() + "." + dbRef.getId(), XREF.name(), xrefUid);
-                    }
-                    writeRelationLine(ANNOTATION___PROTEIN___XREF.name(), uid, xrefUid);
+                    n = NodeBuilder.newNode(csv.getAndIncUid(), dbRef);
+                    updateCSVFiles(uid, n, ANNOTATION___PROTEIN___XREF.name());
 
                     done.add(xrefId);
+                }
+            }
+            if (CollectionUtils.isNotEmpty(protein.getAccession())) {
+                for (String acc: protein.getAccession()) {
+                    String xrefId = "UniProtKB." + acc;
+                    if (!done.contains(xrefId)) {
+                        n = new Node(csv.getAndIncUid(), acc, null, Node.Label.XREF);
+                        n.addAttribute("dbName", "UniProtKB");
+                        updateCSVFiles(uid, n, ANNOTATION___PROTEIN___XREF.name());
+
+                        done.add(xrefId);
+                    }
                 }
             }
         }
@@ -684,38 +705,15 @@ public class Builder {
         Node n;
 
         // Get protein, remember that all proteins were created before genes/transcripts
-        if (CollectionUtils.isNotEmpty(transcript.getXrefs())) {
-            Long proteinUid = null;
-            for (Xref xref: transcript.getXrefs()) {
-                String proteinId = csv.getProteinCache().getPrimaryId(xref.getId());
-                if (proteinId != null) {
-                    proteinUid = csv.getLong(proteinId, PROTEIN.name());
-//                    if (proteinUid == null) {
-//                        Entry protein = csv.getProtein(proteinId);
-//                        if (protein != null) {
-//                            // Create protein node and write the CSV file
-//                            Node proteinNode = createProteinNode(protein);
-//                            csv.getWriter(Node.Label.PROTEIN.name()).println(csv.nodeLine(proteinNode));
-//                            proteinUid = proteinNode.getUid();
-//
-//                            // Save protein UID
-//                            csv.saveProteinUid(proteinId, proteinUid);
-//                        } else {
-//                            logger.info("Protein not found for ID {}", proteinId);
-//                        }
-//                    }
-
-                    if (proteinUid != null) {
-                        // Write transcript-protein relation
-                        writeRelationLine(IS___TRANSCRIPT___PROTEIN.name(), uid, proteinUid);
-                        break;
-                    }
+        if (StringUtils.isNotEmpty(transcript.getProteinId())) {
+            String proteinId = csv.getProteinCache().getPrimaryId(transcript.getSource() + "." + transcript.getProteinId());
+            if (proteinId != null) {
+                Long proteinUid = csv.getLong(proteinId, PROTEIN.name());
+                if (proteinUid != null) {
+                    // Write transcript-protein relation
+                    writeRelationLine(IS___TRANSCRIPT___PROTEIN.name(), uid, proteinUid);
                 }
             }
-//            if (proteinUid == null && StringUtils.isNotEmpty(transcript.getProteinId())) {
-//                System.out.println("Protein not found!!! Transcript " + transcript.getId() + " with proteinId = "
-//                        + transcript.getProteinId());
-//            }
         }
 
         // Model exon
@@ -1359,17 +1357,18 @@ public class Builder {
                 geneCache.saveObject(geneId, jsonGene);
 
                 // Save xrefs for that gene
-                geneCache.saveXref(geneId, geneId);
+                geneCache.saveXref(gene.getSource() + "." + geneId, geneId);
                 if (StringUtils.isNotEmpty(gene.getName())) {
-                    geneCache.saveXref(gene.getName(), geneId);
+                    geneCache.saveXref(gene.getSource() + "." + gene.getName(), geneId);
                 }
 
                 if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
                     for (Transcript transcr : gene.getTranscripts()) {
                         if (CollectionUtils.isNotEmpty(transcr.getXrefs())) {
                             for (Xref xref: transcr.getXrefs()) {
-                                if (StringUtils.isNotEmpty(xref.getId())) {
-                                    geneCache.saveXref(xref.getId(), geneId);
+                                String xrefId = xref.getDbName() + "." + xref.getId();
+                                if (StringUtils.isNotEmpty(xrefId)) {
+                                    geneCache.saveXref(xrefId, geneId);
                                 }
                             }
                         }
@@ -1477,10 +1476,24 @@ public class Builder {
                 if (CollectionUtils.isNotEmpty(protein.getDbReference())) {
                     Set<String> done = new HashSet<>();
                     for (DbReferenceType dbRef: protein.getDbReference()) {
+                        if ("Ensembl".equals(dbRef.getType())) {
+                            for (PropertyType propertyType : dbRef.getProperty()) {
+                                if ("protein sequence ID".equals(propertyType.getType())) {
+                                    String xrefId = dbRef.getType() + "." + propertyType.getValue();
+                                    // In the list, one db reference can be multiple times
+                                    if (!done.contains(xrefId)) {
+                                        proteinCache.saveXref(xrefId, proteinAcc);
+                                        done.add(xrefId);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        String xrefId = dbRef.getType() + "." + dbRef.getId();
                         // In the list, one db reference can be multiple times
-                        if (!done.contains(dbRef.getId())) {
-                            proteinCache.saveXref(dbRef.getId(), proteinAcc);
-                            done.add(dbRef.getId());
+                        if (!done.contains(xrefId)) {
+                            proteinCache.saveXref(xrefId, proteinAcc);
+                            done.add(xrefId);
                         }
                     }
                 }

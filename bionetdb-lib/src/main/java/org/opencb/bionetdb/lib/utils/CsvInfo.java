@@ -747,7 +747,8 @@ public class CsvInfo {
         //
 
         // Protein
-        attrs = Arrays.asList("protId", "id", "name", "accession", "dataset", "proteinExistence", "evidence", "object");
+        attrs = Arrays.asList("protId", "id", "name", "accession", "dataset", "proteinExistence", "evidence", "object",
+                "xrefIds", "xrefDbs");
         nodeAttributes.put(Node.Label.PROTEIN.toString(), new ArrayList<>(attrs));
 
         // Protein keyword
@@ -784,7 +785,7 @@ public class CsvInfo {
         nodeAttributes.put(Node.Label.SMALL_MOLECULE.toString(), new ArrayList<>(attrs));
 
         // RNA
-        attrs = Arrays.asList("rnaId", "id", "name", "evidence");
+        attrs = Arrays.asList("rnaId", "id", "name", "evidence", "xrefIds", "xrefDbs");
         nodeAttributes.put(Node.Label.RNA.toString(), new ArrayList<>(attrs));
 
         // catalysis
@@ -800,7 +801,7 @@ public class CsvInfo {
         nodeAttributes.put(Node.Label.REACTION.toString(), new ArrayList<>(attrs));
 
         // DNA
-        attrs = Arrays.asList("dnaId", "id", "name");
+        attrs = Arrays.asList("dnaId", "id", "name", "xrefIds", "xrefDbs");
         nodeAttributes.put(Node.Label.DNA.toString(), new ArrayList<>(attrs));
 
         // Undefined

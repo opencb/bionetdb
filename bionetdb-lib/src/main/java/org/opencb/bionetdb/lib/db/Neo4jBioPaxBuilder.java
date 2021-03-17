@@ -165,43 +165,37 @@ public class Neo4jBioPaxBuilder {
                     break;
                 }
                 case "Protein": {
-                    String protPrimaryId = null;
-                    String protName = ((Protein) bioPAXElement).getDisplayName();
+                    // Get the protein primary ID
+                    Protein proteinBP = (Protein) bioPAXElement;
 
-                    if (StringUtils.isEmpty(protName)) {
-                        Set<Xref> xrefs = ((Protein)bioPAXElement).getXref();
-                        for (Xref xref: xrefs) {
-                            if (!StringUtils.containsIgnoreCase(xref.getDb(), "Reactome")) {
-                                protPrimaryId = csv.getProteinCache().getPrimaryId(xref.getId());
+                    String protPrimaryId = null;
+                    String protName = proteinBP.getDisplayName();
+
+                    if (StringUtils.isNotEmpty(protName)) {
+                        protPrimaryId = csv.getProteinCache().getPrimaryId(protName);
+                    }
+                    if (StringUtils.isEmpty(protPrimaryId)) {
+                        if (proteinBP.getEntityReference() != null) {
+                            EntityReference entityReference = proteinBP.getEntityReference();
+//
+                            for (Xref xref : entityReference.getXref()) {
+                                if ("UniProt".equals(xref.getDb())) {
+                                    protPrimaryId = csv.getProteinCache().getPrimaryId(xref.getId());
+                                }
                                 if (StringUtils.isNotEmpty(protPrimaryId)) {
                                     break;
                                 }
                             }
                         }
-                        if (StringUtils.isEmpty(protPrimaryId)) {
-                            protPrimaryId = getBioPaxId(bioPAXElement.getRDFId());
-                        }
-                    } else {
-                        protPrimaryId = csv.getProteinCache().getPrimaryId(protName);
-                        if (StringUtils.isEmpty(protPrimaryId)) {
-                            Set<Xref> xrefs = ((Protein)bioPAXElement).getXref();
-                            for (Xref xref: xrefs) {
-                                if (!StringUtils.containsIgnoreCase(xref.getDb(), "Reactome")) {
-                                    protPrimaryId = csv.getProteinCache().getPrimaryId(xref.getId());
-                                    if (StringUtils.isNotEmpty(protPrimaryId)) {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (!"HSP70".equals(protName) && StringUtils.isEmpty(protPrimaryId)) {
-                            protPrimaryId = protName;
-                        }
+                    }
+                    if (StringUtils.isEmpty(protPrimaryId)) {
+                        protPrimaryId = getBioPaxId(bioPAXElement.getRDFId());
                     }
 
+                    // Get the protein UID
                     Long protUid = (protPrimaryId == null ? null : csv.getLong(protPrimaryId, Node.Label.PROTEIN.name()));
                     if (protUid == null) {
-                        node = loadProtein(bioPAXElement);
+                        node =  loadProtein(bioPAXElement);
                         updateAuxMaps(node);
 
                         updatePhysicalEntity(bioPAXElement);
@@ -419,15 +413,21 @@ public class Neo4jBioPaxBuilder {
             addSetAttributes(entityReference.getComment(), "description", node);
 
 //            // xref
-//            Set<Xref> xrefs = entityReference.getXref();
-//            for (Xref xref : xrefs) {
+            Set<Xref> xrefs = entityReference.getXref();
+            List<String> xrefIds = new ArrayList<>();
+            List<String> xrefDbs = new ArrayList<>();
+            for (Xref xref : xrefs) {
+                xrefIds.add(xref.getId());
+                xrefDbs.add(xref.getDb());
 //                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
 //                x.setSource(xref.getDb());
 //                x.setSourceVersion(xref.getDbVersion());
 //                x.setId(xref.getId());
 //                x.setIdVersion(xref.getIdVersion());
-////                dna.setXref(x);
-//            }
+//                dna.setXref(x);
+            }
+            node.addAttribute("xrefIds", StringUtils.join(xrefIds, ";"));
+            node.addAttribute("xrefDbs", StringUtils.join(xrefDbs, ";"));
         }
 
         return node;
@@ -458,15 +458,21 @@ public class Neo4jBioPaxBuilder {
             addSetAttributes(entityReference.getComment(), "description", node);
 
 //            // xref
-//            Set<Xref> xrefs = entityReference.getXref();
-//            for (Xref xref : xrefs) {
+            Set<Xref> xrefs = entityReference.getXref();
+            List<String> xrefIds = new ArrayList<>();
+            List<String> xrefDbs = new ArrayList<>();
+            for (Xref xref : xrefs) {
+                xrefIds.add(xref.getId());
+                xrefDbs.add(xref.getDb());
 //                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
 //                x.setSource(xref.getDb());
 //                x.setSourceVersion(xref.getDbVersion());
 //                x.setId(xref.getId());
 //                x.setIdVersion(xref.getIdVersion());
 ////                rna.setXref(x);
-//            }
+            }
+            node.addAttribute("xrefIds", StringUtils.join(xrefIds, ";"));
+            node.addAttribute("xrefDbs", StringUtils.join(xrefDbs, ";"));
         }
 
         return node;
@@ -496,16 +502,22 @@ public class Neo4jBioPaxBuilder {
             // description
             addSetAttributes(entityReference.getComment(), "description", node);
 //
-//            // xref
-//            Set<Xref> xrefs = entityReference.getXref();
-//            for (Xref xref : xrefs) {
+            // xref
+            Set<Xref> xrefs = entityReference.getXref();
+            List<String> xrefIds = new ArrayList<>();
+            List<String> xrefDbs = new ArrayList<>();
+            for (Xref xref : xrefs) {
+                xrefIds.add(xref.getId());
+                xrefDbs.add(xref.getDb());
 //                org.opencb.bionetdb.core.models.Xref x = new org.opencb.bionetdb.core.models.Xref();
 //                x.setSource(xref.getDb());
 //                x.setSourceVersion(xref.getDbVersion());
 //                x.setId(xref.getId());
 //                x.setIdVersion(xref.getIdVersion());
 //                protein.setXref(x);
-//            }
+            }
+            node.addAttribute("xrefIds", StringUtils.join(xrefIds, ";"));
+            node.addAttribute("xrefDbs", StringUtils.join(xrefDbs, ";"));
         }
 
         return node;
