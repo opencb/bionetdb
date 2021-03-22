@@ -141,80 +141,97 @@ public class Builder {
         csv.openCSVFiles(variantFiles);
 
         // Processing metadata files
+        System.out.println("Processing metadata files...");
         logger.info("Processing metadata files...");
         start = System.currentTimeMillis();
         processMetadata(variantFiles);
         logger.info("Metadata processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+        System.out.println("Metadata processing done in " + (System.currentTimeMillis() - start) / 1000 + " s");
 
         // Processing proteins
+        System.out.println("Processing proteins...");
         logger.info("Processing proteins...");
         start = System.currentTimeMillis();
         buildProteins(proteinFile.toPath());
         logger.info("Protein processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+        System.out.println("Protein processing done in " + (System.currentTimeMillis() - start) / 1000 + " s");
 
         // Processing genes
         if (ensemblGeneFile.exists()) {
+            System.out.println("Processing Ensembl genes...");
             logger.info("Processing Ensembl genes...");
             start = System.currentTimeMillis();
             buildGenes(ensemblGeneFile.toPath());
             logger.info("Ensembl gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+            System.out.println("Ensembl gene processing done in " + (System.currentTimeMillis() - start) / 1000 + " s");
         }
 
         if (refSeqGeneFile.exists()) {
+            System.out.println("Processing RefSeq genes...");
             logger.info("Processing RefSeq genes...");
             start = System.currentTimeMillis();
             buildGenes(refSeqGeneFile.toPath());
             logger.info("RefSeq gene processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+            System.out.println("RefSeq gene processing done in " + (System.currentTimeMillis() - start) / 1000 + " s");
         }
 
         // Disease panels support
+        System.out.println("Processing disease panels...");
         logger.info("Processing disease panels...");
         start = System.currentTimeMillis();
         buildDiseasePanels(panelFile.toPath());
         logger.info("Disease panels processing done in {} s", (System.currentTimeMillis() - start) / 1000);
+        System.out.println("Disease panels processing done in " + (System.currentTimeMillis() - start) / 1000 + " s");
 
         // Procesing BioPAX file
+        System.out.println("Processing Reactome BioPax file...");
+        logger.info("Processing Reactome BioPax file...");
         BioPAXProcessing biopaxProcessing = new BioPAXProcessing(this);
         Neo4jBioPaxBuilder bioPAXImporter = new Neo4jBioPaxBuilder(csv, filters, biopaxProcessing);
         start = System.currentTimeMillis();
         bioPAXImporter.build(networkFile.toPath());
         biopaxProcessing.post();
-        logger.info("Processing BioPax/reactome file done in {} s", (System.currentTimeMillis() - start) / 1000);
+        System.out.println("Processing Reactome BioPax file done in " + ((System.currentTimeMillis() - start) / 1000) + " s");
+        logger.info("Processing Reactome BioPax file done in {} s", (System.currentTimeMillis() - start) / 1000);
 
-        // Processing additional variants
-        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
-            for (String additionalVariantFile: additionalVariantFiles) {
-                // Read sample IDs
-                sampleIds = readSampleIds(additionalVariantFile);
+//        // Processing additional variants
+//        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
+//            for (String additionalVariantFile: additionalVariantFiles) {
+//                // Read sample IDs
+//                sampleIds = readSampleIds(additionalVariantFile);
+//
+//                logger.info("Processing additional variant file {}...", additionalVariantFile);
+//                start = System.currentTimeMillis();
+//                buildVariants(Paths.get(additionalVariantFile));
+//                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
+//            }
+//        }
 
-                logger.info("Processing additional variant file {}...", additionalVariantFile);
-                start = System.currentTimeMillis();
-                buildVariants(Paths.get(additionalVariantFile));
-                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
-            }
-        }
-
-        // Processing clinical variants
-        logger.info("Processing clinical variants...");
-        start = System.currentTimeMillis();
-        buildVariants(clinicalVariantFile.toPath());
-        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
-
-        // Processing additional networks
-        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
-            for (String additionalNeworkFile: additionalNeworkFiles) {
-                logger.info("Processing additional network file {}...", additionalNeworkFile);
-                start = System.currentTimeMillis();
-                processAdditionalNetwork(additionalNeworkFile);
-                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
-            }
-        }
+//        // Processing clinical variants
+//        logger.info("Processing clinical variants...");
+//        start = System.currentTimeMillis();
+//        buildVariants(clinicalVariantFile.toPath());
+//        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
+//
+//        // Processing additional networks
+//        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
+//            for (String additionalNeworkFile: additionalNeworkFiles) {
+//                logger.info("Processing additional network file {}...", additionalNeworkFile);
+//                start = System.currentTimeMillis();
+//                processAdditionalNetwork(additionalNeworkFile);
+//                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
+//            }
+//        }
 
         // Set internal config
         buildInternalConfigNode();
+        logger.info("Configuration node created.");
+        System.out.println("Configuration node created.");
 
         // Close CSV files
         csv.close();
+        logger.info("CSV files closed.");
+        System.out.println("CSV files closed.");
     }
 
     //-------------------------------------------------------------------------
@@ -240,46 +257,41 @@ public class Builder {
 
             // Post-process DNA nodes
             logger.info("Post-processing {} dna nodes", dnaNodes.size());
-            for (Node node: dnaNodes) {
+            for (Node node : dnaNodes) {
                 // Write DNA node
                 writeNodeLine(node);
 
                 // Search for Ensembl and RefSeq genes to relation to
                 Long geneUid;
-                boolean ensemblFound = false;
-                boolean refseqFound = false;
-                List<String> geneIds = getGeneIds(node.getName());
-                for (String geneId: geneIds) {
-                    // Search ensembl gene
-                    if (!ensemblFound) {
-                        geneUid = csv.getLong(geneId, "ensembl");
-                        if (geneUid != null) {
-                            ensemblFound = true;
-                            // Write dna-gene relation
-                            writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
+                List<String> geneNames = getGeneNameFromDnaNode(node);
+                for (String geneName : geneNames) {
+                    // Check if it is an Ensembl ID
+                    if (geneName.startsWith("ENSG00")) {
+                        Gene gene = csv.getGene(geneName);
+                        if (gene != null) {
+                            geneName = gene.getName();
                         }
                     }
 
-                    // Search refseq gene
-                    if (!refseqFound) {
-                        geneUid = csv.getLong(geneId, "refseq");
-                        if (geneUid != null) {
-                            refseqFound = true;
-                            // Write dna-gene relation
-                            writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
-                        }
+                    // Search ensembl gene
+                    geneUid = csv.getLong(geneName, "ensembl");
+                    if (geneUid != null) {
+                        // Write dna-gene relation
+                        writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
                     }
-//                    Long geneUid = builder.processGene(geneId, geneId);
-//                    if (geneUid != null) {
-//                        // Write dna-gene relation
-//                        writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
-//                    }
+
+                    // Search refseq gene
+                    geneUid = csv.getLong(geneName, "refseq");
+                    if (geneUid != null) {
+                        // Write dna-gene relation
+                        writeRelationLine(IS___DNA___GENE.name(), node.getUid(), geneUid);
+                    }
                 }
             }
 
             // Post-process RNA nodes
             logger.info("Post-processing {} rna nodes", rnaNodes.size());
-            for (Node node: rnaNodes) {
+            for (Node node : rnaNodes) {
                 // Write RNA node
                 writeNodeLine(node);
 
@@ -299,7 +311,7 @@ public class Builder {
         @Override
         public void processNodes(List<Node> nodes) throws IOException {
             BufferedWriter bw;
-            for (Node node: nodes) {
+            for (Node node : nodes) {
                 if (CollectionUtils.isNotEmpty(node.getLabels())) {
                     bw = builder.getCsvInfo().getWriter(node.getLabels().get(0).name());
 
@@ -329,7 +341,7 @@ public class Builder {
         @Override
         public void processRelations(List<Relation> relations) throws IOException {
             BufferedWriter bw;
-            for (Relation relation: relations) {
+            for (Relation relation : relations) {
                 String id = relation.getLabel() + FILENAME_SEPARATOR + relation.getOrigLabel() + FILENAME_SEPARATOR
                         + relation.getDestLabel();
                 bw = builder.getCsvInfo().getWriter(id);
@@ -343,16 +355,46 @@ public class Builder {
             }
         }
 
-        private List<String> getGeneIds(String nodeName) {
-            List<String> ids = new ArrayList<>();
-            if (nodeName.toLowerCase().contains("genes") || nodeName.contains("(") || nodeName.contains(",")
-                    || nodeName.contains(";")) {
-                return ids;
-            } else {
-                String name = nodeName.replace("gene", "").replace("Gene", "").trim();
-                ids.add(name);
-                return ids;
+        private List<String> getGeneNameFromDnaNode(Node dnaNode) {
+            String dnaName = dnaNode.getName();
+            String xrefId = dnaNode.getAttributes().getString("attr_xrefIds");
+
+            List<String> names = new ArrayList<>();
+
+            if (StringUtils.isNotEmpty(dnaName)) {
+                // Name
+                String input = dnaName.replace("/", ",").replace("(", "").replace(")", "");
+                if (!input.contains(",") && (!input.contains("genes") && !input.contains("Genes"))) {
+                    // Only one gene
+                    input = input.replace("gene", "").replace("Gene", "").trim();
+                    if (!input.contains(" ")) {
+                        names.add(input);
+                    }
+                } else {
+                    // Multiple genes
+                    input = input.replace("Genes", "").replace("genes", "").replace("Gene", "").replace("gene", "").replace(" ", "").trim();
+                    String[] fields = input.split(",");
+                    for (int i = 0; i < fields.length; i++) {
+                        if (i > 0) {
+                            if (StringUtils.isNumeric(fields[i])) {
+                                names.add(fields[0].trim().substring(0, fields[0].length() - 1) + fields[i]);
+                            } else {
+                                if (fields[i].length() == 1) {
+                                    names.add(fields[0].trim().substring(0, fields[0].length() - 1) + fields[i]);
+                                } else {
+                                    names.add(fields[i].trim());
+                                }
+                            }
+                        } else {
+                            names.add(fields[i].trim());
+                        }
+                    }
+                }
+            } else if (StringUtils.isNotEmpty(xrefId)) {
+                names.add(xrefId);
             }
+
+            return names;
         }
     }
 
@@ -554,8 +596,9 @@ public class Builder {
 
         // Xrefs
         Set<Xref> xrefSet = new HashSet<>();
-        xrefSet.add(new Xref(gene.getId(), "Ensembl", "Ensembl"));
-        xrefSet.add(new Xref(gene.getName(), "Ensembl", "Ensembl"));
+        String dbName = "ensembl".equals(gene.getSource()) ? "Ensembl" : "RefSeq";
+        xrefSet.add(new Xref(gene.getId(), dbName, dbName));
+        xrefSet.add(new Xref(gene.getName(), dbName, dbName));
         if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
             for (Transcript transcript : gene.getTranscripts()) {
                 if (CollectionUtils.isNotEmpty(transcript.getXrefs())) {
@@ -706,7 +749,8 @@ public class Builder {
 
         // Get protein, remember that all proteins were created before genes/transcripts
         if (StringUtils.isNotEmpty(transcript.getProteinId())) {
-            String proteinId = csv.getProteinCache().getPrimaryId(transcript.getSource() + "." + transcript.getProteinId());
+            String dbName = "refseq".equals(transcript.getSource()) ? "RefSeq" : "Ensembl";
+            String proteinId = csv.getProteinCache().getPrimaryId(dbName + "." + transcript.getProteinId());
             if (proteinId != null) {
                 Long proteinUid = csv.getLong(proteinId, PROTEIN.name());
                 if (proteinUid != null) {
@@ -1345,43 +1389,37 @@ public class Builder {
 
         String jsonGene = reader.readLine();
         long geneCounter = 0;
+        Set<String> idDone = new HashSet<>();
         while (jsonGene != null) {
             Gene gene = geneCache.getObjReader().readValue(jsonGene);
             String geneId = gene.getId();
             if (StringUtils.isNotEmpty(geneId)) {
-                geneCounter++;
-                if (geneCounter % 5000 == 0) {
-                    logger.info("Building {} genes...", geneCounter);
-                }
-                // Save gene
-                geneCache.saveObject(geneId, jsonGene);
+                // RefSeq genes can have same ID but different names, we take the first one!!
+                if (!idDone.contains(geneId)) {
+                    idDone.add(geneId);
+                    geneCounter++;
+                    if (geneCounter % 5000 == 0) {
+                        logger.info("Building {} genes...", geneCounter);
+                    }
+                    // Save gene
+                    geneCache.saveObject(geneId, jsonGene);
 
-                // Save xrefs for that gene
-                geneCache.saveXref(gene.getSource() + "." + geneId, geneId);
-                if (StringUtils.isNotEmpty(gene.getName())) {
-                    geneCache.saveXref(gene.getSource() + "." + gene.getName(), geneId);
-                }
+                    // Save xrefs for that gene
+                    geneCache.saveXref(geneId, geneId);
+                    if (StringUtils.isNotEmpty(gene.getName())) {
+                        geneCache.saveXref(gene.getSource() + "." + gene.getName(), geneId);
+                    }
 
-                if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
-                    for (Transcript transcr : gene.getTranscripts()) {
-                        if (CollectionUtils.isNotEmpty(transcr.getXrefs())) {
-                            for (Xref xref: transcr.getXrefs()) {
-                                String xrefId = xref.getDbName() + "." + xref.getId();
-                                if (StringUtils.isNotEmpty(xrefId)) {
-                                    geneCache.saveXref(xrefId, geneId);
-                                }
-                            }
-                        }
+                    // Process gene to save to CSV file and save gene name, source and uid for post-processing DNA, disease panels...
+                    Long geneUid = processGene(gene.getId(), gene.getName());
+                    if (geneUid != null && StringUtils.isNotEmpty(gene.getName())) {
+                        csv.putLong(gene.getName(), gene.getSource(), geneUid);
                     }
                 }
-
-                // Process gene to save to CSV file and save gene name, source and uid for post-processing DNA, disease panels...
-                Long geneUid = processGene(gene.getId(), gene.getName());
-                if (geneUid != null && StringUtils.isNotEmpty(gene.getName())) {
-                    csv.putLong(gene.getName(), gene.getSource(), geneUid);
-                }
             } else {
-                logger.info("Skipping indexing gene: missing gene ID from JSON file");
+                String msg = "Skipping gene: missing gene ID from JSON file, gene name = " + gene.getName();
+                System.out.println(msg);
+                logger.info(msg);
             }
 
             // Next line
@@ -1533,38 +1571,30 @@ public class Builder {
 
                 writeRelationLine(HAS___DISEASE_PANEL___PANEL_GENE.name(), diseasePanelNode.getUid(), panelGeneNode.getUid());
 
-                if (StringUtils.isNotEmpty(panelGene.getId())) {
-                    Gene gene = csv.getGeneCache().get(panelGene.getId());
-                    if (gene != null) {
-                        if (StringUtils.isNotEmpty(gene.getName())) {
-                            Long geneUid = csv.getLong(gene.getName(), "ensembl");
-                            if (geneUid != null) {
-                                // Add relation to CSV file
-                                writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), geneUid, panelGeneNode.getUid());
-                            }
-                            geneUid = csv.getLong(gene.getName(), "refseq");
-                            if (geneUid != null) {
-                                // Add relation to CSV file
-                                writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), geneUid, panelGeneNode.getUid());
-                            }
-                        }
+                if (StringUtils.isEmpty(panelGene.getName())) {
+                    String msg = "Missing gene name (" + panelGene.getId() + ") from disease panel " + diseasePanel.getId();
+                    logger.warn(msg);
+                    System.out.println(msg);
+                } else {
+                    Long ensemblGeneUid = csv.getLong(panelGene.getName(), "ensembl");
+                    if (ensemblGeneUid == null) {
+                        String msg = "Ensembl gene not found: gene " + panelGene.getName() + " (" + panelGene.getId()
+                                + ") from disease panel " + diseasePanel.getId();
+                        logger.warn(msg);
+                        System.out.println(msg);
                     } else {
-//                        System.out.println(">>>> Panel gene " + panelGene.getId() + " not found from panel " + diseasePanel.getId());
-                        Long geneUid = csv.getGeneUid(panelGene.getId());
-                        if (geneUid == null) {
-                            geneUid = csv.getGeneUid(panelGene.getName());
-                        }
+                        // Add relation to CSV file
+                        writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), ensemblGeneUid, panelGeneNode.getUid());
+                    }
 
-//                    Long geneUid = processGene(panelGene.getId(), panelGene.getName());
-                        if (geneUid != null) {
-                            // Add relation to CSV file
-                            writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), geneUid, panelGeneNode.getUid());
-                        } else {
-                            String msg = "Not found!!! Gene " + panelGene.getId() + " (" + panelGene.getName() + ") from disease panel "
-                                    + diseasePanel.getId();
-                            logger.warn(msg);
-//                        System.out.println(msg);
-                        }
+                    Long refSeqGeneUid = csv.getLong(panelGene.getName(), "refseq");
+                    if (refSeqGeneUid == null) {
+                        String msg = "RefSeq gene not found: gene " + panelGene.getName() + " (" + panelGene.getId()
+                                + ") from disease panel " + diseasePanel.getId();
+                        logger.warn(msg);
+                        System.out.println(msg);
+                    } else {
+                        writeRelationLine(ANNOTATION___GENE___PANEL_GENE.name(), refSeqGeneUid, panelGeneNode.getUid());
                     }
                 }
             }
