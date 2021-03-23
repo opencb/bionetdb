@@ -29,7 +29,10 @@ import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
@@ -194,34 +197,38 @@ public class Builder {
         System.out.println("Processing Reactome BioPax file done in " + ((System.currentTimeMillis() - start) / 1000) + " s");
         logger.info("Processing Reactome BioPax file done in {} s", (System.currentTimeMillis() - start) / 1000);
 
-//        // Processing additional variants
-//        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
-//            for (String additionalVariantFile: additionalVariantFiles) {
-//                // Read sample IDs
-//                sampleIds = readSampleIds(additionalVariantFile);
-//
-//                logger.info("Processing additional variant file {}...", additionalVariantFile);
-//                start = System.currentTimeMillis();
-//                buildVariants(Paths.get(additionalVariantFile));
-//                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
-//            }
-//        }
+        // Processing additional variants
+        if (CollectionUtils.isNotEmpty(additionalVariantFiles)) {
+            for (String additionalVariantFile: additionalVariantFiles) {
+                // Read sample IDs
+                sampleIds = readSampleIds(additionalVariantFile);
 
-//        // Processing clinical variants
-//        logger.info("Processing clinical variants...");
-//        start = System.currentTimeMillis();
-//        buildVariants(clinicalVariantFile.toPath());
-//        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
-//
-//        // Processing additional networks
-//        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
-//            for (String additionalNeworkFile: additionalNeworkFiles) {
-//                logger.info("Processing additional network file {}...", additionalNeworkFile);
-//                start = System.currentTimeMillis();
-//                processAdditionalNetwork(additionalNeworkFile);
-//                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
-//            }
-//        }
+                logger.info("Processing additional variant file {}...", additionalVariantFile);
+                start = System.currentTimeMillis();
+                buildVariants(Paths.get(additionalVariantFile));
+                logger.info("Processing additional variant file done in {} s", (System.currentTimeMillis() - start) / 1000);
+            }
+        }
+
+        // Processing clinical variants
+        System.out.println("Processing clinical variants...");
+        logger.info("Processing clinical variants...");
+        start = System.currentTimeMillis();
+        buildVariants(clinicalVariantFile.toPath());
+        logger.info("Processing clinical variants done in {} s", (System.currentTimeMillis() - start) / 1000);
+        System.out.println("Processing clinical variants done in " + (System.currentTimeMillis() - start) / 1000 + " s");
+
+        // Processing additional networks
+        if (CollectionUtils.isNotEmpty(additionalNeworkFiles)) {
+            for (String additionalNeworkFile: additionalNeworkFiles) {
+                System.out.println("Processing additional network file " + additionalNeworkFile + "...");
+                logger.info("Processing additional network file {}...", additionalNeworkFile);
+                start = System.currentTimeMillis();
+                processAdditionalNetwork(additionalNeworkFile);
+                logger.info("Processing additional network file done in {} s", (System.currentTimeMillis() - start) / 1000);
+                System.out.println("Processing additional network file done in " + (System.currentTimeMillis() - start) / 1000 + " s");
+            }
+        }
 
         // Set internal config
         buildInternalConfigNode();
@@ -295,14 +302,35 @@ public class Builder {
                 // Write RNA node
                 writeNodeLine(node);
 
-                if (StringUtils.isNotEmpty(node.getName())) {
-                    if (node.getName().startsWith("miR")) {
-                        String id = "hsa-" + node.getName().toLowerCase();
-                        Long miRnaUid = csv.getLong(id, MIRNA.name());
-                        if (miRnaUid != null) {
+                boolean isRelated = false;
+                String xrefId = node.getAttributes().getString("xrefIds");
+                if (StringUtils.isNotEmpty(xrefId)) {
+                    if (xrefId.startsWith("MI")) {
+                        // miRBase
+                        Long uid = csv.getLong(xrefId, MIRNA.name());
+                        System.out.println("RNA -> MIRNA: " + xrefId + ", " + uid);
+                        if (uid != null) {
                             // Write relation rna - mirna
-                            writeRelationLine(IS___RNA___MIRNA.name(), node.getUid(), miRnaUid);
+                            writeRelationLine(IS___RNA___MIRNA.name(), node.getUid(), uid);
+                            isRelated = true;
                         }
+                    } else if (xrefId.startsWith("ENST")) {
+                        // Ensembl transcript
+                        Long uid = csv.getLong(xrefId, TRANSCRIPT.name());
+                        if (uid != null) {
+                            // Write relation rna - mirna
+                            writeRelationLine(IS___RNA___TRANSCRIPT.name(), node.getUid(), uid);
+                            isRelated = true;
+                        }
+                    }
+                }
+
+                if (!isRelated && StringUtils.isNotEmpty(node.getName()) && node.getName().startsWith("miR")) {
+                    String id = "hsa-" + node.getName().toLowerCase();
+                    Long miRnaUid = csv.getLong(id, MIRNA.name());
+                    if (miRnaUid != null) {
+                        // Write relation rna - mirna
+                        writeRelationLine(IS___RNA___MIRNA.name(), node.getUid(), miRnaUid);
                     }
                 }
             }
@@ -357,7 +385,7 @@ public class Builder {
 
         private List<String> getGeneNameFromDnaNode(Node dnaNode) {
             String dnaName = dnaNode.getName();
-            String xrefId = dnaNode.getAttributes().getString("attr_xrefIds");
+            String xrefId = dnaNode.getAttributes().getString("xrefIds");
 
             List<String> names = new ArrayList<>();
 
@@ -515,6 +543,9 @@ public class Builder {
                 Node miRnaNode = NodeBuilder.newNode(miRnaUid, miRna);
 
                 csv.putLong(miRna.getId(), MIRNA.name(), miRnaUid);
+                if (StringUtils.isNotEmpty(miRna.getAccession())) {
+                    csv.putLong(miRna.getAccession(), MIRNA.name(), miRnaUid);
+                }
                 writeNodeLine(miRnaNode);
 
                 // Mature miRna
@@ -744,6 +775,12 @@ public class Builder {
         // Create transcript node and save transcript UId
         Node node = NodeBuilder.newNode(uid, transcript);
         csv.putLong(transcript.getId(), TRANSCRIPT.name(), uid);
+        if (StringUtils.isNotEmpty(transcript.getId()) && transcript.getId().contains(".")) {
+            String[] split = transcript.getId().split("\\.");
+            if (csv.getLong(split[0], TRANSCRIPT.name()) == null) {
+                csv.putLong(split[0], TRANSCRIPT.name(), uid);
+            }
+        }
 
         Node n;
 
