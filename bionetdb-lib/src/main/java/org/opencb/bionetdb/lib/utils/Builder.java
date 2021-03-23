@@ -308,7 +308,6 @@ public class Builder {
                     if (xrefId.startsWith("MI")) {
                         // miRBase
                         Long uid = csv.getLong(xrefId, MIRNA.name());
-                        System.out.println("RNA -> MIRNA: " + xrefId + ", " + uid);
                         if (uid != null) {
                             // Write relation rna - mirna
                             writeRelationLine(IS___RNA___MIRNA.name(), node.getUid(), uid);
