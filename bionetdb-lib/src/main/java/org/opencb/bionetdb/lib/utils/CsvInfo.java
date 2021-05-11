@@ -872,14 +872,24 @@ public class CsvInfo {
                         }
                     }
 
-                    if (CollectionUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
-                        for (VariantFileMetadata variantFileMetadata : variantStudyMetadata.getFiles()) {
-                            if (variantFileMetadata.getHeader() != null) {
-                                for (VariantFileHeaderComplexLine line : variantFileMetadata.getHeader().getComplexLines()) {
-                                    if ("INFO".equals(line.getKey())) {
-                                        infoAttrs.add(line.getId());
-                                    } else if ("FORMAT".equals(line.getKey())) {
-                                        formatAttrs.add(line.getId());
+                    if (variantStudyMetadata.getAggregatedHeader() != null) {
+                        for (VariantFileHeaderComplexLine line : variantStudyMetadata.getAggregatedHeader().getComplexLines()) {
+                            if ("INFO".equals(line.getKey())) {
+                                infoAttrs.add(line.getId());
+                            } else if ("FORMAT".equals(line.getKey())) {
+                                formatAttrs.add(line.getId());
+                            }
+                        }
+                    } else {
+                        if (CollectionUtils.isNotEmpty(variantStudyMetadata.getFiles())) {
+                            for (VariantFileMetadata variantFileMetadata : variantStudyMetadata.getFiles()) {
+                                if (variantFileMetadata.getHeader() != null) {
+                                    for (VariantFileHeaderComplexLine line : variantFileMetadata.getHeader().getComplexLines()) {
+                                        if ("INFO".equals(line.getKey())) {
+                                            infoAttrs.add(line.getId());
+                                        } else if ("FORMAT".equals(line.getKey())) {
+                                            formatAttrs.add(line.getId());
+                                        }
                                     }
                                 }
                             }
