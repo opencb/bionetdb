@@ -1,6 +1,8 @@
 package org.opencb.bionetdb.lib.utils;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -1258,6 +1260,9 @@ public class Builder {
 
         long counter = 0;
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 //        logger.info("Processing JSON file {}", file.getPath());
 //        reader = FileUtils.newBufferedReader(file.toPath());
         String line = reader.readLine();
@@ -1309,6 +1314,9 @@ public class Builder {
 
                 // Read info, format and sample from metadata file
                 ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+                mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+                mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                 VariantMetadata variantMetadata;
                 try {
                     BufferedReader bufferedReader = FileUtils.newBufferedReader(metaFile.toPath());
@@ -1653,6 +1661,9 @@ public class Builder {
 
         // Read info, format and sample from metadata file
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         VariantMetadata variantMetadata;
         try {
             BufferedReader bufferedReader = FileUtils.newBufferedReader(metaFile.toPath());
